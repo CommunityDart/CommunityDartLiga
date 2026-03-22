@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CDL Liga</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#111823;
+      --panel-2:#162131;
+      --line:#243246;
+      --text:#e8eef7;
+      --muted:#9eb0c6;
+      --blue:#4c8dff;
+      --orange:#ff9a3c;
+      --gold:#d4af37;
+      --silver:#b8c2cc;
+      --bronze:#b67a45;
+      --green:#163523;
+      --green-line:#2f7d4b;
+      --red:#31161a;
+      --red-line:#7a2f3b;
+      --shadow:0 14px 36px rgba(0,0,0,.35);
+      --radius:20px;
+      --max:1250px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:linear-gradient(180deg,#091019 0%, #0b0f14 100%);color:var(--text);font:16px/1.45 Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    a{color:inherit}
+    .wrap{max-width:var(--max);margin:0 auto;padding:24px}
+    .hero{
+      background:linear-gradient(135deg,rgba(76,141,255,.16),rgba(255,154,60,.12));
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:28px;
+      box-shadow:var(--shadow);
+      margin-bottom:22px;
+    }
+    .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    h1{margin:0 0 10px;font-size:clamp(28px,4vw,42px);line-height:1.08}
+    .sub{color:var(--muted);max-width:760px}
+    .panel{
+      background:rgba(17,24,35,.9);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .controls{padding:14px;display:flex;gap:10px;flex-wrap:wrap;position:sticky;top:0;backdrop-filter: blur(8px);z-index:5}
+    .tabs,.league-tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{
+      border:1px solid var(--line);
+      background:var(--panel-2);
+      color:var(--text);
+      border-radius:999px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    .btn:hover{transform:translateY(-1px);border-color:#3a4c67}
+    .btn.active.autodarts{background:rgba(76,141,255,.17);border-color:rgba(76,141,255,.5)}
+    .btn.active.dartcounter{background:rgba(255,154,60,.17);border-color:rgba(255,154,60,.5)}
+    .grid{display:grid;grid-template-columns:1fr;gap:18px;margin-top:18px}
+    .content{padding:18px}
+    .title-row{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap}
+    .title-row h2{margin:0;font-size:26px}
+    .meta{color:var(--muted);font-size:14px}
+    .status{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border-radius:999px;
+      background:#0d1520;border:1px solid var(--line);color:var(--muted);
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:#7f8ea3}
+    .status.ok .dot{background:#58cc7a}
+    .status.err .dot{background:#ff6b6b}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}
+    table{width:100%;border-collapse:collapse;min-width:760px;background:#0c121b}
+    thead th{
+      position:sticky;top:0;background:#101826;z-index:1;
+      color:#c7d5e8;font-size:13px;text-transform:uppercase;letter-spacing:.05em;
+    }
+    th,td{padding:12px 14px;border-bottom:1px solid #1d2a3d;text-align:left;white-space:nowrap}
+    tbody tr:hover{background:#111a28}
+    tbody tr.top1{background:linear-gradient(90deg, rgba(212,175,55,.12), transparent)}
+    tbody tr.top2{background:linear-gradient(90deg, rgba(184,194,204,.11), transparent)}
+    tbody tr.top3{background:linear-gradient(90deg, rgba(182,122,69,.11), transparent)}
+    .rank{
+      display:inline-grid;place-items:center;
+      min-width:30px;height:30px;border-radius:999px;
+      background:#132033;border:1px solid #2a3d57;font-weight:700
+    }
+    .rank.r1{background:rgba(212,175,55,.14);border-color:rgba(212,175,55,.45);color:#f5df88}
+    .rank.r2{background:rgba(184,194,204,.12);border-color:rgba(184,194,204,.45);color:#e6edf4}
+    .rank.r3{background:rgba(182,122,69,.12);border-color:rgba(182,122,69,.45);color:#e6b48d}
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;
+      border-radius:999px;padding:6px 10px;
+      border:1px solid var(--line);background:#101826;font-size:13px;color:var(--muted)
+    }
+    .footer{color:var(--muted);font-size:13px;padding:0 2px 22px}
+    .loader, .empty{padding:42px 18px;text-align:center;color:var(--muted)}
+    .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .chip{padding:7px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px}
+    .chip.blue{background:rgba(76,141,255,.12)}
+    .chip.orange{background:rgba(255,154,60,.12)}
+    .notice{margin-top:10px;color:var(--muted);font-size:13px}
+    .small{font-size:12px;color:var(--muted)}
+    @media (max-width:700px){
+      .wrap{padding:14px}
+      .hero,.content,.controls{padding:14px}
+      th,td{padding:10px 12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">CDL Liga</div>
+      <h1>Tabellen aus Google Sheets, aber in clean.</h1>
+      <div class="sub">
+        Wähle zuerst die Plattform und dann die Liga. Die Daten werden direkt aus deinem bestehenden Google Sheet geladen.
+      </div>
+      <div class="legend">
+        <span class="chip blue">Autodarts</span>
+        <span class="chip orange">DartCounter</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="controls">
+        <div class="tabs" id="platformTabs"></div>
+        <div class="league-tabs" id="leagueTabs"></div>
+      </div>
+
+      <div class="content">
+        <div class="title-row">
+          <div>
+            <h2 id="leagueTitle">Lädt…</h2>
+            <div class="meta" id="leagueMeta">Google Sheet Verbindung wird aufgebaut.</div>
+          </div>
+          <div class="status" id="statusBadge"><span class="dot"></span><span id="statusText">Bereit</span></div>
+        </div>
+
+        <div class="table-wrap" id="tableWrap">
+          <div class="loader" id="loader">Daten werden geladen…</div>
+          <table id="leagueTable" hidden>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="notice">
+          Tipp: Für GitHub Pages sollte das Sheet mindestens auf <span class="small">„Jeder mit Link kann ansehen“</span> stehen. Noch stabiler ist es, wenn du es zusätzlich veröffentlichst.
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Clean League Frontend für GitHub Pages</div>
+  </div>
+
+  <script>
+    const SHEET_ID = "1gE5-Z6MXMAXp3feMGW1U8BpmELbLM5VMTANpLb7P_YY";
+
+    const CONFIG = {
+      autodarts: {
+        label: "Autodarts",
+        className: "autodarts",
+        leagues: [
+          "Autodarts Liga 1",
+          "Autodarts Liga 2",
+          "Autodarts Liga 3",
+          "Autodarts Liga 4",
+          "Autodarts Liga 5",
+          "Autodarts Liga 6"
+        ]
+      },
+      dartcounter: {
+        label: "DartCounter",
+        className: "dartcounter",
+        leagues: [
+          "DartCounter Liga 1",
+          "DartCounter Liga 2",
+          "DartCounter Liga 3",
+          "DartCounter Liga 4",
+          "DartCounter Liga 5",
+          "DartCounter Liga 6"
+        ]
+      }
+    };
+
+    let currentPlatform = "autodarts";
+    let currentLeague = CONFIG[currentPlatform].leagues[0];
+
+    const platformTabs = document.getElementById("platformTabs");
+    const leagueTabs = document.getElementById("leagueTabs");
+    const leagueTitle = document.getElementById("leagueTitle");
+    const leagueMeta = document.getElementById("leagueMeta");
+    const statusBadge = document.getElementById("statusBadge");
+    const statusText = document.getElementById("statusText");
+    const loader = document.getElementById("loader");
+    const table = document.getElementById("leagueTable");
+    const thead = document.getElementById("thead");
+    const tbody = document.getElementById("tbody");
+
+    function setStatus(text, type=""){
+      statusText.textContent = text;
+      statusBadge.className = "status" + (type ? " " + type : "");
+    }
+
+    function makeButton(label, active, className, onClick){
+      const btn = document.createElement("button");
+      btn.className = `btn ${active ? `active ${className}` : ""}`;
+      btn.textContent = label;
+      btn.onclick = onClick;
+      return btn;
+    }
+
+    function renderPlatformTabs(){
+      platformTabs.innerHTML = "";
+      Object.entries(CONFIG).forEach(([key, value]) => {
+        platformTabs.appendChild(
+          makeButton(value.label, key === currentPlatform, value.className, () => {
+            currentPlatform = key;
+            currentLeague = CONFIG[key].leagues[0];
+            renderPlatformTabs();
+            renderLeagueTabs();
+            loadLeague();
+          })
+        );
+      });
+    }
+
+    function renderLeagueTabs(){
+      leagueTabs.innerHTML = "";
+      CONFIG[currentPlatform].leagues.forEach((league) => {
+        const num = league.match(/(\d+)$/)?.[1] || league;
+        leagueTabs.appendChild(
+          makeButton(`Liga ${num}`, league === currentLeague, CONFIG[currentPlatform].className, () => {
+            currentLeague = league;
+            renderLeagueTabs();
+            loadLeague();
+          })
+        );
+      });
+    }
+
+    function gvizUrl(sheetName){
+      return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&tqx=out:json`;
+    }
+
+    async function fetchSheet(sheetName){
+      const res = await fetch(gvizUrl(sheetName));
+      if(!res.ok) throw new Error("Google Sheets Antwort nicht ok");
+      const raw = await res.text();
+      const json = JSON.parse(raw.substring(47).slice(0, -2));
+      return json.table;
+    }
+
+    function normalizeCell(cell){
+      if(!cell) return "";
+      if(cell.f != null && cell.f !== "") return cell.f;
+      if(cell.v == null) return "";
+      return cell.v;
+    }
+
+    function parseTable(tableData){
+      const cols = (tableData.cols || []).map((c, i) => (c.label || c.id || `Spalte ${i+1}`).trim());
+      const rows = (tableData.rows || []).map(r => (r.c || []).map(normalizeCell));
+      return { cols, rows };
+    }
+
+    function detectRankIndex(cols){
+      const lower = cols.map(c => c.toLowerCase());
+      const candidates = ["platz", "rang", "#", "pos", "position"];
+      for(const c of candidates){
+        const idx = lower.findIndex(v => v === c || v.includes(c));
+        if(idx !== -1) return idx;
+      }
+      return 0;
+    }
+
+    function detectNameIndex(cols){
+      const lower = cols.map(c => c.toLowerCase());
+      const candidates = ["spieler", "name", "player"];
+      for(const c of candidates){
+        const idx = lower.findIndex(v => v === c || v.includes(c));
+        if(idx !== -1) return idx;
+      }
+      return 1;
+    }
+
+    function getRankValue(row, rankIndex, fallback){
+      const raw = String(row[rankIndex] ?? "").replace(/[^\d]/g, "");
+      return raw ? Number(raw) : fallback + 1;
+    }
+
+    function renderTable(cols, rows){
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+
+      const headRow = document.createElement("tr");
+      cols.forEach((col) => {
+        const th = document.createElement("th");
+        th.textContent = col || "—";
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+
+      const rankIndex = detectRankIndex(cols);
+      const nameIndex = detectNameIndex(cols);
+
+      rows.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        const rank = getRankValue(row, rankIndex, i);
+
+        if(rank === 1) tr.classList.add("top1");
+        if(rank === 2) tr.classList.add("top2");
+        if(rank === 3) tr.classList.add("top3");
+
+        row.forEach((value, idx) => {
+          const td = document.createElement("td");
+
+          if(idx === rankIndex){
+            const span = document.createElement("span");
+            span.className = "rank" + (rank <= 3 ? ` r${rank}` : "");
+            span.textContent = rank;
+            td.appendChild(span);
+          } else if (idx === nameIndex) {
+            td.innerHTML = `<strong>${escapeHtml(String(value || ""))}</strong>`;
+          } else {
+            td.textContent = value ?? "";
+          }
+
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      table.hidden = false;
+      loader.style.display = rows.length ? "none" : "block";
+      loader.textContent = rows.length ? "" : "Keine Daten gefunden.";
+    }
+
+    function escapeHtml(str){
+      return str.replace(/[&<>"']/g, m => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      }[m]));
+    }
+
+    async function loadLeague(){
+      leagueTitle.textContent = currentLeague;
+      leagueMeta.textContent = `Lade Tabellendaten aus Google Sheet …`;
+      table.hidden = true;
+      loader.style.display = "block";
+      loader.textContent = "Daten werden geladen…";
+      setStatus("Wird geladen");
+
+      try {
+        const tableData = await fetchSheet(currentLeague);
+        const { cols, rows } = parseTable(tableData);
+
+        renderTable(cols, rows);
+        leagueMeta.textContent = `${rows.length} Einträge geladen`;
+        setStatus("Live verbunden", "ok");
+      } catch (err) {
+        console.error(err);
+        table.hidden = true;
+        loader.style.display = "block";
+        loader.innerHTML = `Die Daten konnten nicht geladen werden.<br><span class="small">Prüfe Freigabe/Veröffentlichung des Google Sheets.</span>`;
+        leagueMeta.textContent = "Verbindung fehlgeschlagen";
+        setStatus("Fehler", "err");
+      }
+    }
+
+    renderPlatformTabs();
+    renderLeagueTabs();
+    loadLeague();
+  </script>
+</body>
+</html>
