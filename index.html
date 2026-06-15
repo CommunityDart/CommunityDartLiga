@@ -798,6 +798,150 @@
       });
     }
 
+    // ===========================================================
+    // FEHLENDE FUNKTIONEN (waren nicht vorhanden -> Fehlerursache)
+    // ===========================================================
+
+    function renderSheetAsBlocks(rows) {
+      const validRows = (rows || []).filter(row => rowHasAnyContent(row));
+      if (!validRows.length) return `<p>Keine Inhalte gefunden.</p>`;
+      return validRows.map((row) => {
+        const filled = row.map(cell => String(cell || "").trim()).filter(cell => cell);
+        if (!filled.length) return "";
+        if (filled.length === 1) return `<div class="content-block"><p>${makeClickable(htmlEscape(filled[0]))}</p></div>`;
+        return `<div class="content-block"><h4>${makeClickable(htmlEscape(filled[0]))}</h4>${filled.slice(1).map(text => `<p>${makeClickable(htmlEscape(text))}</p>`).join("")}</div>`;
+      }).join("");
+    }
+
+    async function loadLeague(leagueName) {
+      let leagueRows = []; let ergRows = [];
+      try { leagueRows = await loadCsv(leagueName); } catch (e) { console.warn("Liga-Blatt nicht ladbar:", leagueName, e); }
+      try { ergRows = await loadCsv(ergName(leagueName)); } catch (e) { console.warn("Erg-Blatt nicht ladbar:", leagueName, e); }
+      return { standings: parseStandingsFromLeagueSheet(leagueRows), matchdays: parseMatchdaysFromErgSheet(ergRows) };
+    }
+
+    function leagueHasPlayers(data) { return data && data.standings && data.standings.rows && data.standings.rows.length > 0; }
+
+    function rankClass(rankValue, totalRows) {
+      const rank = parseInt(String(rankValue).replace(/\D/g, ""), 10);
+      if (!Number.isFinite(rank)) return "";
+      if (rank === 1) return "first";
+      if (rank === totalRows) return "last";
+      return "";
+    }
+
+    function sortStandingsWithCards(rows) {
+      return [...rows].sort((a, b) => {
+        const metaA = state.playerMetaMap[normalize(a[1])] || {}; const metaB = state.playerMetaMap[normalize(b[1])] || {};
+        if (!!metaA.hasRed !== !!metaB.hasRed) return metaA.hasRed ? 1 : -1;
+        const rankA = parseInt(String(a[0]).replace(/\D/g, ""), 10); const rankB = parseInt(String(b[0]).replace(/\D/g, ""), 10);
+        return (Number.isFinite(rankA) ? rankA : 9999) - (Number.isFinite(rankB) ? rankB : 9999);
+      });
+    }
+
+    function renderPlayerCards(meta) {
+      if (!meta) return "";
+      const cards = [];
+      for (let i = 0; i < (meta.yellow || 0); i++) cards.push(`<span class="card-badge yellow" title="Gelbe Karte"></span>`);
+      for (let i = 0; i < (meta.red || 0); i++) cards.push(`<span class="card-badge red" title="Rote Karte"></span>`);
+      return cards.length ? `<span class="player-cards">${cards.join("")}</span>` : "";
+    }
+
+    function renderStandingsTable(headers, rows) {
+      if (!headers.length || !rows.length) return `<div class="table-shell"><div class="section-head"><div class="section-title">Tabelle</div></div><div style="padding:18px"><div class="empty">Keine Daten.</div></div></div>`;
+      const displayHeaders = ["Platz", "Spieler", "Discord", "Siege", "Niederlagen", "Leg-Diff", "Punkte"];
+      const sortedRows = sortStandingsWithCards(rows).map((row, index, arr) => ({ displayRank: String(index + 1), originalRow: row, totalRows: arr.length }));
+      const thead = `<tr>${displayHeaders.map((h, i) => `<th${i === 0 ? ' class="rank-col"' : ""}>${htmlEscape(h)}</th>`).join("")}</tr>`;
+      const tbody = sortedRows.map(entry => {
+        const row = entry.originalRow; const spielerName = row[1] || "-";
+        const meta = state.playerMetaMap[normalize(spielerName)] || { discord: "" };
+        return `<tr>
+          <td class="rank-col ${rankClass(entry.displayRank, entry.totalRows)}">${htmlEscape(entry.displayRank)}</td>
+          <td class="player-cell"><span class="player-name">${htmlEscape(spielerName)}</span><div class="player-meta-row">${renderPlayerCards(meta)}</div></td>
+          <td class="discord-cell">${meta.discord ? htmlEscape(meta.discord) : "-"}</td>
+          <td>${htmlEscape(row[2])}</td><td>${htmlEscape(row[3])}</td><td>${htmlEscape(row[4])}</td><td class="points-cell">${htmlEscape(row[5])}</td>
+        </tr>`;
+      }).join("");
+      return `<div class="table-shell"><div class="section-head"><div><div class="section-title">Tabelle</div><div class="section-sub">Bo7 • 1 Spieltag pro Woche</div></div></div><div class="table-wrap"><table><thead>${thead}</thead><tbody>${tbody}</tbody></table></div></div>`;
+    }
+
+    function renderMatchStatusDot(statusValue, legs1, legs2) {
+      const done = isFinishedMatch(statusValue, legs1, legs2);
+      return `<span class="status-badge ${done ? "done" : "open"}"><span class="status-dot ${done ? "done" : "open"}"></span></span>`;
+    }
+
+    function renderMatchTable(headers, rows) {
+      if (!headers.length || !rows.length) return `<div class="empty">Keine Spiele.</div>`;
+      const tbody = rows.map(row => {
+        return `<tr>
+          <td class="col-player"><span class="match-player">${htmlEscape(row[1])}</span>${row[2] ? `<span class="player-discord">${htmlEscape(row[2])}</span>` : ""}</td>
+          <td class="col-player"><span class="match-player">${htmlEscape(row[3])}</span>${row[4] ? `<span class="player-discord">${htmlEscape(row[4])}</span>` : ""}</td>
+          <td class="col-legs">${htmlEscape(row[5])}</td><td class="col-legs">${htmlEscape(row[6])}</td>
+          <td class="status-cell">${renderMatchStatusDot(row[7], row[5], row[6])}</td>
+        </tr>`;
+      }).join("");
+      return `<table class="match-table"><tbody>${tbody}</tbody></table>`;
+    }
+
+    function renderMatchdays(matchdays) {
+      if (!matchdays.length) return `<div class="empty">Keine Spieltage.</div>`;
+      const defOpen = matchdays.findIndex(day => !/fertig|abgeschlossen/i.test(day.status));
+      const defaultOpenIndex = defOpen !== -1 ? defOpen : 0;
+      return matchdays.map((day, idx) => {
+        const key = `${state.activeLeague}__${day.title}`;
+        const isOpen = key in state.matchdayOpenState ? state.matchdayOpenState[key] : idx === defaultOpenIndex;
+        return `<div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
+          <button class="matchday-head" type="button">
+            <span class="matchday-title">${htmlEscape(day.title)}</span>
+            <span class="matchday-head-right"><span class="matchday-progress">${htmlEscape(day.doneMatches)}/${htmlEscape(day.totalMatches)}</span><span class="status-badge ${day.status === "fertig" ? "done" : "open"}"><span class="status-dot ${day.status === "fertig" ? "done" : "open"}"></span></span></span>
+          </button>
+          <div class="matchday-body">${renderMatchTable(day.headers, day.rows)}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function getVisibleModeLeagues() { return state.leagues.filter(l => l.name.startsWith(state.activeMode) && leagueHasPlayers(state.leagueData[l.name])); }
+
+    function renderSystemSubmenus() {
+      const renderSub = (el, prefix) => {
+        if (!el) return;
+        const filtered = state.leagues.filter(l => l.name.startsWith(prefix) && leagueHasPlayers(state.leagueData[l.name]));
+        el.innerHTML = filtered.map(l => `<button class="submenu-btn ${l.name === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l.name)}">${htmlEscape(l.name)}</button>`).join("");
+        el.classList.toggle("active", state.activeMode === prefix);
+        el.querySelectorAll(".submenu-btn").forEach(btn => btn.addEventListener("click", () => { state.activeLeague = btn.dataset.name; renderSystemSubmenus(); renderLeague(); }));
+      };
+      renderSub(autodartsSubmenuEl, "Autodarts");
+      renderSub(dartcounterSubmenuEl, "DartCounter");
+    }
+
+    function attachMatchdayEvents() {
+      if (!matchdayAreaEl) return;
+      matchdayAreaEl.querySelectorAll(".matchday").forEach(card => {
+        card.querySelector(".matchday-head").addEventListener("click", () => {
+          const isOpen = !card.classList.contains("open"); card.classList.toggle("open", isOpen);
+          state.matchdayOpenState[card.dataset.key] = isOpen;
+        });
+      });
+    }
+
+    function renderHome() {
+      if (!tableAreaEl) return;
+      tableAreaEl.innerHTML = `<div class="table-shell"><div class="section-head"><div><div class="section-title">Neuigkeiten & Ankündigungen</div><div class="section-sub">Aktuelle Infos unserer Community.</div></div></div><div style="padding:0 18px 18px">${renderSheetAsBlocks(state.newsRows)}</div></div>`;
+      if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
+    }
+
+    function renderLeague() {
+      const data = state.leagueData[state.activeLeague];
+      if (!data) { tableAreaEl.innerHTML = `<div class="empty">Keine Liga gewählt.</div>`; matchdayAreaEl.innerHTML = ""; return; }
+      tableAreaEl.innerHTML = renderStandingsTable(data.standings.headers, data.standings.rows);
+      matchdayAreaEl.innerHTML = renderMatchdays(data.matchdays);
+      attachMatchdayEvents();
+    }
+
+    // ===========================================================
+    // ENDE FEHLENDE FUNKTIONEN
+    // ===========================================================
+
     function setMode(mode) {
       state.activeMode = mode;
       document.body.setAttribute("data-mode", mode);
