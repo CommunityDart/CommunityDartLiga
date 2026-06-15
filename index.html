@@ -714,7 +714,9 @@
     // SUPABASE KONFIGURATION
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // EINHEITLICH "supabase" GENANNT (Verhindert Fehler in den Unterfunktionen!)
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
     const PLAYER_SHEET = "Spieler_Discord";
@@ -780,6 +782,7 @@
 
     function ergName(leagueName) { return `Erg ${leagueName}`; }
 
+    // Reparierter CSV Parser
     function parseCsv(text) {
       const rows = []; let row = []; let cell = ""; let inQuotes = false;
       for (let i = 0; i < text.length; i++) {
@@ -1122,7 +1125,7 @@
         updated_at: new Date()
       };
 
-      const { error } = await supabaseClient.from('profiles').upsert(updates);
+      const { error } = await supabase.from('profiles').upsert(updates);
       if (error) {
         errEl.innerText = "Datenbankfehler: " + error.message;
         errEl.style.display = "block";
@@ -1157,17 +1160,32 @@
       }
     }
 
+    // REPARIERT UND ERWEITERT FÜR AKTUELLE SESSIONS
     async function initAuth() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      handleSession(session);
-      supabaseClient.auth.onAuthStateChange((_event, session) => { handleSession(session); });
+      // 1. Hole aktiv die Session ab
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await handleSession(session);
+      }
+
+      // 2. Event-Listener für Statusänderungen
+      supabase.auth.onAuthStateChange(async (event, currentSession) => { 
+        if (currentSession) {
+          await handleSession(currentSession);
+        } else {
+          await handleSession(null);
+        }
+      });
 
       if (ligaLoginBtn) {
         ligaLoginBtn.addEventListener("click", async () => {
           if (!state.currentUser) {
-            await supabaseClient.auth.signInWithOAuth({
+            // Starte OAuth-Flow
+            await supabase.auth.signInWithOAuth({
               provider: 'discord',
-              options: { redirectTo: window.location.origin + window.location.pathname }
+              options: { 
+                redirectTo: window.location.origin + window.location.pathname
+              }
             });
           } else {
             setMode("Profil");
@@ -1177,10 +1195,13 @@
     }
 
     async function handleSession(session) {
-      if (session) {
+      if (session && session.user) {
         state.currentUser = session.user;
         if (loginBtnText) loginBtnText.innerText = "Mein Profil";
+        
+        // Hole Daten ab oder erstelle das Profil in der Tabelle
         await fetchOrCreateProfile(session.user);
+        
         if (!document.getElementById("modeProfil") && modeHomeBtn) {
           const profileBtn = document.createElement("button");
           profileBtn.id = "modeProfil";
@@ -1191,7 +1212,8 @@
           modeHomeBtn.parentNode.insertBefore(profileBtn, regelwerkBtn);
         }
       } else {
-        state.currentUser = null; state.currentProfile = null;
+        state.currentUser = null; 
+        state.currentProfile = null;
         if (loginBtnText) loginBtnText.innerText = "Liga Login";
         const pBtn = document.getElementById("modeProfil"); if (pBtn) pBtn.remove();
         if (state.activeMode === "Profil") setMode("Home");
@@ -1199,27 +1221,40 @@
     }
 
     async function fetchOrCreateProfile(user) {
-      const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
-      if (error && error.code === 'PGRST116') {
-        const newProfile = {
-          id: user.id,
-          discord_id: user.user_metadata.provider_id || user.id,
-          username: user.user_metadata.full_name || user.user_metadata.name,
-          avatar_url: user.user_metadata.avatar_url,
-          role: 'user'
-        };
-        await supabaseClient.from('profiles').insert(newProfile);
-        state.currentProfile = newProfile;
-      } else if (data) {
-        if(data.avatar_url !== user.user_metadata.avatar_url) {
-          await supabaseClient.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
-          data.avatar_url = user.user_metadata.avatar_url;
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        
+        if (error && error.code === 'PGRST116') {
+          // Profil existiert noch nicht -> Neu anlegen mit Discord-Metadaten
+          const newProfile = {
+            id: user.id,
+            discord_id: user.user_metadata.provider_id || user.id,
+            username: user.user_metadata.full_name || user.user_metadata.name || user.user_metadata.custom_claims?.global_name,
+            avatar_url: user.user_metadata.avatar_url,
+            role: 'user'
+          };
+          
+          const { error: insertError } = await supabase.from('profiles').insert(newProfile);
+          if (insertError) console.error("Profil-Insert Fehler:", insertError);
+          state.currentProfile = newProfile;
+        } else if (data) {
+          // Profil existiert -> Prüfe ob das Bild geupdated werden muss
+          if (data.avatar_url !== user.user_metadata.avatar_url) {
+            await supabase.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
+            data.avatar_url = user.user_metadata.avatar_url;
+          }
+          state.currentProfile = data;
         }
-        state.currentProfile = data;
+      } catch (err) {
+        console.error("Fehler in fetchOrCreateProfile:", err);
       }
     }
 
-    async function handleLogout() { await supabaseClient.auth.signOut(); window.location.reload(); }
+    async function handleLogout() { 
+      await supabase.auth.signOut(); 
+      window.location.reload(); 
+    }
+    
     function openModal(modal) { if (modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); } }
     function closeModal(modal) { if (modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); } }
 
@@ -1259,7 +1294,14 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        setMode("Home");
+        // Wenn wir bereits aus einer Redirect-Session kommen, bleibe im entsprechenden Modus
+        if (state.currentUser && window.location.hash.includes("access_token")) {
+          setMode("Profil");
+          // Bereinige das Token aus der URL-Zeile, damit es sauber aussieht
+          window.history.replaceState(null, null, window.location.pathname);
+        } else {
+          setMode("Home");
+        }
       } catch (error) {
         if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden: ${htmlEscape(error?.message)}</div>`;
       }
@@ -1285,5 +1327,3 @@
 
     loadAll();
   </script>
-</body>
-</html>
