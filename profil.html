@@ -45,8 +45,8 @@
     </div>
 
     <div id="loadingArea" class="table-shell" style="text-align:center;">
-      <h2>Profil-Sitzung wird geladen...</h2>
-      <p>Bitte einen Moment Geduld.</p>
+      <h2>Profil-Sitzung wird verarbeitet...</h2>
+      <p>Bitte einen kleinen Moment Geduld.</p>
     </div>
 
     <div id="profileArea" class="table-shell" style="display:none;">
@@ -92,10 +92,7 @@
     let currentUser = null;
     let currentProfile = null;
 
-    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
-
     async function checkAuth() {
-      // Höre auf Session-Änderungen (wichtig direkt nach dem Redirect)
       supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (session) {
           currentUser = session.user;
@@ -105,16 +102,14 @@
         }
       });
 
-      // Falls die Session schon aktiv im Speicher liegt
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         currentUser = session.user;
         await loadProfile(session.user);
       } else {
-        // Falls nach 2 Sekunden kein Token/Session geladen wurde -> zurück zur Startseite
         setTimeout(() => {
           if (!currentUser) window.location.href = "index.html";
-        }, 2000);
+        }, 1500);
       }
     }
 
@@ -123,7 +118,6 @@
         let { data, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
         
         if (error && error.code === 'PGRST116') {
-          // Neues Profil in Datenbank anlegen
           const newProfile = {
             id: user.id,
             discord_id: user.user_metadata.provider_id || user.id,
@@ -137,7 +131,6 @@
           currentProfile = data;
         }
 
-        // UI befüllen
         document.getElementById("userTitle").innerText = currentProfile.username;
         document.getElementById("userIdDisplay").innerText = "Discord ID: " + currentProfile.discord_id;
         if (currentProfile.avatar_url) document.getElementById("userAvatar").src = currentProfile.avatar_url;
@@ -151,7 +144,6 @@
         document.getElementById("dartcounter_name").value = currentProfile.dartcounter_name || "";
         document.getElementById("dartcounter_avg").value = currentProfile.dartcounter_avg || "";
 
-        // Bereiche umschalten
         document.getElementById("loadingArea").style.display = "none";
         document.getElementById("profileArea").style.display = "block";
       } catch (err) {
