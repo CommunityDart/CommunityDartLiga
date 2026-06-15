@@ -2039,1402 +2039,568 @@
 
 
   <script>
+    // SUPABASE KONFIGURATION
+    // TRAGE HIER DEINE ECHTEN SUPABASE INFORMATIONEN EIN!
+    const SUPABASE_URL = "DEINE_SUPABASE_URL_HIER";
+    const SUPABASE_ANON_KEY = "DEIN_SUPABASE_ANON_KEY_HIER";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
-
     const PLAYER_SHEET = "Spieler_Discord";
-
     const RULES_SHEET = "Regelwerk";
-
     const NEWS_SHEET = "Neuigkeiten";
-
-    const LINKS_SHEET = "Links"; // NEU: Name des Tabellenblatts für Links
-
+    const LINKS_SHEET = "Links";
 
     const LEAGUES = [
-
-      "Autodarts Liga 1",
-
-      "Autodarts Liga 2",
-
-      "Autodarts Liga 3",
-
-      "Autodarts Liga 4",
-
-      "Autodarts Liga 5",
-
-      "Autodarts Liga 6",
-
-      "DartCounter Liga 1",
-
-      "DartCounter Liga 2",
-
-      "DartCounter Liga 3",
-
-      "DartCounter Liga 4",
-
-      "DartCounter Liga 5",
-
-      "DartCounter Liga 6"
-
+      "Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3",
+      "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6",
+      "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3",
+      "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"
     ];
 
-
     const state = {
-
       leagues: [],
-
       leagueData: {},
-
       activeLeague: null,
-
       activeMode: "Home",
-
       playerMetaMap: {},
-
       matchdayOpenState: {},
-
       regelwerkRows: [],
-
       newsRows: [],
-
-      linksRows: [], // NEU: Speicher für Links
-
+      linksRows: [],
+      currentUser: null,
+      currentProfile: null
     };
 
-
     const tableAreaEl = document.getElementById("tableArea");
-
     const matchdayAreaEl = document.getElementById("matchdayArea");
-
     const modeHomeBtn = document.getElementById("modeHome");
-
     const modeAutodartsBtn = document.getElementById("modeAutodarts");
-
     const modeDartCounterBtn = document.getElementById("modeDartCounter");
-
     const autodartsSubmenuEl = document.getElementById("autodartsSubmenu");
-
     const dartcounterSubmenuEl = document.getElementById("dartcounterSubmenu");
-
     const openImpressumBtn = document.getElementById("openImpressumBtn");
-
     const closeImpressumBtn = document.getElementById("closeImpressumBtn");
-
     const impressumModal = document.getElementById("impressumModal");
-
     const regelwerkBtn = document.getElementById("regelwerkBtn");
-
     const regelwerkModal = document.getElementById("regelwerkModal");
-
     const regelwerkContent = document.getElementById("regelwerkContent");
+    const openLinksBtn = document.getElementById("openLinksBtn");
+    const linksModal = document.getElementById("linksModal");
+    const linksContent = document.getElementById("linksContent");
+    const ligaLoginBtn = document.getElementById("ligaLoginBtn");
+    const loginBtnText = document.getElementById("loginBtnText");
 
-    const openLinksBtn = document.getElementById("openLinksBtn"); // NEU
-
-    const linksModal = document.getElementById("linksModal"); // NEU
-
-    const linksContent = document.getElementById("linksContent"); // NEU
-
-
-    function normalize(value) {
-
-      return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-
-    }
-
-
-    function htmlEscape(value) {
-
-      return String(value ?? "")
-
-        .replace(/&/g, "&amp;")
-
-        .replace(/</g, "&lt;")
-
-        .replace(/>/g, "&gt;")
-
-        .replace(/"/g, "&quot;")
-
-        .replace(/'/g, "&#39;");
-
-    }
-
+    function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
+    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 
     function makeClickable(text) {
-
       if (!text) return "";
-
       const urlRegex = /(https?:\/\/[^\s]+)/g;
-
       return text.replace(urlRegex, function(url) {
-
         return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:underline; word-break:break-all;">${url}</a>`;
-
       });
-
     }
-
 
     function csvUrl(sheetName) {
-
-      if (sheetName === PLAYER_SHEET) {
-
-        return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=2009950588`;
-
-      }
-
+      if (sheetName === PLAYER_SHEET) { return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=2009950588`; }
       return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-
     }
 
-
-    function ergName(leagueName) {
-
-      return `Erg ${leagueName}`;
-
-    }
-
+    function ergName(leagueName) { return `Erg ${leagueName}`; }
 
     function parseCsv(text) {
-
-      const rows = [];
-
-      let row = [];
-
-      let cell = "";
-
-      let inQuotes = false;
-
-
+      const rows = []; let row = []; let cell = ""; let inQuotes = false;
       for (let i = 0; i < text.length; i++) {
-
-        const char = text[i];
-
-        const next = text[i + 1];
-
-
+        const char = text[i]; const next = text[i + 1];
         if (inQuotes) {
-
-          if (char === '"' && next === '"') {
-
-            cell += '"';
-
-            i++;
-
-          } else if (char === '"') {
-
-            inQuotes = false;
-
-          } else {
-
-            cell += char;
-
-          }
-
+          if (char === '"' && next === '"';) { cell += '"'; i++; }
+          else if (char === '"') { inQuotes = false; }
+          else { cell += char; }
         } else {
-
-          if (char === '"') {
-
-            inQuotes = true;
-
-          } else if (char === ',') {
-
-            row.push(cell);
-
-            cell = "";
-
-          } else if (char === '\n') {
-
-            row.push(cell);
-
-            rows.push(row);
-
-            row = [];
-
-            cell = "";
-
-          } else if (char !== '\r') {
-
-            cell += char;
-
-          }
-
+          if (char === '"') { inQuotes = true; }
+          else if (char === ',') { row.push(cell); cell = ""; }
+          else if (char === '\n') { row.push(cell); rows.push(row); row = []; cell = ""; }
+          else if (char !== '\r') { cell += char; }
         }
-
       }
-
-
-      row.push(cell);
-
-      rows.push(row);
-
-      return rows;
-
+      row.push(cell); rows.push(row); return rows;
     }
-
 
     async function loadCsv(sheetName) {
-
       const response = await fetch(csvUrl(sheetName));
-
       if (!response.ok) throw new Error(`${sheetName}: HTTP ${response.status}`);
-
-      const text = await response.text();
-
-      return parseCsv(text);
-
+      return parseCsv(await response.text());
     }
 
-
-    function safeCell(row, index) {
-
-      return row && row[index] !== undefined ? String(row[index]).trim() : "";
-
-    }
-
-
-    function rowHasAnyContent(row) {
-
-      return row && row.some(cell => normalize(cell) !== "");
-
-    }
-
-
+    function safeCell(row, index) { return row && row[index] !== undefined ? String(row[index]).trim() : ""; }
+    function rowHasAnyContent(row) { return row && row.some(cell => normalize(cell) !== ""); }
     function isFinishedMatch(statusValue, legs1, legs2) {
-
       const statusText = String(statusValue || "").trim().toLowerCase();
-
-      const l1 = String(legs1 || "").trim();
-
-      const l2 = String(legs2 || "").trim();
-
-      const statusDone = /fertig|abgeschlossen|done|closed/i.test(statusText);
-
-      const legsDone = l1 !== "" && l2 !== "" && l1 !== "-" && l2 !== "-";
-
-      return statusDone || legsDone;
-
+      return /fertig|abgeschlossen|done|closed/i.test(statusText) || (String(legs1 || "").trim() !== "" && String(legs2 || "").trim() !== "" && legs1 !== "-" && legs2 !== "-");
     }
-
-
-    function isFinishedMatchday(dayStatus) {
-
-      return /fertig|abgeschlossen|done|closed/i.test(String(dayStatus || ""));
-
-    }
-
 
     function parseCardInfo(rawValue) {
-
       const value = normalize(rawValue).replace(/,/g, " ").replace(/;/g, " ").replace(/\s+/g, " ").trim();
-
       if (!value) return { yellow: 0, red: 0, hasRed: false };
-
       if (value.includes("rot")) return { yellow: 0, red: 1, hasRed: true };
-
-
       const gelbCount = (value.match(/gelb/g) || []).length;
-
-
-      if (
-
-        gelbCount >= 2 ||
-
-        value.includes("2x gelb") ||
-
-        value.includes("2xgelb") ||
-
-        value.includes("zweimal gelb") ||
-
-        value.includes("gelb gelb")
-
-      ) {
-
-        return { yellow: 2, red: 0, hasRed: false };
-
-      }
-
-
+      if (gelbCount >= 2 || value.includes("2x gelb") || value.includes("2xgelb") || value.includes("gelb gelb")) { return { yellow: 2, red: 0, hasRed: false }; }
       if (gelbCount >= 1) return { yellow: 1, red: 0, hasRed: false };
-
       return { yellow: 0, red: 0, hasRed: false };
-
     }
-
 
     function parsePlayerDiscordSheet(rows) {
-
       if (!rows || !rows.length) return {};
-
       const map = {};
-
-
       for (let i = 0; i < rows.length; i++) {
-
-        const spieler = safeCell(rows[i], 0);
-
-        const discord = safeCell(rows[i], 1);
-
-        const karte = safeCell(rows[i], 6);
-
-
+        const spieler = safeCell(rows[i], 0); const discord = safeCell(rows[i], 1); const karte = safeCell(rows[i], 6);
         if (!spieler) continue;
-
-
         const nSpieler = normalize(spieler);
-
-        if (!nSpieler) continue;
-
-        if (["spieler", "name", "spielername"].includes(nSpieler)) continue;
-
-
-        map[nSpieler] = {
-
-          discord: discord || "",
-
-          ...parseCardInfo(karte)
-
-        };
-
+        if (!nSpieler || ["spieler", "name", "spielername"].includes(nSpieler)) continue;
+        map[nSpieler] = { discord: discord || "", ...parseCardInfo(karte) };
       }
-
-
       return map;
-
     }
-
 
     function parseStandingsFromLeagueSheet(rows) {
-
       if (!rows || !rows.length) return { headers: [], rows: [] };
-
-
-      let tabelleMarker = -1;
-
-      let spieltageMarker = -1;
-
-
+      let tabelleMarker = -1; let spieltageMarker = -1;
       for (let i = 0; i < rows.length; i++) {
-
         const text = rows[i].map(c => normalize(c)).join(" | ");
-
         if (tabelleMarker === -1 && text.includes("tabelle")) tabelleMarker = i;
-
         if (spieltageMarker === -1 && (text.includes("spieltage") || text.includes("spieltag"))) spieltageMarker = i;
-
       }
-
-
       if (tabelleMarker === -1) return { headers: [], rows: [] };
-
-
-      const start = tabelleMarker + 1;
-
-      const end = spieltageMarker > start ? spieltageMarker : rows.length;
-
-      const headers = ["Platz", "Spieler", "Siege", "Niederlagen", "Leg-Diff", "Punkte"];
-
-      const body = [];
-
-
+      const start = tabelleMarker + 1; const end = spieltageMarker > start ? spieltageMarker : rows.length;
+      const headers = ["Platz", "Spieler", "Siege", "Niederlagen", "Leg-Diff", "Punkte"]; const body = [];
       for (let i = start; i < end; i++) {
-
-        const row = rows[i];
-
-        if (!rowHasAnyContent(row)) continue;
-
-
-        const platz = safeCell(row, 0);
-
-        const spieler = safeCell(row, 1);
-
-        const siege = safeCell(row, 2);
-
-        const niederlagen = safeCell(row, 3);
-
-        const legDiff = safeCell(row, 4);
-
-        const punkte = safeCell(row, 5);
-
-
+        const row = rows[i]; if (!rowHasAnyContent(row)) continue;
+        const platz = safeCell(row, 0); const spieler = safeCell(row, 1);
         if (!platz || isNaN(parseInt(platz, 10))) continue;
-
-
         const nSpieler = normalize(spieler);
-
-        if (!spieler || 
-
-            nSpieler === "" || 
-
-            nSpieler === "-" || 
-
-            nSpieler === "spieler" || 
-
-            nSpieler === "name" || 
-
-            nSpieler === "spielername" || 
-
-            nSpieler === "freilos" ||
-
-            nSpieler === "tba" ||
-
-            nSpieler.startsWith("spieler ")) {
-
-           continue;
-
-        }
-
-
-        body.push([platz, spieler, siege, niederlagen, legDiff, punkte]);
-
+        if (!spieler || nSpieler === "" || nSpieler === "-" || ["spieler","name","freilos","tba"].includes(nSpieler) || nSpieler.startsWith("spieler ")) continue;
+        body.push([platz, spieler, safeCell(row, 2), safeCell(row, 3), safeCell(row, 4), safeCell(row, 5)]);
       }
-
-
       return { headers, rows: body };
-
     }
-
 
     function parseMatchdaysFromErgSheet(rows) {
-
       if (!rows || !rows.length) return [];
-
-
       const grouped = new Map();
-
-
       for (let i = 0; i < rows.length; i++) {
-
-        const row = rows[i];
-
-        if (!rowHasAnyContent(row)) continue;
-
-
-        const spieltagNummer = safeCell(row, 0);
-
-        const spieler1 = safeCell(row, 1);
-
-        const discord1 = safeCell(row, 2);
-
-        const spieler2 = safeCell(row, 3);
-
-        const discord2 = safeCell(row, 4);
-
-        const legs1 = safeCell(row, 5);
-
-        const legs2 = safeCell(row, 6);
-
-        const status = safeCell(row, 7);
-
-
+        const row = rows[i]; if (!rowHasAnyContent(row)) continue;
+        const spieltagNummer = safeCell(row, 0); const spieler1 = safeCell(row, 1); const spieler2 = safeCell(row, 3);
         if (!spieltagNummer || isNaN(parseInt(spieltagNummer, 10))) continue;
-
-        if (!spieler1 || !spieler2) continue;
-
-
-        if (normalize(spieler1).startsWith("spieler ") || normalize(spieler2).startsWith("spieler ")) continue;
-
-
+        if (!spieler1 || !spieler2 || normalize(spieler1).startsWith("spieler ") || normalize(spieler2).startsWith("spieler ")) continue;
         const title = `Spieltag ${spieltagNummer}`;
-
-
         if (!grouped.has(title)) grouped.set(title, []);
-
-        grouped.get(title).push([title, spieler1, discord1, spieler2, discord2, legs1, legs2, status]);
-
+        grouped.get(title).push([title, spieler1, safeCell(row, 2), spieler2, safeCell(row, 4), safeCell(row, 5), safeCell(row, 6), safeCell(row, 7)]);
       }
-
-
       return Array.from(grouped.entries()).map(([title, rowsForDay]) => {
-
-        const totalMatches = rowsForDay.length;
-
-        const doneMatches = rowsForDay.filter(r => isFinishedMatch(r[7], r[5], r[6])).length;
-
-        const dayStatus = totalMatches > 0 && doneMatches === totalMatches ? "fertig" : "offen";
-
-
-        return {
-
-          title,
-
-          status: dayStatus,
-
-          doneMatches,
-
-          totalMatches,
-
-          headers: ["Spieler 1", "Spieler 2", "Legs 1", "Legs 2", "Status"],
-
-          rows: rowsForDay
-
-        };
-
+        const totalMatches = rowsForDay.length; const doneMatches = rowsForDay.filter(r => isFinishedMatch(r[7], r[5], r[6])).length;
+        return { title, status: totalMatches > 0 && doneMatches === totalMatches ? "fertig" : "offen", doneMatches, totalMatches, headers: ["Spieler 1", "Spieler 2", "Legs 1", "Legs 2", "Status"], rows: rowsForDay };
       });
-
     }
 
-
-    function renderSheetAsBlocks(rows, mode) {
-
+    function renderSheetAsBlocks(rows) {
       const validRows = (rows || []).filter(row => rowHasAnyContent(row));
-
       if (!validRows.length) return `<p>Keine Inhalte gefunden.</p>`;
-
-
-      const cleaned = validRows.map(row => row.map(cell => String(cell || "").trim()));
-
-
-      const blocks = cleaned.map((row) => {
-
-        const filled = row.filter(cell => cell);
-
+      return validRows.map((row) => {
+        const filled = row.map(cell => String(cell || "").trim()).filter(cell => cell);
         if (!filled.length) return "";
-
         if (filled.length === 1) return `<div class="content-block"><p>${makeClickable(htmlEscape(filled[0]))}</p></div>`;
-
-
-        const title = filled[0];
-
-        const body = filled.slice(1).map(text => `<p>${makeClickable(htmlEscape(text))}</p>`).join("");
-
-
-        return `
-
-          <div class="content-block">
-
-            <h4>${makeClickable(htmlEscape(title))}</h4>
-
-            ${body}
-
-          </div>
-
-        `;
-
+        return `<div class="content-block"><h4>${makeClickable(htmlEscape(filled[0]))}</h4>${filled.slice(1).map(text => `<p>${makeClickable(htmlEscape(text))}</p>`).join("")}</div>`;
       }).join("");
-
-
-      return blocks || `<p>Keine Inhalte gefunden.</p>`;
-
     }
-
 
     async function loadLeague(leagueName) {
-
-      let leagueRows = [];
-
-      let ergRows = [];
-
-
-      try { leagueRows = await loadCsv(leagueName); }
-
-      catch (e) { console.warn("Liga-Blatt nicht ladbar:", leagueName, e); }
-
-
-      try { ergRows = await loadCsv(ergName(leagueName)); }
-
-      catch (e) { console.warn("Erg-Blatt nicht ladbar:", leagueName, e); }
-
-
-      return {
-
-        standings: parseStandingsFromLeagueSheet(leagueRows),
-
-        matchdays: parseMatchdaysFromErgSheet(ergRows)
-
-      };
-
+      let leagueRows = []; let ergRows = [];
+      try { leagueRows = await loadCsv(leagueName); } catch (e) { console.warn("Liga-Blatt nicht ladbar:", leagueName, e); }
+      try { ergRows = await loadCsv(ergName(leagueName)); } catch (e) { console.warn("Erg-Blatt nicht ladbar:", leagueName, e); }
+      return { standings: parseStandingsFromLeagueSheet(leagueRows), matchdays: parseMatchdaysFromErgSheet(ergRows) };
     }
 
-
-    function leagueHasPlayers(data) {
-
-      return data && data.standings && data.standings.rows && data.standings.rows.length > 0;
-
-    }
-
-
+    function leagueHasPlayers(data) { return data && data.standings && data.standings.rows && data.standings.rows.length > 0; }
     function rankClass(rankValue, totalRows) {
-
       const rank = parseInt(String(rankValue).replace(/\D/g, ""), 10);
-
       if (!Number.isFinite(rank)) return "";
-
       if (rank === 1) return "first";
-
       if (rank === totalRows) return "last";
-
       return "";
-
     }
-
 
     function sortStandingsWithCards(rows) {
-
       return [...rows].sort((a, b) => {
-
-        const metaA = state.playerMetaMap[normalize(a[1])] || {};
-
-        const metaB = state.playerMetaMap[normalize(b[1])] || {};
-
-
+        const metaA = state.playerMetaMap[normalize(a[1])] || {}; const metaB = state.playerMetaMap[normalize(b[1])] || {};
         if (!!metaA.hasRed !== !!metaB.hasRed) return metaA.hasRed ? 1 : -1;
-
-
-        const rankA = parseInt(String(a[0]).replace(/\D/g, ""), 10);
-
-        const rankB = parseInt(String(b[0]).replace(/\D/g, ""), 10);
-
-
+        const rankA = parseInt(String(a[0]).replace(/\D/g, ""), 10); const rankB = parseInt(String(b[0]).replace(/\D/g, ""), 10);
         return (Number.isFinite(rankA) ? rankA : 9999) - (Number.isFinite(rankB) ? rankB : 9999);
-
       });
-
     }
-
 
     function renderPlayerCards(meta) {
-
       if (!meta) return "";
-
-
       const cards = [];
-
       for (let i = 0; i < (meta.yellow || 0); i++) cards.push(`<span class="card-badge yellow" title="Gelbe Karte"></span>`);
-
       for (let i = 0; i < (meta.red || 0); i++) cards.push(`<span class="card-badge red" title="Rote Karte"></span>`);
-
-
-      if (!cards.length) return "";
-
-      return `<span class="player-cards">${cards.join("")}</span>`;
-
+      return cards.length ? `<span class="player-cards">${cards.join("")}</span>` : "";
     }
-
 
     function renderStandingsTable(headers, rows) {
-
-      if (!headers.length || !rows.length) {
-
-        return `
-
-          <div class="table-shell">
-
-            <div class="section-head">
-
-              <div>
-
-                <div class="section-title">Tabelle</div>
-
-                <div class="section-sub">Keine Tabellendaten gefunden.</div>
-
-              </div>
-
-            </div>
-
-            <div style="padding:0 18px 18px">
-
-              <div class="empty">Keine Tabellendaten gefunden.</div>
-
-            </div>
-
-          </div>
-
-        `;
-
-      }
-
-
+      if (!headers.length || !rows.length) return `<div class="table-shell"><div class="section-head"><div class="section-title">Tabelle</div></div><div style="padding:18px"><div class="empty">Keine Daten.</div></div></div>`;
       const displayHeaders = ["Platz", "Spieler", "Discord", "Siege", "Niederlagen", "Leg-Diff", "Punkte"];
-
-      
-
-      const sortedRows = sortStandingsWithCards(rows).map((row, index, arr) => ({
-
-        displayRank: String(index + 1),
-
-        originalRow: row,
-
-        totalRows: arr.length
-
-      }));
-
-
-      const thead = `<tr>${displayHeaders.map((h, i) => {
-
-        const cls = i === 0 ? ' class="rank-col"' : "";
-
-        return `<th${cls}>${htmlEscape(h || "-")}</th>`;
-
-      }).join("")}</tr>`;
-
-
+      const sortedRows = sortStandingsWithCards(rows).map((row, index, arr) => ({ displayRank: String(index + 1), originalRow: row, totalRows: arr.length }));
+      const thead = `<tr>${displayHeaders.map((h, i) => `<th${i === 0 ? ' class="rank-col"' : ""}>${htmlEscape(h)}</th>`).join("")}</tr>`;
       const tbody = sortedRows.map(entry => {
-
-        const row = entry.originalRow;
-
-        const spielerName = row[1] || "-";
-
-        const meta = state.playerMetaMap[normalize(spielerName)] || { discord: "", yellow: 0, red: 0, hasRed: false };
-
-        const discordName = meta.discord || "";
-
-
-        return `
-
-          <tr>
-
-            <td class="${`rank-col ${rankClass(entry.displayRank, entry.totalRows)}`.trim()}">${htmlEscape(entry.displayRank)}</td>
-
-            <td class="player-cell">
-
-              <span class="player-name" title="${htmlEscape(spielerName)}">${htmlEscape(spielerName)}</span>
-
-              <div class="player-meta-row">
-
-                ${renderPlayerCards(meta)}
-
-              </div>
-
-            </td>
-
-            <td class="discord-cell">${discordName ? htmlEscape(discordName) : "-"}</td>
-
-            <td>${htmlEscape(row[2] || "-")}</td>
-
-            <td>${htmlEscape(row[3] || "-")}</td>
-
-            <td>${htmlEscape(row[4] || "-")}</td>
-
-            <td class="points-cell">${htmlEscape(row[5] || "-")}</td>
-
-          </tr>
-
-        `;
-
+        const row = entry.originalRow; const spielerName = row[1] || "-";
+        const meta = state.playerMetaMap[normalize(spielerName)] || { discord: "" };
+        return `<tr>
+          <td class="rank-col ${rankClass(entry.displayRank, entry.totalRows)}">${htmlEscape(entry.displayRank)}</td>
+          <td class="player-cell"><span class="player-name">${htmlEscape(spielerName)}</span><div class="player-meta-row">${renderPlayerCards(meta)}</div></td>
+          <td class="discord-cell">${meta.discord ? htmlEscape(meta.discord) : "-"}</td>
+          <td>${htmlEscape(row[2])}</td><td>${htmlEscape(row[3])}</td><td>${htmlEscape(row[4])}</td><td class="points-cell">${htmlEscape(row[5])}</td>
+        </tr>`;
       }).join("");
-
-
-      return `
-
-        <div class="table-shell">
-
-          <div class="section-head">
-
-            <div>
-
-              <div class="section-title">Tabelle</div>
-
-              <div class="section-sub">Es wird Bo7 gespielt, pro Woche ein Spieltag. Bei Urlaub kann vorgezogen werden oder nach hinten geschoben werden.</div>
-
-            </div>
-
-          </div>
-
-          <div class="table-wrap">
-
-            <table>
-
-              <thead>${thead}</thead>
-
-              <tbody>${tbody}</tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-      `;
-
+      return `<div class="table-shell"><div class="section-head"><div><div class="section-title">Tabelle</div><div class="section-sub">Bo7 • 1 Spieltag pro Woche</div></div></div><div class="table-wrap"><table><thead>${thead}</thead><tbody>${tbody}</tbody></table></div></div>`;
     }
 
-
-    function renderMatchStatusDot(statusValue, legs1 = "", legs2 = "") {
-
+    function renderMatchStatusDot(statusValue, legs1, legs2) {
       const done = isFinishedMatch(statusValue, legs1, legs2);
-
-      return `
-
-        <span class="status-badge ${done ? "done" : "open"}" title="${done ? "Fertig" : "Offen"}">
-
-          <span class="status-dot ${done ? "done" : "open"}"></span>
-
-        </span>
-
-      `;
-
+      return `<span class="status-badge ${done ? "done" : "open"}"><span class="status-dot ${done ? "done" : "open"}"></span></span>`;
     }
-
-
-    function renderMatchdayStatusDot(dayStatus) {
-
-      const done = isFinishedMatchday(dayStatus);
-
-      return `
-
-        <span class="status-badge ${done ? "done" : "open"}" title="${done ? "Fertig" : "Offen"}">
-
-          <span class="status-dot ${done ? "done" : "open"}"></span>
-
-        </span>
-
-      `;
-
-    }
-
 
     function renderMatchTable(headers, rows) {
-
-      if (!headers.length || !rows.length) return `<div class="empty">Keine Spiele gefunden.</div>`;
-
-
+      if (!headers.length || !rows.length) return `<div class="empty">Keine Spiele.</div>`;
       const tbody = rows.map(row => {
-
-        const spieler1 = row[1] || "-";
-
-        const discord1 = row[2] || "";
-
-        const spieler2 = row[3] || "-";
-
-        const discord2 = row[4] || "";
-
-
-        const discord1Html = discord1 ? `<span class="player-discord">${htmlEscape(discord1)}</span>` : "";
-
-        const discord2Html = discord2 ? `<span class="player-discord">${htmlEscape(discord2)}</span>` : "";
-
-
-        return `
-
-          <tr>
-
-            <td class="col-player">
-
-              <span class="match-player" title="${htmlEscape(spieler1)}">${htmlEscape(spieler1)}</span>
-
-              ${discord1Html}
-
-            </td>
-
-            <td class="col-player">
-
-              <span class="match-player" title="${htmlEscape(spieler2)}">${htmlEscape(spieler2)}</span>
-
-              ${discord2Html}
-
-            </td>
-
-            <td class="col-legs">${htmlEscape(row[5] || "-")}</td>
-
-            <td class="col-legs">${htmlEscape(row[6] || "-")}</td>
-
-            <td class="status-cell">${renderMatchStatusDot(row[7], row[5], row[6])}</td>
-
-          </tr>
-
-        `;
-
+        return `<tr>
+          <td class="col-player"><span class="match-player">${htmlEscape(row[1])}</span>${row[2] ? `<span class="player-discord">${htmlEscape(row[2])}</span>` : ""}</td>
+          <td class="col-player"><span class="match-player">${htmlEscape(row[3])}</span>${row[4] ? `<span class="player-discord">${htmlEscape(row[4])}</span>` : ""}</td>
+          <td class="col-legs">${htmlEscape(row[5])}</td><td class="col-legs">${htmlEscape(row[6])}</td>
+          <td class="status-cell">${renderMatchStatusDot(row[7], row[5], row[6])}</td>
+        </tr>`;
       }).join("");
-
-
       return `<table class="match-table"><tbody>${tbody}</tbody></table>`;
-
     }
-
-
-    function getDefaultOpenMatchdayIndex(matchdays) {
-
-      const firstOpenIndex = matchdays.findIndex(day => !/fertig|abgeschlossen|closed|done/i.test(day.status));
-
-      return firstOpenIndex !== -1 ? firstOpenIndex : 0;
-
-    }
-
-
-    function getMatchdayStateKey(leagueName, title) {
-
-      return `${leagueName}__${title}`;
-
-    }
-
 
     function renderMatchdays(matchdays) {
-
-      if (!matchdays.length) return `<div class="empty">Keine Spieltage erkannt.</div>`;
-
-
-      const defaultOpenIndex = getDefaultOpenMatchdayIndex(matchdays);
-
-
+      if (!matchdays.length) return `<div class="empty">Keine Spieltage.</div>`;
+      const defOpen = matchdays.findIndex(day => !/fertig|abgeschlossen/i.test(day.status));
+      const defaultOpenIndex = defOpen !== -1 ? defOpen : 0;
       return matchdays.map((day, idx) => {
-
-        const key = getMatchdayStateKey(state.activeLeague, day.title);
-
+        const key = `${state.activeLeague}__${day.title}`;
         const isOpen = key in state.matchdayOpenState ? state.matchdayOpenState[key] : idx === defaultOpenIndex;
-
-        const progressText = `${day.doneMatches || 0}/${day.totalMatches || 0}`;
-
-
-        return `
-
-          <div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
-
-            <button class="matchday-head" type="button">
-
-              <span class="matchday-title">${htmlEscape(day.title)}</span>
-
-              <span class="matchday-head-right">
-
-                <span class="matchday-progress">${htmlEscape(progressText)}</span>
-
-                ${renderMatchdayStatusDot(day.status)}
-
-              </span>
-
-            </button>
-
-            <div class="matchday-body">
-
-              ${renderMatchTable(day.headers, day.rows)}
-
-            </div>
-
-          </div>
-
-        `;
-
+        return `<div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
+          <button class="matchday-head" type="button">
+            <span class="matchday-title">${htmlEscape(day.title)}</span>
+            <span class="matchday-head-right"><span class="matchday-progress">${htmlEscape(day.doneMatches)}/${htmlEscape(day.totalMatches)}</span><span class="status-badge ${day.status === "fertig" ? "done" : "open"}"><span class="status-dot ${day.status === "fertig" ? "done" : "open"}"></span></span></span>
+          </button>
+          <div class="matchday-body">${renderMatchTable(day.headers, day.rows)}</div>
+        </div>`;
       }).join("");
-
     }
 
-
-    function getModeLeagues() {
-
-      return state.leagues.filter(l => l.name.startsWith(state.activeMode));
-
-    }
-
-
-    function getVisibleModeLeagues() {
-
-      return getModeLeagues().filter(l => leagueHasPlayers(state.leagueData[l.name]));
-
-    }
-
+    function getVisibleModeLeagues() { return state.leagues.filter(l => l.name.startsWith(state.activeMode) && leagueHasPlayers(state.leagueData[l.name])); }
 
     function renderSystemSubmenus() {
-
-      const autodartsLeagues = state.leagues
-
-        .filter(l => l.name.startsWith("Autodarts") && leagueHasPlayers(state.leagueData[l.name]));
-
-
-      const dartcounterLeagues = state.leagues
-
-        .filter(l => l.name.startsWith("DartCounter") && leagueHasPlayers(state.leagueData[l.name]));
-
-
-      autodartsSubmenuEl.innerHTML = autodartsLeagues.map(l => `
-
-        <button class="submenu-btn ${l.name === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l.name)}">
-
-          ${htmlEscape(l.name)}
-
-        </button>
-
-      `).join("");
-
-
-      dartcounterSubmenuEl.innerHTML = dartcounterLeagues.map(l => `
-
-        <button class="submenu-btn ${l.name === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l.name)}">
-
-          ${htmlEscape(l.name)}
-
-        </button>
-
-      `).join("");
-
-
-      autodartsSubmenuEl.classList.toggle("active", state.activeMode === "Autodarts");
-
-      dartcounterSubmenuEl.classList.toggle("active", state.activeMode === "DartCounter");
-
-
-      autodartsSubmenuEl.querySelectorAll(".submenu-btn").forEach(btn => {
-
-        btn.addEventListener("click", () => {
-
-          state.activeLeague = btn.dataset.name;
-
-          renderSystemSubmenus();
-
-          renderLeague();
-
-        });
-
-      });
-
-
-      dartcounterSubmenuEl.querySelectorAll(".submenu-btn").forEach(btn => {
-
-        btn.addEventListener("click", () => {
-
-          state.activeLeague = btn.dataset.name;
-
-          renderSystemSubmenus();
-
-          renderLeague();
-
-        });
-
-      });
-
+      const renderSub = (el, prefix) => {
+        const filtered = state.leagues.filter(l => l.name.startsWith(prefix) && leagueHasPlayers(state.leagueData[l.name]));
+        el.innerHTML = filtered.map(l => `<button class="submenu-btn ${l.name === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l.name)}">${htmlEscape(l.name)}</button>`).join("");
+        el.classList.toggle("active", state.activeMode === prefix);
+        el.querySelectorAll(".submenu-btn").forEach(btn => btn.addEventListener("click", () => { state.activeLeague = btn.dataset.name; renderSystemSubmenus(); renderLeague(); }));
+      };
+      renderSub(autodartsSubmenuEl, "Autodarts");
+      renderSub(dartcounterSubmenuEl, "DartCounter");
     }
-
 
     function attachMatchdayEvents() {
-
       matchdayAreaEl.querySelectorAll(".matchday").forEach(card => {
-
-        const key = card.dataset.key;
-
-        const btn = card.querySelector(".matchday-head");
-
-        btn.addEventListener("click", () => {
-
-          const newOpen = !card.classList.contains("open");
-
-          card.classList.toggle("open", newOpen);
-
-          state.matchdayOpenState[key] = newOpen;
-
+        card.querySelector(".matchday-head").addEventListener("click", () => {
+          const isOpen = !card.classList.contains("open"); card.classList.toggle("open", isOpen);
+          state.matchdayOpenState[card.dataset.key] = isOpen;
         });
-
       });
-
     }
-
 
     function renderHome() {
-
       if (!tableAreaEl) return;
-
-      if (!state.newsRows || !state.newsRows.length) {
-
-        tableAreaEl.innerHTML = `
-
-          <div class="table-shell">
-
-            <div class="section-head">
-
-              <div class="section-title">Neuigkeiten</div>
-
-            </div>
-
-            <div style="padding:0 18px 18px">
-
-              <div class="empty">Keine Neuigkeiten gefunden. Erstelle im Google Sheet einen Reiter namens "Neuigkeiten".</div>
-
-            </div>
-
-          </div>
-
-        `;
-
-        if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
-
-        return;
-
-      }
-
-
-      tableAreaEl.innerHTML = `
-
-        <div class="table-shell">
-
-          <div class="section-head">
-
-            <div>
-
-              <div class="section-title">Neuigkeiten & Ankündigungen</div>
-
-              <div class="section-sub">Aktuelle Infos und News rund um unsere Community Dart Liga.</div>
-
-            </div>
-
-          </div>
-
-          <div style="padding:0 18px 18px">
-
-            ${renderSheetAsBlocks(state.newsRows, "news")}
-
-          </div>
-
-        </div>
-
-      `;
-
+      tableAreaEl.innerHTML = `<div class="table-shell"><div class="section-head"><div><div class="section-title">Neuigkeiten & Ankündigungen</div><div class="section-sub">Aktuelle Infos unserer Community.</div></div></div><div style="padding:0 18px 18px">${renderSheetAsBlocks(state.newsRows)}</div></div>`;
       if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
-
     }
-
 
     function renderLeague() {
-
-      const league = state.leagues.find(l => l.name === state.activeLeague);
-
-      if (!league) {
-
-        tableAreaEl.innerHTML = `<div class="empty">Keine Liga ausgewählt.</div>`;
-
-        matchdayAreaEl.innerHTML = "";
-
-        return;
-
-      }
-
-
-      const data = state.leagueData[league.name];
-
+      const data = state.leagueData[state.activeLeague];
+      if (!data) { tableAreaEl.innerHTML = `<div class="empty">Keine Liga gewählt.</div>`; matchdayAreaEl.innerHTML = ""; return; }
       tableAreaEl.innerHTML = renderStandingsTable(data.standings.headers, data.standings.rows);
-
       matchdayAreaEl.innerHTML = renderMatchdays(data.matchdays);
-
       attachMatchdayEvents();
-
     }
 
+    function renderProfilePage() {
+      if (!state.currentProfile) {
+        tableAreaEl.innerHTML = `<div class="empty">Bitte logge dich zuerst ein, um dein Profil zu verwalten.</div>`;
+        return;
+      }
+      const p = state.currentProfile;
+      const isAdmin = p.role === 'admin';
+
+      tableAreaEl.innerHTML = `
+        <div class="table-shell">
+          <div class="section-head">
+            <div>
+              <div class="section-title">Spielerprofil verwalten</div>
+              <div class="section-sub">Hier kannst du deine Ligadaten pflegen. ${isAdmin ? '<strong style="color:var(--yellow)">[ADMINISTRATOR]</strong>' : ''}</div>
+            </div>
+          </div>
+          <div class="profile-container">
+            <div class="profile-header-ui">
+              <img src="${p.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" alt="Avatar">
+              <div>
+                <h3 style="margin:0">${htmlEscape(p.username)}</h3>
+                <p style="margin:4px 0 0; color:var(--muted); font-size:12px;">Discord ID: ${htmlEscape(p.discord_id)}</p>
+              </div>
+            </div>
+
+            <form id="profileForm" onsubmit="saveProfile(event)">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Echter Name</label>
+                  <input type="text" id="real_name" value="${htmlEscape(p.real_name || '')}">
+                </div>
+                <div class="form-group">
+                  <label>Alter</label>
+                  <input type="number" id="age" value="${p.age || ''}">
+                </div>
+                <div class="form-group">
+                  <label>Postleitzahl (für die Deutschlandkarte)</label>
+                  <input type="text" id="zip_code" maxlength="5" placeholder="z.B. 37520" value="${htmlEscape(p.zip_code || '')}">
+                </div>
+                <div class="form-group">
+                  <label>Scolia Name</label>
+                  <input type="text" id="scolia_name" value="${htmlEscape(p.scolia_name || '')}">
+                </div>
+                <div class="form-group">
+                  <label>Autodarts Name</label>
+                  <input type="text" id="autodarts_name" value="${htmlEscape(p.autodarts_name || '')}" placeholder="Muss ausgefüllt sein falls AVG eingetragen">
+                </div>
+                <div class="form-group">
+                  <label>Autodarts AVG</label>
+                  <input type="number" step="0.01" id="autodarts_avg" value="${p.autodarts_avg || ''}" placeholder="Zwingend wenn Name existiert">
+                </div>
+                <div class="form-group">
+                  <label>DartCounter Name</label>
+                  <input type="text" id="dartcounter_name" value="${htmlEscape(p.dartcounter_name || '')}">
+                </div>
+                <div class="form-group">
+                  <label>DartCounter AVG</label>
+                  <input type="number" step="0.01" id="dartcounter_avg" value="${p.dartcounter_avg || ''}">
+                </div>
+              </div>
+
+              <div id="formError" style="color:var(--red); font-weight:800; margin-top:14px; display:none;"></div>
+              <div id="formSuccess" style="color:var(--green); font-weight:800; margin-top:14px; display:none;">Profil erfolgreich gespeichert!</div>
+
+              <div class="form-actions">
+                <button type="submit" class="button" style="background:var(--green); color:#000;">Speichern</button>
+                <button type="button" class="button" style="background:var(--red);" onclick="handleLogout()">Ausloggen</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
+    }
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      const errEl = document.getElementById("formError");
+      const succEl = document.getElementById("formSuccess");
+      errEl.style.display = "none";
+      succEl.style.display = "none";
+
+      const adName = document.getElementById("autodarts_name").value.trim();
+      const adAvg = document.getElementById("autodarts_avg").value.trim();
+      const dcName = document.getElementById("dartcounter_name").value.trim();
+      const dcAvg = document.getElementById("dartcounter_avg").value.trim();
+
+      if (adName !== "" && adAvg === "") {
+        errEl.innerText = "Fehler: Wenn ein Autodarts-Name eingetragen ist, MUSS zwingend ein Autodarts AVG eingetragen werden!";
+        errEl.style.display = "block"; return;
+      }
+      if (adAvg !== "" && adName === "") {
+        errEl.innerText = "Fehler: Du hast einen Autodarts AVG eingetragen aber keinen Namen hinterlegt!";
+        errEl.style.display = "block"; return;
+      }
+      if (dcName !== "" && dcAvg === "") {
+        errEl.innerText = "Fehler: Wenn ein DartCounter-Name eingetragen ist, MUSS zwingend ein DartCounter AVG eingetragen werden!";
+        errEl.style.display = "block"; return;
+      }
+
+      const updates = {
+        id: state.currentUser.id,
+        real_name: document.getElementById("real_name").value.trim() || null,
+        age: parseInt(document.getElementById("age").value) || null,
+        zip_code: document.getElementById("zip_code").value.trim() || null,
+        scolia_name: document.getElementById("scolia_name").value.trim() || null,
+        autodarts_name: adName || null,
+        autodarts_avg: adAvg ? parseFloat(adAvg) : null,
+        dartcounter_name: dcName || null,
+        dartcounter_avg: dcAvg ? parseFloat(dcAvg) : null,
+        updated_at: new Date()
+      };
+
+      const { error } = await supabase.from('profiles').upsert(updates);
+      if (error) {
+        errEl.innerText = "Datenbankfehler: " + error.message;
+        errEl.style.display = "block";
+      } else {
+        succEl.style.display = "block";
+        state.currentProfile = { ...state.currentProfile, ...updates };
+      }
+    }
 
     function setMode(mode) {
-
       state.activeMode = mode;
-
       document.body.setAttribute("data-mode", mode);
-
-
       if (modeHomeBtn) modeHomeBtn.classList.toggle("active", mode === "Home");
-
       modeAutodartsBtn.classList.toggle("active", mode === "Autodarts");
-
       modeDartCounterBtn.classList.toggle("active", mode === "DartCounter");
-
+      const pBtn = document.getElementById("modeProfil");
+      if(pBtn) pBtn.classList.toggle("active", mode === "Profil");
 
       if (mode === "Home") {
-
         if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
-
         if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
-
         renderHome();
-
+      } else if (mode === "Profil") {
+        if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
+        if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
+        renderProfilePage();
       } else {
-
         const visible = getVisibleModeLeagues();
-
-        if (!visible.some(l => l.name === state.activeLeague)) {
-
-          state.activeLeague = visible[0]?.name || null;
-
-        }
-
+        if (!visible.some(l => l.name === state.activeLeague)) { state.activeLeague = visible[0]?.name || null; }
         renderSystemSubmenus();
-
         renderLeague();
-
       }
-
     }
 
+    async function initAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      handleSession(session);
+      supabase.auth.onAuthStateChange((_event, session) => { handleSession(session); });
 
-    function openModal(modal) {
-
-      modal.classList.add("open");
-
-      modal.setAttribute("aria-hidden", "false");
-
+      ligaLoginBtn.addEventListener("click", async () => {
+        if (!state.currentUser) {
+          await supabase.auth.signInWithOAuth({
+            provider: 'discord',
+            options: { redirectTo: window.location.origin + window.location.pathname }
+          });
+        } else {
+          setMode("Profil");
+        }
+      });
     }
 
-
-    function closeModal(modal) {
-
-      modal.classList.remove("open");
-
-      modal.setAttribute("aria-hidden", "true");
-
+    async function handleSession(session) {
+      if (session) {
+        state.currentUser = session.user;
+        loginBtnText.innerText = "Mein Profil";
+        await fetchOrCreateProfile(session.user);
+        if (!document.getElementById("modeProfil")) {
+          const profileBtn = document.createElement("button");
+          profileBtn.id = "modeProfil";
+          profileBtn.className = "hero-action-btn hero-btn-profil mode-btn";
+          profileBtn.type = "button";
+          profileBtn.innerText = "Mein Profil";
+          profileBtn.addEventListener("click", () => setMode("Profil"));
+          modeHomeBtn.parentNode.insertBefore(profileBtn, regelwerkBtn);
+        }
+      } else {
+        state.currentUser = null; state.currentProfile = null;
+        loginBtnText.innerText = "Liga Login";
+        const pBtn = document.getElementById("modeProfil"); if (pBtn) pBtn.remove();
+        if (state.activeMode === "Profil") setMode("Home");
+      }
     }
 
+    async function fetchOrCreateProfile(user) {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (error && error.code === 'PGRST116') {
+        const newProfile = {
+          id: user.id,
+          discord_id: user.user_metadata.provider_id || user.id,
+          username: user.user_metadata.full_name || user.user_metadata.name,
+          avatar_url: user.user_metadata.avatar_url,
+          role: 'user'
+        };
+        await supabase.from('profiles').insert(newProfile);
+        state.currentProfile = newProfile;
+      } else if (data) {
+        if(data.avatar_url !== user.user_metadata.avatar_url) {
+          await supabase.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
+          data.avatar_url = user.user_metadata.avatar_url;
+        }
+        state.currentProfile = data;
+      }
+    }
 
-    /* REPARIERT: Lädt nun parallel auch das Links-Blatt wieder ein */
+    async function handleLogout() { await supabase.auth.signOut(); window.location.reload(); }
+    function openModal(modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); }
+    function closeModal(modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); }
 
     async function loadStaticSheetContent() {
-
       try {
-
         const [regelwerkRows, newsRows, linksRows] = await Promise.all([
-
           loadCsv(RULES_SHEET).catch(() => []),
-
           loadCsv(NEWS_SHEET).catch(() => []),
-
-          loadCsv(LINKS_SHEET).catch(() => []), // NEU: Links parallel mitladen
-
+          loadCsv(LINKS_SHEET).catch(() => []),
         ]);
-
-
-        state.regelwerkRows = regelwerkRows;
-
-        state.newsRows = newsRows;
-
-        state.linksRows = linksRows; // NEU
-
-
-        if (regelwerkContent) regelwerkContent.innerHTML = renderSheetAsBlocks(regelwerkRows, "rules");
-
-        if (linksContent) linksContent.innerHTML = renderSheetAsBlocks(linksRows, "links"); // NEU: Links parsen und einbinden
-
-      } catch (e) {
-
-        console.warn("Statische Inhalte nicht ladbar", e);
-
-        if (regelwerkContent) regelwerkContent.innerHTML = `<p>Regelwerk konnte nicht geladen werden.</p>`;
-
-        if (linksContent) linksContent.innerHTML = `<p>Links konnten nicht geladen werden.</p>`; // NEU
-
-      }
-
+        state.regelwerkRows = regelwerkRows; state.newsRows = newsRows; state.linksRows = linksRows;
+        if (regelwerkContent) regelwerkContent.innerHTML = renderSheetAsBlocks(regelwerkRows);
+        if (linksContent) linksContent.innerHTML = renderSheetAsBlocks(linksRows);
+      } catch (e) { console.warn("Statische Inhalte nicht ladbar", e); }
     }
-
 
     async function loadAll() {
-
       tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
-
-      matchdayAreaEl.innerHTML = "";
-
-
       try {
-
         state.leagues = LEAGUES.map(name => ({ name }));
-
-
         try {
-
           const playerRows = await loadCsv(PLAYER_SHEET);
-
           state.playerMetaMap = parsePlayerDiscordSheet(playerRows);
-
-        } catch (e) {
-
-          console.warn("Spieler-Blatt nicht ladbar:", PLAYER_SHEET, e);
-
-          state.playerMetaMap = {};
-
-        }
-
+        } catch (e) { state.playerMetaMap = {}; }
 
         await loadStaticSheetContent();
-
-
-        const entries = await Promise.all(
-
-          state.leagues.map(async league => [league.name, await loadLeague(league.name)])
-
-        );
-
-
+        const entries = await Promise.all(state.leagues.map(async league => [league.name, await loadLeague(league.name)]));
         state.leagueData = Object.fromEntries(entries);
 
-
         const visible = getVisibleModeLeagues();
-
         state.activeLeague = visible[0]?.name || null;
 
-
+        await initAuth();
         setMode("Home");
-
       } catch (error) {
-
-        console.error(error);
-
-        tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden: ${htmlEscape(error && error.message ? error.message : "Unbekannter Fehler")}</div>`;
-
-        matchdayAreaEl.innerHTML = "";
-
+        tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden: ${htmlEscape(error?.message)}</div>`;
       }
-
     }
 
-
     if (modeHomeBtn) modeHomeBtn.addEventListener("click", () => setMode("Home"));
-
     modeAutodartsBtn.addEventListener("click", () => setMode("Autodarts"));
-
     modeDartCounterBtn.addEventListener("click", () => setMode("DartCounter"));
-
-
     openImpressumBtn.addEventListener("click", () => openModal(impressumModal));
-
     closeImpressumBtn.addEventListener("click", () => closeModal(impressumModal));
-
-    
-
-    if (openLinksBtn) openLinksBtn.addEventListener("click", () => openModal(linksModal)); // NEU
-
-
+    if (openLinksBtn) openLinksBtn.addEventListener("click", () => openModal(linksModal));
     regelwerkBtn.addEventListener("click", () => openModal(regelwerkModal));
 
-
     document.querySelectorAll("[data-close-modal]").forEach(btn => {
-
-      btn.addEventListener("click", () => {
-
-        const modalId = btn.getAttribute("data-close-modal");
-
-        const modal = document.getElementById(modalId);
-
-        if (modal) closeModal(modal);
-
-      });
-
+      btn.addEventListener("click", () => { closeModal(document.getElementById(btn.getAttribute("data-close-modal"))); });
     });
-
-
-    /* REPARIERT: Klick auf den Hintergrund schließt nun auch das Links-Modal wieder */
 
     [impressumModal, regelwerkModal, linksModal].forEach(modal => {
-
-      if (modal) {
-
-        modal.addEventListener("click", (e) => {
-
-          if (e.target === modal) closeModal(modal);
-
-        });
-
-      }
-
+      if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(modal); });
     });
 
-
-    /* REPARIERT: Escape-Taste schließt nun auch das Links-Modal wieder */
-
-    document.addEventListener("keydown", (e) => {
-
-      if (e.key === "Escape") {
-
-        [impressumModal, regelwerkModal, linksModal].forEach(closeModal);
-
-      }
-
-    });
-
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") [impressumModal, regelwerkModal, linksModal].forEach(closeModal); });
 
     loadAll();
-
   </script>
-
-</body>
-
-</html>
