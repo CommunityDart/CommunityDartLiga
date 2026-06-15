@@ -711,10 +711,8 @@
   </div>
 
   <script>
-    // SUPABASE KONFIGURATION
-    const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Variable für Supabase wird deklariert, aber erst initialisiert, wenn das SDK vollständig geladen ist
+    let supabaseClient = null;
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
     const PLAYER_SHEET = "Spieler_Discord";
@@ -1158,9 +1156,16 @@
     }
 
     async function initAuth() {
+      // 1. Initialisiere den Supabase Client SICHER erst hier drin
+      if (!supabaseClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+
+      // 2. Registriere den Status-Change-Listener
       supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
         if (currentSession) {
           await handleSession(currentSession.user);
+          // WENN ein Token-Redirect stattfand, schieben wir den User hart ins Profil
           if (event === 'SIGNED_IN') {
              setMode("Profil");
              window.history.replaceState(null, null, window.location.pathname);
@@ -1174,18 +1179,20 @@
         }
       });
 
+      // 3. Prüfe, ob beim Laden bereits eine aktive Session läuft
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         await handleSession(session.user);
       }
 
+      // 4. Klick-Event für den Button binden
       if (ligaLoginBtn) {
         ligaLoginBtn.addEventListener("click", async () => {
           if (!state.currentUser) {
             await supabaseClient.auth.signInWithOAuth({
               provider: 'discord',
               options: { 
-                redirectTo: window.location.origin + window.location.pathname
+                redirectTo: 'https://communitydart.github.io/CommunityDartLiga/'
               }
             });
           } else {
@@ -1270,6 +1277,7 @@
         if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
       }
 
+      // Erst initialisieren, wenn das Supabase SDK bereit ist
       await initAuth();
 
       try {
@@ -1287,10 +1295,10 @@
         state.activeLeague = visible[0]?.name || null;
 
         if (hasToken) {
+          // Kleiner Timeout, damit der Rhythmus der onAuthStateChange Event-Schleife abgefangen ist
           setTimeout(() => {
-             if(state.activeMode !== "Profil") setMode("Profil");
-             window.history.replaceState(null, null, window.location.pathname);
-          }, 500);
+             setMode("Profil");
+          }, 400);
         } else {
           if (state.activeMode !== "Profil") {
             setMode("Home");
