@@ -715,7 +715,6 @@
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     
-    // REPARIERT: "supabaseClient" benannt statt die Variable selbst zu überschreiben
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
@@ -876,7 +875,6 @@
       });
     }
 
-    UXRender = renderSheetAsBlocks;
     function renderSheetAsBlocks(rows) {
       const validRows = (rows || []).filter(row => rowHasAnyContent(row));
       if (!validRows.length) return `<p>Keine Inhalte gefunden.</p>`;
@@ -1163,7 +1161,6 @@
     }
 
     async function initAuth() {
-      // REPARIERT: "supabaseClient" einheitlich aufgerufen
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         await handleSession(session);
@@ -1198,6 +1195,7 @@
         state.currentUser = session.user;
         if (loginBtnText) loginBtnText.innerText = "Mein Profil";
         
+        // REPARIERT: Wichtig, hier mit await auf die DB-Erstellung warten
         await fetchOrCreateProfile(session.user);
         
         if (!document.getElementById("modeProfil") && modeHomeBtn) {
@@ -1289,9 +1287,13 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        if (state.currentUser && window.location.hash.includes("access_token")) {
-          setMode("Profil");
-          window.history.replaceState(null, null, window.location.pathname);
+        // REPARIERT: Priorisiere den Profil-Redirect, falls das Token in der URL erkannt wird
+        if (window.location.hash.includes("access_token") || window.location.href.includes("access_token")) {
+          // Kleiner Timeout, damit handleSession sicher DB-Daten gezogen hat
+          setTimeout(() => {
+            setMode("Profil");
+            window.history.replaceState(null, null, window.location.pathname);
+          }, 300);
         } else {
           setMode("Home");
         }
@@ -1320,5 +1322,3 @@
 
     loadAll();
   </script>
-</body>
-</html>
