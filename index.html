@@ -715,8 +715,8 @@
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     
-    // EINHEITLICH "supabase" GENANNT (Verhindert Fehler in den Unterfunktionen!)
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // REPARIERT: "supabaseClient" benannt statt die Variable selbst zu überschreiben
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
     const PLAYER_SHEET = "Spieler_Discord";
@@ -782,7 +782,6 @@
 
     function ergName(leagueName) { return `Erg ${leagueName}`; }
 
-    // Reparierter CSV Parser
     function parseCsv(text) {
       const rows = []; let row = []; let cell = ""; let inQuotes = false;
       for (let i = 0; i < text.length; i++) {
@@ -877,6 +876,7 @@
       });
     }
 
+    UXRender = renderSheetAsBlocks;
     function renderSheetAsBlocks(rows) {
       const validRows = (rows || []).filter(row => rowHasAnyContent(row));
       if (!validRows.length) return `<p>Keine Inhalte gefunden.</p>`;
@@ -1047,13 +1047,15 @@
                   <label>Alter</label>
                   <input type="number" id="age" value="${p.age || ''}">
                 </div>
-                <div class="form-group">
-                  <label>Postleitzahl (für die Deutschlandkarte)</label>
-                  <input type="text" id="zip_code" maxlength="5" placeholder="z.B. 37520" value="${htmlEscape(p.zip_code || '')}">
-                </div>
-                <div class="form-group">
-                  <label>Scolia Name</label>
-                  <input type="text" id="scolia_name" value="${htmlEscape(p.scolia_name || '')}">
+                <div class="form-grid-item" style="grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                  <div class="form-group">
+                    <label>Postleitzahl (für die Deutschlandkarte)</label>
+                    <input type="text" id="zip_code" maxlength="5" placeholder="z.B. 37520" value="${htmlEscape(p.zip_code || '')}">
+                  </div>
+                  <div class="form-group">
+                    <label>Scolia Name</label>
+                    <input type="text" id="scolia_name" value="${htmlEscape(p.scolia_name || '')}">
+                  </div>
                 </div>
                 <div class="form-group">
                   <label>Autodarts Name</label>
@@ -1125,7 +1127,7 @@
         updated_at: new Date()
       };
 
-      const { error } = await supabase.from('profiles').upsert(updates);
+      const { error } = await supabaseClient.from('profiles').upsert(updates);
       if (error) {
         errEl.innerText = "Datenbankfehler: " + error.message;
         errEl.style.display = "block";
@@ -1160,16 +1162,14 @@
       }
     }
 
-    // REPARIERT UND ERWEITERT FÜR AKTUELLE SESSIONS
     async function initAuth() {
-      // 1. Hole aktiv die Session ab
-      const { data: { session } } = await supabase.auth.getSession();
+      // REPARIERT: "supabaseClient" einheitlich aufgerufen
+      const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         await handleSession(session);
       }
 
-      // 2. Event-Listener für Statusänderungen
-      supabase.auth.onAuthStateChange(async (event, currentSession) => { 
+      supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
         if (currentSession) {
           await handleSession(currentSession);
         } else {
@@ -1180,8 +1180,7 @@
       if (ligaLoginBtn) {
         ligaLoginBtn.addEventListener("click", async () => {
           if (!state.currentUser) {
-            // Starte OAuth-Flow
-            await supabase.auth.signInWithOAuth({
+            await supabaseClient.auth.signInWithOAuth({
               provider: 'discord',
               options: { 
                 redirectTo: window.location.origin + window.location.pathname
@@ -1199,7 +1198,6 @@
         state.currentUser = session.user;
         if (loginBtnText) loginBtnText.innerText = "Mein Profil";
         
-        // Hole Daten ab oder erstelle das Profil in der Tabelle
         await fetchOrCreateProfile(session.user);
         
         if (!document.getElementById("modeProfil") && modeHomeBtn) {
@@ -1222,10 +1220,9 @@
 
     async function fetchOrCreateProfile(user) {
       try {
-        const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
         
         if (error && error.code === 'PGRST116') {
-          // Profil existiert noch nicht -> Neu anlegen mit Discord-Metadaten
           const newProfile = {
             id: user.id,
             discord_id: user.user_metadata.provider_id || user.id,
@@ -1234,13 +1231,12 @@
             role: 'user'
           };
           
-          const { error: insertError } = await supabase.from('profiles').insert(newProfile);
+          const { error: insertError } = await supabaseClient.from('profiles').insert(newProfile);
           if (insertError) console.error("Profil-Insert Fehler:", insertError);
           state.currentProfile = newProfile;
         } else if (data) {
-          // Profil existiert -> Prüfe ob das Bild geupdated werden muss
           if (data.avatar_url !== user.user_metadata.avatar_url) {
-            await supabase.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
+            await supabaseClient.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
             data.avatar_url = user.user_metadata.avatar_url;
           }
           state.currentProfile = data;
@@ -1251,7 +1247,7 @@
     }
 
     async function handleLogout() { 
-      await supabase.auth.signOut(); 
+      await supabaseClient.auth.signOut(); 
       window.location.reload(); 
     }
     
@@ -1272,7 +1268,6 @@
     }
 
     async function loadAll() {
-      // Sichere Vorab-Initialisierung der Authentifizierung
       try {
         await initAuth();
       } catch (e) {
@@ -1294,10 +1289,8 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        // Wenn wir bereits aus einer Redirect-Session kommen, bleibe im entsprechenden Modus
         if (state.currentUser && window.location.hash.includes("access_token")) {
           setMode("Profil");
-          // Bereinige das Token aus der URL-Zeile, damit es sauber aussieht
           window.history.replaceState(null, null, window.location.pathname);
         } else {
           setMode("Home");
@@ -1327,3 +1320,5 @@
 
     loadAll();
   </script>
+</body>
+</html>
