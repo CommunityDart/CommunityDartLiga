@@ -262,11 +262,6 @@
         inset 0 1px 0 rgba(255,255,255,.12);
     }
 
-    .hero-btn-profil{
-      background:rgba(61,220,151,.20);
-      border-color:rgba(61,220,151,.45);
-    }
-
     .hero-btn-dark{
       background:rgba(3,19,27,.42);
       border-color:rgba(120,170,195,.18);
@@ -701,6 +696,108 @@
     const ligaLoginBtn = document.getElementById("ligaLoginBtn");
     const loginBtnText = document.getElementById("loginBtnText");
 
+    function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
+    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+
+    function makeClickable(text) {
+      if (!text) return "";
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      return text.replace(urlRegex, function(url) { return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:underline; word-break:break-all;">${url}</a>`; });
+    }
+
+    function csvUrl(sheetName) {
+      if (sheetName === PLAYER_SHEET) { return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=2009950588`; }
+      return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    }
+
+    function ergName(leagueName) { return `Erg ${leagueName}`; }
+
+    function parseCsv(text) {
+      const rows = []; let row = []; let cell = ""; let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i]; const next = text[i + 1];
+        if (inQuotes) { if (char === '"' && next === '"') { cell += '"'; i++; } else if (char === '"') { inQuotes = false; } else { cell += char; } }
+        else { if (char === '"') { inQuotes = true; } else if (char === ',') { row.push(cell); cell = ""; } else if (char === '\n') { row.push(cell); rows.push(row); row = []; cell = ""; } else if (char !== '\r') { cell += char; } }
+      }
+      row.push(cell); rows.push(row); return rows;
+    }
+
+    async function loadCsv(sheetName) {
+      const response = await fetch(csvUrl(sheetName));
+      if (!response.ok) throw new Error(`${sheetName}: HTTP ${response.status}`);
+      return parseCsv(await response.text());
+    }
+
+    function safeCell(row, index) { return row && row[index] !== undefined ? String(row[index]).trim() : ""; }
+    function rowHasAnyContent(row) { return row && row.some(cell => normalize(cell) !== ""); }
+    function isFinishedMatch(statusValue, legs1, legs2) {
+      const statusText = String(statusValue || "").trim().toLowerCase();
+      return /fertig|abgeschlossen|done|closed/i.test(statusText) || (String(legs1 || "").trim() !== "" && String(legs2 || "").trim() !== "" && legs1 !== "-" && legs2 !== "-");
+    }
+
+    function parseCardInfo(rawValue) {
+      const value = normalize(rawValue).replace(/,/g, " ").replace(/;/g, " ").replace(/\s+/g, " ").trim();
+      if (!value) return { yellow: 0, red: 0, hasRed: false };
+      if (value.includes("rot")) return { yellow: 0, red: 1, hasRed: true };
+      const gelbCount = (value.match(/gelb/g) || []).length;
+      if (gelbCount >= 2 || value.includes("2x gelb") || value.includes("2xgelb") || value.includes("gelb gelb")) { return { yellow: 2, red: 0, hasRed: false }; }
+      if (gelbCount >= 1) return { yellow: 1, red: 0, hasRed: false };
+      return { yellow: 0, red: 0, hasRed: false };
+    }
+
+    function parsePlayerDiscordSheet(rows) {
+      if (!rows || !rows.length) return {};
+      const map = {};
+      for (let i = 0; i < rows.length; i++) {
+        const spieler = safeCell(rows[i], 0); const discord = safeCell(rows[i], 1); const karte = safeCell(rows[i], 6);
+        if (!spieler) continue;
+        const nSpieler = normalize(spieler);
+        if (!nSpieler || ["spieler", "name", "spielername"].includes(nSpieler)) continue;
+        map[nSpieler] = { discord: discord || "", ...parseCardInfo(karte) };
+      }
+      return map;
+    }
+
+    function parseStandingsFromLeagueSheet(rows) {
+      if (!rows || !rows.length) return { headers: [], rows: [] };
+      let tabelleMarker = -1; let spieltageMarker = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const text = rows[i].map(c => normalize(c)).join(" | ");
+        if (tabelleMarker === -1 && text.includes("tabelle")) tabelleMarker = i;
+        if (spieltageMarker === -1 && (text.includes("spieltage") || text.includes("spieltag"))) spieltageMarker = i;
+      }
+      if (tabelleMarker === -1) return { headers: [], rows: [] };
+      const start = tabelleMarker + 1; const end = spieltageMarker > start ? spieltageMarker : rows.length;
+      const headers = ["Platz", "Spieler", "Siege", "Niederlagen", "Leg-Diff", "Punkte"]; const body = [];
+      for (let i = start; i < end; i++) {
+        const row = rows[i]; if (!rowHasAnyContent(row)) continue;
+        const platz = safeCell(row, 0); const spieler = safeCell(row, 1);
+        if (!platz || isNaN(parseInt(platz, 10))) continue;
+        const nSpieler = normalize(spieler);
+        if (!spieler || nSpieler === "" || nSpieler === "-" || ["spieler","name","freilos","tba"].includes(nSpieler) || nSpieler.startsWith("spieler ")) continue;
+        body.push([platz, spieler, safeCell(row, 2), safeCell(row, 3), safeCell(row, 4), safeCell(row, 5)]);
+      }
+      return { headers, rows: body };
+    }
+
+    function parseMatchdaysFromErgSheet(rows) {
+      if (!rows || !rows.length) return [];
+      const grouped = new Map();
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i]; if (!rowHasAnyContent(row)) continue;
+        const spieltagNummer = safeCell(row, 0); const spieler1 = safeCell(row, 1); const spieler2 = safeCell(row, 3);
+        if (!spieltagNummer || isNaN(parseInt(spieltagNummer, 10))) continue;
+        if (!spieler1 || !spieler2 || normalize(spieler1).startsWith("spieler ") || normalize(spieler2).startsWith("spieler ")) continue;
+        const title = `Spieltag ${spieltagNummer}`;
+        if (!grouped.has(title)) grouped.set(title, []);
+        grouped.get(title).push([title, spieler1, safeCell(row, 2), spieler2, safeCell(row, 4), safeCell(row, 5), safeCell(row, 6), safeCell(row, 7)]);
+      }
+      return Array.from(grouped.entries()).map(([title, rowsForDay]) => {
+        const totalMatches = rowsForDay.length; const doneMatches = rowsForDay.filter(r => isFinishedMatch(r[7], r[5], r[6])).length;
+        return { title, status: totalMatches > 0 && doneMatches === totalMatches ? "fertig" : "offen", doneMatches, totalMatches, headers: ["Spieler 1", "Spieler 2", "Legs 1", "Legs 2", "Status"], rows: rowsForDay };
+      });
+    }
+
     function setMode(mode) {
       state.activeMode = mode;
       document.body.setAttribute("data-mode", mode);
@@ -757,6 +854,9 @@
         });
       }
     }
+
+    function openModal(modal) { if (modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); } }
+    function closeModal(modal) { if (modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); } }
 
     async function loadStaticSheetContent() {
       try {
