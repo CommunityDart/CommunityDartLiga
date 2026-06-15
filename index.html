@@ -5,80 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Community Dart Liga</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
-  <style>
-    /* ... (Dein gesamtes CSS hier lassen) ... */
-    :root{ --bg:#03131b; --panel:#041924; --text:#f5fbff; --accent:#20b7ff; }
-    body{ font-family:Arial, sans-serif; background: #03131b; color:var(--text); }
-  </style>
-</head>
-<body data-mode="Home">
-  <div class="wrap">
-    <div id="auth-container" style="text-align: center; margin: 20px;">
-        <button id="discord-login-btn" style="background:#5865F2; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">Login mit Discord</button>
-        <div id="profile-section" style="display:none;">
-            <p id="user-name"></p>
-            <button id="logout-btn">Abmelden</button>
-        </div>
-    </div>
-
-    <section class="hero-banner image-banner"></section>
-    <div id="tableArea"></div>
-    <div id="matchdayArea" class="matchday-list"></div>
-  </div>
-
-  <script>
-    // --- SUPABASE SETUP ---
-    const supabaseUrl = 'https://ppxwnqbovrnvzkcpyrcj.supabase.co';
-    const supabaseKey = 'DEIN_NEUER_ANON_KEY'; // <--- HIER DEINEN KEY EINTRAGEN!
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    // --- LOGIN LOGIK ---
-    document.addEventListener("DOMContentLoaded", () => {
-        const loginBtn = document.getElementById('discord-login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        
-        if (loginBtn) {
-            loginBtn.addEventListener('click', async () => {
-                await supabase.auth.signInWithOAuth({ provider: 'discord' });
-            });
-        }
-
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                await supabase.auth.signOut();
-                location.reload();
-            });
-        }
-    });
-
-    // --- HIER DEIN BESTEHENDER JS-CODE (loadAll, etc.) ---
-    // (Diesen Teil einfach unter diesen Kommentar einfügen)
-    loadAll();
-  </script>
-</body>
-</html>
-
-        // Status prüfen
-        async function checkUserStatus() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session && session.user) {
-                if (loginSection) loginSection.style.display = 'none';
-                if (profileSection) profileSection.style.display = 'block';
-                userNameSpan.textContent = "Eingeloggt als: " + (session.user.user_metadata.full_name || "Spieler");
-            }
-        }
-        checkUserStatus();
-    });
-
-    <!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Community Dart Liga</title>
-
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8141059951423155" crossorigin="anonymous"></script>
 
   <style>
@@ -1906,4 +1832,3 @@
   </script>
 </body>
 </html>
-
