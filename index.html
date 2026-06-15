@@ -404,40 +404,18 @@
       });
     }
 
-    function setMode(mode) {
-      state.activeMode = mode;
-      document.body.setAttribute("data-mode", mode);
-      if (modeHomeBtn) modeHomeBtn.classList.toggle("active", mode === "Home");
-      if (modeAutodartsBtn) modeAutodartsBtn.classList.toggle("active", mode === "Autodarts");
-      if (modeDartCounterBtn) modeDartCounterBtn.classList.toggle("active", mode === "DartCounter");
-      if (mode === "Home") {
-        if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
-        if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
-        renderHome();
-      } else {
-        const visible = getVisibleModeLeagues();
-        if (!visible.some(l => l.name === state.activeLeague)) { state.activeLeague = visible[0]?.name || null; }
-        renderSystemSubmenus();
-        renderLeague();
-      }
-    }
-
-    // ---------------------------------------------------------
-    // REPARIERTE INITIALISIERUNG FÜR DAS PROFIL-PROJEKT
-    // ---------------------------------------------------------
+    // SUPABASE AUTHENTIFIZIERUNG
     async function initAuth() {
       if (!supabaseClient) {
-        // Garantierte Initialisierung ohne Absturz
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
 
-      // Supabase auf Statusänderungen horchen lassen
       supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
         if (currentSession) {
           state.currentUser = currentSession.user;
           if (loginBtnText) loginBtnText.innerText = "Mein Profil";
           
-          // NEU: Wenn eingeloggt, schicken wir den User direkt zur neuen profil.html Datei rüber!
+          // DIREKTE UMLEITUNG AUF DIE NEUE SEITE
           if (event === 'SIGNED_IN' || window.location.hash.includes("access_token")) {
              window.location.href = "profil.html";
           }
@@ -447,32 +425,25 @@
         }
       });
 
-      // Wenn die Session im Browser bereits existiert
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         state.currentUser = session.user;
         if (loginBtnText) loginBtnText.innerText = "Mein Profil";
       }
 
-      // Klick auf den Login-Button
       if (ligaLoginBtn) {
         ligaLoginBtn.addEventListener("click", async () => {
           if (!state.currentUser) {
-            // Absolut stabiler Redirect-Pfad
             await supabaseClient.auth.signInWithOAuth({
               provider: 'discord',
               options: { redirectTo: window.location.origin + window.location.pathname }
             });
           } else {
-            // Wenn er eingeloggt ist, navigiert er zur Profil-Datei
             window.location.href = "profil.html";
           }
         });
       }
     }
-
-    function openModal(modal) { if (modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); } }
-    function closeModal(modal) { if (modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); } }
 
     async function loadStaticSheetContent() {
       try {
@@ -488,14 +459,12 @@
     }
 
     async function loadAll() {
-      // Wenn wir aus dem Redirect kommen, zeigen wir ein Lade-Fenster, bevor weitergeleitet wird
       if (window.location.hash.includes("access_token")) {
-        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login erfolgreich!</h2><p>Profil-Verwaltung wird aufgerufen...</p></div>`;
+        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login erfolgreich!</h2><p>Profil-Verwaltung wird geladen...</p></div>`;
       } else {
         if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
       }
 
-      // Supabase starten
       await initAuth();
 
       try {
@@ -512,7 +481,6 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        // Wenn wir nicht im Redirect stecken, ganz normal die Neuigkeiten anzeigen
         if (!window.location.hash.includes("access_token")) {
           setMode("Home");
         }
