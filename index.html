@@ -1226,7 +1226,15 @@
       } catch (e) { console.warn("Statische Inhalte nicht ladbar", e); }
     }
 
-    async function loadAll() {
+  async function loadAll() {
+      // 1. Zuerst IMMER die Authentifizierung starten, damit der Button auf jeden Fall funktioniert!
+      try {
+        await initAuth();
+      } catch (authError) {
+        console.error("Auth-Fehler beim Start:", authError);
+      }
+
+      // 2. Danach die Tabellendaten laden
       tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
       try {
         state.leagues = LEAGUES.map(name => ({ name }));
@@ -1242,10 +1250,12 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        await initAuth();
         setMode("Home");
       } catch (error) {
-        tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden: ${htmlEscape(error?.message)}</div>`;
+        console.error("Tabellen-Ladefehler:", error);
+        tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden der Tabellen: ${htmlEscape(error?.message)}</div>`;
+      }
+  
       }
     }
 
