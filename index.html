@@ -12,7 +12,6 @@
   <style>
     :root{
       --bg:#03131b;
-      --bg:#03131b;
       --panel:#041924;
       --line:rgba(120,170,195,.12);
       --text:#f5fbff;
@@ -627,6 +626,7 @@
               </svg>
               <span>Discord</span>
             </a>
+            
             <button id="ligaLoginBtn" class="hero-action-btn hero-btn-discord discord-login-btn" type="button">
               <svg class="discord-icon" viewBox="0 0 127.14 96.36" aria-hidden="true">
                 <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2A75.57,75.57,0,0,0,95.73,78c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C35.88,65.69,30.5,59.66,30.5,52.25s5.31-13.44,11.95-13.44S54.4,44.87,54.39,52.25,49,65.69,42.45,65.69Zm42.24,0c-6.57,0-11.95-6-11.95-13.44s5.31-13.44,11.95-13.44S96.64,44.87,96.63,52.25,91.26,65.69,84.69,65.69Z"/>
@@ -714,7 +714,7 @@
     // SUPABASE KONFIGURATION
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
     const PLAYER_SHEET = "Spieler_Discord";
@@ -780,15 +780,19 @@
 
     function ergName(leagueName) { return `Erg ${leagueName}`; }
 
-   function parseCsv(text) {
+    function parseCsv(text) {
       const rows = []; let row = []; let cell = ""; let inQuotes = false;
       for (let i = 0; i < text.length; i++) {
         const char = text[i]; const next = text[i + 1];
         if (inQuotes) {
-          // REPARIERT: Falsches Semikolon nach next === '"' entfernt
           if (char === '"' && next === '"') { cell += '"'; i++; }
           else if (char === '"') { inQuotes = false; }
           else { cell += char; }
+        } else {
+          if (char === '"') { inQuotes = true; }
+          else if (char === ',') { row.push(cell); cell = ""; }
+          else if (char === '\n') { row.push(cell); rows.push(row); row = []; cell = ""; }
+          else if (char !== '\r') { cell += char; }
         }
       }
       row.push(cell); rows.push(row); return rows;
@@ -802,7 +806,6 @@
 
     function safeCell(row, index) { return row && row[index] !== undefined ? String(row[index]).trim() : ""; }
     function rowHasAnyContent(row) { return row && row.some(cell => normalize(cell) !== ""); }
-    // REPARIERT: Syntax-Schreibweise des ternären Operators bereinigt
     function isFinishedMatch(statusValue, legs1, legs2) {
       const statusText = String(statusValue || "").trim().toLowerCase();
       return /fertig|abgeschlossen|done|closed/i.test(statusText) || (String(legs1 || "").trim() !== "" && String(legs2 || "").trim() !== "" && legs1 !== "-" && legs2 !== "-");
@@ -972,6 +975,7 @@
 
     function renderSystemSubmenus() {
       const renderSub = (el, prefix) => {
+        if (!el) return;
         const filtered = state.leagues.filter(l => l.name.startsWith(prefix) && leagueHasPlayers(state.leagueData[l.name]));
         el.innerHTML = filtered.map(l => `<button class="submenu-btn ${l.name === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l.name)}">${htmlEscape(l.name)}</button>`).join("");
         el.classList.toggle("active", state.activeMode === prefix);
@@ -982,6 +986,7 @@
     }
 
     function attachMatchdayEvents() {
+      if (!matchdayAreaEl) return;
       matchdayAreaEl.querySelectorAll(".matchday").forEach(card => {
         card.querySelector(".matchday-head").addEventListener("click", () => {
           const isOpen = !card.classList.contains("open"); card.classList.toggle("open", isOpen);
@@ -1117,7 +1122,7 @@
         updated_at: new Date()
       };
 
-      const { error } = await supabase.from('profiles').upsert(updates);
+      const { error } = await supabaseClient.from('profiles').upsert(updates);
       if (error) {
         errEl.innerText = "Datenbankfehler: " + error.message;
         errEl.style.display = "block";
@@ -1131,8 +1136,8 @@
       state.activeMode = mode;
       document.body.setAttribute("data-mode", mode);
       if (modeHomeBtn) modeHomeBtn.classList.toggle("active", mode === "Home");
-      modeAutodartsBtn.classList.toggle("active", mode === "Autodarts");
-      modeDartCounterBtn.classList.toggle("active", mode === "DartCounter");
+      if (modeAutodartsBtn) modeAutodartsBtn.classList.toggle("active", mode === "Autodarts");
+      if (modeDartCounterBtn) modeDartCounterBtn.classList.toggle("active", mode === "DartCounter");
       const pBtn = document.getElementById("modeProfil");
       if(pBtn) pBtn.classList.toggle("active", mode === "Profil");
 
@@ -1153,28 +1158,30 @@
     }
 
     async function initAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       handleSession(session);
-      supabase.auth.onAuthStateChange((_event, session) => { handleSession(session); });
+      supabaseClient.auth.onAuthStateChange((_event, session) => { handleSession(session); });
 
-      ligaLoginBtn.addEventListener("click", async () => {
-        if (!state.currentUser) {
-          await supabase.auth.signInWithOAuth({
-            provider: 'discord',
-            options: { redirectTo: window.location.origin + window.location.pathname }
-          });
-        } else {
-          setMode("Profil");
-        }
-      });
+      if (ligaLoginBtn) {
+        ligaLoginBtn.addEventListener("click", async () => {
+          if (!state.currentUser) {
+            await supabaseClient.auth.signInWithOAuth({
+              provider: 'discord',
+              options: { redirectTo: window.location.origin + window.location.pathname }
+            });
+          } else {
+            setMode("Profil");
+          }
+        });
+      }
     }
 
     async function handleSession(session) {
       if (session) {
         state.currentUser = session.user;
-        loginBtnText.innerText = "Mein Profil";
+        if (loginBtnText) loginBtnText.innerText = "Mein Profil";
         await fetchOrCreateProfile(session.user);
-        if (!document.getElementById("modeProfil")) {
+        if (!document.getElementById("modeProfil") && modeHomeBtn) {
           const profileBtn = document.createElement("button");
           profileBtn.id = "modeProfil";
           profileBtn.className = "hero-action-btn hero-btn-profil mode-btn";
@@ -1185,14 +1192,14 @@
         }
       } else {
         state.currentUser = null; state.currentProfile = null;
-        loginBtnText.innerText = "Liga Login";
+        if (loginBtnText) loginBtnText.innerText = "Liga Login";
         const pBtn = document.getElementById("modeProfil"); if (pBtn) pBtn.remove();
         if (state.activeMode === "Profil") setMode("Home");
       }
     }
 
     async function fetchOrCreateProfile(user) {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
       if (error && error.code === 'PGRST116') {
         const newProfile = {
           id: user.id,
@@ -1201,20 +1208,20 @@
           avatar_url: user.user_metadata.avatar_url,
           role: 'user'
         };
-        await supabase.from('profiles').insert(newProfile);
+        await supabaseClient.from('profiles').insert(newProfile);
         state.currentProfile = newProfile;
       } else if (data) {
         if(data.avatar_url !== user.user_metadata.avatar_url) {
-          await supabase.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
+          await supabaseClient.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
           data.avatar_url = user.user_metadata.avatar_url;
         }
         state.currentProfile = data;
       }
     }
 
-    async function handleLogout() { await supabase.auth.signOut(); window.location.reload(); }
-    function openModal(modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); }
-    function closeModal(modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); }
+    async function handleLogout() { await supabaseClient.auth.signOut(); window.location.reload(); }
+    function openModal(modal) { if (modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); } }
+    function closeModal(modal) { if (modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); } }
 
     async function loadStaticSheetContent() {
       try {
@@ -1229,16 +1236,15 @@
       } catch (e) { console.warn("Statische Inhalte nicht ladbar", e); }
     }
 
-  async function loadAll() {
-      // 1. Zuerst IMMER die Authentifizierung starten, damit der Button auf jeden Fall funktioniert!
+    async function loadAll() {
+      // Sichere Vorab-Initialisierung der Authentifizierung
       try {
         await initAuth();
-      } catch (authError) {
-        console.error("Auth-Fehler beim Start:", authError);
+      } catch (e) {
+        console.error("Sicherheits-Auth-Initialisierung fehlgeschlagen:", e);
       }
 
-      // 2. Danach die Tabellendaten laden
-      tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
+      if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
       try {
         state.leagues = LEAGUES.map(name => ({ name }));
         try {
@@ -1255,20 +1261,17 @@
 
         setMode("Home");
       } catch (error) {
-        console.error("Tabellen-Ladefehler:", error);
-        tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden der Tabellen: ${htmlEscape(error?.message)}</div>`;
-      }
-  
+        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden: ${htmlEscape(error?.message)}</div>`;
       }
     }
 
     if (modeHomeBtn) modeHomeBtn.addEventListener("click", () => setMode("Home"));
-    modeAutodartsBtn.addEventListener("click", () => setMode("Autodarts"));
-    modeDartCounterBtn.addEventListener("click", () => setMode("DartCounter"));
-    openImpressumBtn.addEventListener("click", () => openModal(impressumModal));
-    closeImpressumBtn.addEventListener("click", () => closeModal(impressumModal));
+    if (modeAutodartsBtn) modeAutodartsBtn.addEventListener("click", () => setMode("Autodarts"));
+    if (modeDartCounterBtn) modeDartCounterBtn.addEventListener("click", () => setMode("DartCounter"));
+    if (openImpressumBtn) openImpressumBtn.addEventListener("click", () => openModal(impressumModal));
+    if (closeImpressumBtn) closeImpressumBtn.addEventListener("click", () => closeModal(impressumModal));
     if (openLinksBtn) openLinksBtn.addEventListener("click", () => openModal(linksModal));
-    regelwerkBtn.addEventListener("click", () => openModal(regelwerkModal));
+    if (regelwerkBtn) regelwerkBtn.addEventListener("click", () => openModal(regelwerkModal));
 
     document.querySelectorAll("[data-close-modal]").forEach(btn => {
       btn.addEventListener("click", () => { closeModal(document.getElementById(btn.getAttribute("data-close-modal"))); });
