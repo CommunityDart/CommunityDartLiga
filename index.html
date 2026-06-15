@@ -740,7 +740,8 @@
       newsRows: [],
       linksRows: [],
       currentUser: null,
-      currentProfile: null
+      currentProfile: null,
+      forcedProfilRedirect: false // Verhindert Überschreiben während des Ladens
     };
 
     const tableAreaEl = document.getElementById("tableArea");
@@ -1017,7 +1018,6 @@
       const p = state.currentProfile;
       const isAdmin = p.role === 'admin';
 
-      // REPARIERT: form-grid-item entfernt, um Anzeigefehler der Formularspalten zu verhindern
       tableAreaEl.innerHTML = `
         <div class="table-shell">
           <div class="section-head">
@@ -1159,11 +1159,13 @@
     }
 
     async function initAuth() {
+      // 1. Hole aktiv die Session ab
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         await handleSession(session);
       }
 
+      // 2. Event-Listener für Statusänderungen
       supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
         if (currentSession) {
           await handleSession(currentSession);
@@ -1203,6 +1205,11 @@
           profileBtn.innerText = "Mein Profil";
           profileBtn.addEventListener("click", () => setMode("Profil"));
           modeHomeBtn.parentNode.insertBefore(profileBtn, regelwerkBtn);
+        }
+
+        // Falls wir uns mitten in einem Token-Redirect befinden, erzwingen wir die Ansicht
+        if (state.forcedProfilRedirect) {
+          setMode("Profil");
         }
       } else {
         state.currentUser = null; 
@@ -1263,18 +1270,17 @@
     }
 
     async function loadAll() {
-      // REPARIERT: Prüfe die Session SOFORT, noch vor dem Google-Sheets-Ladezyklus
+      // BOMBENFESTE ERKENNUNG: Prüfe das Token SOFORT vor jeglicher Sheets-Asynchronität
+      const urlHasToken = window.location.hash.includes("access_token") || window.location.href.includes("access_token");
+      if (urlHasToken) {
+        state.forcedProfilRedirect = true;
+        setMode("Profil");
+      }
+
       try {
         await initAuth();
       } catch (e) {
         console.error("Sicherheits-Auth-Initialisierung fehlgeschlagen:", e);
-      }
-
-      // Falls ein OAuth-Token in der URL existiert, erzwingen wir sofort den Profil-Modus
-      const hasAuthToken = window.location.hash.includes("access_token") || window.location.href.includes("access_token");
-      if (hasAuthToken) {
-        setMode("Profil");
-        window.history.replaceState(null, null, window.location.pathname);
       }
 
       if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
@@ -1292,8 +1298,13 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        // Nur wenn wir KEINEN aktiven OAuth-Redirect verarbeiten, laden wir standardmäßig Home
-        if (!hasAuthToken) {
+        // Falls wir das Token verarbeitet haben, räumen wir die URL auf
+        if (state.forcedProfilRedirect) {
+          setMode("Profil");
+          setTimeout(() => {
+            window.history.replaceState(null, null, window.location.pathname);
+          }, 100);
+        } else {
           setMode("Home");
         }
       } catch (error) {
