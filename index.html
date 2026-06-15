@@ -714,7 +714,6 @@
     // SUPABASE KONFIGURATION
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
@@ -1018,6 +1017,7 @@
       const p = state.currentProfile;
       const isAdmin = p.role === 'admin';
 
+      // REPARIERT: form-grid-item entfernt, um Anzeigefehler der Formularspalten zu verhindern
       tableAreaEl.innerHTML = `
         <div class="table-shell">
           <div class="section-head">
@@ -1045,15 +1045,13 @@
                   <label>Alter</label>
                   <input type="number" id="age" value="${p.age || ''}">
                 </div>
-                <div class="form-grid-item" style="grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-                  <div class="form-group">
-                    <label>Postleitzahl (für die Deutschlandkarte)</label>
-                    <input type="text" id="zip_code" maxlength="5" placeholder="z.B. 37520" value="${htmlEscape(p.zip_code || '')}">
-                  </div>
-                  <div class="form-group">
-                    <label>Scolia Name</label>
-                    <input type="text" id="scolia_name" value="${htmlEscape(p.scolia_name || '')}">
-                  </div>
+                <div class="form-group">
+                  <label>Postleitzahl (für die Deutschlandkarte)</label>
+                  <input type="text" id="zip_code" maxlength="5" placeholder="z.B. 37520" value="${htmlEscape(p.zip_code || '')}">
+                </div>
+                <div class="form-group">
+                  <label>Scolia Name</label>
+                  <input type="text" id="scolia_name" value="${htmlEscape(p.scolia_name || '')}">
                 </div>
                 <div class="form-group">
                   <label>Autodarts Name</label>
@@ -1195,7 +1193,6 @@
         state.currentUser = session.user;
         if (loginBtnText) loginBtnText.innerText = "Mein Profil";
         
-        // REPARIERT: Wichtig, hier mit await auf die DB-Erstellung warten
         await fetchOrCreateProfile(session.user);
         
         if (!document.getElementById("modeProfil") && modeHomeBtn) {
@@ -1266,10 +1263,18 @@
     }
 
     async function loadAll() {
+      // REPARIERT: Prüfe die Session SOFORT, noch vor dem Google-Sheets-Ladezyklus
       try {
         await initAuth();
       } catch (e) {
         console.error("Sicherheits-Auth-Initialisierung fehlgeschlagen:", e);
+      }
+
+      // Falls ein OAuth-Token in der URL existiert, erzwingen wir sofort den Profil-Modus
+      const hasAuthToken = window.location.hash.includes("access_token") || window.location.href.includes("access_token");
+      if (hasAuthToken) {
+        setMode("Profil");
+        window.history.replaceState(null, null, window.location.pathname);
       }
 
       if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
@@ -1287,14 +1292,8 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        // REPARIERT: Priorisiere den Profil-Redirect, falls das Token in der URL erkannt wird
-        if (window.location.hash.includes("access_token") || window.location.href.includes("access_token")) {
-          // Kleiner Timeout, damit handleSession sicher DB-Daten gezogen hat
-          setTimeout(() => {
-            setMode("Profil");
-            window.history.replaceState(null, null, window.location.pathname);
-          }, 300);
-        } else {
+        // Nur wenn wir KEINEN aktiven OAuth-Redirect verarbeiten, laden wir standardmäßig Home
+        if (!hasAuthToken) {
           setMode("Home");
         }
       } catch (error) {
@@ -1322,3 +1321,5 @@
 
     loadAll();
   </script>
+</body>
+</html>
