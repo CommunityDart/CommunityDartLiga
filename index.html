@@ -1332,5 +1332,87 @@
 
     loadAll();
   </script>
+  <!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CDL Testversion</title>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8141059951423155" crossorigin="anonymous"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ... (dein bestehendes CSS bleibt hier unverändert) ... */
+    :root{ --bg:#03131b; --panel:#041924; --line:rgba(120,170,195,.12); --text:#f5fbff; --green:#3ddc97; --accent:#20b7ff; }
+    body{ font-family:Arial,sans-serif; background:linear-gradient(180deg, var(--bg) 0%, #021017 100%); color:var(--text); min-height:100vh; margin:0; }
+    .wrap{ width:min(1400px, 95%); margin:0 auto; padding:20px; }
+    .hero-action-btn{ background:rgba(6,20,30,.8); color:#fff; border:1px solid #4b87a5; padding:12px 20px; border-radius:12px; cursor:pointer; font-weight:bold; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="nav">
+      <button onclick="window.location.href='index.html'" class="hero-action-btn">Neuigkeiten</button>
+      <button id="ligaLoginBtn" class="hero-action-btn">Liga Login</button>
+    </div>
+    <div id="tableArea">Lade Daten...</div>
+  </div>
+
+  <script>
+    // 1. SUPABASE INITIALISIERUNG
+    const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let currentUser = null;
+
+    // 2. AUTH-LOGIK
+    async function initAuth() {
+        // Session aus URL oder Cache holen
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) handleSession(session.user);
+
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session?.user) handleSession(session.user);
+        });
+
+        document.getElementById('ligaLoginBtn').addEventListener('click', async () => {
+            if (!currentUser) {
+                await supabase.auth.signInWithOAuth({ 
+                    provider: 'discord', 
+                    options: { redirectTo: window.location.href } 
+                });
+            } else {
+                renderProfile();
+            }
+        });
+    }
+
+    async function handleSession(user) {
+        currentUser = user;
+        document.getElementById('ligaLoginBtn').innerText = "Mein Profil";
+        // Wenn Token in URL, direkt Profil laden
+        if (window.location.hash.includes("access_token")) {
+            renderProfile();
+            window.history.replaceState(null, null, window.location.pathname);
+        }
+    }
+
+    function renderProfile() {
+      document.getElementById('tableArea').innerHTML = `
+        <div style="background:rgba(4,25,36,.96); padding:20px; border-radius:18px;">
+          <h2>Dein Profil</h2>
+          <button onclick="supabase.auth.signOut(); location.reload();" class="hero-action-btn">Logout</button>
+        </div>
+      `;
+    }
+
+    // 3. START
+    initAuth();
+  </script>
+</body>
+</html>
 </body>
 </html>
