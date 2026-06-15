@@ -6,7 +6,6 @@
   <title>CDL Testversion</title>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8141059951423155" crossorigin="anonymous"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -711,10 +710,12 @@
   </div>
 
   <script>
-    // SUPABASE KONFIGURATION
+    // ---------------------------------------------------------
+    // 1. GLOBALE KONFIGURATION & ZUSTAND
+    // ---------------------------------------------------------
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
     const PLAYER_SHEET = "Spieler_Discord";
@@ -740,10 +741,10 @@
       newsRows: [],
       linksRows: [],
       currentUser: null,
-      currentProfile: null,
-      forcedProfilRedirect: false // Verhindert Überschreiben während des Ladens
+      currentProfile: null
     };
 
+    // DOM Elemente
     const tableAreaEl = document.getElementById("tableArea");
     const matchdayAreaEl = document.getElementById("matchdayArea");
     const modeHomeBtn = document.getElementById("modeHome");
@@ -763,6 +764,9 @@
     const ligaLoginBtn = document.getElementById("ligaLoginBtn");
     const loginBtnText = document.getElementById("loginBtnText");
 
+    // ---------------------------------------------------------
+    // 2. HILFSFUNKTIONEN (Google Sheets & Parser)
+    // ---------------------------------------------------------
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 
@@ -894,6 +898,7 @@
     }
 
     function leagueHasPlayers(data) { return data && data.standings && data.standings.rows && data.standings.rows.length > 0; }
+    
     function rankClass(rankValue, totalRows) {
       const rank = parseInt(String(rankValue).replace(/\D/g, ""), 10);
       if (!Number.isFinite(rank)) return "";
@@ -919,6 +924,9 @@
       return cards.length ? `<span class="player-cards">${cards.join("")}</span>` : "";
     }
 
+    // ---------------------------------------------------------
+    // 3. UI RENDERING (Home, League, Profile)
+    // ---------------------------------------------------------
     function renderStandingsTable(headers, rows) {
       if (!headers.length || !rows.length) return `<div class="table-shell"><div class="section-head"><div class="section-title">Tabelle</div></div><div style="padding:18px"><div class="empty">Keine Daten.</div></div></div>`;
       const displayHeaders = ["Platz", "Spieler", "Discord", "Siege", "Niederlagen", "Leg-Diff", "Punkte"];
@@ -980,7 +988,13 @@
         const filtered = state.leagues.filter(l => l.name.startsWith(prefix) && leagueHasPlayers(state.leagueData[l.name]));
         el.innerHTML = filtered.map(l => `<button class="submenu-btn ${l.name === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l.name)}">${htmlEscape(l.name)}</button>`).join("");
         el.classList.toggle("active", state.activeMode === prefix);
-        el.querySelectorAll(".submenu-btn").forEach(btn => btn.addEventListener("click", () => { state.activeLeague = btn.dataset.name; renderSystemSubmenus(); renderLeague(); }));
+        el.querySelectorAll(".submenu-btn").forEach(btn => {
+          btn.addEventListener("click", () => { 
+            state.activeLeague = btn.dataset.name; 
+            renderSystemSubmenus(); 
+            renderLeague(); 
+          });
+        });
       };
       renderSub(autodartsSubmenuEl, "Autodarts");
       renderSub(dartcounterSubmenuEl, "DartCounter");
@@ -1012,7 +1026,7 @@
 
     function renderProfilePage() {
       if (!state.currentProfile) {
-        tableAreaEl.innerHTML = `<div class="empty">Bitte logge dich zuerst ein, um dein Profil zu verwalten.</div>`;
+        tableAreaEl.innerHTML = `<div class="empty">Bitte logge dich zuerst ein.</div>`;
         return;
       }
       const p = state.currentProfile;
@@ -1085,6 +1099,129 @@
       if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
     }
 
+    function setMode(mode) {
+      state.activeMode = mode;
+      document.body.setAttribute("data-mode", mode);
+      
+      if (modeHomeBtn) modeHomeBtn.classList.toggle("active", mode === "Home");
+      if (modeAutodartsBtn) modeAutodartsBtn.classList.toggle("active", mode === "Autodarts");
+      if (modeDartCounterBtn) modeDartCounterBtn.classList.toggle("active", mode === "DartCounter");
+      
+      const pBtn = document.getElementById("modeProfil");
+      if(pBtn) pBtn.classList.toggle("active", mode === "Profil");
+
+      if (mode === "Home") {
+        if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
+        if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
+        renderHome();
+      } else if (mode === "Profil") {
+        if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
+        if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
+        renderProfilePage();
+      } else {
+        const visible = getVisibleModeLeagues();
+        if (!visible.some(l => l.name === state.activeLeague)) { state.activeLeague = visible[0]?.name || null; }
+        renderSystemSubmenus();
+        renderLeague();
+      }
+    }
+
+    // ---------------------------------------------------------
+    // 4. SUPABASE AUTHENTIFIZIERUNG & PROFIL
+    // ---------------------------------------------------------
+    async function initAuth() {
+      // Session prüfen
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await handleSession(session.user);
+
+      // Auth Listener
+      supabase.auth.onAuthStateChange((event, session) => { 
+        if (session?.user) {
+          handleSession(session.user);
+        } else {
+          handleLogoutState();
+        }
+      });
+
+      // Login Button Klick
+      if (ligaLoginBtn) {
+        ligaLoginBtn.addEventListener("click", async () => {
+          if (!state.currentUser) {
+            await supabase.auth.signInWithOAuth({
+              provider: 'discord',
+              options: { redirectTo: window.location.origin + window.location.pathname }
+            });
+          } else {
+            setMode("Profil");
+          }
+        });
+      }
+    }
+
+    async function handleSession(user) {
+      state.currentUser = user;
+      if (loginBtnText) loginBtnText.innerText = "Mein Profil";
+      
+      await fetchOrCreateProfile(user);
+      
+      // Profil-Button zur Navigation hinzufügen, falls nicht vorhanden
+      if (!document.getElementById("modeProfil") && modeHomeBtn) {
+        const profileBtn = document.createElement("button");
+        profileBtn.id = "modeProfil";
+        profileBtn.className = "hero-action-btn hero-btn-profil mode-btn";
+        profileBtn.type = "button";
+        profileBtn.innerText = "Mein Profil";
+        profileBtn.addEventListener("click", () => setMode("Profil"));
+        modeHomeBtn.parentNode.insertBefore(profileBtn, regelwerkBtn);
+      }
+
+      // Wenn wir aus dem Discord Redirect kommen -> Profil öffnen
+      if (window.location.hash.includes("access_token")) {
+        setMode("Profil");
+        setTimeout(() => {
+          window.history.replaceState(null, null, window.location.pathname);
+        }, 100);
+      }
+    }
+
+    function handleLogoutState() {
+      state.currentUser = null; 
+      state.currentProfile = null;
+      if (loginBtnText) loginBtnText.innerText = "Liga Login";
+      const pBtn = document.getElementById("modeProfil"); 
+      if (pBtn) pBtn.remove();
+      if (state.activeMode === "Profil") setMode("Home");
+    }
+
+    async function fetchOrCreateProfile(user) {
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        
+        if (error && error.code === 'PGRST116') {
+          // Neues Profil erstellen
+          const newProfile = {
+            id: user.id,
+            discord_id: user.user_metadata.provider_id || user.id,
+            username: user.user_metadata.full_name || user.user_metadata.name || user.user_metadata.custom_claims?.global_name,
+            avatar_url: user.user_metadata.avatar_url,
+            role: 'user'
+          };
+          const { error: insertError } = await supabase.from('profiles').insert(newProfile);
+          if (insertError) console.error("Profil-Insert Fehler:", insertError);
+          state.currentProfile = newProfile;
+        } else if (data) {
+          // Avatar Update falls geändert
+          if (data.avatar_url !== user.user_metadata.avatar_url) {
+            await supabase.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
+            data.avatar_url = user.user_metadata.avatar_url;
+          }
+          state.currentProfile = data;
+        }
+      } catch (err) {
+        console.error("Fehler in fetchOrCreateProfile:", err);
+      }
+    }
+
     async function saveProfile(e) {
       e.preventDefault();
       const errEl = document.getElementById("formError");
@@ -1123,7 +1260,7 @@
         updated_at: new Date()
       };
 
-      const { error } = await supabaseClient.from('profiles').upsert(updates);
+      const { error } = await supabase.from('profiles').upsert(updates);
       if (error) {
         errEl.innerText = "Datenbankfehler: " + error.message;
         errEl.style.display = "block";
@@ -1133,126 +1270,14 @@
       }
     }
 
-    function setMode(mode) {
-      state.activeMode = mode;
-      document.body.setAttribute("data-mode", mode);
-      if (modeHomeBtn) modeHomeBtn.classList.toggle("active", mode === "Home");
-      if (modeAutodartsBtn) modeAutodartsBtn.classList.toggle("active", mode === "Autodarts");
-      if (modeDartCounterBtn) modeDartCounterBtn.classList.toggle("active", mode === "DartCounter");
-      const pBtn = document.getElementById("modeProfil");
-      if(pBtn) pBtn.classList.toggle("active", mode === "Profil");
-
-      if (mode === "Home") {
-        if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
-        if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
-        renderHome();
-      } else if (mode === "Profil") {
-        if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
-        if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
-        renderProfilePage();
-      } else {
-        const visible = getVisibleModeLeagues();
-        if (!visible.some(l => l.name === state.activeLeague)) { state.activeLeague = visible[0]?.name || null; }
-        renderSystemSubmenus();
-        renderLeague();
-      }
-    }
-
-    async function initAuth() {
-      // 1. Hole aktiv die Session ab
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        await handleSession(session);
-      }
-
-      // 2. Event-Listener für Statusänderungen
-      supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
-        if (currentSession) {
-          await handleSession(currentSession);
-        } else {
-          await handleSession(null);
-        }
-      });
-
-      if (ligaLoginBtn) {
-        ligaLoginBtn.addEventListener("click", async () => {
-          if (!state.currentUser) {
-            await supabaseClient.auth.signInWithOAuth({
-              provider: 'discord',
-              options: { 
-                redirectTo: window.location.origin + window.location.pathname
-              }
-            });
-          } else {
-            setMode("Profil");
-          }
-        });
-      }
-    }
-
-    async function handleSession(session) {
-      if (session && session.user) {
-        state.currentUser = session.user;
-        if (loginBtnText) loginBtnText.innerText = "Mein Profil";
-        
-        await fetchOrCreateProfile(session.user);
-        
-        if (!document.getElementById("modeProfil") && modeHomeBtn) {
-          const profileBtn = document.createElement("button");
-          profileBtn.id = "modeProfil";
-          profileBtn.className = "hero-action-btn hero-btn-profil mode-btn";
-          profileBtn.type = "button";
-          profileBtn.innerText = "Mein Profil";
-          profileBtn.addEventListener("click", () => setMode("Profil"));
-          modeHomeBtn.parentNode.insertBefore(profileBtn, regelwerkBtn);
-        }
-
-        // Falls wir uns mitten in einem Token-Redirect befinden, erzwingen wir die Ansicht
-        if (state.forcedProfilRedirect) {
-          setMode("Profil");
-        }
-      } else {
-        state.currentUser = null; 
-        state.currentProfile = null;
-        if (loginBtnText) loginBtnText.innerText = "Liga Login";
-        const pBtn = document.getElementById("modeProfil"); if (pBtn) pBtn.remove();
-        if (state.activeMode === "Profil") setMode("Home");
-      }
-    }
-
-    async function fetchOrCreateProfile(user) {
-      try {
-        const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
-        
-        if (error && error.code === 'PGRST116') {
-          const newProfile = {
-            id: user.id,
-            discord_id: user.user_metadata.provider_id || user.id,
-            username: user.user_metadata.full_name || user.user_metadata.name || user.user_metadata.custom_claims?.global_name,
-            avatar_url: user.user_metadata.avatar_url,
-            role: 'user'
-          };
-          
-          const { error: insertError } = await supabaseClient.from('profiles').insert(newProfile);
-          if (insertError) console.error("Profil-Insert Fehler:", insertError);
-          state.currentProfile = newProfile;
-        } else if (data) {
-          if (data.avatar_url !== user.user_metadata.avatar_url) {
-            await supabaseClient.from('profiles').update({ avatar_url: user.user_metadata.avatar_url }).eq('id', user.id);
-            data.avatar_url = user.user_metadata.avatar_url;
-          }
-          state.currentProfile = data;
-        }
-      } catch (err) {
-        console.error("Fehler in fetchOrCreateProfile:", err);
-      }
-    }
-
     async function handleLogout() { 
-      await supabaseClient.auth.signOut(); 
+      await supabase.auth.signOut(); 
       window.location.reload(); 
     }
-    
+
+    // ---------------------------------------------------------
+    // 5. INITIALISIERUNG DER GESAMTEN SEITE
+    // ---------------------------------------------------------
     function openModal(modal) { if (modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); } }
     function closeModal(modal) { if (modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); } }
 
@@ -1270,20 +1295,24 @@
     }
 
     async function loadAll() {
-      // BOMBENFESTE ERKENNUNG: Prüfe das Token SOFORT vor jeglicher Sheets-Asynchronität
-      const urlHasToken = window.location.hash.includes("access_token") || window.location.href.includes("access_token");
-      if (urlHasToken) {
-        state.forcedProfilRedirect = true;
-        setMode("Profil");
-      }
-
+      // 1. Authentifizierung zuerst prüfen
       try {
         await initAuth();
       } catch (e) {
-        console.error("Sicherheits-Auth-Initialisierung fehlgeschlagen:", e);
+        console.error("Auth-Init Fehler:", e);
       }
 
-      if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
+      // Prüfen, ob wir von Discord Redirect kommen
+      const isRedirect = window.location.hash.includes("access_token") || window.location.href.includes("access_token");
+      if (isRedirect) {
+        setMode("Profil");
+      }
+
+      if (tableAreaEl && state.activeMode !== "Profil") {
+          tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
+      }
+
+      // 2. Google Sheets Tabellen laden
       try {
         state.leagues = LEAGUES.map(name => ({ name }));
         try {
@@ -1298,13 +1327,8 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        // Falls wir das Token verarbeitet haben, räumen wir die URL auf
-        if (state.forcedProfilRedirect) {
-          setMode("Profil");
-          setTimeout(() => {
-            window.history.replaceState(null, null, window.location.pathname);
-          }, 100);
-        } else {
+        // Wenn nicht vom Login gekommen, lade Standard-Ansicht
+        if (!isRedirect && state.activeMode !== "Profil") {
           setMode("Home");
         }
       } catch (error) {
@@ -1312,6 +1336,7 @@
       }
     }
 
+    // Event Listener für Navigation & Modals
     if (modeHomeBtn) modeHomeBtn.addEventListener("click", () => setMode("Home"));
     if (modeAutodartsBtn) modeAutodartsBtn.addEventListener("click", () => setMode("Autodarts"));
     if (modeDartCounterBtn) modeDartCounterBtn.addEventListener("click", () => setMode("DartCounter"));
@@ -1330,89 +1355,8 @@
 
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") [impressumModal, regelwerkModal, linksModal].forEach(closeModal); });
 
+    // App Starten
     loadAll();
   </script>
-  <!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Testversion</title>
-
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8141059951423155" crossorigin="anonymous"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    /* ... (dein bestehendes CSS bleibt hier unverändert) ... */
-    :root{ --bg:#03131b; --panel:#041924; --line:rgba(120,170,195,.12); --text:#f5fbff; --green:#3ddc97; --accent:#20b7ff; }
-    body{ font-family:Arial,sans-serif; background:linear-gradient(180deg, var(--bg) 0%, #021017 100%); color:var(--text); min-height:100vh; margin:0; }
-    .wrap{ width:min(1400px, 95%); margin:0 auto; padding:20px; }
-    .hero-action-btn{ background:rgba(6,20,30,.8); color:#fff; border:1px solid #4b87a5; padding:12px 20px; border-radius:12px; cursor:pointer; font-weight:bold; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div id="nav">
-      <button onclick="window.location.href='index.html'" class="hero-action-btn">Neuigkeiten</button>
-      <button id="ligaLoginBtn" class="hero-action-btn">Liga Login</button>
-    </div>
-    <div id="tableArea">Lade Daten...</div>
-  </div>
-
-  <script>
-    // 1. SUPABASE INITIALISIERUNG
-    const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    let currentUser = null;
-
-    // 2. AUTH-LOGIK
-    async function initAuth() {
-        // Session aus URL oder Cache holen
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) handleSession(session.user);
-
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (session?.user) handleSession(session.user);
-        });
-
-        document.getElementById('ligaLoginBtn').addEventListener('click', async () => {
-            if (!currentUser) {
-                await supabase.auth.signInWithOAuth({ 
-                    provider: 'discord', 
-                    options: { redirectTo: window.location.href } 
-                });
-            } else {
-                renderProfile();
-            }
-        });
-    }
-
-    async function handleSession(user) {
-        currentUser = user;
-        document.getElementById('ligaLoginBtn').innerText = "Mein Profil";
-        // Wenn Token in URL, direkt Profil laden
-        if (window.location.hash.includes("access_token")) {
-            renderProfile();
-            window.history.replaceState(null, null, window.location.pathname);
-        }
-    }
-
-    function renderProfile() {
-      document.getElementById('tableArea').innerHTML = `
-        <div style="background:rgba(4,25,36,.96); padding:20px; border-radius:18px;">
-          <h2>Dein Profil</h2>
-          <button onclick="supabase.auth.signOut(); location.reload();" class="hero-action-btn">Logout</button>
-        </div>
-      `;
-    }
-
-    // 3. START
-    initAuth();
-  </script>
-</body>
-</html>
 </body>
 </html>
