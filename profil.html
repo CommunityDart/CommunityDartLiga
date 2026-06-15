@@ -18,7 +18,7 @@
   </div>
 
   <script>
-    const supabase = supabase.createClient("https://ppxwnqbovrnvzkcpyrcj.supabase.co", "DEIN_ANON_KEY");
+    const supabase = supabase.createClient("https://ppxwnqbovrnvzkcpyrcj.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q");
 
     supabase.auth.getSession().then(({data}) => {
       if (!data.session) window.location.href = "index.html";
