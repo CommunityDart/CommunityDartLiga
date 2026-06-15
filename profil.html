@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CDL - Mein Profil</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#03131b;
+      --panel:#041924;
+      --line:rgba(120,170,195,.12);
+      --text:#f5fbff;
+      --muted:#90a9b7;
+      --green:#3ddc97;
+      --red:#e74c3c;
+      --accent:#20b7ff;
+    }
+    body{
+      font-family:Arial,sans-serif;
+      background: linear-gradient(180deg, var(--bg) 0%, #021017 100%);
+      color:var(--text);
+      min-height:100vh;
+      margin:0; padding:20px;
+    }
+    .wrap{ width:min(800px, 100%); margin:0 auto; }
+    .table-shell { background:var(--panel); border-radius:18px; padding:24px; border:1px solid var(--line); box-shadow:0 18px 50px rgba(0,0,0,.35); }
+    .profile-header-ui { display:flex; align-items:center; gap:16px; margin-bottom:24px; background:rgba(255,255,255,0.02); padding:16px; border-radius:14px; border:1px solid var(--line); }
+    .profile-header-ui img { border-radius:50%; border:2px solid var(--accent); width:64px; height:64px; }
+    .form-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:18px; }
+    @media (max-width:760px) { .form-grid { grid-template-columns:1fr; } }
+    .form-group { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+    .form-group label { font-size:13px; font-weight:700; color:var(--muted); }
+    .form-group input { background:#03131b; border:1px solid rgba(75,135,165,.28); border-radius:8px; min-height:42px; padding:0 12px; color:#fff; font-size:14px; outline:none; }
+    .form-group input:focus { border-color:var(--accent); }
+    .button, .hero-action-btn{ border:1px solid rgba(75,135,165,.28); background:rgba(4,25,36,.96); color:var(--text); border-radius:12px; min-height:46px; padding:0 24px; font-size:14px; cursor:pointer; font-weight:800; transition:.16s ease; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+    .button:hover, .hero-action-btn:hover{ border-color:var(--accent); background:#082738; }
+    .form-actions { margin-top:24px; display:flex; gap:12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div style="margin-bottom:20px;">
+      <a href="index.html" class="hero-action-btn">← Zurück zur Startseite</a>
+    </div>
+
+    <div id="loadingArea" class="table-shell" style="text-align:center;">
+      <h2>Profil-Sitzung wird geladen...</h2>
+      <p>Bitte einen Moment Geduld.</p>
+    </div>
+
+    <div id="profileArea" class="table-shell" style="display:none;">
+      <div class="section-head">
+        <h2>Spielerprofil verwalten</h2>
+      </div>
+      <div class="profile-container">
+        <div class="profile-header-ui">
+          <img id="userAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar">
+          <div>
+            <h3 id="userTitle" style="margin:0">-</h3>
+            <p id="userIdDisplay" style="margin:4px 0 0; color:var(--muted); font-size:12px;">Discord ID: -</p>
+          </div>
+        </div>
+
+        <form id="profileForm" onsubmit="saveProfile(event)">
+          <div class="form-grid">
+            <div class="form-group"><label>Echter Name</label><input type="text" id="real_name"></div>
+            <div class="form-group"><label>Alter</label><input type="number" id="age"></div>
+            <div class="form-group"><label>Postleitzahl</label><input type="text" id="zip_code" maxlength="5"></div>
+            <div class="form-group"><label>Scolia Name</label><input type="text" id="scolia_name"></div>
+            <div class="form-group"><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
+            <div class="form-group"><label>Autodarts AVG</label><input type="number" step="0.01" id="autodarts_avg"></div>
+            <div class="form-group"><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
+            <div class="form-group"><label>DartCounter AVG</label><input type="number" step="0.01" id="dartcounter_avg"></div>
+          </div>
+          <div id="formError" style="color:var(--red); font-weight:800; margin-top:14px; display:none;"></div>
+          <div id="formSuccess" style="color:var(--green); font-weight:800; margin-top:14px; display:none;">Profil erfolgreich gespeichert!</div>
+          <div class="form-actions">
+            <button type="submit" class="button" style="background:var(--green); color:#000;">Speichern</button>
+            <button type="button" class="button" style="background:var(--red);" onclick="handleLogout()">Ausloggen</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let currentProfile = null;
+
+    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+
+    async function checkAuth() {
+      // Höre auf Session-Änderungen (wichtig direkt nach dem Redirect)
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        if (session) {
+          currentUser = session.user;
+          await loadProfile(session.user);
+        } else {
+          window.location.href = "index.html";
+        }
+      });
+
+      // Falls die Session schon aktiv im Speicher liegt
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        await loadProfile(session.user);
+      } else {
+        // Falls nach 2 Sekunden kein Token/Session geladen wurde -> zurück zur Startseite
+        setTimeout(() => {
+          if (!currentUser) window.location.href = "index.html";
+        }, 2000);
+      }
+    }
+
+    async function loadProfile(user) {
+      try {
+        let { data, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+        
+        if (error && error.code === 'PGRST116') {
+          // Neues Profil in Datenbank anlegen
+          const newProfile = {
+            id: user.id,
+            discord_id: user.user_metadata.provider_id || user.id,
+            username: user.user_metadata.full_name || user.user_metadata.name || "Spieler",
+            avatar_url: user.user_metadata.avatar_url,
+            role: 'user'
+          };
+          await supabaseClient.from('profiles').insert(newProfile);
+          currentProfile = newProfile;
+        } else if (data) {
+          currentProfile = data;
+        }
+
+        // UI befüllen
+        document.getElementById("userTitle").innerText = currentProfile.username;
+        document.getElementById("userIdDisplay").innerText = "Discord ID: " + currentProfile.discord_id;
+        if (currentProfile.avatar_url) document.getElementById("userAvatar").src = currentProfile.avatar_url;
+
+        document.getElementById("real_name").value = currentProfile.real_name || "";
+        document.getElementById("age").value = currentProfile.age || "";
+        document.getElementById("zip_code").value = currentProfile.zip_code || "";
+        document.getElementById("scolia_name").value = currentProfile.scolia_name || "";
+        document.getElementById("autodarts_name").value = currentProfile.autodarts_name || "";
+        document.getElementById("autodarts_avg").value = currentProfile.autodarts_avg || "";
+        document.getElementById("dartcounter_name").value = currentProfile.dartcounter_name || "";
+        document.getElementById("dartcounter_avg").value = currentProfile.dartcounter_avg || "";
+
+        // Bereiche umschalten
+        document.getElementById("loadingArea").style.display = "none";
+        document.getElementById("profileArea").style.display = "block";
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      const errEl = document.getElementById("formError");
+      const succEl = document.getElementById("formSuccess");
+      errEl.style.display = "none"; succEl.style.display = "none";
+
+      const updates = {
+        id: currentUser.id,
+        real_name: document.getElementById("real_name").value.trim() || null,
+        age: parseInt(document.getElementById("age").value) || null,
+        zip_code: document.getElementById("zip_code").value.trim() || null,
+        scolia_name: document.getElementById("scolia_name").value.trim() || null,
+        autodarts_name: document.getElementById("autodarts_name").value.trim() || null,
+        autodarts_avg: parseFloat(document.getElementById("autodarts_avg").value) || null,
+        dartcounter_name: document.getElementById("dartcounter_name").value.trim() || null,
+        dartcounter_avg: parseFloat(document.getElementById("dartcounter_avg").value) || null,
+        updated_at: new Date()
+      };
+
+      const { error } = await supabaseClient.from('profiles').upsert(updates);
+      if (error) {
+        errEl.innerText = "Fehler beim Speichern: " + error.message; errEl.style.display = "block";
+      } else {
+        succEl.style.display = "block";
+      }
+    }
+
+    async function handleLogout() {
+      await supabaseClient.auth.signOut();
+      window.location.href = "index.html";
+    }
+
+    checkAuth();
+  </script>
+</body>
+</html>
