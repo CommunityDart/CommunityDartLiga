@@ -66,6 +66,7 @@
       </div>
     </div>
     
+    <!-- SAISON-ABFRAGE BOX (Multi-Plattform) -->
     <div id="seasonRegistrationBox" class="registration-box">
       <h3>🎯 Anmeldung nächste Saison</h3>
       <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px; text-align: center; color: #90a9b7;">Lade Status...</p>
@@ -76,11 +77,12 @@
             <label><input type="checkbox" id="want_dc"> DartCounter Liga spielen</label>
             <label><input type="checkbox" id="want_sc"> Scolia Liga spielen</label>
           </div>
-          <button type="button" id="btnSaveRegistration" style="background: #20b7ff; color: #fff; width: 100%;">Anmeldung Speichern</button>
+          <button type="button" id="btnSaveRegistration" style="background: #20b7ff; color: #fff; width: 100%;">Anmeldung Speichern / Ändern</button>
       </div>
       <div id="assignmentArea"></div>
     </div>
 
+    <!-- Das eigentliche Profil-Formular -->
     <form id="profilForm" style="display:none;">
       <div class="input-group">
         <div style="flex: 2;"><label>Echter Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
@@ -129,6 +131,7 @@
               const meta = session.user.user_metadata || {};
               document.getElementById("statusText").innerText = meta.full_name || meta.name || "Spieler";
               if (meta.avatar_url || meta.picture) document.getElementById("userAvatar").src = meta.avatar_url || meta.picture;
+              
               document.getElementById("profilForm").style.display = "block";
               
               try {
@@ -167,7 +170,6 @@
                       if (!isRegistrationOpen) {
                           regText.innerHTML = "🔒 <strong>Die Anmeldung für die neue Saison ist aktuell geschlossen.</strong>";
                           
-                          // Wenn zugeteilt, zeige die aktuellen Ligen
                           if(data.status_neue_saison === 'assigned') {
                               let assignHtml = "";
                               if (data.assigned_ad_league) assignHtml += `<div>🎯 Autodarts: <strong>${data.assigned_ad_league}</strong></div>`;
@@ -176,7 +178,6 @@
                               assignArea.innerHTML = `<div class="league-assignment-text">🏆 Deine aktuellen Ligen:<br>${assignHtml}</div>`;
                           }
                       } else {
-                          // Anmeldung ist offen
                           if (data.status_neue_saison === 'assigned') {
                               regText.innerHTML = "✅ Du wurdest bereits von einem Admin eingeteilt. Viel Erfolg!";
                               let assignHtml = "";
@@ -192,17 +193,39 @@
                               regForm.style.display = "block";
                           }
 
+                          // SICHERHEITS-CHECK VOR DEM SPEICHERN DER ANMELDUNG
                           document.getElementById("btnSaveRegistration").onclick = async () => {
+                              const wantAd = document.getElementById("want_ad").checked;
+                              const wantDc = document.getElementById("want_dc").checked;
+                              const wantSc = document.getElementById("want_sc").checked;
+
+                              const adName = document.getElementById("autodarts_name").value.trim();
+                              const adAvg = document.getElementById("autodarts_avg").value.trim().replace(',', '.');
+                              const dcName = document.getElementById("dartcounter_name").value.trim();
+                              const dcAvg = document.getElementById("dartcounter_avg").value.trim().replace(',', '.');
+                              const scName = document.getElementById("scolia_name").value.trim();
+                              const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
+
+                              // Validation: Felder müssen ausgefüllt sein
+                              if (wantAd && (!adName || !adAvg)) return alert("❌ Bitte trage unten erst deinen Autodarts Namen und deinen AVG ein!");
+                              if (wantDc && (!dcName || !dcAvg)) return alert("❌ Bitte trage unten erst deinen DartCounter Namen und deinen AVG ein!");
+                              if (wantSc && (!scName || !scAvg)) return alert("❌ Bitte trage unten erst deinen Scolia Namen und deinen AVG ein!");
+
                               const btn = document.getElementById("btnSaveRegistration");
                               btn.innerText = "Speichert...";
-                              const wantsAny = document.getElementById("want_ad").checked || document.getElementById("want_dc").checked || document.getElementById("want_sc").checked;
+                              btn.disabled = true;
+
+                              const wantsAny = wantAd || wantDc || wantSc;
                               
+                              // Speichert die Anmeldung UND parallel auch sofort das Profil, falls der User etwas ergänzt hat
                               await supabaseClient.from('profiles').update({
-                                  want_autodarts: document.getElementById("want_ad").checked,
-                                  want_dartcounter: document.getElementById("want_dc").checked,
-                                  want_scolia: document.getElementById("want_sc").checked,
-                                  status_neue_saison: wantsAny ? 'waiting' : 'none'
+                                  want_autodarts: wantAd, want_dartcounter: wantDc, want_scolia: wantSc,
+                                  status_neue_saison: wantsAny ? 'waiting' : 'none',
+                                  autodarts_name: adName || null, autodarts_avg: adAvg || null,
+                                  dartcounter_name: dcName || null, dartcounter_avg: dcAvg || null,
+                                  scolia_name: scName || null, scolia_avg: scAvg || null
                               }).eq('id', currentUser.id);
+                              
                               window.location.reload();
                           };
                       }
