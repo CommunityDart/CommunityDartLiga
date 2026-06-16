@@ -7,10 +7,11 @@
   <style>
     body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; }
     .shell { background: #041924; border: 1px solid rgba(32,183,255,0.2); padding: 30px; border-radius: 15px; max-width: 600px; margin: 40px auto; }
-    input { width: 100%; padding: 10px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 5px; }
-    button { background: #3ddc97; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; }
+    input { width: 100%; padding: 10px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 5px; box-sizing: border-box; }
+    button { background: #3ddc97; color: #000; border: none; padding: 12px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; }
+    button:hover { opacity: 0.8; }
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; margin-bottom: 20px; }
-    .logout-btn { background: #e74c3c; margin-left: 10px; color: #fff; }
+    .logout-btn { background: #e74c3c; color: white; margin-left: 10px; }
   </style>
 </head>
 <body>
@@ -42,40 +43,44 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
 
-    if (window.location.hash.includes("access_token")) {
-        document.getElementById("statusText").innerText = "Login wird verarbeitet, bitte einen Moment warten...";
-    } else {
-        supabaseClient.auth.getSession().then(({ data: { session } }) => {
-            if (!session) {
-                window.location.href = "index.html";
-            }
-        });
+    async function initProfile() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      if (!session && !window.location.hash.includes("access_token") && !window.location.search.includes("code")) {
+         window.location.href = "index.html";
+         return;
+      }
+
+      supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
+          if (currentSession) {
+              currentUser = currentSession.user;
+              document.getElementById("statusText").innerText = "Willkommen, " + (currentSession.user.user_metadata.full_name || "Spieler");
+              document.getElementById("profilForm").style.display = "block";
+              
+              try {
+                  const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                  if (data) {
+                      document.getElementById("real_name").value = data.real_name || "";
+                      document.getElementById("autodarts_name").value = data.autodarts_name || "";
+                      document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
+                  }
+              } catch (err) {
+                  console.log("Fehler beim Profil-Laden:", err);
+              }
+          } else if (event === 'SIGNED_OUT') {
+              window.location.href = "index.html";
+          }
+      });
     }
 
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        if (session) {
-            currentUser = session.user;
-            document.getElementById("statusText").innerText = "Willkommen, " + (session.user.user_metadata.full_name || "Spieler");
-            document.getElementById("profilForm").style.display = "block";
-            
-            try {
-                const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                if (data) {
-                    document.getElementById("real_name").value = data.real_name || "";
-                    document.getElementById("autodarts_name").value = data.autodarts_name || "";
-                    document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
-                }
-            } catch (err) {
-                console.log("Fehler beim Profil-Laden:", err);
-            }
-        }
-    });
-
-    // Profil Speichern Logik (MIT EINGEBAUTEM FEHLER-CHECK)
     document.getElementById("profilForm").addEventListener("submit", async function(e) {
-        e.preventDefault(); // Verhindert das nervige Neuladen der Seite
+        e.preventDefault(); 
         const msgBox = document.getElementById("msgBox");
+        const saveBtn = document.getElementById("saveBtn");
         
+        saveBtn.innerText = "Speichert...";
+        saveBtn.disabled = true;
+
         const updates = {
             id: currentUser.id,
             real_name: document.getElementById("real_name").value,
@@ -84,18 +89,18 @@
             updated_at: new Date()
         };
         
-        // Versuchen, das Profil zu speichern
         const { error } = await supabaseClient.from('profiles').upsert(updates);
         
+        saveBtn.innerText = "Profil Speichern";
+        saveBtn.disabled = false;
+
         if (error) {
-            // FEHLER! Das wird rot angezeigt (meistens wegen RLS / Tabellen-Berechtigungen)
             msgBox.style.display = "block";
             msgBox.style.background = "rgba(231, 76, 60, 0.2)";
             msgBox.style.color = "#e74c3c";
             msgBox.style.border = "1px solid #e74c3c";
-            msgBox.innerText = "Fehler beim Speichern! Grund: " + error.message;
+            msgBox.innerText = "Fehler beim Speichern! Bitte Datenbank (Profiles Tabelle & RLS) in Supabase prüfen: " + error.message;
         } else {
-            // ERFOLG! Das wird grün angezeigt
             msgBox.style.display = "block";
             msgBox.style.background = "rgba(61, 220, 151, 0.2)";
             msgBox.style.color = "#3ddc97";
@@ -105,12 +110,17 @@
         }
     });
 
-    // Ausloggen Logik (Der Button funktioniert jetzt zu 100%)
-    document.getElementById("logoutBtn").addEventListener("click", async function() {
+    document.getElementById("logoutBtn").addEventListener("click", async function(e) {
+        e.preventDefault();
+        document.getElementById("statusText").innerText = "Wird ausgeloggt...";
+        document.getElementById("profilForm").style.display = "none";
         await supabaseClient.auth.signOut();
-        window.location.href = "index.html";
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 500); 
     });
 
+    initProfile();
   </script>
 </body>
 </html>
