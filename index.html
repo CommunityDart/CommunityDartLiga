@@ -169,7 +169,7 @@
     .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
     .modal-profile-name { font-size: 20px; font-weight: 900; margin: 0; }
     
-    /* NEU: Profilname als edler Hover-Link für Discord */
+    /* Profilname als edler Hover-Link für Discord */
     .modal-profile-name a { color: #fff; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.2); transition: 0.2s; }
     .modal-profile-name a:hover { color: var(--accent); text-decoration-color: var(--accent); }
     
@@ -271,7 +271,6 @@
     </div>
   </div>
 
-  <!-- PLAYER PROFILE MODAL -->
   <div id="playerProfileModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="playerProfileTitle">
       <div class="modal-head">
@@ -284,7 +283,6 @@
     </div>
   </div>
 
-  <!-- EXISTING MODALS -->
   <div id="impressumModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
       <div class="modal-head">
@@ -372,9 +370,7 @@
       });
     };
 
-    // UPGRADE: Der Profilname verlinkt nun direkt in die Discord-App / Website!
-    // FIX: Jetzt mit den richtigen Backticks, damit das Profil wieder sauber rendert!
-   window.openPlayerProfile = async function(playerName) {
+    window.openPlayerProfile = async function(playerName) {
         const modal = document.getElementById("playerProfileModal");
         const content = document.getElementById("playerProfileContent");
         document.getElementById("playerProfileTitle").innerText = "Spielerprofil";
@@ -396,7 +392,6 @@
 
             const avatarSrc = data.avatar_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>";
 
-            // Hier bauen wir das HTML sauber zusammen, ohne den Code zu zerstören
             let profileHtml = `
                 <div class="modal-profile-header">
                     <img class="modal-avatar" src="${htmlEscape(avatarSrc)}" alt="Avatar">
@@ -412,13 +407,17 @@
             profileHtml += `
                     </div>
                 </div>
-                ${data.dart_setup ? `
+            `;
+
+            if (data.dart_setup) {
+                profileHtml += `
                 <div class="content-block">
                     <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Mein Dartsetup</h4>
                     <p style="margin:0; font-size:14px; color:#edf7fb;">${htmlEscape(data.dart_setup)}</p>
-                </div>
-                ` : ""}
+                </div>`;
+            }
 
+            profileHtml += `
                 <div class="content-block">
                     <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Plattformen & AVG</h4>
                     <p style="margin:4px 0;"><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em></p>
@@ -436,7 +435,7 @@
             content.innerHTML = "<div class='empty'>Fehler beim Laden des Profils.</div>";
         }
     };
-    };
+
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 
