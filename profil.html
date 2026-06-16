@@ -2,13 +2,16 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <!-- WICHTIG: Dieser Tag sorgt dafür, dass Handys die Seite nicht winzig klein zoomen! -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mein Profil - CDL</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
     .shell { background: #041924; border: 1px solid rgba(32,183,255,0.2); padding: 30px; border-radius: 15px; max-width: 600px; margin: 20px auto; }
+    
+    .top-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .admin-btn { border-color: #e74c3c; color: #e74c3c; }
     
     .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
     .avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #20b7ff; object-fit: cover; background: #021017; flex-shrink: 0; }
@@ -20,7 +23,6 @@
     
     button { background: #3ddc97; color: #000; border: none; padding: 14px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; font-size: 15px; }
     button:hover { opacity: 0.8; }
-    .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; margin-bottom: 20px; }
     .logout-btn { background: #e74c3c; color: white; margin-left: 10px; }
     
     .input-group { display: flex; gap: 15px; }
@@ -29,28 +31,28 @@
     
     .hint-text { font-size: 12px; color: #90a9b7; margin-top: 15px; font-style: italic; text-align: center; }
 
-    /* ==========================================
-       MOBILE OPTIMIERUNG FÜR DAS PROFIL
-       ========================================== */
+    .registration-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(120,170,195,0.2); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: center; display: none; }
+    .registration-box h3 { margin-top: 0; color: var(--accent); font-size: 16px; margin-bottom: 10px; }
+
     @media (max-width: 600px) {
       body { padding: 10px; }
       .shell { padding: 20px; margin: 10px auto; border-radius: 12px; }
-      
-      /* Felder rutschen auf dem Handy untereinander statt nebeneinander */
       .input-group { flex-direction: column; gap: 0; }
-      
-      /* Buttons werden für den Daumen schön groß gemacht */
       button { width: 100%; display: block; margin-bottom: 10px; }
       .logout-btn { margin-left: 0; margin-top: 5px; }
-      
       .profile-header { flex-direction: column; text-align: center; gap: 10px; }
       h2 { font-size: 22px; }
+      .top-buttons { flex-direction: column; }
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
+    
+    <div class="top-buttons">
+        <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
+        <button id="adminDashboardBtn" class="back-btn admin-btn" style="display:none;" onclick="window.location.href='admin.html'">⚙️ Admin Dashboard</button>
+    </div>
     
     <div class="profile-header">
       <img id="userAvatar" class="avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>" alt="Avatar">
@@ -59,6 +61,13 @@
       </div>
     </div>
     
+    <!-- ANMELDE-BOX FÜR DIE LIGA -->
+    <div id="seasonRegistrationBox" class="registration-box">
+      <h3>Saison Anmeldung</h3>
+      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px;">Du bist aktuell nicht für die kommende Saison angemeldet.</p>
+      <button type="button" id="registerSeasonBtn" style="background: #20b7ff; color: #fff; width: auto; display: inline-block;">Für Liga anmelden</button>
+    </div>
+
     <form id="profilForm" style="display:none;">
       
       <div class="input-group">
@@ -143,7 +152,35 @@
                       document.getElementById("scolia_name").value = data.scolia_name || "";
                       document.getElementById("scolia_avg").value = data.scolia_avg || "";
                       
-                      if (data.is_admin === true) document.getElementById("adminBadge").style.display = "inline-block";
+                      // Zeige Admin Button und Badge
+                      if (data.is_admin === true) {
+                          document.getElementById("adminBadge").style.display = "inline-block";
+                          document.getElementById("adminDashboardBtn").style.display = "inline-block";
+                      }
+
+                      // LOGIK FÜR LIGA ANMELDUNG
+                      const regBox = document.getElementById("seasonRegistrationBox");
+                      const regBtn = document.getElementById("registerSeasonBtn");
+                      const regText = document.getElementById("registrationStatusText");
+                      
+                      regBox.style.display = "block";
+
+                      if (data.anmelde_status === 'waiting') {
+                          regText.innerText = "⏳ Du stehst auf der Warteliste für die Einteilung in die nächste Saison.";
+                          regBtn.style.display = "none";
+                      } else if (data.anmelde_status === 'assigned') {
+                          regText.innerText = "✅ Du wurdest erfolgreich für die kommende Saison in eine Liga eingeteilt!";
+                          regText.style.color = "#3ddc97";
+                          regBtn.style.display = "none";
+                      } else {
+                          regBtn.onclick = async () => {
+                              regBtn.innerText = "Wird angemeldet...";
+                              regBtn.disabled = true;
+                              await supabaseClient.from('profiles').update({ anmelde_status: 'waiting' }).eq('id', currentUser.id);
+                              window.location.reload();
+                          };
+                      }
+
                   }
               } catch (err) {}
           } else if (event === 'SIGNED_OUT') {
