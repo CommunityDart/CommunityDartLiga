@@ -479,25 +479,37 @@
     async function loadAll() {
         tableAreaEl.innerHTML = `<div class="empty">Berechne Live-Tabellen...</div>`;
         
-        // 1. Auth Status prüfen
         const { data: { session } } = await supabaseClient.auth.getSession();
         state.currentUser = session ? session.user : null;
         loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
 
         try {
-            // 2. Lade HTML Dateien für Neuigkeiten, Regelwerk und Links
-            try { const r = await fetch('neuigkeiten.html'); state.newsHtml = r.ok ? await r.text() : "<div class='empty'>Bitte erstelle die neuigkeiten.html</div>"; } catch(e){}
+            // News live aus der Datenbank laden
+            const { data: newsData } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
+            let nHtml = "";
+            if(newsData && newsData.length > 0) {
+                newsData.forEach(n => {
+                    const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+                    nHtml += `<div class="content-block">
+                                <h4 style="margin-bottom:8px; color:#fff;">${htmlEscape(n.title)} <span style="font-size:11px; color:#7c95a3; float:right; font-weight:normal;">${date} Uhr</span></h4>
+                                <p style="white-space: pre-wrap; margin:0; color:#d7e8ef; line-height:1.5;">${htmlEscape(n.content)}</p>
+                              </div>`;
+                });
+            } else {
+                nHtml = "<div class='empty'>Aktuell keine Neuigkeiten vorhanden.</div>";
+            }
+            state.newsHtml = `<div class="table-shell"><div class="section-head"><div><div class="section-title">Neuigkeiten & Ankündigungen</div><div class="section-sub">Aktuelle Infos unserer Community.</div></div></div><div style="padding:0 18px 18px">${nHtml}</div></div>`;
+
+            // Regelwerk & Links weiterhin aus HTML laden (optional kannst du das später auch ändern)
             try { const r = await fetch('regelwerk.html'); if(r.ok) document.getElementById('regelwerkContent').innerHTML = await r.text(); } catch(e){}
             try { const r = await fetch('links.html'); if(r.ok) document.getElementById('linksContent').innerHTML = await r.text(); } catch(e){}
 
-            // 3. Datenbank-Abfragen
             const { data: sys } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
             state.currentSeason = sys ? sys.current_season : 'Saison 1';
 
             const { data: profiles } = await supabaseClient.from('profiles').select('*');
             const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', state.currentSeason);
 
-            // 4. Tabellen & Spieltage berechnen
             ALL_LEAGUES.forEach(league => {
                 const lMatches = matches ? matches.filter(m => m.league_name === league) : [];
                 const lPlayers = profiles ? profiles.filter(p => p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league) : [];
