@@ -96,8 +96,9 @@
     tbody tr:hover td{background:#0a2b3b}
     body[data-mode="DartCounter"] tbody tr:hover td{background:#5a2b08}
 
+    /* HIER WAR DER FEHLER: content ist jetzt richtig leer! */
     .rank-col{ width:84px; font-weight:900; position:relative; }
-    .rank-col.first::before, .rank-col.last::before{ content:"absolute"; position:absolute; left:0; top:0; bottom:0; width:10px; }
+    .rank-col.first::before, .rank-col.last::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:10px; }
     .rank-col.first::before{ background:var(--green); }
     .rank-col.last::before{ background:var(--red); }
 
@@ -171,7 +172,6 @@
     .modal-discord-sub { font-size: 13px; color: #8ec9ee; font-weight: bold; cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
     .modal-discord-sub:hover { color: #fff; }
     
-    /* Style für die Profil-Links */
     .platform-link-btn { display: inline-block; background: rgba(32,183,255,0.15); border: 1px solid rgba(32,183,255,0.3); color: #20b7ff; padding: 2px 8px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 8px; transition: 0.2s; }
     .platform-link-btn:hover { background: #20b7ff; color: #000; }
 
@@ -275,7 +275,6 @@
     </div>
   </div>
 
-  <!-- PLAYER PROFILE MODAL -->
   <div id="playerProfileModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="playerProfileTitle">
       <div class="modal-head">
@@ -288,7 +287,6 @@
     </div>
   </div>
 
-  <!-- EXISTING MODALS -->
   <div id="impressumModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
       <div class="modal-head">
@@ -422,7 +420,6 @@
                 </div>`;
             }
 
-            // HIER WERDEN JETZT DIE LINKS ANGEZEIGT (Falles vorhanden)
             const adLink = data.autodarts_url ? `<a href="${htmlEscape(data.autodarts_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
             const dcLink = data.dartcounter_url ? `<a href="${htmlEscape(data.dartcounter_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
             const scLink = data.scolia_url ? `<a href="${htmlEscape(data.scolia_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
