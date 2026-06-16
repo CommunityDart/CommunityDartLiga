@@ -12,7 +12,14 @@
     h1 { color: #e74c3c; margin-top: 0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;}
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-weight:bold; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 800px; }
+    .control-panel { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;}
+    .status-badge { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+    .status-closed { background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid #e74c3c; }
+    .status-open { background: rgba(61,220,151,0.2); color: #3ddc97; border: 1px solid #3ddc97; }
+    .toggle-btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .toggle-btn:hover { opacity: 0.8; }
+
+    table { width: 100%; border-collapse: collapse; min-width: 800px; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); vertical-align: middle; }
     th { background: rgba(0,0,0,0.2); color: #90a9b7; font-size: 13px; text-transform: uppercase; }
     
@@ -31,7 +38,17 @@
 </head>
 <body>
   <div class="shell">
-    <h1>⚙️ Liga-Zuteilung (Neue Saison) <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
+    <h1>⚙️ Liga-Zuteilung <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
+    
+    <!-- NEU: Das Kontrollzentrum für den Saison-Start -->
+    <div class="control-panel">
+        <div>
+            <h3 style="margin:0 0 5px 0;">Saison-Anmeldung</h3>
+            <span id="globalStatusBadge" class="status-badge status-closed">Lade Status...</span>
+        </div>
+        <button id="toggleRegistrationBtn" class="toggle-btn" style="display:none;"></button>
+    </div>
+
     <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Hier siehst du alle Spieler, die für die nächste Saison zugesagt haben. Wähle die passende Liga aus und weise sie direkt zu.</p>
     
     <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
@@ -62,6 +79,8 @@
       "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"
     ];
 
+    let isRegistrationOpen = false;
+
     async function initAdmin() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return window.location.href = "index.html";
@@ -72,13 +91,53 @@
           return window.location.href = "index.html";
       }
 
+      await loadGlobalSettings();
       loadWaitingList();
+    }
+
+    async function loadGlobalSettings() {
+        const { data, error } = await supabase.from('system_settings').select('registration_open').eq('id', 1).single();
+        if (data) isRegistrationOpen = data.registration_open;
+
+        const badge = document.getElementById("globalStatusBadge");
+        const btn = document.getElementById("toggleRegistrationBtn");
+        
+        btn.style.display = "block";
+
+        if (isRegistrationOpen) {
+            badge.className = "status-badge status-open";
+            badge.innerText = "GEÖFFNET 🟢";
+            btn.style.background = "#e74c3c";
+            btn.style.color = "#fff";
+            btn.innerText = "Anmeldung SCHLIESSEN";
+            btn.onclick = () => toggleRegistration(false);
+        } else {
+            badge.className = "status-badge status-closed";
+            badge.innerText = "GESCHLOSSEN 🔴";
+            btn.style.background = "#3ddc97";
+            btn.style.color = "#000";
+            btn.innerText = "Anmeldung ÖFFNEN";
+            btn.onclick = () => toggleRegistration(true);
+        }
+    }
+
+    async function toggleRegistration(newState) {
+        if(!confirm(`Willst du die Anmeldung für alle Spieler wirklich ${newState ? 'ÖFFNEN' : 'SCHLIESSEN'}?`)) return;
+        await supabase.from('system_settings').update({ registration_open: newState }).eq('id', 1);
+        
+        // Wenn man die Anmeldung öffnet, löschen wir sicherheitshalber bei allen alten Spielern die alte Zuteilung, 
+        // damit sie frisch neu "Ja" oder "Nein" drücken müssen für die NEUE Saison.
+        if (newState === true) {
+             await supabase.from('profiles').update({ next_season_active: null, assigned_league: null }).neq('id', '00000000-0000-0000-0000-000000000000');
+        }
+
+        loadGlobalSettings();
+        loadWaitingList();
     }
 
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         
-        // Lädt alle Spieler, die "Ja" gedrückt haben, aber noch in keiner Liga eingeteilt sind
         const { data: players, error } = await supabase
             .from('profiles')
             .select('*')
