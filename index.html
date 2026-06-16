@@ -373,6 +373,7 @@
     };
 
     // UPGRADE: Der Profilname verlinkt nun direkt in die Discord-App / Website!
+    // FIX: Jetzt mit den richtigen Backticks, damit das Profil wieder sauber rendert!
     window.openPlayerProfile = async function(playerName) {
         const modal = document.getElementById("playerProfileModal");
         const content = document.getElementById("playerProfileContent");
@@ -400,38 +401,37 @@
                     <img class="modal-avatar" src="${htmlEscape(avatarSrc)}" alt="Avatar">
                     <div>
                         <h2 class="modal-profile-name">
-                            \${data.discord_id 
-                              ? \`<a href="https://discord.com/users/\${htmlEscape(data.discord_id)}" target="_blank" rel="noopener noreferrer" title="Direkt in Discord anschreiben">\${htmlEscape(playerName)} 💬</a>\` 
+                            ${data.discord_id 
+                              ? `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" rel="noopener noreferrer" title="Direkt in Discord anschreiben">${htmlEscape(playerName)} 💬</a>` 
                               : htmlEscape(playerName)}
                         </h2>
-                        \${data.discord_name ? \`<span class="modal-discord-sub" onclick="copyDiscord('\${htmlEscape(data.discord_name)}')">Name kopieren: \${htmlEscape(data.discord_name)} 📋</span>\` : ""}
+                        ${data.discord_name ? `<span class="modal-discord-sub" onclick="copyDiscord('${htmlEscape(data.discord_name)}')">Name kopieren: ${htmlEscape(data.discord_name)} 📋</span>` : ""}
                     </div>
                 </div>
                 
-                \${data.dart_setup ? \`
+                ${data.dart_setup ? `
                 <div class="content-block">
                     <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Mein Dartsetup</h4>
-                    <p style="margin:0; font-size:14px; color:#edf7fb;">\${htmlEscape(data.dart_setup)}</p>
+                    <p style="margin:0; font-size:14px; color:#edf7fb;">${htmlEscape(data.dart_setup)}</p>
                 </div>
-                \` : ""}
+                ` : ""}
 
                 <div class="content-block">
                     <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Plattformen & AVG</h4>
-                    <p style="margin:4px 0;"><strong>Autodarts:</strong> \${htmlEscape(data.autodarts_name || '-')} <em>(AVG: \${htmlEscape(data.autodarts_avg || '-')})</em></p>
-                    <p style="margin:4px 0;"><strong>DartCounter:</strong> \${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: \${htmlEscape(data.dartcounter_avg || '-')})</em></p>
-                    <p style="margin:4px 0;"><strong>Scolia:</strong> \${htmlEscape(data.scolia_name || '-')} <em>(AVG: \${htmlEscape(data.scolia_avg || '-')})</em></p>
+                    <p style="margin:4px 0;"><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em></p>
+                    <p style="margin:4px 0;"><strong>DartCounter:</strong> ${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: ${htmlEscape(data.dartcounter_avg || '-')})</em></p>
+                    <p style="margin:4px 0;"><strong>Scolia:</strong> ${htmlEscape(data.scolia_name || '-')} <em>(AVG: ${htmlEscape(data.scolia_avg || '-')})</em></p>
                 </div>
                 
                 <div class="content-block" style="margin-top:10px;">
                     <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Wohnort</h4>
-                    <p style="margin:0;">\${htmlEscape(data.plz || '')} \${htmlEscape(data.ort || '-')}</p>
+                    <p style="margin:0;">${htmlEscape(data.plz || '')} ${htmlEscape(data.ort || '-')}</p>
                 </div>
             `;
         } catch (err) {
             content.innerHTML = `<div class="empty">Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>`;
         }
     };
-
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 
