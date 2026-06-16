@@ -169,10 +169,6 @@
     .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
     .modal-profile-name { font-size: 20px; font-weight: 900; margin: 0; }
     
-    /* Profilname als edler Hover-Link für Discord */
-    .modal-profile-name a { color: #fff; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.2); transition: 0.2s; }
-    .modal-profile-name a:hover { color: var(--accent); text-decoration-color: var(--accent); }
-    
     .modal-discord-sub { font-size: 13px; color: #8ec9ee; font-weight: bold; cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
     .modal-discord-sub:hover { color: #fff; }
 
@@ -271,6 +267,7 @@
     </div>
   </div>
 
+  <!-- PLAYER PROFILE MODAL -->
   <div id="playerProfileModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="playerProfileTitle">
       <div class="modal-head">
@@ -283,6 +280,7 @@
     </div>
   </div>
 
+  <!-- EXISTING MODALS -->
   <div id="impressumModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
       <div class="modal-head">
@@ -399,7 +397,7 @@
                         <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>`;
             
             if (data.discord_id) {
-                profileHtml += `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-size:14px; text-decoration:underline; display:block; margin-top:5px;">Discord: ${htmlEscape(data.discord_name || 'Anschreiben')} 💬</a>`;
+                profileHtml += `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-size:14px; text-decoration:none; font-weight:bold; display:block; margin-top:5px; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--accent)'">Nachricht per Discord an ${htmlEscape(data.discord_name || playerName)} senden 💬</a>`;
             } else if (data.discord_name) {
                 profileHtml += `<span style="color:#90a9b7; font-size:13px; display:block; margin-top:5px;">Discord: ${htmlEscape(data.discord_name)}</span>`;
             }
