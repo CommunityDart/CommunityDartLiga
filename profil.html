@@ -113,7 +113,7 @@
                       document.getElementById("real_name").value = data.real_name || "";
                       document.getElementById("plz").value = data.plz || "";
                       document.getElementById("ort").value = data.ort || "";
-                      document.getElementById("dart_setup").value = data.dart_setup || ""; // <-- NEU: Lädt das Setup
+                      document.getElementById("dart_setup").value = data.dart_setup || "";
                       document.getElementById("autodarts_name").value = data.autodarts_name || "";
                       document.getElementById("autodarts_avg").value = data.autodarts_avg || "";
                       document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
@@ -150,7 +150,6 @@
         const scName = document.getElementById("scolia_name").value.trim();
         const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
 
-        // Pflichtfeld-Prüfung
         if (autoName !== "" && autoAvg === "") return showError("Fehler: Autodarts AVG fehlt!");
         if (dcName !== "" && dcAvg === "") return showError("Fehler: DartCounter AVG fehlt!");
         if (scName !== "" && scAvg === "") return showError("Fehler: Scolia AVG fehlt!");
@@ -160,13 +159,15 @@
 
         const meta = currentUser.user_metadata || {};
         const safeAvatarUrl = meta.avatar_url || meta.picture || "";
+        const currentDiscordName = meta.full_name || meta.name || "";
 
         const updates = {
             id: currentUser.id,
+            discord_name: currentDiscordName || null, // <-- NEU: Speichert den Discord-Namen
             real_name: document.getElementById("real_name").value.trim() || null,
             plz: document.getElementById("plz").value.trim() || null,
             ort: document.getElementById("ort").value.trim() || null,
-            dart_setup: document.getElementById("dart_setup").value.trim() || null, // <-- NEU: Speichert das Setup
+            dart_setup: document.getElementById("dart_setup").value.trim() || null,
             autodarts_name: autoName || null,
             autodarts_avg: autoAvg || null,
             dartcounter_name: dcName || null,
