@@ -1,34 +1,387 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <title>Mein Profil</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mein Profil - Community Dart Liga</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="assets/styles.css">
   <style>
-    /* Füge hier dein CSS für das Formular ein */
-    body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; }
-    .shell { background: #041924; padding: 20px; border-radius: 15px; max-width: 500px; margin: auto; }
+    .profile-hero {
+      background: linear-gradient(135deg, rgba(32, 183, 255, 0.1), rgba(88, 101, 242, 0.1));
+      border-radius: var(--radius-2xl);
+      padding: var(--spacing-xl);
+      margin-bottom: var(--spacing-xl);
+      border: 1px solid rgba(32, 183, 255, 0.2);
+    }
+
+    .profile-header {
+      display: flex;
+      gap: var(--spacing-lg);
+      align-items: flex-start;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      flex-shrink: 0;
+    }
+
+    .profile-info h2 {
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .profile-meta {
+      color: var(--muted);
+      font-size: var(--font-size-sm);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-lg);
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+    }
+
+    .rules-hint {
+      background: rgba(247, 201, 72, 0.1);
+      border-left: 4px solid var(--yellow);
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-lg);
+      color: #f3c98f;
+      font-size: var(--font-size-sm);
+    }
+
+    .zip-hint {
+      color: var(--muted);
+      font-size: var(--font-size-sm);
+      margin-top: var(--spacing-sm);
+      font-style: italic;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-xl);
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .form-actions {
+        flex-direction: column;
+      }
+
+      .form-actions .button {
+        width: 100%;
+      }
+    }
+
+    .required {
+      color: var(--red);
+    }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <h1>Profil bearbeiten</h1>
-    <div id="profileContent">Lade Profil...</div>
-    <button onclick="supabase.auth.signOut().then(() => window.location.href='index.html')">Logout</button>
+
+<div class="container">
+  <!-- Header mit Logout -->
+  <div class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">⚡ CDL</a>
+      <div class="nav">
+        <a href="index.html">Ligen</a>
+        <a href="regelwerk.html">Regelwerk</a>
+        <button class="button button--small" id="logoutBtn">Ausloggen</button>
+      </div>
+    </div>
   </div>
 
-  <script>
-    const supabase = supabase.createClient("https://ppxwnqbovrnvzkcpyrcj.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q");
+  <!-- Loading State -->
+  <div id="loadingState" class="content-wrap">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Profil wird geladen...</p>
+    </div>
+  </div>
 
-    supabase.auth.getSession().then(({data}) => {
-      if (!data.session) window.location.href = "index.html";
-      else loadProfile(data.session.user);
-    });
+  <!-- Profil Form -->
+  <div id="profileState" class="content-wrap" style="display: none;">
+    <!-- Login-Gate (falls nicht angemeldet) -->
+    <div id="authGate" class="card" style="display: none;">
+      <div class="card-body" style="text-align: center; padding: var(--spacing-xl);">
+        <h2>Anmeldung erforderlich</h2>
+        <p style="color: var(--muted);">Melde dich mit Discord an, um dein Profil zu verwalten.</p>
+        <button class="button button--primary" id="discordLoginBtn" style="margin-top: var(--spacing-lg);">
+          <svg width="20" height="20" viewBox="0 0 127.14 96.36" fill="currentColor" style="margin-right: 8px;">
+            <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2A75.57,75.57,0,0,0,95.73,78c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C35.88,65.69,30.5,59.66,30.5,52.25s5.31-13.44,11.95-13.44S54.4,44.87,54.39,52.25,49,65.69,42.45,65.69Zm42.24,0c-6.57,0-11.95-6-11.95-13.44s5.31-13.44,11.95-13.44S96.64,44.87,96.63,52.25,91.26,65.69,84.69,65.69Z"/>
+          </svg>
+          Mit Discord anmelden
+        </button>
+      </div>
+    </div>
 
-    async function loadProfile(user) {
-        // Hier deine Logik zum Profil laden...
-        document.getElementById('profileContent').innerHTML = "Profil geladen!";
+    <!-- Profil-Formular (nur wenn angemeldet) -->
+    <div id="profileForm" style="display: none;">
+      <!-- Profile Hero -->
+      <div class="profile-hero">
+        <div class="profile-header">
+          <img id="avatarImg" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" class="profile-avatar">
+          <div class="profile-info">
+            <h2 id="usernameDisplay">-</h2>
+            <div class="profile-meta" id="emailDisplay">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rules Hinweis -->
+      <div class="rules-hint">
+        ⚠️ Bitte beachte unsere <a href="regelwerk.html" style="color: inherit; text-decoration: underline;">Regelwerk & Richtlinien</a> bevor du spielst!
+      </div>
+
+      <!-- Fehler/Erfolgs-Messages -->
+      <div id="formMessage" style="display: none;"></div>
+
+      <!-- Form -->
+      <form id="profileDataForm" class="card">
+        <div class="card-body">
+          <h3>Spielerdaten</h3>
+          <p style="color: var(--muted); margin-bottom: var(--spacing-lg);">
+            Felder mit <span class="required">*</span> sind erforderlich.
+          </p>
+
+          <!-- Grunddaten -->
+          <fieldset style="border: none; padding: 0; margin: 0;">
+            <legend style="font-weight: var(--font-weight-bold); margin-bottom: var(--spacing-md);">Grunddaten</legend>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="realName">Echter Name <span class="required">*</span></label>
+                <input type="text" id="realName" name="real_name" required>
+              </div>
+
+              <div class="form-group">
+                <label for="spielerName">Spielername</label>
+                <input type="text" id="spielerName" name="spieler_name" placeholder="Optional">
+                <div class="form-hint">Wie möchtest du in der Liga genannt werden?</div>
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="zipCode">Postleitzahl <span class="required">*</span></label>
+                <input type="text" id="zipCode" name="zip_code" maxlength="5" pattern="\d{5}" required>
+                <div class="zip-hint">
+                  ℹ️ Postleitzahl wird nur für die Mitglieder-Karte erhoben.
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <hr style="border: none; border-top: 1px solid var(--line); margin: var(--spacing-xl) 0;">
+
+          <!-- Autodarts -->
+          <fieldset style="border: none; padding: 0; margin: 0;">
+            <legend style="font-weight: var(--font-weight-bold); margin-bottom: var(--spacing-md);">Autodarts (optional)</legend>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="autodartsName">Spielername</label>
+                <input type="text" id="autodartsName" name="autodarts_name" placeholder="z.B. BigDave">
+                <div class="form-hint">Wenn ausgefüllt, muss auch AVG angegeben sein.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="autodartsAvg">Average (AVG)</label>
+                <input type="number" id="autodartsAvg" name="autodarts_avg" step="0.01" placeholder="z.B. 85.50">
+              </div>
+            </div>
+          </fieldset>
+
+          <hr style="border: none; border-top: 1px solid var(--line); margin: var(--spacing-xl) 0;">
+
+          <!-- DartCounter -->
+          <fieldset style="border: none; padding: 0; margin: 0;">
+            <legend style="font-weight: var(--font-weight-bold); margin-bottom: var(--spacing-md);">DartCounter (optional)</legend>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="dartcounterName">Spielername</label>
+                <input type="text" id="dartcounterName" name="dartcounter_name" placeholder="z.B. Killer">
+                <div class="form-hint">Wenn ausgefüllt, muss auch AVG angegeben sein.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="dartcounterAvg">Average (AVG)</label>
+                <input type="number" id="dartcounterAvg" name="dartcounter_avg" step="0.01" placeholder="z.B. 72.30">
+              </div>
+            </div>
+          </fieldset>
+
+          <hr style="border: none; border-top: 1px solid var(--line); margin: var(--spacing-xl) 0;">
+
+          <!-- Scolia -->
+          <fieldset style="border: none; padding: 0; margin: 0;">
+            <legend style="font-weight: var(--font-weight-bold); margin-bottom: var(--spacing-md);">Scolia (optional)</legend>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="scholiaName">Spielername</label>
+                <input type="text" id="scholiaName" name="scolia_name" placeholder="z.B. Eagle">
+                <div class="form-hint">Wenn ausgefüllt, muss auch AVG angegeben sein.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="scholiaAvg">Average (AVG)</label>
+                <input type="number" id="scholiaAvg" name="scolia_avg" step="0.01" placeholder="z.B. 65.00">
+              </div>
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- Actions -->
+        <div style="padding: 0 var(--spacing-lg) var(--spacing-lg);">
+          <div class="form-actions">
+            <button type="submit" class="button button--success" style="flex: 1;">✓ Speichern</button>
+            <button type="button" class="button button--danger" id="logoutBtn2" style="flex: 1;">Ausloggen</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/utils.js"></script>
+<script src="assets/auth.js"></script>
+<script src="assets/db.js"></script>
+
+<script>
+  const loadingState = $('#loadingState');
+  const profileState = $('#profileState');
+  const authGate = $('#authGate');
+  const profileForm = $('#profileForm');
+  const formMessage = $('#formMessage');
+  const profileDataForm = $('#profileDataForm');
+  const discordLoginBtn = $('#discordLoginBtn');
+  const logoutBtns = $$('#logoutBtn, #logoutBtn2');
+
+  onAuthChange(async (user, profile) => {
+    loadingState.style.display = 'none';
+    profileState.style.display = 'block';
+
+    if (!user) {
+      authGate.style.display = 'block';
+      profileForm.style.display = 'none';
+      return;
     }
-  </script>
+
+    authGate.style.display = 'none';
+    profileForm.style.display = 'block';
+
+    $('#usernameDisplay').textContent = user.user_metadata?.full_name || user.user_metadata?.name || 'Spieler';
+    $('#emailDisplay').textContent = user.email || '-';
+    if (user.user_metadata?.avatar_url) {
+      $('#avatarImg').src = user.user_metadata.avatar_url;
+    }
+
+    if (!profile) {
+      const newProfile = await initializeProfileFromDiscord(user);
+      if (newProfile) {
+        authState.profile = newProfile;
+        loadProfileForm(newProfile);
+      }
+    } else {
+      loadProfileForm(profile);
+    }
+  });
+
+  function loadProfileForm(profile) {
+    if (!profile) return;
+    $('#realName').value = profile.real_name || '';
+    $('#spielerName').value = profile.spieler_name || '';
+    $('#zipCode').value = profile.zip_code || '';
+    $('#autodartsName').value = profile.autodarts_name || '';
+    $('#autodartsAvg').value = profile.autodarts_avg || '';
+    $('#dartcounterName').value = profile.dartcounter_name || '';
+    $('#dartcounterAvg').value = profile.dartcounter_avg || '';
+    $('#scholiaName').value = profile.scolia_name || '';
+    $('#scholiaAvg').value = profile.scolia_avg || '';
+  }
+
+  profileDataForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formMessage.style.display = 'none';
+
+    const formData = {
+      real_name: cleanInput($('#realName').value),
+      spieler_name: cleanInput($('#spielerName').value),
+      zip_code: validateZipCode($('#zipCode').value),
+      autodarts_name: cleanInput($('#autodartsName').value),
+      autodarts_avg: parseFloat2Decimals($('#autodartsAvg').value),
+      dartcounter_name: cleanInput($('#dartcounterName').value),
+      dartcounter_avg: parseFloat2Decimals($('#dartcounterAvg').value),
+      scolia_name: cleanInput($('#scholiaName').value),
+      scolia_avg: parseFloat2Decimals($('#scholiaAvg').value)
+    };
+
+    const validation = validateProfileData(formData);
+    if (!validation.isValid) {
+      showFormError(validation.errors);
+      return;
+    }
+
+    const result = await updateUserProfile(formData);
+    if (result.success) {
+      showFormSuccess('Profil erfolgreich gespeichert! ✓');
+    } else {
+      showFormError([result.error || 'Fehler beim Speichern']);
+    }
+  });
+
+  function showFormError(errors) {
+    formMessage.className = 'alert alert--error';
+    formMessage.innerHTML = '<strong>Fehler:</strong><br>' + errors.map(e => `• ${htmlEscape(e)}`).join('<br>');
+    formMessage.style.display = 'block';
+  }
+
+  function showFormSuccess(msg) {
+    formMessage.className = 'alert alert--success';
+    formMessage.textContent = msg;
+    formMessage.style.display = 'block';
+  }
+
+  discordLoginBtn.addEventListener('click', async () => {
+    discordLoginBtn.disabled = true;
+    const success = await signInWithDiscord();
+    if (!success) {
+      showFormError(['Discord Login fehlgeschlagen.']);
+      discordLoginBtn.disabled = false;
+    }
+  });
+
+  logoutBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (confirm('Wirklich ausloggen?')) {
+        await signOut();
+        window.location.href = 'index.html';
+      }
+    });
+  });
+
+</script>
+
 </body>
 </html>
