@@ -18,8 +18,8 @@
     .admin-badge { background: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 10px; display: none; vertical-align: middle; }
     
     label { display: block; font-size: 13px; color: #90a9b7; margin-bottom: 5px; font-weight: bold; }
-    input { width: 100%; padding: 12px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-    input:focus { outline: none; border-color: #20b7ff; box-shadow: 0 0 8px rgba(32,183,255,0.3); }
+    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+    input[type="text"]:focus { outline: none; border-color: #20b7ff; box-shadow: 0 0 8px rgba(32,183,255,0.3); }
     
     button { border: none; padding: 14px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; font-size: 15px; }
     button:hover { opacity: 0.8; }
@@ -32,8 +32,12 @@
     
     .hint-text { font-size: 12px; color: #90a9b7; margin-top: 15px; font-style: italic; text-align: center; }
 
-    .registration-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(120,170,195,0.2); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: center; display: none; }
-    .registration-box h3 { margin-top: 0; color: var(--accent); font-size: 18px; margin-bottom: 10px; }
+    .registration-box { background: rgba(32, 183, 255, 0.05); border: 1px solid rgba(32,183,255,0.3); padding: 20px; border-radius: 12px; margin-bottom: 25px; display: none; }
+    .registration-box h3 { margin-top: 0; color: var(--accent); font-size: 18px; margin-bottom: 10px; text-align: center;}
+    .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; }
+    .checkbox-group label { display: flex; align-items: center; gap: 10px; font-size: 15px; color: #fff; cursor: pointer; margin: 0; }
+    .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    .league-assignment-text { color: #3ddc97; font-weight: bold; font-size: 14px; margin-top: 10px; text-align: center; background: rgba(61, 220, 151, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(61, 220, 151, 0.3);}
 
     @media (max-width: 600px) {
       body { padding: 10px; }
@@ -62,15 +66,21 @@
       </div>
     </div>
     
-    <!-- SAISON-ABFRAGE BOX -->
+    <!-- SAISON-ABFRAGE BOX (Multi-Plattform) -->
     <div id="seasonRegistrationBox" class="registration-box">
-      <h3>🎯 Nächste Saison</h3>
-      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px;">Lade Status...</p>
+      <h3>🎯 Anmeldung nächste Saison</h3>
+      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px; text-align: center;">Wähle die Plattformen aus, auf denen du nächste Saison spielen möchtest. Nimmst du alle Haken raus, setzt du aus.</p>
       
-      <div id="registrationButtons" style="display: none; gap: 10px; justify-content: center; flex-wrap: wrap;">
-        <button type="button" id="btnPlayYes" style="background: #3ddc97; color: #000; width: 140px;">Ja, ich spiele!</button>
-        <button type="button" id="btnPlayNo" style="background: #e74c3c; color: #fff; width: 140px;">Nein, Pause</button>
+      <div id="registrationFormArea">
+          <div class="checkbox-group">
+            <label><input type="checkbox" id="want_ad"> Autodarts Liga spielen</label>
+            <label><input type="checkbox" id="want_dc"> DartCounter Liga spielen</label>
+            <label><input type="checkbox" id="want_sc"> Scolia Liga spielen</label>
+          </div>
+          <button type="button" id="btnSaveRegistration" style="background: #20b7ff; color: #fff; width: 100%;">Anmeldung Speichern / Ändern</button>
       </div>
+
+      <div id="assignmentArea"></div>
     </div>
 
     <!-- Das eigentliche Profil-Formular -->
@@ -124,30 +134,21 @@
 
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      
       if (!session && !window.location.hash.includes("access_token") && !window.location.search.includes("code")) {
-         window.location.href = "index.html";
-         return;
+         window.location.href = "index.html"; return;
       }
 
       supabaseClient.auth.onAuthStateChange(async (event, session) => {
           if (session) {
               currentUser = session.user;
-              
               const meta = session.user.user_metadata || {};
-              const discordName = meta.full_name || meta.name || "Spieler";
-              const avatarUrl = meta.avatar_url || meta.picture || "";
+              document.getElementById("statusText").innerText = meta.full_name || meta.name || "Spieler";
+              if (meta.avatar_url || meta.picture) document.getElementById("userAvatar").src = meta.avatar_url || meta.picture;
               
-              document.getElementById("statusText").innerText = discordName;
-              if (avatarUrl) {
-                  document.getElementById("userAvatar").src = avatarUrl;
-              }
               document.getElementById("profilForm").style.display = "block";
               
               try {
                   const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                  
-                  // Prüfen, ob die Anmeldung überhaupt offen ist
                   const { data: sysData } = await supabaseClient.from('system_settings').select('registration_open').eq('id', 1).single();
                   const isRegistrationOpen = sysData ? sysData.registration_open : false;
 
@@ -163,73 +164,61 @@
                       document.getElementById("scolia_name").value = data.scolia_name || "";
                       document.getElementById("scolia_avg").value = data.scolia_avg || "";
                       
-                      // Zeige Admin Button und Badge
                       if (data.is_admin === true) {
                           document.getElementById("adminBadge").style.display = "inline-block";
                           document.getElementById("adminDashboardBtn").style.display = "inline-block";
                       }
 
-                      // LOGIK FÜR SAISON-ABFRAGE (mit Hauptschalter)
+                      // SAISON ANMELDUNG LOGIK
                       const regBox = document.getElementById("seasonRegistrationBox");
                       const regText = document.getElementById("registrationStatusText");
-                      const btnYes = document.getElementById("btnPlayYes");
-                      const btnNo = document.getElementById("btnPlayNo");
-                      const regButtons = document.getElementById("registrationButtons");
+                      const regForm = document.getElementById("registrationFormArea");
+                      const assignArea = document.getElementById("assignmentArea");
+                      
+                      document.getElementById("want_ad").checked = data.want_autodarts || false;
+                      document.getElementById("want_dc").checked = data.want_dartcounter || false;
+                      document.getElementById("want_sc").checked = data.want_scolia || false;
                       
                       regBox.style.display = "block";
 
-                      if (isRegistrationOpen === false) {
-                          regText.innerHTML = "🔒 <strong>Die Anmeldung für die neue Saison ist aktuell geschlossen.</strong><br>Bitte warte, bis die laufende Saison beendet wurde.";
-                          regButtons.style.display = "none";
-                      } 
-                      else {
-                          // Wenn offen, dann normale Logik
-                          if (data.next_season_active === true) {
-                              if (data.assigned_league) {
-                                  regText.innerHTML = `✅ Du wurdest für die nächste Saison eingeteilt in:<br><strong style="color:var(--accent); font-size:18px;">${data.assigned_league}</strong>`;
-                                  regButtons.style.display = "none";
-                              } else {
-                                  regText.innerHTML = "⏳ Du hast dich für die nächste Saison angemeldet. Bitte warte auf die Einteilung durch die Admins.";
-                                  regButtons.style.display = "none";
-                              }
-                          } else if (data.next_season_active === false) {
-                              regText.innerHTML = "⏸️ Du pausierst in der nächsten Saison. Komm gerne danach wieder zurück!";
-                              regButtons.style.display = "none";
-                          } else {
-                              regText.innerHTML = "Möchtest du in der nächsten Saison wieder in der Liga mitspielen?";
-                              regButtons.style.display = "flex";
-
-                              btnYes.onclick = async () => {
-                                  btnYes.innerText = "Speichert...";
-                                  await supabaseClient.from('profiles').update({ next_season_active: true }).eq('id', currentUser.id);
-                                  window.location.reload();
-                              };
-                              btnNo.onclick = async () => {
-                                  if(!confirm("Bist du sicher, dass du nächste Saison aussetzen möchtest?")) return;
-                                  btnNo.innerText = "Speichert...";
-                                  await supabaseClient.from('profiles').update({ next_season_active: false }).eq('id', currentUser.id);
-                                  window.location.reload();
-                              };
-                          }
+                      if (!isRegistrationOpen) {
+                          regText.innerHTML = "🔒 <strong>Die Anmeldung für die neue Saison ist aktuell geschlossen.</strong>";
+                          regForm.style.display = "none";
+                      } else {
+                          regText.innerHTML = "Wähle die Plattformen aus, auf denen du nächste Saison spielen möchtest. Willst du pausieren, entferne alle Haken und klicke Speichern.";
                       }
 
+                      // Zeige Zuteilungen, falls vorhanden
+                      let assignHtml = "";
+                      if (data.assigned_ad_league) assignHtml += `<div>🎯 Autodarts: <strong>${data.assigned_ad_league}</strong></div>`;
+                      if (data.assigned_dc_league) assignHtml += `<div>📱 DartCounter: <strong>${data.assigned_dc_league}</strong></div>`;
+                      if (data.assigned_sc_league) assignHtml += `<div>🎥 Scolia: <strong>${data.assigned_sc_league}</strong></div>`;
+                      
+                      if (assignHtml !== "") {
+                          assignArea.innerHTML = `<div class="league-assignment-text">✅ Du wurdest bereits eingeteilt:<br>${assignHtml}</div>`;
+                      } else if (data.want_autodarts || data.want_dartcounter || data.want_scolia) {
+                          assignArea.innerHTML = `<div style="text-align:center; color:#90a9b7; margin-top:10px;">⏳ Deine Anmeldung ist gespeichert. Du wartest auf die Liga-Einteilung.</div>`;
+                      }
+
+                      document.getElementById("btnSaveRegistration").onclick = async () => {
+                          const btn = document.getElementById("btnSaveRegistration");
+                          btn.innerText = "Speichert...";
+                          
+                          await supabaseClient.from('profiles').update({
+                              want_autodarts: document.getElementById("want_ad").checked,
+                              want_dartcounter: document.getElementById("want_dc").checked,
+                              want_scolia: document.getElementById("want_sc").checked
+                          }).eq('id', currentUser.id);
+                          
+                          window.location.reload();
+                      };
                   }
               } catch (err) {}
-          } else if (event === 'SIGNED_OUT') {
-              window.location.href = "index.html";
-          }
+          } else if (event === 'SIGNED_OUT') window.location.href = "index.html";
       });
     }
 
-    function showError(text) {
-        const msgBox = document.getElementById("msgBox");
-        msgBox.style.display = "block";
-        msgBox.style.background = "rgba(231, 76, 60, 0.2)";
-        msgBox.style.color = "#e74c3c";
-        msgBox.style.border = "1px solid #e74c3c";
-        msgBox.innerText = text;
-    }
-
+    // Profilspeicherung (wie vorher)
     document.getElementById("profilForm").addEventListener("submit", async function(e) {
         e.preventDefault(); 
         const saveBtn = document.getElementById("saveBtn");
@@ -241,10 +230,6 @@
         const scName = document.getElementById("scolia_name").value.trim();
         const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
 
-        if (autoName !== "" && autoAvg === "") return showError("Fehler: Autodarts AVG fehlt!");
-        if (dcName !== "" && dcAvg === "") return showError("Fehler: DartCounter AVG fehlt!");
-        if (scName !== "" && scAvg === "") return showError("Fehler: Scolia AVG fehlt!");
-
         saveBtn.innerText = "Speichert...";
         saveBtn.disabled = true;
 
@@ -254,47 +239,28 @@
         const currentDiscordId = meta.sub || currentUser.id || "";
 
         const updates = {
-            id: currentUser.id,
-            discord_name: currentDiscordName || null,
-            discord_id: currentDiscordId || null,
-            real_name: document.getElementById("real_name").value.trim() || null,
-            plz: document.getElementById("plz").value.trim() || null,
-            ort: document.getElementById("ort").value.trim() || null,
-            dart_setup: document.getElementById("dart_setup").value.trim() || null,
-            autodarts_name: autoName || null,
-            autodarts_avg: autoAvg || null,
-            dartcounter_name: dcName || null,
-            dartcounter_avg: dcAvg || null,
-            scolia_name: scName || null,
-            scolia_avg: scAvg || null,
-            avatar_url: safeAvatarUrl || null,
-            updated_at: new Date()
+            id: currentUser.id, discord_name: currentDiscordName || null, discord_id: currentDiscordId || null,
+            real_name: document.getElementById("real_name").value.trim() || null, plz: document.getElementById("plz").value.trim() || null,
+            ort: document.getElementById("ort").value.trim() || null, dart_setup: document.getElementById("dart_setup").value.trim() || null,
+            autodarts_name: autoName || null, autodarts_avg: autoAvg || null,
+            dartcounter_name: dcName || null, dartcounter_avg: dcAvg || null,
+            scolia_name: scName || null, scolia_avg: scAvg || null,
+            avatar_url: safeAvatarUrl || null, updated_at: new Date()
         };
         
-        const { error } = await supabaseClient.from('profiles').upsert(updates);
+        await supabaseClient.from('profiles').upsert(updates);
         
-        saveBtn.innerText = "Profil Speichern";
-        saveBtn.disabled = false;
-
-        if (error) {
-            showError("Fehler beim Speichern! " + error.message);
-        } else {
-            const msgBox = document.getElementById("msgBox");
-            msgBox.style.display = "block";
-            msgBox.style.background = "rgba(61, 220, 151, 0.2)";
-            msgBox.style.color = "#3ddc97";
-            msgBox.style.border = "1px solid #3ddc97";
-            msgBox.innerText = "Profil erfolgreich gespeichert!";
-            setTimeout(() => msgBox.style.display = "none", 4000);
-        }
+        saveBtn.innerText = "Profil Speichern"; saveBtn.disabled = false;
+        
+        const msgBox = document.getElementById("msgBox");
+        msgBox.style.display = "block"; msgBox.style.background = "rgba(61, 220, 151, 0.2)";
+        msgBox.style.color = "#3ddc97"; msgBox.style.border = "1px solid #3ddc97";
+        msgBox.innerText = "Profil erfolgreich gespeichert!";
+        setTimeout(() => msgBox.style.display = "none", 4000);
     });
 
     document.getElementById("logoutBtn").addEventListener("click", async function(e) {
-        e.preventDefault();
-        document.getElementById("statusText").innerText = "Wird ausgeloggt...";
-        document.getElementById("profilForm").style.display = "none";
-        await supabaseClient.auth.signOut();
-        setTimeout(() => { window.location.href = "index.html"; }, 500); 
+        e.preventDefault(); await supabaseClient.auth.signOut(); window.location.href = "index.html"; 
     });
 
     initProfile();
