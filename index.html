@@ -177,11 +177,16 @@
     .modal-close:hover{ background:rgba(255,255,255,0.2); }
     .modal-body{ padding:18px; color:#d7e8ef; line-height:1.6; font-size:14px; overflow:auto; }
     .modal-body p{ margin:0 0 12px; }
-    .content-block{ margin-bottom:18px; padding:14px; border:1px solid rgba(120,170,195,.10); border-radius:14px; background:rgba(255,255,255,.02); }
+    .content-block{ margin-bottom:18px; padding:14px; border:1px solid rgba(120,170,195,.10); border-radius:14px; background:rgba(255,255,255,.02); position: relative; }
     .content-block h4{ margin:0 0 8px; font-size:15px; color:#fff; }
 
-    /* Richtiger Bild-Style für News im Homepage Container */
     .content-block img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; border: 1px solid rgba(255,255,255,0.1); }
+
+    /* NEU: Kleine, unauffällige Admin-Buttons direkt im News-Block */
+    .news-admin-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
+    .news-action-link { font-size: 11px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #90a9b7; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; transition: 0.15s; }
+    .news-action-link.edit:hover { background: #20b7ff; color: #000; border-color: #20b7ff; }
+    .news-action-link.delete:hover { background: #e74c3c; color: #fff; border-color: #e74c3c; }
 
     .modal-profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
@@ -317,7 +322,7 @@
     const state = { 
         leagueData: {}, activeLeague: null, activeMode: "Home", 
         currentSeason: "Saison 1", newsHtml: "", currentUser: null,
-        matchdayOpenState: {} 
+        matchdayOpenState: {}, isAdminUser: false
     };
 
     const tableAreaEl = document.getElementById("tableArea");
@@ -328,6 +333,18 @@
 
     window.copyDiscord = function(name) {
       navigator.clipboard.writeText(name).then(() => alert("Der Discord-Name '" + name + "' wurde kopiert!"));
+    };
+
+    // Globale Funktionen für Admin-Aktionen direkt auf der Startseite
+    window.directEditNews = function(id) {
+        window.location.href = "profil.html"; // Leitet zum Profil weiter, wo der Editor ist
+    };
+
+    window.directDeleteNews = async function(id) {
+        if(!confirm("Möchtest du diesen News-Eintrag wirklich direkt löschen?")) return;
+        const { error } = await supabaseClient.from('news').delete().eq('id', id);
+        if(error) alert("Fehler: " + error.message);
+        else loadAll();
     };
 
     window.openPlayerProfile = async function(playerName) {
@@ -486,15 +503,34 @@
         state.currentUser = session ? session.user : null;
         loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
 
+        // Admin Status prüfen
+        state.isAdminUser = false;
+        if (state.currentUser) {
+            const { data: pData } = await supabaseClient.from('profiles').select('is_admin').eq('id', state.currentUser.id).maybeSingle();
+            if (pData && pData.is_admin === true) {
+                state.isAdminUser = true;
+            }
+        }
+
         try {
-            // HIER WURDE DER CODE ANGEPASST: Rendert das Rich-Text-HTML jetzt originalgetreu!
+            // News live aus der Datenbank laden
             const { data: newsData } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
             let nHtml = "";
             if(newsData && newsData.length > 0) {
                 newsData.forEach(n => {
                     const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+                    
+                    // Verstecke Buttons standardmäßig, blende sie nur für Admins ein
+                    const adminActionsHtml = state.isAdminUser ? `
+                        <div class="news-admin-actions">
+                            <span class="news-action-link edit" onclick="directEditNews('${n.id}')">✏️</span>
+                            <span class="news-action-link delete" onclick="directDeleteNews('${n.id}')">🗑️</span>
+                        </div>
+                    ` : '';
+
                     nHtml += `<div class="content-block">
-                                <h4 style="margin-bottom:12px; color:#fff; font-size:16px; border-bottom:1px dashed rgba(255,255,255,0.05); padding-bottom:6px;">${htmlEscape(n.title)} <span style="font-size:11px; color:#7c95a3; float:right; font-weight:normal; margin-top:4px;">${date} Uhr</span></h4>
+                                ${adminActionsHtml}
+                                <h4 style="margin-bottom:12px; color:#fff; font-size:16px; border-bottom:1px dashed rgba(255,255,255,0.05); padding-bottom:6px; padding-right: 60px;">${htmlEscape(n.title)} <span style="font-size:11px; color:#7c95a3; float:right; font-weight:normal; margin-top:4px;">${date} Uhr</span></h4>
                                 <div style="color:#d7e8ef; line-height:1.6; font-size:14px;">${n.content}</div>
                               </div>`;
                 });
