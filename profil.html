@@ -10,6 +10,7 @@
     input { width: 100%; padding: 10px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 5px; }
     button { background: #3ddc97; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; }
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; margin-bottom: 20px; }
+    .logout-btn { background: #e74c3c; margin-left: 10px; color: #fff; }
   </style>
 </head>
 <body>
@@ -17,7 +18,7 @@
     <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
     <h2 id="statusText">Lade Profil...</h2>
     
-    <form id="profilForm" style="display:none;" onsubmit="saveProfile(event)">
+    <form id="profilForm" style="display:none;">
       <label>Echter Name</label>
       <input type="text" id="real_name" placeholder="Dein Vorname">
       
@@ -27,57 +28,54 @@
       <label>DartCounter Name</label>
       <input type="text" id="dartcounter_name">
 
-      <button type="submit">Profil Speichern</button>
-      <button type="button" style="background: #e74c3c; margin-left:10px;" onclick="logout()">Ausloggen</button>
-      <p id="erfolgMsg" style="color: #3ddc97; display:none; margin-top:10px;">Profil erfolgreich gespeichert!</p>
+      <button type="submit" id="saveBtn">Profil Speichern</button>
+      <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
+      
+      <div id="msgBox" style="margin-top:15px; font-weight:bold; padding: 10px; border-radius: 5px; display: none;"></div>
     </form>
   </div>
 
   <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-    // DEIN ORIGINAL KEY IST JETZT HIER FEST EINGEBAUT:
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
 
-    // 1. Erstmal schauen, ob wir gerade von Discord kommen
     if (window.location.hash.includes("access_token")) {
         document.getElementById("statusText").innerText = "Login wird verarbeitet, bitte einen Moment warten...";
     } else {
-        // Falls wir NICHT von Discord kommen, schauen wir, ob eine Sitzung existiert
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
             if (!session) {
-                // Keine Sitzung und kein Token -> Zurück zur Startseite!
                 window.location.href = "index.html";
             }
         });
     }
 
-    // 2. Warten, bis Supabase das Token verarbeitet hat oder den Login erkennt
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (session) {
             currentUser = session.user;
             document.getElementById("statusText").innerText = "Willkommen, " + (session.user.user_metadata.full_name || "Spieler");
             document.getElementById("profilForm").style.display = "block";
             
-            // Lade vorhandene Daten aus der Supabase Datenbank
             try {
-                const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
                 if (data) {
                     document.getElementById("real_name").value = data.real_name || "";
                     document.getElementById("autodarts_name").value = data.autodarts_name || "";
                     document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
                 }
             } catch (err) {
-                console.log("Noch kein Profil in der Datenbank vorhanden.");
+                console.log("Fehler beim Profil-Laden:", err);
             }
         }
     });
 
-    // 3. Profil in Supabase Speichern
-    async function saveProfile(e) {
-        e.preventDefault();
+    // Profil Speichern Logik (MIT EINGEBAUTEM FEHLER-CHECK)
+    document.getElementById("profilForm").addEventListener("submit", async function(e) {
+        e.preventDefault(); // Verhindert das nervige Neuladen der Seite
+        const msgBox = document.getElementById("msgBox");
+        
         const updates = {
             id: currentUser.id,
             real_name: document.getElementById("real_name").value,
@@ -85,16 +83,34 @@
             dartcounter_name: document.getElementById("dartcounter_name").value,
             updated_at: new Date()
         };
-        await supabaseClient.from('profiles').upsert(updates);
-        document.getElementById("erfolgMsg").style.display = "block";
-        setTimeout(() => document.getElementById("erfolgMsg").style.display = "none", 3000);
-    }
+        
+        // Versuchen, das Profil zu speichern
+        const { error } = await supabaseClient.from('profiles').upsert(updates);
+        
+        if (error) {
+            // FEHLER! Das wird rot angezeigt (meistens wegen RLS / Tabellen-Berechtigungen)
+            msgBox.style.display = "block";
+            msgBox.style.background = "rgba(231, 76, 60, 0.2)";
+            msgBox.style.color = "#e74c3c";
+            msgBox.style.border = "1px solid #e74c3c";
+            msgBox.innerText = "Fehler beim Speichern! Grund: " + error.message;
+        } else {
+            // ERFOLG! Das wird grün angezeigt
+            msgBox.style.display = "block";
+            msgBox.style.background = "rgba(61, 220, 151, 0.2)";
+            msgBox.style.color = "#3ddc97";
+            msgBox.style.border = "1px solid #3ddc97";
+            msgBox.innerText = "Profil erfolgreich gespeichert!";
+            setTimeout(() => msgBox.style.display = "none", 4000);
+        }
+    });
 
-    // 4. Logout und zurück zur Startseite
-    async function logout() {
+    // Ausloggen Logik (Der Button funktioniert jetzt zu 100%)
+    document.getElementById("logoutBtn").addEventListener("click", async function() {
         await supabaseClient.auth.signOut();
         window.location.href = "index.html";
-    }
+    });
+
   </script>
 </body>
 </html>
