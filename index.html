@@ -101,7 +101,7 @@
     .rank-col.first::before{ background:var(--green); }
     .rank-col.last::before{ background:var(--red); }
 
-    /* NEU: Klickbare Elemente */
+    /* Klickbare Elemente */
     .player-link { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.2); transition: 0.2s; font-weight:600; color:#fff; }
     .player-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
     .discord-link { cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; color: #8ec9ee; }
@@ -163,6 +163,11 @@
     .content-block{ margin-bottom:18px; padding:14px; border:1px solid rgba(120,170,195,.10); border-radius:14px; background:rgba(255,255,255,.02); }
     .content-block h4{ margin:0 0 8px; font-size:15px; color:#fff; }
     .content-block:last-child{ margin-bottom:0; }
+
+    /* NEU: Modal Profil Header & Avatar */
+    .modal-profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+    .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
+    .modal-profile-name { font-size: 20px; font-weight: 900; margin: 0; }
 
     @media (max-width:1180px){
       .banner-nav{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
@@ -352,7 +357,7 @@
     const loginBtnText = document.getElementById("loginBtnText");
 
     // ==========================================
-    // NEUE KLICK-FUNKTIONEN FÜR DISCORD & PROFIL
+    // KLICK-FUNKTIONEN FÜR DISCORD & PROFIL
     // ==========================================
     window.copyDiscord = function(name) {
       navigator.clipboard.writeText(name).then(() => {
@@ -365,12 +370,11 @@
     window.openPlayerProfile = async function(playerName) {
         const modal = document.getElementById("playerProfileModal");
         const content = document.getElementById("playerProfileContent");
-        document.getElementById("playerProfileTitle").innerText = "Profil: " + playerName;
+        document.getElementById("playerProfileTitle").innerText = "Spielerprofil";
         content.innerHTML = "<p>Suche Spieler in der Datenbank...</p>";
         openModal(modal);
 
         try {
-            // Sucht in Supabase nach dem Spieler. Erkennt ihn an Echtem Namen, Autodarts oder Dartcounter Namen
             const { data, error } = await supabaseClient
                 .from('profiles')
                 .select('*')
@@ -379,12 +383,17 @@
                 .single();
 
             if (error || !data) {
-                content.innerHTML = `<div class="empty">Dieser Spieler hat noch kein Profil angelegt.</div>`;
+                content.innerHTML = `<div class="empty">Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>`;
                 return;
             }
 
-            // Wenn er gefunden wurde, zeige die Karte
+            const avatarSrc = data.avatar_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>";
+
             content.innerHTML = `
+                <div class="modal-profile-header">
+                    <img class="modal-avatar" src="${htmlEscape(avatarSrc)}" alt="Avatar">
+                    <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>
+                </div>
                 <div class="content-block">
                     <h4 style="color:var(--accent); font-size:16px;">Plattformen & AVG</h4>
                     <p><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em></p>
@@ -397,11 +406,10 @@
                 </div>
             `;
         } catch (err) {
-            content.innerHTML = `<div class="empty">Dieser Spieler hat noch kein Profil angelegt.</div>`;
+            content.innerHTML = `<div class="empty">Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>`;
         }
     };
     // ==========================================
-
 
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
@@ -550,7 +558,6 @@
       return cards.length ? `<span class="player-cards">${cards.join("")}</span>` : "";
     }
 
-    // TABELLE RENDER MIT KLICKBAREN NAMEN UND DISCORD LINKS
     function renderStandingsTable(headers, rows) {
       if (!headers.length || !rows.length) return `<div class="table-shell"><div class="section-head"><div class="section-title">Tabelle</div></div><div style="padding:18px"><div class="empty">Keine Daten.</div></div></div>`;
       const displayHeaders = ["Platz", "Spieler", "Discord", "Siege", "Niederlagen", "Leg-Diff", "Punkte"];
@@ -579,7 +586,6 @@
       return `<span class="status-badge ${done ? "done" : "open"}"><span class="status-dot ${done ? "done" : "open"}"></span></span>`;
     }
 
-    // MATCHTAGE RENDER MIT KLICKBAREN NAMEN UND DISCORD LINKS
     function renderMatchTable(headers, rows) {
       if (!headers.length || !rows.length) return `<div class="empty">Keine Spiele.</div>`;
       const tbody = rows.map(row => {
