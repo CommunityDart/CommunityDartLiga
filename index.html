@@ -39,17 +39,15 @@
     body[data-mode="DartCounter"] .hero-banner.image-banner{ box-shadow: 0 18px 44px rgba(0,0,0,.34), 0 0 0 1px rgba(255,159,28,.20), 0 0 28px rgba(255,159,28,.14); }
     body[data-mode="Scolia"] .hero-banner.image-banner{ box-shadow: 0 18px 44px rgba(0,0,0,.34), 0 0 0 1px rgba(61,220,151,.20), 0 0 28px rgba(61,220,151,.14); }
     
-    /* DAS OPTIMIERTE MENÜ-RASTER (5 GLEICHMÄSSIGE SPALTEN) */
+    /* DAS KORRIGIERTE FLEX-LAYOUT FÜR BOMBENFESTE SYMMETRIE */
     .top-nav-wrap{ width:min(1200px, 100%); margin:0 auto 24px; }
-    .banner-nav-shell{ display:flex; justify-content:center; align-items:center; }
-    .banner-nav{ width:100%; display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:14px; padding:14px; border-radius:22px; background:rgba(4,12,14,.22); border:1px solid rgba(255,255,255,.10); box-shadow: 0 10px 24px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); align-items: start; }
+    .banner-nav{ width:100%; display:flex; gap:14px; padding:14px; border-radius:22px; background:rgba(4,12,14,.22); border:1px solid rgba(255,255,255,.10); box-shadow: 0 10px 24px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); align-items: start; }
     
-    /* Spalten-Gruppen für die vertikale Ausrichtung untereinander */
-    .nav-column-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-    .discord-button-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .nav-column-group { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+    .discord-button-group { display: flex; flex-direction: column; gap: 8px; flex: 1.2; min-width: 0; }
     
     .hero-action-btn{ position:relative; width:100%; border:1px solid rgba(255,255,255,.16); background:rgba(6,20,30,.38); color:#f5fbff; border-radius:16px; min-height:50px; padding:0 14px; font-size:14px; font-weight:900; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; text-align:center; gap:10px; transition:.22s ease; white-space:nowrap; overflow:hidden; box-shadow: 0 10px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.10); }
-    .discord-button-group .hero-action-btn { min-height: 50px; font-size: 14px; }
+    .discord-button-group .hero-action-btn { min-height: 44px; font-size: 13px; }
     .hero-action-btn::before{ content:""; position:absolute; inset:1px; border-radius:15px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0)); pointer-events:none; }
     .hero-action-btn:hover{ transform:translateY(-2px); background:rgba(10,28,40,.48); border-color:rgba(255,255,255,.24); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 22px rgba(255,255,255,.06); }
     
@@ -64,7 +62,7 @@
     #modeDartCounter.active{ background:rgba(255,154,31,.28); border-color:rgba(255,206,130,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(255,154,31,.24); }
     #modeScolia.active{ background:rgba(61,220,151,.28); border-color:rgba(100,240,180,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(61,220,151,.24); }
 
-    /* DIE ANPASSUNG: FLIESSENDE DROPDOWNS DIREKT IN DER JEWEILIGEN SPALTE */
+    /* DIE ANPASSUNG: FLIESSENDE DROPDOWNS DIREKT INNERHALB DER SPALTE */
     .dropdown-submenu { display: none; flex-direction: column; gap: 6px; background: rgba(2,16,23,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 6px; width: 100%; margin-top: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); }
     .dropdown-submenu.active { display: flex; }
     .dropdown-btn { background: rgba(6,20,30,0.5); border: 1px solid rgba(255,255,255,0.08); color: #dff3ff; text-align: center; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.15s; width: 100%; }
@@ -186,8 +184,9 @@
     .modal-discord-sub { font-size: 13px; color: #8ec9ee; font-weight: bold; cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
     .platform-link-btn { display: inline-block; background: rgba(32,183,255,0.15); border: 1px solid rgba(32,183,255,0.3); color: #20b7ff; padding: 2px 8px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 8px; transition: 0.2s; }
 
+    /* RESPONSIVE ANPASSUNGEN */
     @media (max-width:1180px){
-      .banner-nav{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
+      .banner-nav{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     }
     @media (max-width:1100px){
       .main{grid-template-columns:1fr}
@@ -205,7 +204,7 @@
       .matchday-head-right{ width:92px; min-width:92px; flex:0 0 92px; }
       .modal { width: calc(100% - 24px); margin: 12px; max-height: calc(100vh - 24px); }
     }
-    @media (max-width:560px){ .banner-nav { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+    @media (max-width:560px){ .banner-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   </style>
 </head>
 <body data-mode="Home">
@@ -455,13 +454,14 @@
       if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
     }
 
+    // MAPPT DIE UNTERMENÜS ALS COMPACT FLIESSENDE DROPDOWNS DIREKT INNERHALB DER JEWEILIGEN SPALTE
     function renderSystemSubmenus() {
       const renderSub = (elId, prefix) => {
         const el = document.getElementById(elId); if (!el) return;
         const filtered = ALL_LEAGUES.filter(l => l.startsWith(prefix) && state.leagueData[l] && state.leagueData[l].standings.rows.length > 0);
         
         el.innerHTML = filtered.map(l => `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l)}">${getShortLeagueNumber(l)}</button>`).join("");
-        el.classList.add('active'); // Bleibt fest in seiner Spalte stehen!
+        el.classList.add('active'); // Verankert das Menü in der Spalte darunter
         
         el.querySelectorAll(".dropdown-btn").forEach(btn => btn.onclick = (e) => {
             e.stopPropagation();
@@ -483,7 +483,7 @@
       document.getElementById("modeDartCounter").classList.toggle("active", mode === "DartCounter");
       document.getElementById("modeScolia").classList.toggle("active", mode === "Scolia");
       
-      // Blende alle Submenus aus, außer das der aktiven Spalte
+      // Blende alle Submenus aus
       document.querySelectorAll('.dropdown-submenu').forEach(e => e.classList.remove('active'));
 
       if (mode === "Home") {
