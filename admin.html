@@ -7,21 +7,22 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
-    .shell { background: #041924; border: 1px solid rgba(231,76,60,0.4); padding: 30px; border-radius: 15px; max-width: 1000px; margin: 20px auto; }
+    .shell { background: #041924; border: 1px solid rgba(231,76,60,0.4); padding: 30px; border-radius: 15px; max-width: 1200px; margin: 20px auto; }
     
     h1 { color: #e74c3c; margin-top: 0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;}
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-weight:bold; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 600px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 800px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); vertical-align: middle; }
     th { background: rgba(0,0,0,0.2); color: #90a9b7; font-size: 13px; text-transform: uppercase; }
     
+    select { padding: 8px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; margin-right: 10px; width: 200px;}
     .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; }
     .assign-btn:hover { opacity: 0.8; }
     
     .empty-msg { text-align: center; color: #90a9b7; padding: 40px; font-style: italic; }
 
-    @media (max-width: 600px) {
+    @media (max-width: 760px) {
       body { padding: 10px; }
       .shell { padding: 15px; }
       h1 { font-size: 20px; }
@@ -30,18 +31,18 @@
 </head>
 <body>
   <div class="shell">
-    <h1>⚙️ Liga-Einteilung <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
-    <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Hier tauchen alle Spieler auf, die im Profil auf "Für Liga anmelden" gedrückt haben. Trage sie in dein Google Sheet ein und klicke danach auf "In Liga zugeordnet".</p>
+    <h1>⚙️ Liga-Zuteilung (Neue Saison) <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
+    <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Hier siehst du alle Spieler, die für die nächste Saison zugesagt haben. Wähle die passende Liga aus und weise sie direkt zu.</p>
     
     <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
       <table>
         <thead>
           <tr>
-            <th>Discord Name</th>
-            <th>Echter Name</th>
-            <th>Autodarts (AVG)</th>
-            <th>DartCounter (AVG)</th>
-            <th>Aktion</th>
+            <th>Spieler</th>
+            <th>Autodarts</th>
+            <th>DartCounter</th>
+            <th>Scolia</th>
+            <th>Liga Zuteilung</th>
           </tr>
         </thead>
         <tbody id="waitingListBody">
@@ -56,14 +57,18 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const LEAGUES = [
+      "Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6",
+      "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"
+    ];
+
     async function initAdmin() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return window.location.href = "index.html";
 
-      // Admin Check
       const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
       if (!profile || profile.is_admin !== true) {
-          alert("Zugriff verweigert! Du hast keine Admin-Rechte.");
+          alert("Zugriff verweigert!");
           return window.location.href = "index.html";
       }
 
@@ -72,29 +77,52 @@
 
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
-        const { data: players, error } = await supabase.from('profiles').select('*').eq('anmelde_status', 'waiting');
+        
+        // Lädt alle Spieler, die "Ja" gedrückt haben, aber noch in keiner Liga eingeteilt sind
+        const { data: players, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('next_season_active', true)
+            .is('assigned_league', null);
 
         if (error || !players || players.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Niemand in der Warteschlange. Alles erledigt! 🎉</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Niemand in der Warteschlange zur Zuteilung. Alles erledigt! 🎉</td></tr>';
             return;
         }
 
+        const leagueOptions = LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
+
         tbody.innerHTML = players.map(p => `
             <tr>
-              <td><strong style="color: #fff;">${p.discord_name || '-'}</strong></td>
-              <td>${p.real_name || '-'}</td>
-              <td>${p.autodarts_name ? `${p.autodarts_name} <br><span style="color:#20b7ff">${p.autodarts_avg} AVG</span>` : '-'}</td>
-              <td>${p.dartcounter_name ? `${p.dartcounter_name} <br><span style="color:#ff9f1c">${p.dartcounter_avg} AVG</span>` : '-'}</td>
-              <td><button class="assign-btn" onclick="markAsAssigned('${p.id}')">Eingeteilt ✔️</button></td>
+              <td>
+                <strong style="color: #fff; font-size:15px;">${p.discord_name || p.real_name || '-'}</strong><br>
+                <span style="font-size:12px; color:#90a9b7;">${p.ort || 'Kein Ort'}</span>
+              </td>
+              <td>${p.autodarts_name ? `<span style="color:#20b7ff; font-weight:bold;">${p.autodarts_avg} AVG</span><br><span style="font-size:12px;">${p.autodarts_name}</span>` : '-'}</td>
+              <td>${p.dartcounter_name ? `<span style="color:#ff9f1c; font-weight:bold;">${p.dartcounter_avg} AVG</span><br><span style="font-size:12px;">${p.dartcounter_name}</span>` : '-'}</td>
+              <td>${p.scolia_name ? `<span style="color:#3ddc97; font-weight:bold;">${p.scolia_avg} AVG</span><br><span style="font-size:12px;">${p.scolia_name}</span>` : '-'}</td>
+              <td style="display:flex; align-items:center;">
+                <select id="select_${p.id}">
+                  <option value="" disabled selected>Liga auswählen...</option>
+                  ${leagueOptions}
+                </select>
+                <button class="assign-btn" onclick="assignToLeague('${p.id}')">Einordnen</button>
+              </td>
             </tr>
         `).join("");
     }
 
-    window.markAsAssigned = async function(playerId) {
-        if(!confirm("Hast du den Spieler erfolgreich in dein Google Sheet eingetragen?")) return;
+    window.assignToLeague = async function(playerId) {
+        const selectBox = document.getElementById(`select_${playerId}`);
+        const chosenLeague = selectBox.value;
         
-        await supabase.from('profiles').update({ anmelde_status: 'assigned' }).eq('id', playerId);
-        loadWaitingList(); // Tabelle direkt neu laden
+        if(!chosenLeague) {
+            alert("Bitte zuerst eine Liga aus dem Dropdown auswählen!");
+            return;
+        }
+        
+        await supabase.from('profiles').update({ assigned_league: chosenLeague }).eq('id', playerId);
+        loadWaitingList();
     };
 
     initAdmin();
