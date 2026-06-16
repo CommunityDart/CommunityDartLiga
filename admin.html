@@ -21,8 +21,8 @@
     .toggle-btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .toggle-btn:hover { opacity: 0.8; }
 
-    table { width: 100%; border-collapse: collapse; min-width: 900px; }
-    th, td { padding: 15px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
+    table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    th, td { padding: 15px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
     th { background: rgba(0,0,0,0.2); color: #90a9b7; font-size: 13px; text-transform: uppercase; }
     
     .league-select { padding: 8px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; width: 100%; margin-bottom: 5px; font-size: 13px;}
@@ -34,6 +34,8 @@
     .tag-ad { background: rgba(32,183,255,0.2); color: #20b7ff; }
     .tag-dc { background: rgba(255,159,28,0.2); color: #ff9f1c; }
     .tag-sc { background: rgba(61,220,151,0.2); color: #3ddc97; }
+    
+    .old-league-info { font-size: 11px; color: #90a9b7; margin-bottom: 6px; display: block; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px;}
 
     .error-box { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; font-weight: bold; }
 
@@ -58,7 +60,7 @@
         <button id="toggleRegistrationBtn" class="toggle-btn" style="display:none;"></button>
     </div>
 
-    <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Wähle die passende Liga für den Spieler aus. Wenn ein Spieler absteigt, ordne ihn hier einfach manuell eine Liga tiefer ein und klicke auf Speichern.</p>
+    <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Wähle die passende Liga aus (beachte die "Bisherige Liga" für Auf-/Abstieg) und klicke auf Speichern.</p>
     
     <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
       <table>
@@ -81,7 +83,6 @@
   <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
@@ -92,39 +93,24 @@
 
     function showGlobalError(msg) {
         const box = document.getElementById("globalErrorBox");
-        box.innerText = msg;
-        box.style.display = "block";
+        box.innerText = msg; box.style.display = "block";
     }
 
     async function initAdmin() {
         try {
-            // Direkter Login-Check (besser als darauf zu warten, dass der Listener anspringt)
             const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-            
-            if (sessionError || !session) {
-                window.location.href = "index.html";
-                return;
-            }
+            if (sessionError || !session) return window.location.href = "index.html";
 
             const { data: profile, error: pError } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
-            
-            if (pError) {
-                showGlobalError("Fehler beim Prüfen der Admin-Rechte: " + pError.message);
-                return;
-            }
-            
-            if (!profile || profile.is_admin !== true) {
+            if (pError || !profile || profile.is_admin !== true) {
                 alert("Zugriff verweigert! Du bist kein Admin.");
-                window.location.href = "index.html";
-                return;
+                return window.location.href = "index.html";
             }
 
-            // Wenn wir hier sind, bist du sicher eingeloggt und Admin. Jetzt laden wir sofort die Daten!
             await loadGlobalSettings();
             await loadWaitingList();
-
         } catch (x) {
-            showGlobalError("Kritischer Fehler beim Laden der Admin-Seite: " + x.message);
+            showGlobalError("Kritischer Fehler: " + x.message);
         }
     }
 
@@ -136,30 +122,21 @@
             const { data, error } = await supabaseClient.from('system_settings').select('registration_open').eq('id', 1).maybeSingle();
             if (error) throw error;
             
-            if (data) {
-                isRegistrationOpen = data.registration_open;
-            } else {
-                isRegistrationOpen = false;
-            }
-
+            isRegistrationOpen = data ? data.registration_open : false;
             btn.style.display = "block";
 
             if (isRegistrationOpen) {
-                badge.className = "status-badge status-open";
-                badge.innerText = "GEÖFFNET 🟢";
+                badge.className = "status-badge status-open"; badge.innerText = "GEÖFFNET 🟢";
                 btn.style.background = "#e74c3c"; btn.style.color = "#fff";
                 btn.innerText = "Anmeldung SCHLIESSEN";
                 btn.onclick = () => toggleRegistration(false);
             } else {
-                badge.className = "status-badge status-closed";
-                badge.innerText = "GESCHLOSSEN 🔴";
+                badge.className = "status-badge status-closed"; badge.innerText = "GESCHLOSSEN 🔴";
                 btn.style.background = "#3ddc97"; btn.style.color = "#000";
                 btn.innerText = "Anmeldung ÖFFNEN";
                 btn.onclick = () => toggleRegistration(true);
             }
         } catch (err) {
-            badge.className = "status-badge status-error";
-            badge.innerText = "FEHLER ⚠️";
             showGlobalError("Fehler beim Laden des Hauptschalters: " + err.message);
         }
     }
@@ -168,39 +145,36 @@
         if(!confirm(`Willst du die Anmeldung wirklich ${newState ? 'ÖFFNEN' : 'SCHLIESSEN'}?`)) return;
         
         try {
-            const { error } = await supabaseClient.from('system_settings').update({ registration_open: newState }).eq('id', 1);
-            if (error) throw error;
-
+            await supabaseClient.from('system_settings').update({ registration_open: newState }).eq('id', 1);
+            
             if (newState === true) {
-                 // Setzt alle alten Anmeldungen zurück, wenn eine neue Runde startet
+                 // WICHTIG: Wir setzen NUR den "status_neue_saison" zurück und entfernen die Checkboxen.
+                 // Die "assigned_ad_league" (etc.) bleiben erhalten, damit wir die bisherige Liga sehen!
                  await supabaseClient.from('profiles').update({ 
                      want_autodarts: false, want_dartcounter: false, want_scolia: false,
-                     assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null 
+                     status_neue_saison: 'none'
                  }).neq('id', '00000000-0000-0000-0000-000000000000');
             }
             window.location.reload();
-        } catch (err) {
-            alert("Fehler beim Umschalten: " + err.message);
-        }
+        } catch (err) { alert("Fehler beim Umschalten: " + err.message); }
     }
 
     function buildSelect(idPrefix, playerId, optionsArr, isWanted, currentVal) {
         if (!isWanted) return `<span style="color:#90a9b7; font-size:12px;">Nicht angemeldet</span>`;
-        let html = `<select id="${idPrefix}_${playerId}" class="league-select">
-                      <option value="" disabled ${!currentVal ? 'selected' : ''}>-- Liga wählen --</option>`;
-        optionsArr.forEach(l => {
-            html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
-        });
+        let html = `<span class="old-league-info">Bisher: <b style="color:#fff">${currentVal || 'Keine'}</b></span>`;
+        html += `<select id="${idPrefix}_${playerId}" class="league-select">
+                      <option value="" disabled ${!currentVal ? 'selected' : ''}>-- Neue Liga wählen --</option>`;
+        optionsArr.forEach(l => { html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`; });
         html += `</select>`;
         return html;
     }
 
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
-        
         try {
+            // Lade nur Spieler, die sich angemeldet oder die schon zugeteilt wurden
             const { data: players, error } = await supabaseClient.from('profiles').select('*')
-                .or('want_autodarts.eq.true,want_dartcounter.eq.true,want_scolia.eq.true');
+                .in('status_neue_saison', ['waiting', 'assigned']);
 
             if (error) throw error;
 
@@ -210,10 +184,13 @@
             }
 
             tbody.innerHTML = players.map(p => {
-                const isEingeteilt = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
+                const isEingeteilt = p.status_neue_saison === 'assigned';
                 return `
-                <tr style="${isEingeteilt ? 'background:rgba(61,220,151,0.03);' : ''}">
-                  <td><strong style="color: #fff; font-size:15px;">${htmlEscape(p.discord_name || p.real_name || 'Spieler')}</strong></td>
+                <tr style="${isEingeteilt ? 'background:rgba(61,220,151,0.05);' : ''}">
+                  <td>
+                    <strong style="color: #fff; font-size:16px;">${htmlEscape(p.discord_name || 'Unbekannt')}</strong><br>
+                    <span style="font-size:12px; color:#90a9b7;">Echt: ${htmlEscape(p.real_name || '-')}</span>
+                  </td>
                   <td>
                     ${p.want_autodarts ? `<span class="platform-tag tag-ad">Autodarts</span><br><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.autodarts_avg || '-')}</span><br>` : ''}
                     ${buildSelect('ad', p.id, AD_LEAGUES, p.want_autodarts, p.assigned_ad_league)}
@@ -226,19 +203,17 @@
                     ${p.want_scolia ? `<span class="platform-tag tag-sc">Scolia</span><br><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.scolia_avg || '-')}</span><br>` : ''}
                     ${buildSelect('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league)}
                   </td>
-                  <td>
+                  <td style="text-align:center;">
                     <button class="assign-btn" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
-                    ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px; text-align:center;">✓ Gespeichert</div>' : ''}
+                    ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px;">✓ Eingeteilt</div>' : ''}
                   </td>
                 </tr>
             `}).join("");
-        } catch (err) {
-            showGlobalError("Fehler beim Laden der Warteliste: " + err.message);
-        }
+        } catch (err) { showGlobalError("Fehler beim Laden der Warteliste: " + err.message); }
     }
 
     window.saveAssignments = async function(playerId, wantAD, wantDC, wantSC) {
-        const updates = {};
+        const updates = { status_neue_saison: 'assigned' };
         if(wantAD) updates.assigned_ad_league = document.getElementById(`ad_${playerId}`)?.value || null;
         if(wantDC) updates.assigned_dc_league = document.getElementById(`dc_${playerId}`)?.value || null;
         if(wantSC) updates.assigned_sc_league = document.getElementById(`sc_${playerId}`)?.value || null;
@@ -247,10 +222,7 @@
             const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
             if (error) throw error;
             await loadWaitingList();
-            alert("Erfolgreich zugeteilt!");
-        } catch (err) {
-            alert("Fehler beim Speichern: " + err.message);
-        }
+        } catch (err) { alert("Fehler beim Speichern: " + err.message); }
     };
 
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
