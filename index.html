@@ -390,26 +390,28 @@
                 .single();
 
             if (error || !data) {
-                content.innerHTML = `<div class="empty">Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>`;
+                content.innerHTML = "<div class='empty'>Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>";
                 return;
             }
 
             const avatarSrc = data.avatar_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>";
 
-            // Hier wird der Discord-Name eingefügt und verlinkt
-            const discordLink = data.discord_id 
-                ? `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" style="color:var(--accent); font-size:14px; text-decoration:underline;">Discord: ${htmlEscape(data.discord_name || 'Anschreiben')} 💬</a>` 
-                : `<span style="color:#90a9b7;">Discord: ${htmlEscape(data.discord_name || 'Nicht hinterlegt')}</span>`;
-
-            content.innerHTML = `
+            // Hier bauen wir das HTML sauber zusammen, ohne den Code zu zerstören
+            let profileHtml = `
                 <div class="modal-profile-header">
                     <img class="modal-avatar" src="${htmlEscape(avatarSrc)}" alt="Avatar">
                     <div>
-                        <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>
-                        <div style="margin-top:5px;">${discordLink}</div>
+                        <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>`;
+            
+            if (data.discord_id) {
+                profileHtml += `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-size:14px; text-decoration:underline; display:block; margin-top:5px;">Discord: ${htmlEscape(data.discord_name || 'Anschreiben')} 💬</a>`;
+            } else if (data.discord_name) {
+                profileHtml += `<span style="color:#90a9b7; font-size:13px; display:block; margin-top:5px;">Discord: ${htmlEscape(data.discord_name)}</span>`;
+            }
+
+            profileHtml += `
                     </div>
                 </div>
-                
                 ${data.dart_setup ? `
                 <div class="content-block">
                     <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Mein Dartsetup</h4>
@@ -429,10 +431,10 @@
                     <p style="margin:0;">${htmlEscape(data.plz || '')} ${htmlEscape(data.ort || '-')}</p>
                 </div>
             `;
+            content.innerHTML = profileHtml;
         } catch (err) {
-            content.innerHTML = `<div class="empty">Fehler beim Laden des Profils.</div>`;
+            content.innerHTML = "<div class='empty'>Fehler beim Laden des Profils.</div>";
         }
-    };
     };
     };
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
