@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga</title>
+  <title>CDL Testversion</title>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8141059951423155" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -672,23 +672,24 @@
     }
 
     // ===========================================================
-    // DER FIX FÜR DEN LOGIN
+    // DER FIX FÜR DEN LOGIN MIT PUFFER 
     // ===========================================================
     async function initAuth() {
       if (!supabaseClient) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
 
-      // HIER IST DER FIX: Wir checken, ob Supabase uns eingeloggt hat, 
-      // und DANN erst springen wir auf die profil.html!
       supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
         if (currentSession) {
           state.currentUser = currentSession.user;
           if (loginBtnText) loginBtnText.innerText = "Mein Profil";
           
           // Wir wechseln nur die Seite, wenn wir gerade erfolgreich von Discord reinkamen
-          if (window.location.hash.includes("access_token")) {
-             window.location.href = "profil.html";
+          if (window.location.hash.includes("access_token") || window.location.search.includes("code")) {
+             // 3 Sekunden Puffer bevor wir weiterleiten!
+             setTimeout(() => {
+                 window.location.href = "profil.html";
+             }, 3000);
           }
         } else {
           state.currentUser = null;
@@ -706,7 +707,6 @@
         ligaLoginBtn.addEventListener("click", async () => {
           if (!state.currentUser) {
             // GANZ WICHTIG: Das hier MUSS deine Haupt-URL sein, KEINE profil.html am Ende!
-            // Nur so erlaubt Discord den Login.
             const redirectUrl = "https://communitydart.github.io/CommunityDartLiga/";
             await supabaseClient.auth.signInWithOAuth({
               provider: 'discord',
@@ -743,11 +743,11 @@
         return; 
       }
 
-      // WENN WIR VON DISCORD KOMMEN: Nichts laden! Supabase arbeiten lassen!
-      if (window.location.hash.includes("access_token")) {
-        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login erfolgreich!</h2><p>Leite weiter zum Profil...</p></div>`;
+      // WENN WIR VON DISCORD KOMMEN: Puffer aktivieren und Warten!
+      if (window.location.hash.includes("access_token") || window.location.search.includes("code")) {
+        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login erfolgreich!</h2><p>Leite in 3 Sekunden zum Profil weiter...</p></div>`;
         await initAuth();
-        return; // DIESES RETURN IST DAS WICHTIGSTE IM GANZEN CODE!
+        return; 
       } else {
         if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
       }
@@ -768,7 +768,7 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        if (!window.location.hash.includes("access_token")) {
+        if (!window.location.hash.includes("access_token") && !window.location.search.includes("code")) {
           setMode("Home");
         }
       } catch (error) {
