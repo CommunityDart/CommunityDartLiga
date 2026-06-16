@@ -21,6 +21,8 @@
     input[type="text"] { width: 100%; padding: 12px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
     input[type="text"]:focus { outline: none; border-color: #20b7ff; box-shadow: 0 0 8px rgba(32,183,255,0.3); }
     
+    .url-input { margin-top: -10px; border-color: rgba(120,170,195,0.3) !important; background: rgba(0,0,0,0.2) !important; font-size: 13px !important; }
+
     button { border: none; padding: 14px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; font-size: 15px; }
     button:hover { opacity: 0.8; }
     #saveBtn { background: #3ddc97; color: #000; }
@@ -66,7 +68,6 @@
       </div>
     </div>
     
-    <!-- SAISON-ABFRAGE BOX (Multi-Plattform) -->
     <div id="seasonRegistrationBox" class="registration-box">
       <h3>🎯 Anmeldung nächste Saison</h3>
       <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px; text-align: center; color: #90a9b7;">Lade Status...</p>
@@ -82,7 +83,6 @@
       <div id="assignmentArea"></div>
     </div>
 
-    <!-- Das eigentliche Profil-Formular -->
     <form id="profilForm" style="display:none;">
       <div class="input-group">
         <div style="flex: 2;"><label>Echter Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
@@ -93,18 +93,28 @@
       <label>Mein Dartsetup (Welche Darts spiele ich derzeit?)</label>
       <input type="text" id="dart_setup" placeholder="z.B. Target Gabriel Clemens 21g, Condor Flights">
       <div class="divider"></div>
+      
+      <!-- Autodarts -->
       <div class="input-group">
         <div style="flex: 2;"><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="autodarts_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
-      <div class="input-group">
+      <input type="text" id="autodarts_url" class="url-input" placeholder="URL zum Autodarts Profil (optional)">
+      
+      <!-- DartCounter -->
+      <div class="input-group" style="margin-top: 10px;">
         <div style="flex: 2;"><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="dartcounter_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
-      <div class="input-group">
+      <input type="text" id="dartcounter_url" class="url-input" placeholder="URL zum DartCounter Profil (optional)">
+      
+      <!-- Scolia -->
+      <div class="input-group" style="margin-top: 10px;">
         <div style="flex: 2;"><label>Scolia Name</label><input type="text" id="scolia_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="scolia_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
+      <input type="text" id="scolia_url" class="url-input" placeholder="URL zum Scolia Profil (optional)">
+
       <div class="divider"></div>
       <button type="submit" id="saveBtn">Profil Speichern</button>
       <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
@@ -144,12 +154,18 @@
                       document.getElementById("plz").value = data.plz || "";
                       document.getElementById("ort").value = data.ort || "";
                       document.getElementById("dart_setup").value = data.dart_setup || "";
+                      
                       document.getElementById("autodarts_name").value = data.autodarts_name || "";
                       document.getElementById("autodarts_avg").value = data.autodarts_avg || "";
+                      document.getElementById("autodarts_url").value = data.autodarts_url || "";
+                      
                       document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
                       document.getElementById("dartcounter_avg").value = data.dartcounter_avg || "";
+                      document.getElementById("dartcounter_url").value = data.dartcounter_url || "";
+                      
                       document.getElementById("scolia_name").value = data.scolia_name || "";
                       document.getElementById("scolia_avg").value = data.scolia_avg || "";
+                      document.getElementById("scolia_url").value = data.scolia_url || "";
                       
                       if (data.is_admin === true) {
                           document.getElementById("adminBadge").style.display = "inline-block";
@@ -193,7 +209,6 @@
                               regForm.style.display = "block";
                           }
 
-                          // SICHERHEITS-CHECK VOR DEM SPEICHERN DER ANMELDUNG
                           document.getElementById("btnSaveRegistration").onclick = async () => {
                               const wantAd = document.getElementById("want_ad").checked;
                               const wantDc = document.getElementById("want_dc").checked;
@@ -201,12 +216,16 @@
 
                               const adName = document.getElementById("autodarts_name").value.trim();
                               const adAvg = document.getElementById("autodarts_avg").value.trim().replace(',', '.');
+                              const adUrl = document.getElementById("autodarts_url").value.trim();
+                              
                               const dcName = document.getElementById("dartcounter_name").value.trim();
                               const dcAvg = document.getElementById("dartcounter_avg").value.trim().replace(',', '.');
+                              const dcUrl = document.getElementById("dartcounter_url").value.trim();
+                              
                               const scName = document.getElementById("scolia_name").value.trim();
                               const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
+                              const scUrl = document.getElementById("scolia_url").value.trim();
 
-                              // Validation: Felder müssen ausgefüllt sein
                               if (wantAd && (!adName || !adAvg)) return alert("❌ Bitte trage unten erst deinen Autodarts Namen und deinen AVG ein!");
                               if (wantDc && (!dcName || !dcAvg)) return alert("❌ Bitte trage unten erst deinen DartCounter Namen und deinen AVG ein!");
                               if (wantSc && (!scName || !scAvg)) return alert("❌ Bitte trage unten erst deinen Scolia Namen und deinen AVG ein!");
@@ -217,13 +236,12 @@
 
                               const wantsAny = wantAd || wantDc || wantSc;
                               
-                              // Speichert die Anmeldung UND parallel auch sofort das Profil, falls der User etwas ergänzt hat
                               await supabaseClient.from('profiles').update({
                                   want_autodarts: wantAd, want_dartcounter: wantDc, want_scolia: wantSc,
                                   status_neue_saison: wantsAny ? 'waiting' : 'none',
-                                  autodarts_name: adName || null, autodarts_avg: adAvg || null,
-                                  dartcounter_name: dcName || null, dartcounter_avg: dcAvg || null,
-                                  scolia_name: scName || null, scolia_avg: scAvg || null
+                                  autodarts_name: adName || null, autodarts_avg: adAvg || null, autodarts_url: adUrl || null,
+                                  dartcounter_name: dcName || null, dartcounter_avg: dcAvg || null, dartcounter_url: dcUrl || null,
+                                  scolia_name: scName || null, scolia_avg: scAvg || null, scolia_url: scUrl || null
                               }).eq('id', currentUser.id);
                               
                               window.location.reload();
@@ -243,9 +261,19 @@
             id: currentUser.id,
             real_name: document.getElementById("real_name").value.trim() || null, plz: document.getElementById("plz").value.trim() || null,
             ort: document.getElementById("ort").value.trim() || null, dart_setup: document.getElementById("dart_setup").value.trim() || null,
-            autodarts_name: document.getElementById("autodarts_name").value.trim() || null, autodarts_avg: document.getElementById("autodarts_avg").value.trim().replace(',', '.') || null,
-            dartcounter_name: document.getElementById("dartcounter_name").value.trim() || null, dartcounter_avg: document.getElementById("dartcounter_avg").value.trim().replace(',', '.') || null,
-            scolia_name: document.getElementById("scolia_name").value.trim() || null, scolia_avg: document.getElementById("scolia_avg").value.trim().replace(',', '.') || null,
+            
+            autodarts_name: document.getElementById("autodarts_name").value.trim() || null, 
+            autodarts_avg: document.getElementById("autodarts_avg").value.trim().replace(',', '.') || null,
+            autodarts_url: document.getElementById("autodarts_url").value.trim() || null,
+            
+            dartcounter_name: document.getElementById("dartcounter_name").value.trim() || null, 
+            dartcounter_avg: document.getElementById("dartcounter_avg").value.trim().replace(',', '.') || null,
+            dartcounter_url: document.getElementById("dartcounter_url").value.trim() || null,
+            
+            scolia_name: document.getElementById("scolia_name").value.trim() || null, 
+            scolia_avg: document.getElementById("scolia_avg").value.trim().replace(',', '.') || null,
+            scolia_url: document.getElementById("scolia_url").value.trim() || null,
+            
             updated_at: new Date()
         };
         await supabaseClient.from('profiles').upsert(updates);
