@@ -144,9 +144,17 @@
 
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 
+    // UNZERSTÖRBARER UUID-GENERATOR (Läuft auf jedem PC, http und https völlig fehlerfrei!)
+    function generateMathUuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     async function initAdmin() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return window.location.href = "index.html";
+        const { data: { session }, error: sErr } = await supabaseClient.auth.getSession();
+        if (sErr || !session) return window.location.href = "index.html";
 
         const { data: profile } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
         if (!profile || profile.is_admin !== true) return window.location.href = "index.html";
@@ -157,22 +165,21 @@
         loadWaitingList(); 
     }
 
-    // AUTOMATISCHE TESTSPIELER GENERIERUNG DIREKT IM DASHBOARD
     window.createDummyPlayer = async function() {
         const name = document.getElementById("dummyNameInput").value.trim();
         if(!name) return alert("Bitte gib erst einen Namen für den Spieler ein!");
 
-        // Erzeugt eine vorschriftsmäßige, zufällige ID (UUID v4) über JavaScript
-        const generatedUuid = crypto.randomUUID();
+        // Hier nutzen wir jetzt den unzerstörbaren Ersatz-Generator
+        const unzerstoerbareId = generateMathUuid();
 
         const dummyRow = {
-            id: generatedUuid,
+            id: unzerstoerbareId,
             discord_name: name,
             real_name: name + " (Gast)",
             status_neue_saison: 'waiting',
-            want_autodarts: true,     // Aktiviert standardmäßig die Anmeldung für alle 3, 
-            want_dartcounter: true,   // damit du ihn flexibel einteilen oder per Dropdown
-            want_scolia: true,        // wieder rauswerfen kannst!
+            want_autodarts: true,
+            want_dartcounter: true,
+            want_scolia: true,
             autodarts_name: name,
             autodarts_avg: "45.0",
             dartcounter_name: name,
@@ -186,7 +193,7 @@
         if (error) {
             alert("Fehler beim Erstellen: " + error.message);
         } else {
-            alert(`🎉 Spieler "${name}" erfolgreich ohne Discord angelegt! Er wartet jetzt direkt unten in der Liste.`);
+            alert(`🎉 Spieler "${name}" erfolgreich angelegt!`);
             document.getElementById("dummyNameInput").value = "";
             loadWaitingList();
         }
@@ -211,8 +218,12 @@
 
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
-        const { data: players } = await supabaseClient.from('profiles').select('*').in('status_neue_saison', ['waiting', 'assigned']);
-        if (!players || players.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Niemand in der Warteschlange.</td></tr>'; return; }
+        const { data: players, error } = await supabaseClient.from('profiles').select('*').in('status_neue_saison', ['waiting', 'assigned']);
+        
+        if (error || !players || players.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Niemand in der Warteschlange.</td></tr>'; 
+            return; 
+        }
 
         tbody.innerHTML = players.map(p => {
             const isEingeteilt = p.status_neue_saison === 'assigned';
@@ -230,7 +241,7 @@
               <td style="text-align:center;">
                 <button class="assign-btn" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
                 <button class="remove-btn" onclick="removePlayerCompletely('${p.id}')">Rauswerfen</button>
-                ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px;">✓ Eingeteilt</div>' : ''}
+                ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px; text-align:center;">✓ Eingeteilt</div>' : ''}
               </td></tr>`}).join("");
     }
 
