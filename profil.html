@@ -88,11 +88,14 @@
           if (currentSession) {
               currentUser = currentSession.user;
               
-              const discordName = currentSession.user.user_metadata.full_name || "Spieler";
-              const avatarUrl = currentSession.user.user_metadata.avatar_url;
+              const meta = currentSession.user.user_metadata || {};
+              const discordName = meta.full_name || meta.name || "Spieler";
+              const avatarUrl = meta.avatar_url || meta.picture || "";
               
               document.getElementById("statusText").innerText = discordName;
-              if (avatarUrl) document.getElementById("userAvatar").src = avatarUrl;
+              if (avatarUrl) {
+                  document.getElementById("userAvatar").src = avatarUrl;
+              }
               document.getElementById("profilForm").style.display = "block";
               
               try {
@@ -131,11 +134,12 @@
         const saveBtn = document.getElementById("saveBtn");
         
         const autoName = document.getElementById("autodarts_name").value.trim();
-        const autoAvg = document.getElementById("autodarts_avg").value.trim();
+        // Hier wandeln wir ein Komma in einen Punkt um!
+        const autoAvg = document.getElementById("autodarts_avg").value.trim().replace(',', '.');
         const dcName = document.getElementById("dartcounter_name").value.trim();
-        const dcAvg = document.getElementById("dartcounter_avg").value.trim();
+        const dcAvg = document.getElementById("dartcounter_avg").value.trim().replace(',', '.');
         const scName = document.getElementById("scolia_name").value.trim();
-        const scAvg = document.getElementById("scolia_avg").value.trim();
+        const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
 
         // PFLICHTFELD LOGIK
         if (autoName !== "" && autoAvg === "") return showError("Fehler: Autodarts AVG fehlt!");
@@ -145,18 +149,21 @@
         saveBtn.innerText = "Speichert...";
         saveBtn.disabled = true;
 
+        const meta = currentUser.user_metadata || {};
+        const safeAvatarUrl = meta.avatar_url || meta.picture || "";
+
         const updates = {
             id: currentUser.id,
-            real_name: document.getElementById("real_name").value,
-            plz: document.getElementById("plz").value,
-            ort: document.getElementById("ort").value,
+            real_name: document.getElementById("real_name").value.trim(),
+            plz: document.getElementById("plz").value.trim(),
+            ort: document.getElementById("ort").value.trim(),
             autodarts_name: autoName,
             autodarts_avg: autoAvg,
             dartcounter_name: dcName,
             dartcounter_avg: dcAvg,
             scolia_name: scName,
             scolia_avg: scAvg,
-            avatar_url: currentUser.user_metadata.avatar_url || "", // <-- NEU: Speichert das Profilbild in der DB!
+            avatar_url: safeAvatarUrl, // Speichert das Bild jetzt sicher!
             updated_at: new Date()
         };
         
