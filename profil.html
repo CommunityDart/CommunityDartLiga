@@ -8,11 +8,11 @@
     body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; }
     .shell { background: #041924; border: 1px solid rgba(32,183,255,0.2); padding: 30px; border-radius: 15px; max-width: 600px; margin: 40px auto; }
     
-    /* Profilbild Styles */
     .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
     .avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #20b7ff; object-fit: cover; background: #021017; }
     .admin-badge { background: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 10px; display: none; }
     
+    label { display: block; font-size: 13px; color: #90a9b7; margin-bottom: 5px; font-weight: bold; }
     input { width: 100%; padding: 10px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 5px; box-sizing: border-box; }
     button { background: #3ddc97; color: #000; border: none; padding: 12px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; }
     button:hover { opacity: 0.8; }
@@ -21,6 +21,7 @@
     
     .input-group { display: flex; gap: 10px; }
     .input-group > div { flex: 1; }
+    .divider { height: 1px; background: rgba(120,170,195,0.1); margin: 15px 0 20px 0; }
   </style>
 </head>
 <body>
@@ -35,22 +36,31 @@
     </div>
     
     <form id="profilForm" style="display:none;">
-      <label>Echter Name</label>
-      <input type="text" id="real_name" placeholder="Dein Vorname">
       
       <div class="input-group">
-        <div>
-          <label>Autodarts Name</label>
-          <input type="text" id="autodarts_name" placeholder="Name bei Autodarts">
-        </div>
-        <div>
-          <label>Autodarts AVG</label>
-          <input type="text" id="autodarts_avg" placeholder="z.B. 45.67">
-        </div>
+        <div style="flex: 2;"><label>Echter Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
+        <div style="flex: 1;"><label>PLZ</label><input type="text" id="plz" maxlength="5" placeholder="12345"></div>
+        <div style="flex: 2;"><label>Wohnort</label><input type="text" id="ort" placeholder="Musterstadt"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="input-group">
+        <div style="flex: 2;"><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
+        <div style="flex: 1;"><label>AVG</label><input type="text" id="autodarts_avg" placeholder="z.B. 45.6"></div>
       </div>
       
-      <label>DartCounter Name</label>
-      <input type="text" id="dartcounter_name" placeholder="Name bei Dartcounter">
+      <div class="input-group">
+        <div style="flex: 2;"><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
+        <div style="flex: 1;"><label>AVG</label><input type="text" id="dartcounter_avg" placeholder="z.B. 45.6"></div>
+      </div>
+
+      <div class="input-group">
+        <div style="flex: 2;"><label>Scolia Name</label><input type="text" id="scolia_name"></div>
+        <div style="flex: 1;"><label>AVG</label><input type="text" id="scolia_avg" placeholder="z.B. 45.6"></div>
+      </div>
+
+      <div class="divider"></div>
 
       <button type="submit" id="saveBtn">Profil Speichern</button>
       <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
@@ -78,56 +88,59 @@
           if (currentSession) {
               currentUser = currentSession.user;
               
-              // Discord Daten auslesen
-              const discordName = currentSession.user.user_metadata.full_name || currentSession.user.user_metadata.name || "Spieler";
+              const discordName = currentSession.user.user_metadata.full_name || "Spieler";
               const avatarUrl = currentSession.user.user_metadata.avatar_url;
               
               document.getElementById("statusText").innerText = discordName;
-              if (avatarUrl) {
-                  document.getElementById("userAvatar").src = avatarUrl;
-              }
+              if (avatarUrl) document.getElementById("userAvatar").src = avatarUrl;
               document.getElementById("profilForm").style.display = "block";
               
-              // Lade Datenbank-Infos
               try {
                   const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
                   if (data) {
                       document.getElementById("real_name").value = data.real_name || "";
+                      document.getElementById("plz").value = data.plz || "";
+                      document.getElementById("ort").value = data.ort || "";
                       document.getElementById("autodarts_name").value = data.autodarts_name || "";
                       document.getElementById("autodarts_avg").value = data.autodarts_avg || "";
                       document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
+                      document.getElementById("dartcounter_avg").value = data.dartcounter_avg || "";
+                      document.getElementById("scolia_name").value = data.scolia_name || "";
+                      document.getElementById("scolia_avg").value = data.scolia_avg || "";
                       
-                      // Zeige Admin Badge, wenn in der DB is_admin = true steht
-                      if (data.is_admin === true) {
-                          document.getElementById("adminBadge").style.display = "inline-block";
-                      }
+                      if (data.is_admin === true) document.getElementById("adminBadge").style.display = "inline-block";
                   }
-              } catch (err) {
-                  console.log("Fehler beim Profil-Laden:", err);
-              }
+              } catch (err) {}
           } else if (event === 'SIGNED_OUT') {
               window.location.href = "index.html";
           }
       });
     }
 
+    function showError(text) {
+        const msgBox = document.getElementById("msgBox");
+        msgBox.style.display = "block";
+        msgBox.style.background = "rgba(231, 76, 60, 0.2)";
+        msgBox.style.color = "#e74c3c";
+        msgBox.style.border = "1px solid #e74c3c";
+        msgBox.innerText = text;
+    }
+
     document.getElementById("profilForm").addEventListener("submit", async function(e) {
         e.preventDefault(); 
-        const msgBox = document.getElementById("msgBox");
         const saveBtn = document.getElementById("saveBtn");
         
-        const autoDartsName = document.getElementById("autodarts_name").value.trim();
-        const autoDartsAvg = document.getElementById("autodarts_avg").value.trim();
+        const autoName = document.getElementById("autodarts_name").value.trim();
+        const autoAvg = document.getElementById("autodarts_avg").value.trim();
+        const dcName = document.getElementById("dartcounter_name").value.trim();
+        const dcAvg = document.getElementById("dartcounter_avg").value.trim();
+        const scName = document.getElementById("scolia_name").value.trim();
+        const scAvg = document.getElementById("scolia_avg").value.trim();
 
-        // PFLICHTFELD LOGIK:
-        if (autoDartsName !== "" && autoDartsAvg === "") {
-            msgBox.style.display = "block";
-            msgBox.style.background = "rgba(231, 76, 60, 0.2)";
-            msgBox.style.color = "#e74c3c";
-            msgBox.style.border = "1px solid #e74c3c";
-            msgBox.innerText = "Fehler: Wenn du einen Autodarts Namen angibst, musst du auch deinen aktuellen AVG eintragen!";
-            return; // Bricht das Speichern hier ab!
-        }
+        // PFLICHTFELD LOGIK
+        if (autoName !== "" && autoAvg === "") return showError("Fehler: Autodarts AVG fehlt!");
+        if (dcName !== "" && dcAvg === "") return showError("Fehler: DartCounter AVG fehlt!");
+        if (scName !== "" && scAvg === "") return showError("Fehler: Scolia AVG fehlt!");
 
         saveBtn.innerText = "Speichert...";
         saveBtn.disabled = true;
@@ -135,9 +148,14 @@
         const updates = {
             id: currentUser.id,
             real_name: document.getElementById("real_name").value,
-            autodarts_name: autoDartsName,
-            autodarts_avg: autoDartsAvg,
-            dartcounter_name: document.getElementById("dartcounter_name").value,
+            plz: document.getElementById("plz").value,
+            ort: document.getElementById("ort").value,
+            autodarts_name: autoName,
+            autodarts_avg: autoAvg,
+            dartcounter_name: dcName,
+            dartcounter_avg: dcAvg,
+            scolia_name: scName,
+            scolia_avg: scAvg,
             updated_at: new Date()
         };
         
@@ -147,12 +165,9 @@
         saveBtn.disabled = false;
 
         if (error) {
-            msgBox.style.display = "block";
-            msgBox.style.background = "rgba(231, 76, 60, 0.2)";
-            msgBox.style.color = "#e74c3c";
-            msgBox.style.border = "1px solid #e74c3c";
-            msgBox.innerText = "Fehler beim Speichern! " + error.message;
+            showError("Fehler beim Speichern! " + error.message);
         } else {
+            const msgBox = document.getElementById("msgBox");
             msgBox.style.display = "block";
             msgBox.style.background = "rgba(61, 220, 151, 0.2)";
             msgBox.style.color = "#3ddc97";
@@ -167,9 +182,7 @@
         document.getElementById("statusText").innerText = "Wird ausgeloggt...";
         document.getElementById("profilForm").style.display = "none";
         await supabaseClient.auth.signOut();
-        setTimeout(() => {
-            window.location.href = "index.html";
-        }, 500); 
+        setTimeout(() => { window.location.href = "index.html"; }, 500); 
     });
 
     initProfile();
