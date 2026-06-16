@@ -22,6 +22,8 @@
     .input-group { display: flex; gap: 10px; }
     .input-group > div { flex: 1; }
     .divider { height: 1px; background: rgba(120,170,195,0.1); margin: 15px 0 20px 0; }
+    
+    .hint-text { font-size: 12px; color: #90a9b7; margin-top: 15px; font-style: italic; }
   </style>
 </head>
 <body>
@@ -39,9 +41,14 @@
       
       <div class="input-group">
         <div style="flex: 2;"><label>Echter Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
-        <div style="flex: 1;"><label>PLZ</label><input type="text" id="plz" maxlength="5" placeholder="12345"></div>
+        <div style="flex: 1;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" placeholder="12345"></div>
         <div style="flex: 2;"><label>Wohnort</label><input type="text" id="ort" placeholder="Musterstadt"></div>
       </div>
+
+      <div class="divider"></div>
+
+      <label>Mein Dartsetup (Welche Darts spiele ich derzeit?)</label>
+      <input type="text" id="dart_setup" placeholder="z.B. Target Gabriel Clemens 21g, Condor Flights">
 
       <div class="divider"></div>
 
@@ -64,6 +71,8 @@
 
       <button type="submit" id="saveBtn">Profil Speichern</button>
       <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
+      
+      <p class="hint-text">* wird benötigt für die Mitgliederkarte</p>
       
       <div id="msgBox" style="margin-top:15px; font-weight:bold; padding: 10px; border-radius: 5px; display: none;"></div>
     </form>
@@ -104,6 +113,7 @@
                       document.getElementById("real_name").value = data.real_name || "";
                       document.getElementById("plz").value = data.plz || "";
                       document.getElementById("ort").value = data.ort || "";
+                      document.getElementById("dart_setup").value = data.dart_setup || ""; // <-- NEU: Lädt das Setup
                       document.getElementById("autodarts_name").value = data.autodarts_name || "";
                       document.getElementById("autodarts_avg").value = data.autodarts_avg || "";
                       document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
@@ -151,12 +161,12 @@
         const meta = currentUser.user_metadata || {};
         const safeAvatarUrl = meta.avatar_url || meta.picture || "";
 
-        // HIER IST DER FIX: Wenn ein Wert leer ist (""), senden wir ein sauberes null (Datenbank-Leerzeichen)
         const updates = {
             id: currentUser.id,
             real_name: document.getElementById("real_name").value.trim() || null,
             plz: document.getElementById("plz").value.trim() || null,
             ort: document.getElementById("ort").value.trim() || null,
+            dart_setup: document.getElementById("dart_setup").value.trim() || null, // <-- NEU: Speichert das Setup
             autodarts_name: autoName || null,
             autodarts_avg: autoAvg || null,
             dartcounter_name: dcName || null,
