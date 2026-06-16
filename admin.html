@@ -9,25 +9,31 @@
     body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
     .shell { background: #041924; border: 1px solid rgba(231,76,60,0.4); padding: 30px; border-radius: 15px; max-width: 1000px; margin: 20px auto; }
     
-    h1 { color: #e74c3c; margin-top: 0; display:flex; justify-content:space-between; align-items:center; }
+    h1 { color: #e74c3c; margin-top: 0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;}
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-weight:bold; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 600px; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
     th { background: rgba(0,0,0,0.2); color: #90a9b7; font-size: 13px; text-transform: uppercase; }
     
-    .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; }
     .assign-btn:hover { opacity: 0.8; }
     
     .empty-msg { text-align: center; color: #90a9b7; padding: 40px; font-style: italic; }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .shell { padding: 15px; }
+      h1 { font-size: 20px; }
+    }
   </style>
 </head>
 <body>
   <div class="shell">
-    <h1>⚙️ Liga-Einteilung (Warteschlange) <button class="back-btn" onclick="window.location.href='profil.html'">Zurück</button></h1>
-    <p style="color:#90a9b7; font-size:14px;">Hier tauchen alle Spieler auf, die im Profil auf "Für Liga anmelden" gedrückt haben. Trage sie in dein Google Sheet ein und klicke danach auf "In Liga zugeordnet".</p>
+    <h1>⚙️ Liga-Einteilung <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
+    <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Hier tauchen alle Spieler auf, die im Profil auf "Für Liga anmelden" gedrückt haben. Trage sie in dein Google Sheet ein und klicke danach auf "In Liga zugeordnet".</p>
     
-    <div style="overflow-x: auto;">
+    <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
       <table>
         <thead>
           <tr>
@@ -75,20 +81,20 @@
 
         tbody.innerHTML = players.map(p => `
             <tr>
-              <td><strong>${p.discord_name || '-'}</strong></td>
+              <td><strong style="color: #fff;">${p.discord_name || '-'}</strong></td>
               <td>${p.real_name || '-'}</td>
               <td>${p.autodarts_name ? `${p.autodarts_name} <br><span style="color:#20b7ff">${p.autodarts_avg} AVG</span>` : '-'}</td>
               <td>${p.dartcounter_name ? `${p.dartcounter_name} <br><span style="color:#ff9f1c">${p.dartcounter_avg} AVG</span>` : '-'}</td>
-              <td><button class="assign-btn" onclick="markAsAssigned('${p.id}')">In Liga zugeordnet ✔️</button></td>
+              <td><button class="assign-btn" onclick="markAsAssigned('${p.id}')">Eingeteilt ✔️</button></td>
             </tr>
         `).join("");
     }
 
     window.markAsAssigned = async function(playerId) {
-        if(!confirm("Hast du den Spieler in dein Google Sheet eingetragen?")) return;
+        if(!confirm("Hast du den Spieler erfolgreich in dein Google Sheet eingetragen?")) return;
         
         await supabase.from('profiles').update({ anmelde_status: 'assigned' }).eq('id', playerId);
-        loadWaitingList(); // Tabelle neu laden
+        loadWaitingList(); // Tabelle direkt neu laden
     };
 
     initAdmin();
