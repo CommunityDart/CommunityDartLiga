@@ -97,7 +97,7 @@
     body[data-mode="DartCounter"] tbody tr:hover td{background:#5a2b08}
 
     .rank-col{ width:84px; font-weight:900; position:relative; }
-    .rank-col.first::before, .rank-col.last::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:10px; }
+    .rank-col.first::before, .rank-col.last::before{ content:"absolute"; position:absolute; left:0; top:0; bottom:0; width:10px; }
     .rank-col.first::before{ background:var(--green); }
     .rank-col.last::before{ background:var(--red); }
 
@@ -164,17 +164,17 @@
     .content-block h4{ margin:0 0 8px; font-size:15px; color:#fff; }
     .content-block:last-child{ margin-bottom:0; }
 
-    /* Modal Profil Header & Avatar */
     .modal-profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
     .modal-profile-name { font-size: 20px; font-weight: 900; margin: 0; }
     
     .modal-discord-sub { font-size: 13px; color: #8ec9ee; font-weight: bold; cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
     .modal-discord-sub:hover { color: #fff; }
+    
+    /* Style für die Profil-Links */
+    .platform-link-btn { display: inline-block; background: rgba(32,183,255,0.15); border: 1px solid rgba(32,183,255,0.3); color: #20b7ff; padding: 2px 8px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 8px; transition: 0.2s; }
+    .platform-link-btn:hover { background: #20b7ff; color: #000; }
 
-    /* ==========================================
-       MOBILE OPTIMIERUNG
-       ========================================== */
     @media (max-width:1180px){
       .banner-nav{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
       .submenu-row{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
@@ -191,19 +191,14 @@
       .hero-banner.image-banner{ min-height:180px; border-radius:20px; background-position:center center; background-size:cover; }
       .banner-nav, .submenu-row{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
       .hero-action-btn{ min-height:42px; border-radius:14px; font-size:13px; padding:0 10px; white-space:nowrap; }
-      
-      /* Tabellen kompakter auf Mobile */
       .player-cell{ width:120px; min-width:120px; }
       thead th { padding: 10px 8px; font-size: 11px; }
       tbody td { padding: 10px 8px; font-size: 13px; }
       .rank-col { width: 60px; }
-      
       .matchday-head-right{ width:92px; min-width:92px; flex:0 0 92px; }
       .matchday-progress{ width:42px; }
       .status-cell, .col-status{ width:92px; min-width:92px; }
       .match-table td.col-player{ min-width:100px; }
-      
-      /* Modals bekommen Sicherheitsabstand auf Mobile */
       .modal { width: calc(100% - 24px); margin: 12px; max-height: calc(100vh - 24px); }
       .modal-head, .modal-body { padding: 14px; }
     }
@@ -427,12 +422,17 @@
                 </div>`;
             }
 
+            // HIER WERDEN JETZT DIE LINKS ANGEZEIGT (Falles vorhanden)
+            const adLink = data.autodarts_url ? `<a href="${htmlEscape(data.autodarts_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
+            const dcLink = data.dartcounter_url ? `<a href="${htmlEscape(data.dartcounter_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
+            const scLink = data.scolia_url ? `<a href="${htmlEscape(data.scolia_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
+
             profileHtml += `
                 <div class="content-block">
                     <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Plattformen & AVG</h4>
-                    <p style="margin:4px 0;"><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em></p>
-                    <p style="margin:4px 0;"><strong>DartCounter:</strong> ${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: ${htmlEscape(data.dartcounter_avg || '-')})</em></p>
-                    <p style="margin:4px 0;"><strong>Scolia:</strong> ${htmlEscape(data.scolia_name || '-')} <em>(AVG: ${htmlEscape(data.scolia_avg || '-')})</em></p>
+                    <p style="margin:4px 0;"><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em> ${adLink}</p>
+                    <p style="margin:4px 0;"><strong>DartCounter:</strong> ${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: ${htmlEscape(data.dartcounter_avg || '-')})</em> ${dcLink}</p>
+                    <p style="margin:4px 0;"><strong>Scolia:</strong> ${htmlEscape(data.scolia_name || '-')} <em>(AVG: ${htmlEscape(data.scolia_avg || '-')})</em> ${scLink}</p>
                 </div>
                 
                 <div class="content-block" style="margin-top:10px;">
