@@ -15,7 +15,7 @@
 <body>
   <div class="shell">
     <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
-    <h2 id="statusText">Lade dein Profil...</h2>
+    <h2 id="statusText">Lade Profil...</h2>
     
     <form id="profilForm" style="display:none;" onsubmit="saveProfile(event)">
       <label>Echter Name</label>
@@ -29,37 +29,53 @@
 
       <button type="submit">Profil Speichern</button>
       <button type="button" style="background: #e74c3c; margin-left:10px;" onclick="logout()">Ausloggen</button>
-      <p id="erfolgMsg" style="color: #3ddc97; display:none;">Gespeichert!</p>
+      <p id="erfolgMsg" style="color: #3ddc97; display:none; margin-top:10px;">Profil erfolgreich gespeichert!</p>
     </form>
   </div>
 
   <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
+    // DEIN ORIGINAL KEY IST JETZT HIER FEST EINGEBAUT:
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+    
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
 
-    // Prüfen, ob der Login geklappt hat
+    // 1. Erstmal schauen, ob wir gerade von Discord kommen
+    if (window.location.hash.includes("access_token")) {
+        document.getElementById("statusText").innerText = "Login wird verarbeitet, bitte einen Moment warten...";
+    } else {
+        // Falls wir NICHT von Discord kommen, schauen wir, ob eine Sitzung existiert
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            if (!session) {
+                // Keine Sitzung und kein Token -> Zurück zur Startseite!
+                window.location.href = "index.html";
+            }
+        });
+    }
+
+    // 2. Warten, bis Supabase das Token verarbeitet hat oder den Login erkennt
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (session) {
             currentUser = session.user;
             document.getElementById("statusText").innerText = "Willkommen, " + (session.user.user_metadata.full_name || "Spieler");
             document.getElementById("profilForm").style.display = "block";
             
-            // Lade vorhandene Daten aus der DB
-            const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-            if (data) {
-                document.getElementById("real_name").value = data.real_name || "";
-                document.getElementById("autodarts_name").value = data.autodarts_name || "";
-                document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
+            // Lade vorhandene Daten aus der Supabase Datenbank
+            try {
+                const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                if (data) {
+                    document.getElementById("real_name").value = data.real_name || "";
+                    document.getElementById("autodarts_name").value = data.autodarts_name || "";
+                    document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
+                }
+            } catch (err) {
+                console.log("Noch kein Profil in der Datenbank vorhanden.");
             }
-        } else {
-            // Nicht eingeloggt! Zurückschicken!
-            window.location.href = "index.html";
         }
     });
 
-    // Profil Speichern
+    // 3. Profil in Supabase Speichern
     async function saveProfile(e) {
         e.preventDefault();
         const updates = {
@@ -74,7 +90,7 @@
         setTimeout(() => document.getElementById("erfolgMsg").style.display = "none", 3000);
     }
 
-    // Logout
+    // 4. Logout und zurück zur Startseite
     async function logout() {
         await supabaseClient.auth.signOut();
         window.location.href = "index.html";
