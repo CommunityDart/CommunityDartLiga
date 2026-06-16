@@ -50,13 +50,11 @@
 <body>
   <div class="shell">
     
-    <!-- Navigation Oben -->
     <div class="top-buttons">
         <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
         <button id="adminDashboardBtn" class="back-btn admin-btn" style="display:none;" onclick="window.location.href='admin.html'">⚙️ Admin Dashboard</button>
     </div>
     
-    <!-- Profil Header mit Avatar -->
     <div class="profile-header">
       <img id="userAvatar" class="avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>" alt="Avatar">
       <div>
@@ -67,9 +65,9 @@
     <!-- SAISON-ABFRAGE BOX -->
     <div id="seasonRegistrationBox" class="registration-box">
       <h3>🎯 Nächste Saison</h3>
-      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px;">Möchtest du in der nächsten Saison wieder in der Liga mitspielen?</p>
+      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px;">Lade Status...</p>
       
-      <div id="registrationButtons" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+      <div id="registrationButtons" style="display: none; gap: 10px; justify-content: center; flex-wrap: wrap;">
         <button type="button" id="btnPlayYes" style="background: #3ddc97; color: #000; width: 140px;">Ja, ich spiele!</button>
         <button type="button" id="btnPlayNo" style="background: #e74c3c; color: #fff; width: 140px;">Nein, Pause</button>
       </div>
@@ -148,6 +146,11 @@
               
               try {
                   const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                  
+                  // Prüfen, ob die Anmeldung überhaupt offen ist
+                  const { data: sysData } = await supabaseClient.from('system_settings').select('registration_open').eq('id', 1).single();
+                  const isRegistrationOpen = sysData ? sysData.registration_open : false;
+
                   if (data) {
                       document.getElementById("real_name").value = data.real_name || "";
                       document.getElementById("plz").value = data.plz || "";
@@ -160,13 +163,13 @@
                       document.getElementById("scolia_name").value = data.scolia_name || "";
                       document.getElementById("scolia_avg").value = data.scolia_avg || "";
                       
-                      // Prüfen ob Admin eingeloggt ist
+                      // Zeige Admin Button und Badge
                       if (data.is_admin === true) {
                           document.getElementById("adminBadge").style.display = "inline-block";
                           document.getElementById("adminDashboardBtn").style.display = "inline-block";
                       }
 
-                      // LOGIK FÜR SAISON-ABFRAGE
+                      // LOGIK FÜR SAISON-ABFRAGE (mit Hauptschalter)
                       const regBox = document.getElementById("seasonRegistrationBox");
                       const regText = document.getElementById("registrationStatusText");
                       const btnYes = document.getElementById("btnPlayYes");
@@ -175,29 +178,39 @@
                       
                       regBox.style.display = "block";
 
-                      if (data.next_season_active === true) {
-                          if (data.assigned_league) {
-                              regText.innerHTML = `✅ Du wurdest für die nächste Saison eingeteilt in:<br><strong style="color:var(--accent); font-size:18px;">${data.assigned_league}</strong>`;
+                      if (isRegistrationOpen === false) {
+                          regText.innerHTML = "🔒 <strong>Die Anmeldung für die neue Saison ist aktuell geschlossen.</strong><br>Bitte warte, bis die laufende Saison beendet wurde.";
+                          regButtons.style.display = "none";
+                      } 
+                      else {
+                          // Wenn offen, dann normale Logik
+                          if (data.next_season_active === true) {
+                              if (data.assigned_league) {
+                                  regText.innerHTML = `✅ Du wurdest für die nächste Saison eingeteilt in:<br><strong style="color:var(--accent); font-size:18px;">${data.assigned_league}</strong>`;
+                                  regButtons.style.display = "none";
+                              } else {
+                                  regText.innerHTML = "⏳ Du hast dich für die nächste Saison angemeldet. Bitte warte auf die Einteilung durch die Admins.";
+                                  regButtons.style.display = "none";
+                              }
+                          } else if (data.next_season_active === false) {
+                              regText.innerHTML = "⏸️ Du pausierst in der nächsten Saison. Komm gerne danach wieder zurück!";
                               regButtons.style.display = "none";
                           } else {
-                              regText.innerHTML = "⏳ Du hast dich für die nächste Saison angemeldet. Bitte warte auf die Einteilung durch die Admins.";
-                              regButtons.style.display = "none";
+                              regText.innerHTML = "Möchtest du in der nächsten Saison wieder in der Liga mitspielen?";
+                              regButtons.style.display = "flex";
+
+                              btnYes.onclick = async () => {
+                                  btnYes.innerText = "Speichert...";
+                                  await supabaseClient.from('profiles').update({ next_season_active: true }).eq('id', currentUser.id);
+                                  window.location.reload();
+                              };
+                              btnNo.onclick = async () => {
+                                  if(!confirm("Bist du sicher, dass du nächste Saison aussetzen möchtest?")) return;
+                                  btnNo.innerText = "Speichert...";
+                                  await supabaseClient.from('profiles').update({ next_season_active: false }).eq('id', currentUser.id);
+                                  window.location.reload();
+                              };
                           }
-                      } else if (data.next_season_active === false) {
-                          regText.innerHTML = "⏸️ Du pausierst in der nächsten Saison. Komm gerne danach wieder zurück!";
-                          regButtons.style.display = "none";
-                      } else {
-                          btnYes.onclick = async () => {
-                              btnYes.innerText = "Speichert...";
-                              await supabaseClient.from('profiles').update({ next_season_active: true }).eq('id', currentUser.id);
-                              window.location.reload();
-                          };
-                          btnNo.onclick = async () => {
-                              if(!confirm("Bist du sicher, dass du nächste Saison aussetzen möchtest?")) return;
-                              btnNo.innerText = "Speichert...";
-                              await supabaseClient.from('profiles').update({ next_season_active: false }).eq('id', currentUser.id);
-                              window.location.reload();
-                          };
                       }
 
                   }
