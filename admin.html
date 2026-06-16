@@ -21,7 +21,7 @@
     .toggle-btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .toggle-btn:hover { opacity: 0.8; }
 
-    table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    table { width: 100%; border-collapse: collapse; min-width: 900px; }
     th, td { padding: 15px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
     th { background: rgba(0,0,0,0.2); color: #90a9b7; font-size: 13px; text-transform: uppercase; }
     
@@ -35,7 +35,7 @@
     .tag-dc { background: rgba(255,159,28,0.2); color: #ff9f1c; }
     .tag-sc { background: rgba(61,220,151,0.2); color: #3ddc97; }
     
-    .old-league-info { font-size: 11px; color: #90a9b7; margin-bottom: 6px; display: block; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px;}
+    .old-league-info { font-size: 11px; color: #90a9b7; margin-bottom: 6px; display: block; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 6px;}
 
     .error-box { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; font-weight: bold; }
 
@@ -60,7 +60,7 @@
         <button id="toggleRegistrationBtn" class="toggle-btn" style="display:none;"></button>
     </div>
 
-    <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Wähle die passende Liga aus (beachte die "Bisherige Liga" für Auf-/Abstieg) und klicke auf Speichern.</p>
+    <p style="color:#90a9b7; font-size:14px; margin-bottom: 20px;">Wähle die passende Liga aus (beachte die "Letzte Liga" für Auf-/Abstieg) und klicke auf Speichern.</p>
     
     <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
       <table>
@@ -148,8 +148,7 @@
             await supabaseClient.from('system_settings').update({ registration_open: newState }).eq('id', 1);
             
             if (newState === true) {
-                 // WICHTIG: Wir setzen NUR den "status_neue_saison" zurück und entfernen die Checkboxen.
-                 // Die "assigned_ad_league" (etc.) bleiben erhalten, damit wir die bisherige Liga sehen!
+                 // WICHTIG: Setzt NUR den "status_neue_saison" zurück. assigned_league bleibt für die Anzeige "Letzte Liga" erhalten!
                  await supabaseClient.from('profiles').update({ 
                      want_autodarts: false, want_dartcounter: false, want_scolia: false,
                      status_neue_saison: 'none'
@@ -161,7 +160,7 @@
 
     function buildSelect(idPrefix, playerId, optionsArr, isWanted, currentVal) {
         if (!isWanted) return `<span style="color:#90a9b7; font-size:12px;">Nicht angemeldet</span>`;
-        let html = `<span class="old-league-info">Bisher: <b style="color:#fff">${currentVal || 'Keine'}</b></span>`;
+        let html = `<span class="old-league-info">Letzte Liga: <b style="color:#fff">${currentVal || 'Neu dabei'}</b></span>`;
         html += `<select id="${idPrefix}_${playerId}" class="league-select">
                       <option value="" disabled ${!currentVal ? 'selected' : ''}>-- Neue Liga wählen --</option>`;
         optionsArr.forEach(l => { html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`; });
@@ -172,7 +171,6 @@
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         try {
-            // Lade nur Spieler, die sich angemeldet oder die schon zugeteilt wurden
             const { data: players, error } = await supabaseClient.from('profiles').select('*')
                 .in('status_neue_saison', ['waiting', 'assigned']);
 
@@ -192,20 +190,20 @@
                     <span style="font-size:12px; color:#90a9b7;">Echt: ${htmlEscape(p.real_name || '-')}</span>
                   </td>
                   <td>
-                    ${p.want_autodarts ? `<span class="platform-tag tag-ad">Autodarts</span><br><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.autodarts_avg || '-')}</span><br>` : ''}
+                    ${p.want_autodarts ? `<span class="platform-tag tag-ad">Autodarts</span><br><strong style="color:#fff; font-size:13px; display:block; margin-bottom:2px;">${htmlEscape(p.autodarts_name || '-')}</strong><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.autodarts_avg || '-')}</span><br><br>` : ''}
                     ${buildSelect('ad', p.id, AD_LEAGUES, p.want_autodarts, p.assigned_ad_league)}
                   </td>
                   <td>
-                    ${p.want_dartcounter ? `<span class="platform-tag tag-dc">DartCounter</span><br><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.dartcounter_avg || '-')}</span><br>` : ''}
+                    ${p.want_dartcounter ? `<span class="platform-tag tag-dc">DartCounter</span><br><strong style="color:#fff; font-size:13px; display:block; margin-bottom:2px;">${htmlEscape(p.dartcounter_name || '-')}</strong><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.dartcounter_avg || '-')}</span><br><br>` : ''}
                     ${buildSelect('dc', p.id, DC_LEAGUES, p.want_dartcounter, p.assigned_dc_league)}
                   </td>
                   <td>
-                    ${p.want_scolia ? `<span class="platform-tag tag-sc">Scolia</span><br><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.scolia_avg || '-')}</span><br>` : ''}
+                    ${p.want_scolia ? `<span class="platform-tag tag-sc">Scolia</span><br><strong style="color:#fff; font-size:13px; display:block; margin-bottom:2px;">${htmlEscape(p.scolia_name || '-')}</strong><span style="font-size:12px;color:#90a9b7;">AVG: ${htmlEscape(p.scolia_avg || '-')}</span><br><br>` : ''}
                     ${buildSelect('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league)}
                   </td>
                   <td style="text-align:center;">
                     <button class="assign-btn" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
-                    ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px;">✓ Eingeteilt</div>' : ''}
+                    ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px; text-align:center;">✓ Gespeichert</div>' : ''}
                   </td>
                 </tr>
             `}).join("");
