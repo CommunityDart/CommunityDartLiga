@@ -13,21 +13,6 @@
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-weight:bold; }
     
     /* TABS SYSTEM */
-    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; overflow-x: auto; }<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Admin Dashboard - CDL</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
-    .shell { background: #041924; border: 1px solid rgba(231,76,60,0.4); padding: 30px; border-radius: 15px; max-width: 1400px; margin: 20px auto; }
-    
-    h1 { color: #e74c3c; margin-top: 0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;}
-    .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-weight:bold; }
-    
-    /* TABS SYSTEM */
     .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; overflow-x: auto; }
     .tab-btn { background: rgba(0,0,0,0.3); color: #90a9b7; border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s; }
     .tab-btn:hover { background: rgba(255,255,255,0.05); }
@@ -42,7 +27,7 @@
     .league-select, .leg-input { padding: 8px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 13px;}
     .leg-input { width: 50px; text-align: center; font-weight: bold; font-size: 16px; }
     
-    .assign-btn { background: #3ddc97; color: #000; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
+    .assign-btn { background: #3ddc97; color: #000; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; width: 100%; }
     .assign-btn:hover { opacity: 0.8; }
     .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; margin-top: 5px; width: 100%;}
     .remove-btn:hover { opacity: 0.8; }
@@ -76,6 +61,7 @@
       <button class="tab-btn" onclick="switchTab('saison'); loadSaisonSettings();">4. Saison Beenden</button>
     </div>
 
+    <!-- TAB 1: ZUTEILUNG -->
     <div id="zuteilung" class="tab-content active">
       <p style="color:#90a9b7;">Wähle die passende Liga aus. Das System zeigt dir bei Auf- und Absteigern automatisch einen Hinweis an!</p>
       <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
@@ -88,19 +74,21 @@
       </div>
     </div>
 
+    <!-- TAB 2: SPIELPLÄNE & ERGEBNISSE -->
     <div id="spielplan" class="tab-content">
       <p style="color:#90a9b7;">Wähle eine Liga. Sind noch keine Matches vorhanden, kannst du den Spielplan generieren.</p>
       <div style="margin-bottom: 20px;">
         <select id="leagueSelector" class="league-select" style="width: auto; padding: 10px;" onchange="loadMatchesForLeague()">
           <option value="" disabled selected>-- Liga auswählen --</option>
         </select>
-        <button id="generateScheduleBtn" class="assign-btn" style="background:#20b7ff; color:#fff; display:none; margin-top:0;" onclick="generateSchedule()">🎲 Spielplan generieren</button>
+        <button id="generateScheduleBtn" class="assign-btn" style="background:#20b7ff; color:#fff; display:none; margin-top:0; width:auto;" onclick="generateSchedule()">🎲 Spielplan generieren</button>
       </div>
       <div id="matchesArea" style="background: rgba(0,0,0,0.1); border-radius: 10px; padding: 15px; border: 1px solid rgba(255,255,255,0.05);">
           <div class="empty-msg">Bitte wähle oben eine Liga aus.</div>
       </div>
     </div>
 
+    <!-- TAB 3: STRAFEN (KARTEN) -->
     <div id="strafen" class="tab-content">
       <p style="color:#90a9b7;">Verteile Gelbe und Rote Karten. 2 Gelbe Karten werden automatisch zu einer Roten Karte (Saison-Ausschluss / Zwangsabstieg).</p>
       <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
@@ -111,6 +99,7 @@
       </div>
     </div>
 
+    <!-- TAB 4: SAISON BEENDEN -->
     <div id="saison" class="tab-content">
       <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
           <h3 style="margin-top:0;">Aktuelle Saison: <span id="currentSeasonNameDisplay" style="color:var(--accent);">Lade...</span></h3>
@@ -119,7 +108,7 @@
           <div style="margin: 20px 0; background:rgba(255,255,255,0.02); padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
              <h4 style="margin-top:0; color:#3ddc97;">Schritt 1: Liga beenden (Auf-/Abstiege berechnen)</h4>
              <p style="color:#90a9b7; font-size:13px; margin-bottom:15px;">Klicke diesen Button am Ende der Saison. Das System wertet alle Tabellen aus, merkt sich die Ligen und berechnet, wer auf- oder abgestiegen ist.</p>
-             <button class="assign-btn" style="background:#3ddc97; color:#000;" onclick="endCurrentLeaguesAndCalculate()">🏁 Liga beenden & Auf-/Abstiege einfrieren</button>
+             <button class="assign-btn" style="background:#3ddc97; color:#000; width:auto;" onclick="endCurrentLeaguesAndCalculate()">🏁 Liga beenden & Auf-/Abstiege einfrieren</button>
           </div>
 
           <div style="background: rgba(255,255,255,0.02); padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
@@ -167,13 +156,9 @@
         loadWaitingList(); 
     }
 
-    // ==========================================
-    // TAB 1: ZUTEILUNG MIT HISTORIE-INFO
-    // ==========================================
     function buildSelect(idPrefix, playerId, optionsArr, isWanted, currentVal, historyInfo) {
         if (!isWanted) return `<span style="color:#90a9b7; font-size:12px;">Nicht angemeldet</span>`;
         
-        // Holt die extra abgespeicherte Auf-/Abstiegs-Info, falls vorhanden
         let infoText = currentVal || 'Neu';
         if (historyInfo && historyInfo[idPrefix]) {
             infoText = historyInfo[idPrefix];
@@ -195,7 +180,6 @@
 
         tbody.innerHTML = players.map(p => {
             const isEingeteilt = p.status_neue_saison === 'assigned';
-            // Parse das JSON-Objekt aus der Datenbank für die 3 Plattformen
             let hInfo = { ad: '', dc: '', sc: '' };
             try { if(p.liga_historie_info) hInfo = JSON.parse(p.liga_historie_info); } catch(e){}
 
@@ -208,7 +192,7 @@
               <td>${buildSelect('dc', p.id, DC_LEAGUES, p.want_dartcounter, p.assigned_dc_league, hInfo)}</td>
               <td>${buildSelect('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league, hInfo)}</td>
               <td style="text-align:center;">
-                <button class="assign-btn" style="width:100%;" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
+                <button class="assign-btn" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
                 <button class="remove-btn" onclick="removePlayerCompletely('${p.id}')">Rauswerfen</button>
                 ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px;">✓ Eingeteilt</div>' : ''}
               </td></tr>`}).join("");
@@ -255,9 +239,6 @@
         loadWaitingList();
     };
 
-    // ==========================================
-    // TAB 2: SPIELPLÄNE & ERGEBNISSE
-    // ==========================================
     window.loadMatchSettings = function() {
         const sel = document.getElementById("leagueSelector");
         if(sel.options.length === 1) { ALL_LEAGUES.forEach(l => sel.innerHTML += `<option value="${l}">${l}</option>`); }
@@ -300,7 +281,7 @@
                         `}
                     </td>
                     <td>
-                        ${isFreilos ? '' : `<button class="assign-btn" onclick="saveMatch('${m.id}')">💾</button>`}
+                        ${isFreilos ? '' : `<button class="assign-btn" style="width:auto;" onclick="saveMatch('${m.id}')">💾</button>`}
                     </td>
                 </tr>`;
             });
@@ -336,9 +317,6 @@
         loadMatchesForLeague();
     }
 
-    // ==========================================
-    // TAB 3: STRAFEN (KARTEN)
-    // ==========================================
     window.loadCards = async function() {
         const tbody = document.getElementById("cardsListBody");
         const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, real_name, yellow_cards, red_cards').order('red_cards', {ascending: false});
@@ -358,9 +336,6 @@
     }
     window.resetCards = async function(id) { await supabaseClient.from('profiles').update({ yellow_cards: 0, red_cards: 0 }).eq('id', id); loadCards(); }
 
-    // ==========================================
-    // TAB 4: SAISON BEENDEN & AUF-/ABSTIEG MATHEMATISCH BERECHNEN (Phase 1)
-    // ==========================================
     window.loadSaisonSettings = async function() {
         const { data: sysData } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
         document.getElementById("currentSeasonNameDisplay").innerText = sysData.current_season || "Saison 1";
@@ -368,24 +343,20 @@
         document.getElementById("globalStatusBadge").className = sysData.registration_open ? "status-badge status-open" : "status-badge status-closed";
     }
 
-    // AUTOMATISCHE BLITZ-BERECHNUNG FÜR AUF- UND ABSTIEGE
     window.endCurrentLeaguesAndCalculate = async function() {
-        if(!confirm("Möchtest du die aktuelle Liga wirklich beenden und Auf-/Abstiege berechnen? Das überschreibt die alten Historien-Texte.")) return;
+        if(!confirm("Möchtest du die aktuelle Liga wirklich beenden und Auf-/Abstiege berechnen?")) return;
         
-        // 1. Hole alle Profile und alle Matches der aktuellen Saison
         const { data: profiles } = await supabaseClient.from('profiles').select('*');
         const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', currentSeasonGlobal).eq('status', 'done');
 
         alert("Berechne Daten... Bitte kurz warten.");
 
-        // Wir gehen jede Liga einzeln durch und werten Platz 1 und den Letzten aus
         for (const league of ALL_LEAGUES) {
             const lPlayers = profiles.filter(p => p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league);
             const lMatches = matches.filter(m => m.league_name === league);
             
             if (lPlayers.length === 0) continue;
 
-            // Punkte-Objekt bauen
             let stats = {};
             lPlayers.forEach(p => stats[p.id] = { id: p.id, points: 0, legDiff: 0 });
 
@@ -403,38 +374,32 @@
                 }
             });
 
-            // Sortieren nach Punkten und Leg-Differenz
             let sorted = Object.values(stats).sort((a,b) => (b.points !== a.points) ? (b.points - a.points) : (b.legDiff - a.legDiff));
 
             if(sorted.length > 0) {
                 const winnerId = sorted[0].id;
                 const loserId = sorted[sorted.length - 1].id;
 
-                // Für jeden Spieler dieser Liga das entsprechende Label updaten
                 for (const p of lPlayers) {
-                    let textInfo = league; // Standard: Verbleib in Liga
+                    let textInfo = league; 
                     if (p.id === winnerId) textInfo = `${league} (Aufsteiger) 🚀`;
                     if (p.id === loserId && sorted.length > 1) textInfo = `${league} (Absteiger) 📉`;
 
-                    // Welches Kürzel? ad, dc oder sc?
                     let key = 'ad';
                     if (league.startsWith('DartCounter')) key = 'dc';
                     if (league.startsWith('Scolia')) key = 'sc';
 
-                    // Lade das aktuelle JSON des Spielers
                     let currentHistory = { ad: '', dc: '', sc: '' };
                     const freshP = profiles.find(pr => pr.id === p.id);
                     try { if(freshP.liga_historie_info) currentHistory = JSON.parse(freshP.liga_historie_info); } catch(e){}
                     
                     currentHistory[key] = textInfo;
-
-                    // Zurückschreiben in die DB
                     await supabaseClient.from('profiles').update({ liga_historie_info: JSON.stringify(currentHistory) }).eq('id', p.id);
                 }
             }
         }
-
-        alert("🎉 Auf- und Abstiege erfolgreich berechnet und eingefroren! Du siehst die Hinweise jetzt im Tab 1 bei der Einteilung.");
+        alert("Auf- und Abstiege erfolgreich berechnet!");
+        loadWaitingList();
     }
 
     window.openNewSeason = async function() {
@@ -445,406 +410,8 @@
         await supabaseClient.from('system_settings').update({ registration_open: true, current_season: newName }).eq('id', 1);
         currentSeasonGlobal = newName;
 
-        // Setzt nur den Wunsch zurück, behält aber assigned_leagues und die liga_historie_info!
         await supabaseClient.from('profiles').update({ want_autodarts: false, want_dartcounter: false, want_scolia: false, status_neue_saison: 'none' }).neq('id', '00000000-0000-0000-0000-000000000000');
-
         window.location.reload();
-    }
-
-    initAdmin();
-  </script>
-</body>
-</html>
-    .tab-btn { background: rgba(0,0,0,0.3); color: #90a9b7; border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s; }
-    .tab-btn:hover { background: rgba(255,255,255,0.05); }
-    .tab-btn.active { background: rgba(231,76,60,0.2); color: #e74c3c; border-color: #e74c3c; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    table { width: 100%; border-collapse: collapse; min-width: 800px; }
-    th, td { padding: 15px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
-    th { background: rgba(0,0,0,0.2); color: #90a9b7; font-size: 13px; text-transform: uppercase; }
-    
-    .league-select, .leg-input { padding: 8px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 13px;}
-    .leg-input { width: 50px; text-align: center; font-weight: bold; font-size: 16px; }
-    
-    .assign-btn { background: #3ddc97; color: #000; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
-    .assign-btn:hover { opacity: 0.8; }
-    .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; margin-top: 5px; width: 100%;}
-    .remove-btn:hover { opacity: 0.8; }
-    
-    .card-btn { background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .card-btn.yellow:hover { background: #f7c948; color: #000; }
-    .card-btn.red:hover { background: #e74c3c; color: #fff; }
-
-    .empty-msg { text-align: center; color: #90a9b7; padding: 40px; font-style: italic; }
-    
-    .status-badge { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; display: inline-block; margin-bottom: 10px;}
-    .status-closed { background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid #e74c3c; }
-    .status-open { background: rgba(61,220,151,0.2); color: #3ddc97; border: 1px solid #3ddc97; }
-  </style>
-</head>
-<body>
-  <div class="shell">
-    <h1>⚙️ Kommandozentrale <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
-    
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('zuteilung')">1. Liga Zuteilung</button>
-      <button class="tab-btn" onclick="switchTab('spielplan'); loadMatchSettings();">2. Spielpläne & Ergebnisse</button>
-      <button class="tab-btn" onclick="switchTab('strafen'); loadCards();">3. Strafenkatalog</button>
-      <button class="tab-btn" onclick="switchTab('saison'); loadSaisonSettings();">4. Saison Beenden</button>
-    </div>
-
-    <!-- TAB 1: ZUTEILUNG -->
-    <div id="zuteilung" class="tab-content active">
-      <p style="color:#90a9b7;">Wähle die passende Liga aus. Du kannst Spieler auch komplett oder aus einzelnen Ligen wieder entfernen.</p>
-      <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-        <table>
-          <thead>
-            <tr><th width="20%">Spieler</th><th width="25%">Autodarts</th><th width="25%">DartCounter</th><th width="25%">Scolia</th><th width="5%">Aktion</th></tr>
-          </thead>
-          <tbody id="waitingListBody"><tr><td colspan="5" class="empty-msg">Lade Daten...</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- TAB 2: SPIELPLÄNE & ERGEBNISSE -->
-    <div id="spielplan" class="tab-content">
-      <p style="color:#90a9b7;">Wähle eine Liga. Sind noch keine Matches vorhanden, kannst du den Spielplan generieren.</p>
-      <div style="margin-bottom: 20px;">
-        <select id="leagueSelector" class="league-select" style="width: auto; padding: 10px;" onchange="loadMatchesForLeague()">
-          <option value="" disabled selected>-- Liga auswählen --</option>
-        </select>
-        <button id="generateScheduleBtn" class="assign-btn" style="background:#20b7ff; color:#fff; display:none; margin-top:0;" onclick="generateSchedule()">🎲 Spielplan generieren</button>
-      </div>
-      <div id="matchesArea" style="background: rgba(0,0,0,0.1); border-radius: 10px; padding: 15px; border: 1px solid rgba(255,255,255,0.05);">
-          <div class="empty-msg">Bitte wähle oben eine Liga aus.</div>
-      </div>
-    </div>
-
-    <!-- TAB 3: STRAFEN (KARTEN) -->
-    <div id="strafen" class="tab-content">
-      <p style="color:#90a9b7;">Verteile Gelbe und Rote Karten. 2 Gelbe Karten werden automatisch zu einer Roten Karte (Saison-Ausschluss / Zwangsabstieg).</p>
-      <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-        <table>
-          <thead><tr><th>Spieler</th><th>Gelbe Karten</th><th>Rote Karten</th><th>Aktion</th></tr></thead>
-          <tbody id="cardsListBody"><tr><td colspan="4" class="empty-msg">Lade Daten...</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- TAB 4: SAISON BEENDEN -->
-    <div id="saison" class="tab-content">
-      <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-          <h3 style="margin-top:0;">Aktuelle Saison: <span id="currentSeasonNameDisplay" style="color:var(--accent);">Lade...</span></h3>
-          <span id="globalStatusBadge" class="status-badge status-closed">Lade Status...</span>
-          
-          <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
-          
-          <h4>Saison-Wechsel durchführen</h4>
-          <p style="color:#90a9b7; font-size:13px;">Wenn du die Anmeldung öffnest, wird die laufende Saison für die Spieler eingefroren und sie können sich für die neue Saison eintragen.</p>
-          <input type="text" id="newSeasonNameInput" class="league-select" style="width: 250px;" placeholder="Name der NEUEN Saison (z.B. Saison 2)">
-          <button class="assign-btn" style="background:#e74c3c; color:#fff; margin-left: 10px; width:auto;" onclick="openNewSeason()">Anmeldung für NEUE Saison öffnen</button>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
-    const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
-    const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
-    const ALL_LEAGUES = [...AD_LEAGUES, ...DC_LEAGUES, ...SC_LEAGUES];
-
-    let currentSeasonGlobal = "Saison 1";
-
-    // TAB SYSTEM
-    window.switchTab = function(tabId) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
-    };
-
-    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
-
-    async function initAdmin() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return window.location.href = "index.html";
-
-        const { data: profile } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
-        if (!profile || profile.is_admin !== true) return window.location.href = "index.html";
-
-        const { data: sysData } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
-        if(sysData) currentSeasonGlobal = sysData.current_season || "Saison 1";
-
-        loadWaitingList(); 
-    }
-
-    // ==========================================
-    // TAB 1: ZUTEILUNG & SPIELER RAUSWERFEN
-    // ==========================================
-    function buildSelect(idPrefix, playerId, optionsArr, isWanted, currentVal) {
-        if (!isWanted) return `<span style="color:#90a9b7; font-size:12px;">Nicht angemeldet</span>`;
-        let html = `<span style="font-size:11px; color:#90a9b7; display:block; margin-bottom:4px;">Letzte Liga: <b style="color:#fff">${currentVal || 'Neu'}</b></span>`;
-        html += `<select id="${idPrefix}_${playerId}" class="league-select">
-                    <option value="" disabled ${!currentVal ? 'selected' : ''}>-- Liga wählen --</option>
-                    <option value="REMOVE" style="color:#e74c3c; font-weight:bold;">❌ Aus Liga entfernen</option>
-                    <option disabled>──────────</option>`;
-        optionsArr.forEach(l => { html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`; });
-        html += `</select>`; return html;
-    }
-
-    async function loadWaitingList() {
-        const tbody = document.getElementById("waitingListBody");
-        const { data: players } = await supabaseClient.from('profiles').select('*').in('status_neue_saison', ['waiting', 'assigned']);
-        if (!players || players.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Niemand in der Warteschlange.</td></tr>'; return; }
-
-        tbody.innerHTML = players.map(p => {
-            const isEingeteilt = p.status_neue_saison === 'assigned';
-            return `<tr style="${isEingeteilt ? 'background:rgba(61,220,151,0.05);' : ''}">
-              <td><strong style="color: #fff; font-size:15px;">${htmlEscape(p.discord_name || p.real_name || 'Unbekannt')}</strong></td>
-              <td>${buildSelect('ad', p.id, AD_LEAGUES, p.want_autodarts, p.assigned_ad_league)}</td>
-              <td>${buildSelect('dc', p.id, DC_LEAGUES, p.want_dartcounter, p.assigned_dc_league)}</td>
-              <td>${buildSelect('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league)}</td>
-              <td style="text-align:center;">
-                <button class="assign-btn" style="width:100%;" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
-                <button class="remove-btn" onclick="removePlayerCompletely('${p.id}')">Rauswerfen</button>
-                ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px;">✓ Eingeteilt</div>' : ''}
-              </td></tr>`}).join("");
-    }
-
-    window.saveAssignments = async function(playerId, wantAD, wantDC, wantSC) {
-        const updates = { status_neue_saison: 'assigned' };
-        let removedSomething = false;
-
-        // Prüfen, was im Dropdown gewählt wurde (Liga oder REMOVE)
-        if(wantAD) {
-            const val = document.getElementById(`ad_${playerId}`)?.value;
-            if (val === 'REMOVE') { updates.assigned_ad_league = null; updates.want_autodarts = false; removedSomething = true; }
-            else if (val) updates.assigned_ad_league = val;
-        }
-        if(wantDC) {
-            const val = document.getElementById(`dc_${playerId}`)?.value;
-            if (val === 'REMOVE') { updates.assigned_dc_league = null; updates.want_dartcounter = false; removedSomething = true; }
-            else if (val) updates.assigned_dc_league = val;
-        }
-        if(wantSC) {
-            const val = document.getElementById(`sc_${playerId}`)?.value;
-            if (val === 'REMOVE') { updates.assigned_sc_league = null; updates.want_scolia = false; removedSomething = true; }
-            else if (val) updates.assigned_sc_league = val;
-        }
-
-        await supabaseClient.from('profiles').update(updates).eq('id', playerId);
-
-        // Wenn ein Spieler aus einer Liga entfernt wurde, prüfen ob er noch woanders angemeldet ist
-        if (removedSomething) {
-            const { data: p } = await supabaseClient.from('profiles').select('want_autodarts, want_dartcounter, want_scolia').eq('id', playerId).single();
-            if (p && !p.want_autodarts && !p.want_dartcounter && !p.want_scolia) {
-                // Keine Ligen mehr übrig -> Komplett aus Anmeldung nehmen
-                await supabaseClient.from('profiles').update({ status_neue_saison: 'none' }).eq('id', playerId);
-            }
-        }
-        loadWaitingList();
-    };
-
-    // Spieler komplett resetten (Aus der Zuteilung löschen)
-    window.removePlayerCompletely = async function(playerId) {
-        if(!confirm("Möchtest du diesen Spieler wirklich komplett aus der Anmeldung und allen Ligen entfernen?")) return;
-        
-        await supabaseClient.from('profiles').update({ 
-             want_autodarts: false, want_dartcounter: false, want_scolia: false,
-             assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null,
-             status_neue_saison: 'none'
-        }).eq('id', playerId);
-        
-        loadWaitingList();
-    };
-
-
-    // ==========================================
-    // TAB 2: SPIELPLÄNE & ERGEBNISSE
-    // ==========================================
-    window.loadMatchSettings = function() {
-        const sel = document.getElementById("leagueSelector");
-        if(sel.options.length === 1) { ALL_LEAGUES.forEach(l => sel.innerHTML += `<option value="${l}">${l}</option>`); }
-    }
-
-    window.loadMatchesForLeague = async function() {
-        const league = document.getElementById("leagueSelector").value;
-        const area = document.getElementById("matchesArea");
-        const btnGen = document.getElementById("generateScheduleBtn");
-        
-        area.innerHTML = '<div class="empty-msg">Lade Matches...</div>';
-        
-        const { data: matches } = await supabaseClient.from('matches').select(`*, player1:profiles!matches_player1_id_fkey(discord_name), player2:profiles!matches_player2_id_fkey(discord_name)`).eq('league_name', league).eq('season', currentSeasonGlobal).order('matchday', { ascending: true });
-
-        if (!matches || matches.length === 0) {
-            btnGen.style.display = "inline-block";
-            area.innerHTML = `<div class="empty-msg">Noch kein Spielplan für <b>${league}</b> in der <b>${currentSeasonGlobal}</b> vorhanden. Klicke auf Generieren!</div>`;
-            return;
-        }
-
-        btnGen.style.display = "none";
-        
-        const grouped = {};
-        matches.forEach(m => { if(!grouped[m.matchday]) grouped[m.matchday] = []; grouped[m.matchday].push(m); });
-
-        let html = "";
-        for (const [day, mList] of Object.entries(grouped)) {
-            html += `<h3 style="color:var(--accent); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Spieltag ${day}</h3>`;
-            html += `<table style="margin-bottom:20px;"><thead><tr><th width="35%">Heim</th><th width="35%">Auswärts</th><th width="20%">Ergebnis (Legs)</th><th width="10%">Speichern</th></tr></thead><tbody>`;
-            
-            mList.forEach(m => {
-                const p1Name = m.player1 ? m.player1.discord_name : "Freilos";
-                const p2Name = m.player2 ? m.player2.discord_name : "Freilos";
-                const isFreilos = !m.player1 || !m.player2;
-
-                html += `<tr style="${m.status === 'done' ? 'background:rgba(61,220,151,0.05);' : ''}">
-                    <td><strong>${htmlEscape(p1Name)}</strong></td>
-                    <td><strong>${htmlEscape(p2Name)}</strong></td>
-                    <td>
-                        ${isFreilos ? '<span style="color:#90a9b7; font-style:italic;">Kein Spiel</span>' : `
-                        <input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs1}"> : 
-                        <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs2}">
-                        `}
-                    </td>
-                    <td>
-                        ${isFreilos ? '' : `<button class="assign-btn" style="width:auto;" onclick="saveMatch('${m.id}')">💾</button>`}
-                        ${m.status === 'done' ? '<br><span style="color:#3ddc97;font-size:11px;">Gespeichert</span>' : ''}
-                    </td>
-                </tr>`;
-            });
-            html += `</tbody></table>`;
-        }
-        area.innerHTML = html;
-    }
-
-    window.saveMatch = async function(matchId) {
-        const l1 = parseInt(document.getElementById(`l1_${matchId}`).value) || 0;
-        const l2 = parseInt(document.getElementById(`l2_${matchId}`).value) || 0;
-        await supabaseClient.from('matches').update({ legs1: l1, legs2: l2, status: 'done' }).eq('id', matchId);
-        loadMatchesForLeague(); 
-    }
-
-    window.generateSchedule = async function() {
-        const league = document.getElementById("leagueSelector").value;
-        if(!confirm(`Möchtest du den Spielplan für ${league} in ${currentSeasonGlobal} wirklich erstellen?`)) return;
-
-        const { data: players } = await supabaseClient.from('profiles').select('id')
-            .or(`assigned_ad_league.eq."${league}",assigned_dc_league.eq."${league}",assigned_sc_league.eq."${league}"`);
-
-        if(!players || players.length < 2) return alert("Es müssen mindestens 2 Spieler in dieser Liga sein!");
-
-        let pIds = players.map(p => p.id);
-        if (pIds.length % 2 !== 0) pIds.push(null); 
-        
-        const numDays = pIds.length - 1;
-        const half = pIds.length / 2;
-        const newMatches = [];
-
-        let temp = [...pIds];
-        for (let day = 0; day < numDays; day++) {
-            for (let i = 0; i < half; i++) {
-                const p1 = temp[i];
-                const p2 = temp[temp.length - 1 - i];
-                newMatches.push({
-                    season: currentSeasonGlobal,
-                    league_name: league,
-                    matchday: day + 1,
-                    player1_id: p1,
-                    player2_id: p2,
-                    status: (p1 === null || p2 === null) ? 'done' : 'open'
-                });
-            }
-            temp.splice(1, 0, temp.pop()); 
-        }
-
-        await supabaseClient.from('matches').insert(newMatches);
-        alert("Spielplan erfolgreich generiert!");
-        loadMatchesForLeague();
-    }
-
-    // ==========================================
-    // TAB 3: STRAFEN (KARTEN)
-    // ==========================================
-    window.loadCards = async function() {
-        const tbody = document.getElementById("cardsListBody");
-        const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, real_name, yellow_cards, red_cards').order('red_cards', {ascending: false}).order('yellow_cards', {ascending: false});
-        
-        tbody.innerHTML = players.map(p => `
-            <tr style="${p.red_cards > 0 ? 'background:rgba(231,76,60,0.1);' : ''}">
-                <td><strong style="color: #fff;">${htmlEscape(p.discord_name)}</strong><br><span style="font-size:11px;color:#90a9b7;">${htmlEscape(p.real_name)}</span></td>
-                <td>
-                    <span style="font-size:18px; font-weight:bold; color:#f7c948;">${p.yellow_cards}</span> 
-                    <button class="card-btn yellow" style="margin-left:10px;" onclick="updateCard('${p.id}', 'yellow', 1)">+1</button>
-                    <button class="card-btn" onclick="updateCard('${p.id}', 'yellow', -1)">-1</button>
-                </td>
-                <td>
-                    <span style="font-size:18px; font-weight:bold; color:#e74c3c;">${p.red_cards}</span>
-                    <button class="card-btn red" style="margin-left:10px;" onclick="updateCard('${p.id}', 'red', 1)">+1</button>
-                    <button class="card-btn" onclick="updateCard('${p.id}', 'red', -1)">-1</button>
-                </td>
-                <td><button class="card-btn" onclick="resetCards('${p.id}')">Karten Löschen</button></td>
-            </tr>
-        `).join("");
-    }
-
-    window.updateCard = async function(id, type, amount) {
-        const { data: p } = await supabaseClient.from('profiles').select('yellow_cards, red_cards').eq('id', id).single();
-        let y = p.yellow_cards; let r = p.red_cards;
-        
-        if (type === 'yellow') {
-            y += amount;
-            if (y < 0) y = 0;
-            if (y >= 2) { y = 0; r += 1; alert("Regel: 2 Gelbe Karten werden in 1 Rote Karte umgewandelt!"); }
-        } else {
-            r += amount;
-            if (r < 0) r = 0;
-        }
-
-        await supabaseClient.from('profiles').update({ yellow_cards: y, red_cards: r }).eq('id', id);
-        loadCards();
-    }
-    window.resetCards = async function(id) {
-        await supabaseClient.from('profiles').update({ yellow_cards: 0, red_cards: 0 }).eq('id', id);
-        loadCards();
-    }
-
-    // ==========================================
-    // TAB 4: SAISON BEENDEN
-    // ==========================================
-    window.loadSaisonSettings = async function() {
-        const { data: sysData } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
-        document.getElementById("currentSeasonNameDisplay").innerText = sysData.current_season || "Saison 1";
-        
-        const badge = document.getElementById("globalStatusBadge");
-        if (sysData.registration_open) {
-            badge.className = "status-badge status-open"; badge.innerText = "Anmeldung aktuell GEÖFFNET 🟢";
-        } else {
-            badge.className = "status-badge status-closed"; badge.innerText = "Anmeldung aktuell GESCHLOSSEN 🔴";
-        }
-    }
-
-    window.openNewSeason = async function() {
-        const newName = document.getElementById("newSeasonNameInput").value.trim();
-        if(!newName) return alert("Bitte gib einen Namen für die neue Saison ein (z.B. Saison 2)");
-        if(!confirm(`Achtung: Dies friert die alte Saison ein und öffnet die Anmeldung für '${newName}'. Alle Spieler müssen sich dann neu anmelden. Fortfahren?`)) return;
-
-        await supabaseClient.from('system_settings').update({ registration_open: true, current_season: newName }).eq('id', 1);
-        currentSeasonGlobal = newName;
-
-        await supabaseClient.from('profiles').update({ 
-            want_autodarts: false, want_dartcounter: false, want_scolia: false,
-            status_neue_saison: 'none'
-        }).neq('id', '00000000-0000-0000-0000-000000000000');
-
-        alert(`Erfolgreich! Die Anmeldung für ${newName} ist jetzt offen.`);
-        loadSaisonSettings();
     }
 
     initAdmin();
