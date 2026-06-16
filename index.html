@@ -374,7 +374,7 @@
 
     // UPGRADE: Der Profilname verlinkt nun direkt in die Discord-App / Website!
     // FIX: Jetzt mit den richtigen Backticks, damit das Profil wieder sauber rendert!
-    window.openPlayerProfile = async function(playerName) {
+   window.openPlayerProfile = async function(playerName) {
         const modal = document.getElementById("playerProfileModal");
         const content = document.getElementById("playerProfileContent");
         document.getElementById("playerProfileTitle").innerText = "Spielerprofil";
@@ -432,6 +432,7 @@
         } catch (err) {
             content.innerHTML = `<div class="empty">Fehler beim Laden des Profils.</div>`;
         }
+    };
     };
     };
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
