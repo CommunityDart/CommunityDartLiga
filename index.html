@@ -92,7 +92,7 @@
 
     .table-wrap{ overflow-x:auto; padding:0 0 6px; }
     table{ width:100%; border-collapse:collapse; min-width:760px; table-layout:fixed; }
-    thead th{ padding:14px 16px; color:#c8dce6; font-size:12px; font-weight:800; text-transform:uppercase; border-bottom:1px solid var(--line); background:#041722; white-space:nowrap; text-align:left; min-width:90px; }
+    thead th{ padding:14px 16px; color:#c8dce6; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line); background:#041722; white-space:nowrap; text-align:left; min-width:90px; }
     thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7){ text-align:center; }
     
     body[data-mode="DartCounter"] thead th{ background:#3a1d08; color:#ffe2b8; border-bottom:1px solid rgba(255,159,28,.20); }
@@ -179,6 +179,9 @@
     .modal-body p{ margin:0 0 12px; }
     .content-block{ margin-bottom:18px; padding:14px; border:1px solid rgba(120,170,195,.10); border-radius:14px; background:rgba(255,255,255,.02); }
     .content-block h4{ margin:0 0 8px; font-size:15px; color:#fff; }
+
+    /* Richtiger Bild-Style für News im Homepage Container */
+    .content-block img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; border: 1px solid rgba(255,255,255,0.1); }
 
     .modal-profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
@@ -484,15 +487,15 @@
         loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
 
         try {
-            // News live aus der Datenbank laden
+            // HIER WURDE DER CODE ANGEPASST: Rendert das Rich-Text-HTML jetzt originalgetreu!
             const { data: newsData } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
             let nHtml = "";
             if(newsData && newsData.length > 0) {
                 newsData.forEach(n => {
                     const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                     nHtml += `<div class="content-block">
-                                <h4 style="margin-bottom:8px; color:#fff;">${htmlEscape(n.title)} <span style="font-size:11px; color:#7c95a3; float:right; font-weight:normal;">${date} Uhr</span></h4>
-                                <p style="white-space: pre-wrap; margin:0; color:#d7e8ef; line-height:1.5;">${htmlEscape(n.content)}</p>
+                                <h4 style="margin-bottom:12px; color:#fff; font-size:16px; border-bottom:1px dashed rgba(255,255,255,0.05); padding-bottom:6px;">${htmlEscape(n.title)} <span style="font-size:11px; color:#7c95a3; float:right; font-weight:normal; margin-top:4px;">${date} Uhr</span></h4>
+                                <div style="color:#d7e8ef; line-height:1.6; font-size:14px;">${n.content}</div>
                               </div>`;
                 });
             } else {
@@ -500,7 +503,6 @@
             }
             state.newsHtml = `<div class="table-shell"><div class="section-head"><div><div class="section-title">Neuigkeiten & Ankündigungen</div><div class="section-sub">Aktuelle Infos unserer Community.</div></div></div><div style="padding:0 18px 18px">${nHtml}</div></div>`;
 
-            // Regelwerk & Links weiterhin aus HTML laden (optional kannst du das später auch ändern)
             try { const r = await fetch('regelwerk.html'); if(r.ok) document.getElementById('regelwerkContent').innerHTML = await r.text(); } catch(e){}
             try { const r = await fetch('links.html'); if(r.ok) document.getElementById('linksContent').innerHTML = await r.text(); } catch(e){}
 
@@ -579,6 +581,9 @@
         if (!state.currentUser) supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: "https://communitydart.github.io/CommunityDartLiga/" }});
         else window.location.assign("profil.html");
     };
+
+    function openModal(modal) { if (modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); } }
+    function closeModal(modal) { if (modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); } }
 
     loadAll();
   </script>
