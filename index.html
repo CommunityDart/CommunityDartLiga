@@ -396,16 +396,17 @@
 
             const avatarSrc = data.avatar_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>";
 
+            // Hier wird der Discord-Name eingefügt und verlinkt
+            const discordLink = data.discord_id 
+                ? `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" style="color:var(--accent); font-size:14px; text-decoration:underline;">Discord: ${htmlEscape(data.discord_name || 'Anschreiben')} 💬</a>` 
+                : `<span style="color:#90a9b7;">Discord: ${htmlEscape(data.discord_name || 'Nicht hinterlegt')}</span>`;
+
             content.innerHTML = `
                 <div class="modal-profile-header">
                     <img class="modal-avatar" src="${htmlEscape(avatarSrc)}" alt="Avatar">
                     <div>
-                        <h2 class="modal-profile-name">
-                            ${data.discord_id 
-                              ? `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" rel="noopener noreferrer" title="Direkt in Discord anschreiben">${htmlEscape(playerName)} 💬</a>` 
-                              : htmlEscape(playerName)}
-                        </h2>
-                        ${data.discord_name ? `<span class="modal-discord-sub" onclick="copyDiscord('${htmlEscape(data.discord_name)}')">Name kopieren: ${htmlEscape(data.discord_name)} 📋</span>` : ""}
+                        <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>
+                        <div style="margin-top:5px;">${discordLink}</div>
                     </div>
                 </div>
                 
@@ -429,8 +430,9 @@
                 </div>
             `;
         } catch (err) {
-            content.innerHTML = `<div class="empty">Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>`;
+            content.innerHTML = `<div class="empty">Fehler beim Laden des Profils.</div>`;
         }
+    };
     };
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
