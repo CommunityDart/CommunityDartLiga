@@ -12,6 +12,7 @@
     .top-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .admin-btn { border-color: #e74c3c; color: #e74c3c; }
+    .news-btn { border-color: #3ddc97; color: #3ddc97; }
     
     .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
     .avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #20b7ff; object-fit: cover; background: #021017; flex-shrink: 0; }
@@ -41,6 +42,12 @@
     .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
     .league-assignment-text { color: #3ddc97; font-weight: bold; font-size: 14px; margin-top: 10px; text-align: center; background: rgba(61, 220, 151, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(61, 220, 151, 0.3);}
 
+    /* NEWS MODAL */
+    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); display:none; align-items:center; justify-content:center; z-index:9999; padding: 20px; }
+    .modal-box { background:#041924; border:1px solid #3ddc97; padding:25px; border-radius:12px; width:100%; max-width:500px; }
+    .modal-box input, .modal-box textarea { width:100%; padding:12px; margin-bottom:15px; background:#021017; border:1px solid #4b87a5; color:#fff; border-radius:8px; box-sizing:border-box; font-family:sans-serif;}
+    .modal-box textarea { height:180px; resize:vertical; font-size: 14px; }
+
     @media (max-width: 600px) {
       body { padding: 10px; }
       .shell { padding: 20px; margin: 10px auto; border-radius: 12px; }
@@ -54,11 +61,25 @@
   </style>
 </head>
 <body>
+
+  <div id="newsModalOverlay" class="modal-overlay">
+    <div class="modal-box">
+      <h3 style="margin-top:0; color:#3ddc97; text-align:center;">📰 Neuigkeit verfassen</h3>
+      <input type="text" id="newsTitleInput" placeholder="Überschrift (z.B. Willkommen zur neuen Saison)">
+      <textarea id="newsContentInput" placeholder="Dein Text hier... (Absätze werden automatisch übernommen)"></textarea>
+      <div style="display:flex; gap:10px; flex-wrap: wrap;">
+        <button onclick="saveNews()" style="background:#3ddc97; color:#000; flex:1;">Veröffentlichen</button>
+        <button onclick="closeNewsModal()" style="background:#e74c3c; color:#fff; flex:1;">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
   <div class="shell">
     
     <div class="top-buttons">
         <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
         <button id="adminDashboardBtn" class="back-btn admin-btn" style="display:none;" onclick="window.location.href='admin.html'">⚙️ Admin Dashboard</button>
+        <button id="newsDashboardBtn" class="back-btn news-btn" style="display:none;" onclick="openNewsModal()">📰 News verfassen</button>
     </div>
     
     <div class="profile-header">
@@ -94,21 +115,18 @@
       <input type="text" id="dart_setup" placeholder="z.B. Target Gabriel Clemens 21g, Condor Flights">
       <div class="divider"></div>
       
-      <!-- Autodarts -->
       <div class="input-group">
         <div style="flex: 2;"><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="autodarts_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
       <input type="text" id="autodarts_url" class="url-input" placeholder="URL zum Autodarts Profil (optional)">
       
-      <!-- DartCounter -->
       <div class="input-group" style="margin-top: 10px;">
         <div style="flex: 2;"><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="dartcounter_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
       <input type="text" id="dartcounter_url" class="url-input" placeholder="URL zum DartCounter Profil (optional)">
       
-      <!-- Scolia -->
       <div class="input-group" style="margin-top: 10px;">
         <div style="flex: 2;"><label>Scolia Name</label><input type="text" id="scolia_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="scolia_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
@@ -128,6 +146,24 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
+
+    // NEWS FUNKTIONEN
+    window.openNewsModal = () => document.getElementById('newsModalOverlay').style.display = 'flex';
+    window.closeNewsModal = () => document.getElementById('newsModalOverlay').style.display = 'none';
+    
+    window.saveNews = async () => {
+        const t = document.getElementById('newsTitleInput').value.trim();
+        const c = document.getElementById('newsContentInput').value.trim();
+        if(!t || !c) return alert('Bitte Überschrift und Text eingeben!');
+        
+        const { error } = await supabaseClient.from('news').insert([{ title: t, content: c }]);
+        if(error) return alert('Fehler: ' + error.message);
+        
+        alert('News erfolgreich veröffentlicht!');
+        closeNewsModal();
+        document.getElementById('newsTitleInput').value = '';
+        document.getElementById('newsContentInput').value = '';
+    }
 
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -167,9 +203,11 @@
                       document.getElementById("scolia_avg").value = data.scolia_avg || "";
                       document.getElementById("scolia_url").value = data.scolia_url || "";
                       
+                      // ADMIN BUTTONS ANZEIGEN
                       if (data.is_admin === true) {
                           document.getElementById("adminBadge").style.display = "inline-block";
                           document.getElementById("adminDashboardBtn").style.display = "inline-block";
+                          document.getElementById("newsDashboardBtn").style.display = "inline-block";
                       }
 
                       const regBox = document.getElementById("seasonRegistrationBox");
