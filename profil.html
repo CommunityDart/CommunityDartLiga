@@ -156,6 +156,7 @@
             dartcounter_avg: dcAvg,
             scolia_name: scName,
             scolia_avg: scAvg,
+            avatar_url: currentUser.user_metadata.avatar_url || "", // <-- NEU: Speichert das Profilbild in der DB!
             updated_at: new Date()
         };
         
