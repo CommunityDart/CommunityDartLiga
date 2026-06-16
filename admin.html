@@ -42,12 +42,10 @@
     .status-closed { background: rgba(231,76,60,0.2); color: #e74c3c; border: 1px solid #e74c3c; }
     .status-open { background: rgba(61,220,151,0.2); color: #3ddc97; border: 1px solid #3ddc97; }
     
-    .platform-tag { font-size: 11px; font-weight:bold; padding: 2px 6px; border-radius: 4px; display:inline-block; margin-bottom:4px; }
-    .tag-ad { background: rgba(32,183,255,0.2); color: #20b7ff; }
-    .tag-dc { background: rgba(255,159,28,0.2); color: #ff9f1c; }
-    .tag-sc { background: rgba(61,220,151,0.2); color: #3ddc97; }
-    
     .old-league-info { font-size: 11px; color: #90a9b7; margin-bottom: 6px; display: block; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 6px;}
+
+    /* TESTSPIELER GENERATOR KASTEN */
+    .dummy-box { background: rgba(32,183,255,0.05); border: 1px dashed rgba(32,183,255,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -61,8 +59,14 @@
       <button class="tab-btn" onclick="switchTab('saison'); loadSaisonSettings();">4. Saison Beenden</button>
     </div>
 
-    <!-- TAB 1: ZUTEILUNG -->
     <div id="zuteilung" class="tab-content active">
+      
+      <div class="dummy-box">
+         <span style="font-weight: bold; color: #20b7ff; font-size: 14px;">🎲 Testspieler-Tool:</span>
+         <input type="text" id="dummyNameInput" class="league-select" style="width: 200px; margin: 0;" placeholder="Spielername eingeben">
+         <button onclick="createDummyPlayer()" class="assign-btn" style="width: auto; background: #20b7ff; color: #000; padding: 8px 15px;">➕ Spieler ohne Discord anlegen</button>
+      </div>
+
       <p style="color:#90a9b7;">Wähle die passende Liga aus. Das System zeigt dir bei Auf- und Absteigern automatisch einen Hinweis an!</p>
       <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
         <table>
@@ -74,7 +78,6 @@
       </div>
     </div>
 
-    <!-- TAB 2: SPIELPLÄNE & ERGEBNISSE -->
     <div id="spielplan" class="tab-content">
       <p style="color:#90a9b7;">Wähle eine Liga. Sind noch keine Matches vorhanden, kannst du den Spielplan generieren.</p>
       <div style="margin-bottom: 20px;">
@@ -88,7 +91,6 @@
       </div>
     </div>
 
-    <!-- TAB 3: STRAFEN (KARTEN) -->
     <div id="strafen" class="tab-content">
       <p style="color:#90a9b7;">Verteile Gelbe und Rote Karten. 2 Gelbe Karten werden automatisch zu einer Roten Karte (Saison-Ausschluss / Zwangsabstieg).</p>
       <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
@@ -99,7 +101,6 @@
       </div>
     </div>
 
-    <!-- TAB 4: SAISON BEENDEN -->
     <div id="saison" class="tab-content">
       <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
           <h3 style="margin-top:0;">Aktuelle Saison: <span id="currentSeasonNameDisplay" style="color:var(--accent);">Lade...</span></h3>
@@ -154,6 +155,41 @@
         if(sysData) currentSeasonGlobal = sysData.current_season || "Saison 1";
 
         loadWaitingList(); 
+    }
+
+    // AUTOMATISCHE TESTSPIELER GENERIERUNG DIREKT IM DASHBOARD
+    window.createDummyPlayer = async function() {
+        const name = document.getElementById("dummyNameInput").value.trim();
+        if(!name) return alert("Bitte gib erst einen Namen für den Spieler ein!");
+
+        // Erzeugt eine vorschriftsmäßige, zufällige ID (UUID v4) über JavaScript
+        const generatedUuid = crypto.randomUUID();
+
+        const dummyRow = {
+            id: generatedUuid,
+            discord_name: name,
+            real_name: name + " (Gast)",
+            status_neue_saison: 'waiting',
+            want_autodarts: true,     // Aktiviert standardmäßig die Anmeldung für alle 3, 
+            want_dartcounter: true,   // damit du ihn flexibel einteilen oder per Dropdown
+            want_scolia: true,        // wieder rauswerfen kannst!
+            autodarts_name: name,
+            autodarts_avg: "45.0",
+            dartcounter_name: name,
+            dartcounter_avg: "45.0",
+            scolia_name: name,
+            scolia_avg: "45.0"
+        };
+
+        const { error } = await supabaseClient.from('profiles').insert([dummyRow]);
+        
+        if (error) {
+            alert("Fehler beim Erstellen: " + error.message);
+        } else {
+            alert(`🎉 Spieler "${name}" erfolgreich ohne Discord angelegt! Er wartet jetzt direkt unten in der Liste.`);
+            document.getElementById("dummyNameInput").value = "";
+            loadWaitingList();
+        }
     }
 
     function buildSelect(idPrefix, playerId, optionsArr, isWanted, currentVal, historyInfo) {
