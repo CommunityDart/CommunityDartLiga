@@ -39,36 +39,37 @@
     body[data-mode="DartCounter"] .hero-banner.image-banner{ box-shadow: 0 18px 44px rgba(0,0,0,.34), 0 0 0 1px rgba(255,159,28,.20), 0 0 28px rgba(255,159,28,.14); }
     body[data-mode="Scolia"] .hero-banner.image-banner{ box-shadow: 0 18px 44px rgba(0,0,0,.34), 0 0 0 1px rgba(61,220,151,.20), 0 0 28px rgba(61,220,151,.14); }
     
-    /* DAS VOLLE, EDLE MENÜ-RASTER AUS DEINER ZEICHNUNG */
-    .top-nav-wrap{ width:min(1200px, 100%); margin:0 auto 12px; }
-    .banner-nav-shell{ display:flex; justify-content:center; align-items:center; margin-bottom:10px; }
-    .banner-nav{ width:100%; display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:12px; padding:12px; border-radius:22px; background:rgba(4,12,14,.22); border:1px solid rgba(255,255,255,.10); box-shadow: 0 10px 24px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+    /* DAS OPTIMIERTE MENÜ-RASTER (5 GLEICHMÄSSIGE SPALTEN) */
+    .top-nav-wrap{ width:min(1200px, 100%); margin:0 auto 24px; }
+    .banner-nav-shell{ display:flex; justify-content:center; align-items:center; }
+    .banner-nav{ width:100%; display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:14px; padding:14px; border-radius:22px; background:rgba(4,12,14,.22); border:1px solid rgba(255,255,255,.10); box-shadow: 0 10px 24px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); align-items: start; }
     
-    .nav-column-group { display: flex; flex-direction: column; gap: 10px; grid-column: span 1; position: relative; }
-    .discord-button-group { display: flex; flex-direction: column; gap: 8px; grid-column: span 1; }
+    /* Spalten-Gruppen für die vertikale Ausrichtung untereinander */
+    .nav-column-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .discord-button-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     
     .hero-action-btn{ position:relative; width:100%; border:1px solid rgba(255,255,255,.16); background:rgba(6,20,30,.38); color:#f5fbff; border-radius:16px; min-height:50px; padding:0 14px; font-size:14px; font-weight:900; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; text-align:center; gap:10px; transition:.22s ease; white-space:nowrap; overflow:hidden; box-shadow: 0 10px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.10); }
-    .discord-button-group .hero-action-btn { min-height: 44px; font-size: 13px; }
+    .discord-button-group .hero-action-btn { min-height: 50px; font-size: 14px; }
     .hero-action-btn::before{ content:""; position:absolute; inset:1px; border-radius:15px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0)); pointer-events:none; }
     .hero-action-btn:hover{ transform:translateY(-2px); background:rgba(10,28,40,.48); border-color:rgba(255,255,255,.24); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 22px rgba(255,255,255,.06); }
     
-    .hero-btn-autodarts{ background:rgba(36,141,255,.20); border-color:rgba(90,180,255,.45); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 20px rgba(36,141,255,.14); }
-    .hero-btn-dartcounter{ background:rgba(255,154,31,.18); border-color:rgba(255,186,90,.42); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 20px rgba(255,154,31,.12); }
-    .hero-btn-scolia{ background:rgba(61,220,151,.18); border-color:rgba(100,240,180,.42); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 20px rgba(61,220,151,.12); }
-    .hero-btn-discord{ background:rgba(88,101,242,.28); border-color:rgba(162,170,255,.42); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 20px rgba(88,101,242,.16); }
-    .hero-btn-dark{ background:rgba(3,19,27,.42); border-color:rgba(120,170,195,.18); box-shadow: 0 10px 22px rgba(0,0,0,.22); }
+    .hero-btn-autodarts{ background:rgba(36,141,255,.20); border-color:rgba(90,180,255,.45); }
+    .hero-btn-dartcounter{ background:rgba(255,154,31,.18); border-color:rgba(255,186,90,.42); }
+    .hero-btn-scolia{ background:rgba(61,220,151,.18); border-color:rgba(100,240,180,.42); }
+    .hero-btn-discord{ background:rgba(88,101,242,.28); border-color:rgba(162,170,255,.42); }
+    .hero-btn-dark{ background:rgba(3,19,27,.42); border-color:rgba(120,170,195,.18); }
     
     #modeHome.active{ background:rgba(32,183,255,.25); border-color:rgba(130,205,255,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(32,183,255,.28); }
     #modeAutodarts.active{ background:rgba(36,141,255,.30); border-color:rgba(130,205,255,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(36,141,255,.28); }
     #modeDartCounter.active{ background:rgba(255,154,31,.28); border-color:rgba(255,206,130,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(255,154,31,.24); }
     #modeScolia.active{ background:rgba(61,220,151,.28); border-color:rgba(100,240,180,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(61,220,151,.24); }
 
-    /* ECHTE DROPDOWN-FELDER DIREKT UNTER DEM JEWEILIGEN BUTTON */
-    .dropdown-submenu { position: absolute; top: 100%; left: 0; right: 0; background: rgba(4,20,28,0.98); border: 1px solid var(--accent-border); border-radius: 12px; padding: 6px; display: none; flex-direction: column; gap: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; margin-top: 6px; backdrop-filter: blur(10px); }
+    /* DIE ANPASSUNG: FLIESSENDE DROPDOWNS DIREKT IN DER JEWEILIGEN SPALTE */
+    .dropdown-submenu { display: none; flex-direction: column; gap: 6px; background: rgba(2,16,23,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 6px; width: 100%; margin-top: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); }
     .dropdown-submenu.active { display: flex; }
-    .dropdown-btn { background: transparent; border: 1px solid transparent; color: #dff3ff; text-align: center; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.15s; width: 100%; }
-    .dropdown-btn:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-    .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 50%, transparent); }
+    .dropdown-btn { background: rgba(6,20,30,0.5); border: 1px solid rgba(255,255,255,0.08); color: #dff3ff; text-align: center; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.15s; width: 100%; }
+    .dropdown-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--accent-border); }
+    .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; border-color: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent); }
 
     .main{ display:grid; grid-template-columns:minmax(0,1.7fr) minmax(320px,.8fr); gap:18px; align-items:start; }
     body[data-mode="Home"] .main { grid-template-columns: 1fr; }
@@ -350,7 +351,7 @@
             const avatarSrc = data.avatar_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>";
             let profileHtml = `<div class="modal-profile-header"><img class="modal-avatar" src="${htmlEscape(avatarSrc)}"><div><h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>`;
             
-            if (data.discord_id) profileHtml += `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" style="color:var(--accent); font-size:14px; font-weight:bold; display:block; margin-top:5px;">Nachricht in Discord 💬</a>`;
+            if (data.discord_id) profileHtml += `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" style="color:var(--accent); font-size:14px; font-weight:bold; display:block; margin-top:5px; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--accent)'">Nachricht in Discord 💬</a>`;
             else if (data.discord_name) profileHtml += `<span style="color:#90a9b7; font-size:13px; display:block; margin-top:5px;">Discord: ${htmlEscape(data.discord_name)}</span>`;
             profileHtml += `</div></div>`;
 
@@ -454,17 +455,16 @@
       if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
     }
 
-    // MAPPT DIE UNTERMENÜS ALS ECHTE DROPDOWNS DIREKT UNTER DEN BUTTON (Wie skizziert!)
     function renderSystemSubmenus() {
       const renderSub = (elId, prefix) => {
         const el = document.getElementById(elId); if (!el) return;
         const filtered = ALL_LEAGUES.filter(l => l.startsWith(prefix) && state.leagueData[l] && state.leagueData[l].standings.rows.length > 0);
         
         el.innerHTML = filtered.map(l => `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l)}">${getShortLeagueNumber(l)}</button>`).join("");
-        el.classList.toggle("active", state.activeMode === prefix);
+        el.classList.add('active'); // Bleibt fest in seiner Spalte stehen!
         
         el.querySelectorAll(".dropdown-btn").forEach(btn => btn.onclick = (e) => {
-            e.stopPropagation(); // Verhindert sofortiges Schließen
+            e.stopPropagation();
             state.activeLeague = btn.dataset.name; 
             renderSystemSubmenus(); 
             renderLeague(); 
@@ -483,7 +483,7 @@
       document.getElementById("modeDartCounter").classList.toggle("active", mode === "DartCounter");
       document.getElementById("modeScolia").classList.toggle("active", mode === "Scolia");
       
-      // Schließe erst alle Dropdowns
+      // Blende alle Submenus aus, außer das der aktiven Spalte
       document.querySelectorAll('.dropdown-submenu').forEach(e => e.classList.remove('active'));
 
       if (mode === "Home") {
@@ -495,15 +495,6 @@
         renderLeague();
       }
     }
-
-    // Schließt die Dropdowns, wenn man irgendwo anders hinklickt
-    document.addEventListener("click", () => {
-        if(state.activeMode !== 'Home') {
-            // Behalte das aktive Dropdown offen, schließe es nicht voreilig
-            const activeMenu = document.getElementById(`${state.activeMode.toLowerCase()}Submenu`);
-            if(activeMenu) activeMenu.classList.add('active');
-        }
-    });
 
     async function loadAll() {
         tableAreaEl.innerHTML = `<div class="empty">Berechne Live-Tabellen...</div>`;
