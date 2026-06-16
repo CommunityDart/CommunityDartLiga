@@ -26,8 +26,12 @@
     
     .league-select, .leg-input { padding: 8px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 13px;}
     .leg-input { width: 50px; text-align: center; font-weight: bold; font-size: 16px; }
+    
     .assign-btn { background: #3ddc97; color: #000; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
     .assign-btn:hover { opacity: 0.8; }
+    .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; margin-top: 5px; width: 100%;}
+    .remove-btn:hover { opacity: 0.8; }
+    
     .card-btn { background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .card-btn.yellow:hover { background: #f7c948; color: #000; }
     .card-btn.red:hover { background: #e74c3c; color: #fff; }
@@ -50,8 +54,9 @@
       <button class="tab-btn" onclick="switchTab('saison'); loadSaisonSettings();">4. Saison Beenden</button>
     </div>
 
+    <!-- TAB 1: ZUTEILUNG -->
     <div id="zuteilung" class="tab-content active">
-      <p style="color:#90a9b7;">Wähle die passende Liga aus (beachte die "Letzte Liga" für Auf-/Abstieg) und klicke auf Speichern.</p>
+      <p style="color:#90a9b7;">Wähle die passende Liga aus. Du kannst Spieler auch komplett oder aus einzelnen Ligen wieder entfernen.</p>
       <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
         <table>
           <thead>
@@ -62,19 +67,21 @@
       </div>
     </div>
 
+    <!-- TAB 2: SPIELPLÄNE & ERGEBNISSE -->
     <div id="spielplan" class="tab-content">
-      <p style="color:#90a9b7;">Wähle eine Liga. Sind noch keine Matches vorhanden, kannst du den Spielplan für die aktuell eingeteilten Spieler generieren.</p>
+      <p style="color:#90a9b7;">Wähle eine Liga. Sind noch keine Matches vorhanden, kannst du den Spielplan generieren.</p>
       <div style="margin-bottom: 20px;">
         <select id="leagueSelector" class="league-select" style="width: auto; padding: 10px;" onchange="loadMatchesForLeague()">
           <option value="" disabled selected>-- Liga auswählen --</option>
         </select>
-        <button id="generateScheduleBtn" class="assign-btn" style="background:#20b7ff; color:#fff; display:none;" onclick="generateSchedule()">🎲 Spielplan generieren</button>
+        <button id="generateScheduleBtn" class="assign-btn" style="background:#20b7ff; color:#fff; display:none; margin-top:0;" onclick="generateSchedule()">🎲 Spielplan generieren</button>
       </div>
       <div id="matchesArea" style="background: rgba(0,0,0,0.1); border-radius: 10px; padding: 15px; border: 1px solid rgba(255,255,255,0.05);">
           <div class="empty-msg">Bitte wähle oben eine Liga aus.</div>
       </div>
     </div>
 
+    <!-- TAB 3: STRAFEN (KARTEN) -->
     <div id="strafen" class="tab-content">
       <p style="color:#90a9b7;">Verteile Gelbe und Rote Karten. 2 Gelbe Karten werden automatisch zu einer Roten Karte (Saison-Ausschluss / Zwangsabstieg).</p>
       <div style="overflow-x: auto; background: rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
@@ -85,6 +92,7 @@
       </div>
     </div>
 
+    <!-- TAB 4: SAISON BEENDEN -->
     <div id="saison" class="tab-content">
       <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
           <h3 style="margin-top:0;">Aktuelle Saison: <span id="currentSeasonNameDisplay" style="color:var(--accent);">Lade...</span></h3>
@@ -95,7 +103,7 @@
           <h4>Saison-Wechsel durchführen</h4>
           <p style="color:#90a9b7; font-size:13px;">Wenn du die Anmeldung öffnest, wird die laufende Saison für die Spieler eingefroren und sie können sich für die neue Saison eintragen.</p>
           <input type="text" id="newSeasonNameInput" class="league-select" style="width: 250px;" placeholder="Name der NEUEN Saison (z.B. Saison 2)">
-          <button class="assign-btn" style="background:#e74c3c; color:#fff; margin-left: 10px;" onclick="openNewSeason()">Anmeldung für NEUE Saison öffnen</button>
+          <button class="assign-btn" style="background:#e74c3c; color:#fff; margin-left: 10px; width:auto;" onclick="openNewSeason()">Anmeldung für NEUE Saison öffnen</button>
       </div>
     </div>
 
@@ -130,20 +138,22 @@
         const { data: profile } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
         if (!profile || profile.is_admin !== true) return window.location.href = "index.html";
 
-        // Lade Global Settings für alle Tabs
         const { data: sysData } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
         if(sysData) currentSeasonGlobal = sysData.current_season || "Saison 1";
 
-        loadWaitingList(); // Tab 1
+        loadWaitingList(); 
     }
 
     // ==========================================
-    // TAB 1: ZUTEILUNG
+    // TAB 1: ZUTEILUNG & SPIELER RAUSWERFEN
     // ==========================================
     function buildSelect(idPrefix, playerId, optionsArr, isWanted, currentVal) {
         if (!isWanted) return `<span style="color:#90a9b7; font-size:12px;">Nicht angemeldet</span>`;
         let html = `<span style="font-size:11px; color:#90a9b7; display:block; margin-bottom:4px;">Letzte Liga: <b style="color:#fff">${currentVal || 'Neu'}</b></span>`;
-        html += `<select id="${idPrefix}_${playerId}" class="league-select"><option value="" disabled ${!currentVal ? 'selected' : ''}>-- Liga wählen --</option>`;
+        html += `<select id="${idPrefix}_${playerId}" class="league-select">
+                    <option value="" disabled ${!currentVal ? 'selected' : ''}>-- Liga wählen --</option>
+                    <option value="REMOVE" style="color:#e74c3c; font-weight:bold;">❌ Aus Liga entfernen</option>
+                    <option disabled>──────────</option>`;
         optionsArr.forEach(l => { html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`; });
         html += `</select>`; return html;
     }
@@ -161,19 +171,59 @@
               <td>${buildSelect('dc', p.id, DC_LEAGUES, p.want_dartcounter, p.assigned_dc_league)}</td>
               <td>${buildSelect('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league)}</td>
               <td style="text-align:center;">
-                <button class="assign-btn" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
+                <button class="assign-btn" style="width:100%;" onclick="saveAssignments('${p.id}', ${p.want_autodarts}, ${p.want_dartcounter}, ${p.want_scolia})">Speichern</button>
+                <button class="remove-btn" onclick="removePlayerCompletely('${p.id}')">Rauswerfen</button>
                 ${isEingeteilt ? '<div style="color:#3ddc97; font-size:11px; margin-top:5px;">✓ Eingeteilt</div>' : ''}
               </td></tr>`}).join("");
     }
 
     window.saveAssignments = async function(playerId, wantAD, wantDC, wantSC) {
         const updates = { status_neue_saison: 'assigned' };
-        if(wantAD) updates.assigned_ad_league = document.getElementById(`ad_${playerId}`)?.value || null;
-        if(wantDC) updates.assigned_dc_league = document.getElementById(`dc_${playerId}`)?.value || null;
-        if(wantSC) updates.assigned_sc_league = document.getElementById(`sc_${playerId}`)?.value || null;
+        let removedSomething = false;
+
+        // Prüfen, was im Dropdown gewählt wurde (Liga oder REMOVE)
+        if(wantAD) {
+            const val = document.getElementById(`ad_${playerId}`)?.value;
+            if (val === 'REMOVE') { updates.assigned_ad_league = null; updates.want_autodarts = false; removedSomething = true; }
+            else if (val) updates.assigned_ad_league = val;
+        }
+        if(wantDC) {
+            const val = document.getElementById(`dc_${playerId}`)?.value;
+            if (val === 'REMOVE') { updates.assigned_dc_league = null; updates.want_dartcounter = false; removedSomething = true; }
+            else if (val) updates.assigned_dc_league = val;
+        }
+        if(wantSC) {
+            const val = document.getElementById(`sc_${playerId}`)?.value;
+            if (val === 'REMOVE') { updates.assigned_sc_league = null; updates.want_scolia = false; removedSomething = true; }
+            else if (val) updates.assigned_sc_league = val;
+        }
+
         await supabaseClient.from('profiles').update(updates).eq('id', playerId);
+
+        // Wenn ein Spieler aus einer Liga entfernt wurde, prüfen ob er noch woanders angemeldet ist
+        if (removedSomething) {
+            const { data: p } = await supabaseClient.from('profiles').select('want_autodarts, want_dartcounter, want_scolia').eq('id', playerId).single();
+            if (p && !p.want_autodarts && !p.want_dartcounter && !p.want_scolia) {
+                // Keine Ligen mehr übrig -> Komplett aus Anmeldung nehmen
+                await supabaseClient.from('profiles').update({ status_neue_saison: 'none' }).eq('id', playerId);
+            }
+        }
         loadWaitingList();
     };
+
+    // Spieler komplett resetten (Aus der Zuteilung löschen)
+    window.removePlayerCompletely = async function(playerId) {
+        if(!confirm("Möchtest du diesen Spieler wirklich komplett aus der Anmeldung und allen Ligen entfernen?")) return;
+        
+        await supabaseClient.from('profiles').update({ 
+             want_autodarts: false, want_dartcounter: false, want_scolia: false,
+             assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null,
+             status_neue_saison: 'none'
+        }).eq('id', playerId);
+        
+        loadWaitingList();
+    };
+
 
     // ==========================================
     // TAB 2: SPIELPLÄNE & ERGEBNISSE
@@ -190,12 +240,7 @@
         
         area.innerHTML = '<div class="empty-msg">Lade Matches...</div>';
         
-        // Hole alle Matches für diese Liga UND diese Saison, joine die Profile um die Namen zu bekommen
-        const { data: matches } = await supabaseClient.from('matches').select(`
-            *,
-            player1:profiles!matches_player1_id_fkey(discord_name),
-            player2:profiles!matches_player2_id_fkey(discord_name)
-        `).eq('league_name', league).eq('season', currentSeasonGlobal).order('matchday', { ascending: true });
+        const { data: matches } = await supabaseClient.from('matches').select(`*, player1:profiles!matches_player1_id_fkey(discord_name), player2:profiles!matches_player2_id_fkey(discord_name)`).eq('league_name', league).eq('season', currentSeasonGlobal).order('matchday', { ascending: true });
 
         if (!matches || matches.length === 0) {
             btnGen.style.display = "inline-block";
@@ -205,7 +250,6 @@
 
         btnGen.style.display = "none";
         
-        // Gruppiere nach Spieltag
         const grouped = {};
         matches.forEach(m => { if(!grouped[m.matchday]) grouped[m.matchday] = []; grouped[m.matchday].push(m); });
 
@@ -229,7 +273,7 @@
                         `}
                     </td>
                     <td>
-                        ${isFreilos ? '' : `<button class="assign-btn" onclick="saveMatch('${m.id}')">💾</button>`}
+                        ${isFreilos ? '' : `<button class="assign-btn" style="width:auto;" onclick="saveMatch('${m.id}')">💾</button>`}
                         ${m.status === 'done' ? '<br><span style="color:#3ddc97;font-size:11px;">Gespeichert</span>' : ''}
                     </td>
                 </tr>`;
@@ -243,22 +287,20 @@
         const l1 = parseInt(document.getElementById(`l1_${matchId}`).value) || 0;
         const l2 = parseInt(document.getElementById(`l2_${matchId}`).value) || 0;
         await supabaseClient.from('matches').update({ legs1: l1, legs2: l2, status: 'done' }).eq('id', matchId);
-        loadMatchesForLeague(); // Reload view
+        loadMatchesForLeague(); 
     }
 
     window.generateSchedule = async function() {
         const league = document.getElementById("leagueSelector").value;
         if(!confirm(`Möchtest du den Spielplan für ${league} in ${currentSeasonGlobal} wirklich erstellen?`)) return;
 
-        // Finde alle Spieler, die für diese Liga (egal ob AD, DC oder SC) zugeteilt wurden
         const { data: players } = await supabaseClient.from('profiles').select('id')
             .or(`assigned_ad_league.eq."${league}",assigned_dc_league.eq."${league}",assigned_sc_league.eq."${league}"`);
 
         if(!players || players.length < 2) return alert("Es müssen mindestens 2 Spieler in dieser Liga sein!");
 
-        // Round-Robin Algorithmus (Jeder gegen Jeden)
         let pIds = players.map(p => p.id);
-        if (pIds.length % 2 !== 0) pIds.push(null); // Freilos hinzufügen
+        if (pIds.length % 2 !== 0) pIds.push(null); 
         
         const numDays = pIds.length - 1;
         const half = pIds.length / 2;
@@ -269,7 +311,6 @@
             for (let i = 0; i < half; i++) {
                 const p1 = temp[i];
                 const p2 = temp[temp.length - 1 - i];
-                // Freilos-Matches speichern wir als Info mit ab (damit man sieht, wer Pause hat)
                 newMatches.push({
                     season: currentSeasonGlobal,
                     league_name: league,
@@ -279,7 +320,7 @@
                     status: (p1 === null || p2 === null) ? 'done' : 'open'
                 });
             }
-            temp.splice(1, 0, temp.pop()); // Rotieren
+            temp.splice(1, 0, temp.pop()); 
         }
 
         await supabaseClient.from('matches').insert(newMatches);
@@ -353,11 +394,9 @@
         if(!newName) return alert("Bitte gib einen Namen für die neue Saison ein (z.B. Saison 2)");
         if(!confirm(`Achtung: Dies friert die alte Saison ein und öffnet die Anmeldung für '${newName}'. Alle Spieler müssen sich dann neu anmelden. Fortfahren?`)) return;
 
-        // 1. System Settings aktualisieren
         await supabaseClient.from('system_settings').update({ registration_open: true, current_season: newName }).eq('id', 1);
         currentSeasonGlobal = newName;
 
-        // 2. Profile resetten (Karten bleiben erhalten, Wunsch & Status wird genullt. Bisherige Liga bleibt als Historie stehen)
         await supabaseClient.from('profiles').update({ 
             want_autodarts: false, want_dartcounter: false, want_scolia: false,
             status_neue_saison: 'none'
