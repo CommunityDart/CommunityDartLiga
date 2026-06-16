@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mein Profil - CDL</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+
   <style>
     body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
     .shell { background: #041924; border: 1px solid rgba(32,183,255,0.2); padding: 30px; border-radius: 15px; max-width: 600px; margin: 20px auto; }
@@ -42,11 +46,25 @@
     .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
     .league-assignment-text { color: #3ddc97; font-weight: bold; font-size: 14px; margin-top: 10px; text-align: center; background: rgba(61, 220, 151, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(61, 220, 151, 0.3);}
 
-    /* NEWS MODAL */
-    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); display:none; align-items:center; justify-content:center; z-index:9999; padding: 20px; }
-    .modal-box { background:#041924; border:1px solid #3ddc97; padding:25px; border-radius:12px; width:100%; max-width:500px; }
-    .modal-box input, .modal-box textarea { width:100%; padding:12px; margin-bottom:15px; background:#021017; border:1px solid #4b87a5; color:#fff; border-radius:8px; box-sizing:border-box; font-family:sans-serif;}
-    .modal-box textarea { height:180px; resize:vertical; font-size: 14px; }
+    /* NEWS MODAL UPGRADE */
+    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:9999; padding: 20px; }
+    .modal-box { background:#041924; border:1px solid #3ddc97; padding:25px; border-radius:12px; width:100%; max-width:700px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    
+    /* Quill Container Anpassung an das dunkle Design */
+    .ql-toolbar.ql-snow { background: #021017 !important; border-color: #4b87a5 !important; border-radius: 8px 8px 0 0; }
+    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #021017; border-radius: 0 0 8px 8px; height: 250px; font-size: 15px; color: #fff; }
+    .ql-editor.ql-blank::before { color: #5a7585 !important; font-style: normal; }
+    .ql-snow .ql-stroke { stroke: #90a9b7 !important; }
+    .ql-snow .ql-fill { fill: #90a9b7 !important; }
+    .ql-snow .ql-picker { color: #90a9b7 !important; }
+
+    /* Admin News Liste */
+    .admin-news-section { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-top: 25px; display: none; }
+    .admin-news-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 10px; }
+    .admin-news-item:last-child { border-bottom: none; }
+    .news-manage-btn { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .edit-btn { background: #20b7ff; color: #000; margin-right: 5px; }
+    .delete-btn { background: #e74c3c; color: #fff; }
 
     @media (max-width: 600px) {
       body { padding: 10px; }
@@ -64,11 +82,16 @@
 
   <div id="newsModalOverlay" class="modal-overlay">
     <div class="modal-box">
-      <h3 style="margin-top:0; color:#3ddc97; text-align:center;">📰 Neuigkeit verfassen</h3>
+      <h3 id="newsModalTitle" style="margin-top:0; color:#3ddc97; text-align:center;">📰 Neuigkeit verfassen</h3>
+      <input type="hidden" id="editNewsId" value="">
       <input type="text" id="newsTitleInput" placeholder="Überschrift (z.B. Willkommen zur neuen Saison)">
-      <textarea id="newsContentInput" placeholder="Dein Text hier... (Absätze werden automatisch übernommen)"></textarea>
+      
+      <div style="margin-bottom:15px;">
+        <div id="editor-container"></div>
+      </div>
+
       <div style="display:flex; gap:10px; flex-wrap: wrap;">
-        <button onclick="saveNews()" style="background:#3ddc97; color:#000; flex:1;">Veröffentlichen</button>
+        <button onclick="saveNews()" style="background:#3ddc97; color:#000; flex:1;">Veröffentlichen / Speichern</button>
         <button onclick="closeNewsModal()" style="background:#e74c3c; color:#fff; flex:1;">Abbrechen</button>
       </div>
     </div>
@@ -79,7 +102,7 @@
     <div class="top-buttons">
         <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
         <button id="adminDashboardBtn" class="back-btn admin-btn" style="display:none;" onclick="window.location.href='admin.html'">⚙️ Admin Dashboard</button>
-        <button id="newsDashboardBtn" class="back-btn news-btn" style="display:none;" onclick="openNewsModal()">📰 News verfassen</button>
+        <button id="newsDashboardBtn" class="back-btn news-btn" style="display:none;" onclick="openNewsModalForCreate()">📰 News verfassen</button>
     </div>
     
     <div class="profile-header">
@@ -103,6 +126,13 @@
       </div>
       <div id="assignmentArea"></div>
     </div>
+
+    <div id="adminNewsSection" class="admin-news-section">
+        <h3 style="margin-top:0; color:#3ddc97; font-size:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">📰 Geschriebene News verwalten</h3>
+        <div id="adminNewsList">Lade Nachrichten-Historie...</div>
+    </div>
+
+    <div class="divider"></div>
 
     <form id="profilForm" style="display:none;">
       <div class="input-group">
@@ -146,24 +176,102 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
+    let quillEditor = null;
 
-    // NEWS FUNKTIONEN
-    window.openNewsModal = () => document.getElementById('newsModalOverlay').style.display = 'flex';
+    // Quill Initialisieren (Word-Funktionen + Farben + Schriftgrößen + Bild-Symbol)
+    function initQuill() {
+        if (quillEditor) return;
+        quillEditor = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: 'Schreibe deine News... Nutze die Leiste für Farben, Größen oder füge Bilder via URL ein!',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                    ['image', 'clean']
+                ]
+            }
+        });
+    }
+
+    window.openNewsModalForCreate = () => {
+        initQuill();
+        document.getElementById('newsModalTitle').innerText = "💡 Neue Nachricht verfassen";
+        document.getElementById('editNewsId').value = "";
+        document.getElementById('newsTitleInput').value = "";
+        quillEditor.setContents([]); // Leeren
+        document.getElementById('newsModalOverlay').style.display = 'flex';
+    };
+
     window.closeNewsModal = () => document.getElementById('newsModalOverlay').style.display = 'none';
     
     window.saveNews = async () => {
-        const t = document.getElementById('newsTitleInput').value.trim();
-        const c = document.getElementById('newsContentInput').value.trim();
-        if(!t || !c) return alert('Bitte Überschrift und Text eingeben!');
+        const title = document.getElementById('newsTitleInput').value.trim();
+        const htmlContent = quillEditor.getSemanticHTML(); // Holt das echte formatierte HTML
+        const textCheck = quillEditor.getText().trim();
+        const editId = document.getElementById('editNewsId').value;
+
+        if(!title || !textCheck) return alert('Bitte Überschrift und Nachrichtentext eingeben!');
         
-        const { error } = await supabaseClient.from('news').insert([{ title: t, content: c }]);
-        if(error) return alert('Fehler: ' + error.message);
+        if (editId) {
+            // BEARBEITEN Modus
+            const { error } = await supabaseClient.from('news').update({ title: title, content: htmlContent }).eq('id', editId);
+            if(error) return alert('Fehler: ' + error.message);
+            alert('News erfolgreich aktualisiert!');
+        } else {
+            // NEU Modus
+            const { error } = await supabaseClient.from('news').insert([{ title: title, content: htmlContent }]);
+            if(error) return alert('Fehler: ' + error.message);
+            alert('News erfolgreich veröffentlicht!');
+        }
         
-        alert('News erfolgreich veröffentlicht!');
         closeNewsModal();
-        document.getElementById('newsTitleInput').value = '';
-        document.getElementById('newsContentInput').value = '';
+        loadAdminNewsList();
     }
+
+    // Lädt die Historie im Admin-Panel zum Ändern/Löschen
+    async function loadAdminNewsList() {
+        const container = document.getElementById('adminNewsList');
+        const { data, error } = await supabaseClient.from('news').select('id, title, created_at').order('created_at', { ascending: false });
+        
+        if(error || !data || data.length === 0) {
+            container.innerHTML = "<div style='font-style:italic; color:#90a9b7; font-size:13px;'>Noch keine Nachrichten geschrieben.</div>";
+            return;
+        }
+
+        container.innerHTML = data.map(n => {
+            const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+            return `<div class="admin-news-item">
+                <span style="font-size:14px; color:#edf7fb;">[${date}] <b>${htmlEscape(n.title)}</b></span>
+                <div>
+                    <button type="button" class="news-manage-btn edit-btn" onclick="openNewsForEdit('${n.id}')">📝 Ändern</button>
+                    <button type="button" class="news-manage-btn delete-btn" onclick="deleteNews('${n.id}')">🗑️ Löschen</button>
+                </div>
+            </div>`;
+        }).join("");
+    }
+
+    window.openNewsForEdit = async (newsId) => {
+        initQuill();
+        const { data, error } = await supabaseClient.from('news').select('*').eq('id', newsId).single();
+        if(error || !data) return alert('Nachricht konnte nicht geladen werden.');
+
+        document.getElementById('newsModalTitle').innerText = "✏️ Nachricht bearbeiten";
+        document.getElementById('editNewsId').value = data.id;
+        document.getElementById('newsTitleInput').value = data.title;
+        
+        quillEditor.clipboard.dangerouslyPasteHTML(data.content); // Fügt das HTML in den Editor ein
+        document.getElementById('newsModalOverlay').style.display = 'flex';
+    };
+
+    window.deleteNews = async (newsId) => {
+        if(!confirm('Möchtest du diese Nachricht wirklich unwiderruflich von der Startseite löschen?')) return;
+        const { error } = await supabaseClient.from('news').delete().eq('id', newsId);
+        if(error) alert('Fehler beim Löschen: ' + error.message);
+        loadAdminNewsList();
+    };
 
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -203,11 +311,12 @@
                       document.getElementById("scolia_avg").value = data.scolia_avg || "";
                       document.getElementById("scolia_url").value = data.scolia_url || "";
                       
-                      // ADMIN BUTTONS ANZEIGEN
                       if (data.is_admin === true) {
                           document.getElementById("adminBadge").style.display = "inline-block";
                           document.getElementById("adminDashboardBtn").style.display = "inline-block";
                           document.getElementById("newsDashboardBtn").style.display = "inline-block";
+                          document.getElementById("adminNewsSection").style.display = "block";
+                          loadAdminNewsList(); // Liste für Admins laden
                       }
 
                       const regBox = document.getElementById("seasonRegistrationBox");
@@ -323,6 +432,8 @@
         msgBox.innerText = "Profil erfolgreich gespeichert!";
         setTimeout(() => msgBox.style.display = "none", 4000);
     });
+
+    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 
     document.getElementById("logoutBtn").addEventListener("click", async function(e) {
         e.preventDefault(); await supabaseClient.auth.signOut(); window.location.href = "index.html"; 
