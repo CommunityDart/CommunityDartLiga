@@ -98,27 +98,33 @@
 
     async function initAdmin() {
         try {
-            supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                if (session) {
-                    const { data: profile, error: pError } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
-                    if (pError) {
-                        showGlobalError("Fehler beim Admin-Check: " + pError.message);
-                        return;
-                    }
-                    if (!profile || profile.is_admin !== true) {
-                        alert("Zugriff verweigert!");
-                        window.location.href = "index.html";
-                        return;
-                    }
+            // Direkter Login-Check (besser als darauf zu warten, dass der Listener anspringt)
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+            
+            if (sessionError || !session) {
+                window.location.href = "index.html";
+                return;
+            }
 
-                    await loadGlobalSettings();
-                    await loadWaitingList();
-                } else {
-                    window.location.href = "index.html";
-                }
-            });
+            const { data: profile, error: pError } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
+            
+            if (pError) {
+                showGlobalError("Fehler beim Prüfen der Admin-Rechte: " + pError.message);
+                return;
+            }
+            
+            if (!profile || profile.is_admin !== true) {
+                alert("Zugriff verweigert! Du bist kein Admin.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            // Wenn wir hier sind, bist du sicher eingeloggt und Admin. Jetzt laden wir sofort die Daten!
+            await loadGlobalSettings();
+            await loadWaitingList();
+
         } catch (x) {
-            showGlobalError("Kritischer Skriptfehler: " + x.message);
+            showGlobalError("Kritischer Fehler beim Laden der Admin-Seite: " + x.message);
         }
     }
 
@@ -154,7 +160,7 @@
         } catch (err) {
             badge.className = "status-badge status-error";
             badge.innerText = "FEHLER ⚠️";
-            showGlobalError("System-Settings Fehler: " + err.message);
+            showGlobalError("Fehler beim Laden des Hauptschalters: " + err.message);
         }
     }
 
