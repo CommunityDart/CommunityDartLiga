@@ -2,28 +2,50 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
+  <!-- WICHTIG: Dieser Tag sorgt dafür, dass Handys die Seite nicht winzig klein zoomen! -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mein Profil - CDL</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; }
-    .shell { background: #041924; border: 1px solid rgba(32,183,255,0.2); padding: 30px; border-radius: 15px; max-width: 600px; margin: 40px auto; }
+    body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+    .shell { background: #041924; border: 1px solid rgba(32,183,255,0.2); padding: 30px; border-radius: 15px; max-width: 600px; margin: 20px auto; }
     
     .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
-    .avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #20b7ff; object-fit: cover; background: #021017; }
-    .admin-badge { background: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 10px; display: none; }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #20b7ff; object-fit: cover; background: #021017; flex-shrink: 0; }
+    .admin-badge { background: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 10px; display: none; vertical-align: middle; }
     
     label { display: block; font-size: 13px; color: #90a9b7; margin-bottom: 5px; font-weight: bold; }
-    input { width: 100%; padding: 10px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 5px; box-sizing: border-box; }
-    button { background: #3ddc97; color: #000; border: none; padding: 12px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; }
+    input { width: 100%; padding: 12px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+    input:focus { outline: none; border-color: #20b7ff; box-shadow: 0 0 8px rgba(32,183,255,0.3); }
+    
+    button { background: #3ddc97; color: #000; border: none; padding: 14px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; font-size: 15px; }
     button:hover { opacity: 0.8; }
     .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; margin-bottom: 20px; }
     .logout-btn { background: #e74c3c; color: white; margin-left: 10px; }
     
-    .input-group { display: flex; gap: 10px; }
+    .input-group { display: flex; gap: 15px; }
     .input-group > div { flex: 1; }
     .divider { height: 1px; background: rgba(120,170,195,0.1); margin: 15px 0 20px 0; }
     
-    .hint-text { font-size: 12px; color: #90a9b7; margin-top: 15px; font-style: italic; }
+    .hint-text { font-size: 12px; color: #90a9b7; margin-top: 15px; font-style: italic; text-align: center; }
+
+    /* ==========================================
+       MOBILE OPTIMIERUNG FÜR DAS PROFIL
+       ========================================== */
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .shell { padding: 20px; margin: 10px auto; border-radius: 12px; }
+      
+      /* Felder rutschen auf dem Handy untereinander statt nebeneinander */
+      .input-group { flex-direction: column; gap: 0; }
+      
+      /* Buttons werden für den Daumen schön groß gemacht */
+      button { width: 100%; display: block; margin-bottom: 10px; }
+      .logout-btn { margin-left: 0; margin-top: 5px; }
+      
+      .profile-header { flex-direction: column; text-align: center; gap: 10px; }
+      h2 { font-size: 22px; }
+    }
   </style>
 </head>
 <body>
@@ -41,7 +63,7 @@
       
       <div class="input-group">
         <div style="flex: 2;"><label>Echter Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
-        <div style="flex: 1;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" placeholder="12345"></div>
+        <div style="flex: 1;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" inputmode="numeric" placeholder="12345"></div>
         <div style="flex: 2;"><label>Wohnort</label><input type="text" id="ort" placeholder="Musterstadt"></div>
       </div>
 
@@ -54,17 +76,17 @@
 
       <div class="input-group">
         <div style="flex: 2;"><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
-        <div style="flex: 1;"><label>AVG</label><input type="text" id="autodarts_avg" placeholder="z.B. 45.6"></div>
+        <div style="flex: 1;"><label>AVG</label><input type="text" id="autodarts_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
       
       <div class="input-group">
         <div style="flex: 2;"><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
-        <div style="flex: 1;"><label>AVG</label><input type="text" id="dartcounter_avg" placeholder="z.B. 45.6"></div>
+        <div style="flex: 1;"><label>AVG</label><input type="text" id="dartcounter_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
 
       <div class="input-group">
         <div style="flex: 2;"><label>Scolia Name</label><input type="text" id="scolia_name"></div>
-        <div style="flex: 1;"><label>AVG</label><input type="text" id="scolia_avg" placeholder="z.B. 45.6"></div>
+        <div style="flex: 1;"><label>AVG</label><input type="text" id="scolia_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
 
       <div class="divider"></div>
@@ -74,7 +96,7 @@
       
       <p class="hint-text">* wird benötigt für die Mitgliederkarte</p>
       
-      <div id="msgBox" style="margin-top:15px; font-weight:bold; padding: 10px; border-radius: 5px; display: none;"></div>
+      <div id="msgBox" style="margin-top:15px; font-weight:bold; padding: 12px; border-radius: 8px; display: none; text-align:center;"></div>
     </form>
   </div>
 
@@ -160,12 +182,12 @@
         const meta = currentUser.user_metadata || {};
         const safeAvatarUrl = meta.avatar_url || meta.picture || "";
         const currentDiscordName = meta.full_name || meta.name || "";
-        const currentDiscordId = meta.sub || currentUser.id || ""; // <-- Zieht die echte Discord-Zahlen-ID
+        const currentDiscordId = meta.sub || currentUser.id || "";
 
         const updates = {
             id: currentUser.id,
             discord_name: currentDiscordName || null,
-            discord_id: currentDiscordId || null, // <-- NEU: Speichert den Link-Code ab
+            discord_id: currentDiscordId || null,
             real_name: document.getElementById("real_name").value.trim() || null,
             plz: document.getElementById("plz").value.trim() || null,
             ort: document.getElementById("ort").value.trim() || null,
