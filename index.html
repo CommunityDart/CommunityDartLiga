@@ -25,7 +25,9 @@
     }
 
     body[data-mode="DartCounter"]{ --accent:#ff9f1c; --accent-border:rgba(255,159,28,.42); }
+    body[data-mode="Scolia"]{ --accent:#3ddc97; --accent-border:rgba(61,220,151,.42); }
     body[data-mode="Home"]{ --accent:#20b7ff; --accent-border:rgba(32,183,255,.42); }
+    
     *{box-sizing:border-box} html,body{margin:0;padding:0}
     body{ font-family:Arial,Helvetica,sans-serif; background: radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 14%, transparent), transparent 22%), linear-gradient(180deg, var(--bg) 0%, #021017 100%); color:var(--text); min-height:100vh; transition:background .2s ease; }
     .wrap{ width:min(1400px, calc(100% - 28px)); margin:0 auto; padding:8px 0 42px; }
@@ -34,34 +36,37 @@
     
     .hero-banner.image-banner{ position:relative; margin:0 0 14px; min-height:420px; border-radius:30px; overflow:hidden; border:1px solid rgba(255,255,255,.10); box-shadow: 0 18px 44px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.06); background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.14)), url("banner.png") center center / cover no-repeat; transition: box-shadow .2s ease; }
     .hero-banner.image-banner::before{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.03) 0%, rgba(0,0,0,.08) 55%, rgba(0,0,0,.16) 100%); pointer-events:none; }
+    
     body[data-mode="Home"] .hero-banner.image-banner, body[data-mode="Autodarts"] .hero-banner.image-banner{ box-shadow: 0 18px 44px rgba(0,0,0,.34), 0 0 0 1px rgba(32,183,255,.20), 0 0 28px rgba(32,183,255,.14); }
     body[data-mode="DartCounter"] .hero-banner.image-banner{ box-shadow: 0 18px 44px rgba(0,0,0,.34), 0 0 0 1px rgba(255,159,28,.20), 0 0 28px rgba(255,159,28,.14); }
+    body[data-mode="Scolia"] .hero-banner.image-banner{ box-shadow: 0 18px 44px rgba(0,0,0,.34), 0 0 0 1px rgba(61,220,151,.20), 0 0 28px rgba(61,220,151,.14); }
     
-    .top-nav-wrap{ width:min(1200px, 100%); margin:0 auto 12px; }
+    .top-nav-wrap{ width:min(1300px, 100%); margin:0 auto 12px; }
     .banner-nav-shell{ display:flex; justify-content:center; align-items:center; margin-bottom:10px; }
-    .banner-nav{ width:100%; display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:12px; padding:12px; border-radius:22px; background:rgba(4,12,14,.22); border:1px solid rgba(255,255,255,.10); box-shadow: 0 10px 24px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+    .banner-nav{ width:100%; display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:12px; padding:12px; border-radius:22px; background:rgba(4,12,14,.22); border:1px solid rgba(255,255,255,.10); box-shadow: 0 10px 24px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+    
     .discord-button-group { display: flex; flex-direction: column; gap: 8px; grid-column: span 1; }
-    .hero-action-btn{ position:relative; width:100%; border:1px solid rgba(255,255,255,.16); background:rgba(6,20,30,.38); color:#f5fbff; border-radius:16px; min-height:50px; padding:0 14px; font-size:14px; font-weight:900; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; text-align:center; gap:10px; transition:.22s ease; white-space:nowrap; overflow:hidden; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow: 0 10px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.10), inset 0 -1px 0 rgba(255,255,255,.03); }
+    .hero-action-btn{ position:relative; width:100%; border:1px solid rgba(255,255,255,.16); background:rgba(6,20,30,.38); color:#f5fbff; border-radius:16px; min-height:50px; padding:0 14px; font-size:14px; font-weight:900; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; text-align:center; gap:10px; transition:.22s ease; white-space:nowrap; overflow:hidden; backdrop-filter:blur(10px); box-shadow: 0 10px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.10), inset 0 -1px 0 rgba(255,255,255,.03); }
     .discord-button-group .hero-action-btn { min-height: 44px; font-size: 13px; }
     .hero-action-btn::before{ content:""; position:absolute; inset:1px; border-radius:15px; background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0)); pointer-events:none; }
-    .hero-action-btn::after{ content:""; position:absolute; top:-120%; left:-35%; width:38%; height:300%; transform:rotate(18deg); background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.18), rgba(255,255,255,0)); opacity:0; transition:opacity .2s ease, transform .45s ease; pointer-events:none; }
     .hero-action-btn:hover{ transform:translateY(-2px); background:rgba(10,28,40,.48); border-color:rgba(255,255,255,.24); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 22px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.14); }
-    .hero-action-btn:hover::after{ opacity:1; transform:translateX(230%) rotate(18deg); }
     
     .hero-btn-autodarts{ background:rgba(36,141,255,.20); border-color:rgba(90,180,255,.45); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 0 1px rgba(36,141,255,.14), 0 0 20px rgba(36,141,255,.14), inset 0 1px 0 rgba(255,255,255,.12); }
     .hero-btn-dartcounter{ background:rgba(255,154,31,.18); border-color:rgba(255,186,90,.42); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 0 1px rgba(255,154,31,.12), 0 0 20px rgba(255,154,31,.12), inset 0 1px 0 rgba(255,255,255,.12); }
+    .hero-btn-scolia{ background:rgba(61,220,151,.20); border-color:rgba(61,220,151,.45); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 0 1px rgba(61,220,151,.14), 0 0 20px rgba(61,220,151,.14), inset 0 1px 0 rgba(255,255,255,.12); }
     .hero-btn-discord{ background:rgba(88,101,242,.28); border-color:rgba(162,170,255,.42); box-shadow: 0 10px 22px rgba(0,0,0,.22), 0 0 0 1px rgba(88,101,242,.14), 0 0 20px rgba(88,101,242,.16), inset 0 1px 0 rgba(255,255,255,.12); }
     .hero-btn-dark{ background:rgba(3,19,27,.42); border-color:rgba(120,170,195,.18); box-shadow: 0 10px 22px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08); }
+    
     #modeHome.active{ background:rgba(32,183,255,.25); border-color:rgba(130,205,255,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(32,183,255,.28); }
     #modeAutodarts.active{ background:rgba(36,141,255,.30); border-color:rgba(130,205,255,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(36,141,255,.28); }
     #modeDartCounter.active{ background:rgba(255,154,31,.28); border-color:rgba(255,206,130,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(255,154,31,.24); }
+    #modeScolia.active{ background:rgba(61,220,151,.30); border-color:rgba(100,240,180,.72); box-shadow: 0 14px 28px rgba(0,0,0,.24), 0 0 28px rgba(61,220,151,.28); }
 
     .discord-icon{ width:18px; height:18px; fill:currentColor; flex:0 0 18px; display:block; filter:drop-shadow(0 0 6px rgba(255,255,255,.18)); }
-    .submenu-row{ display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:12px; margin-top:10px; align-items:start; }
-    .submenu-slot{ min-height:52px; display:none; flex-wrap:wrap; gap:10px; align-items:flex-start; overflow:visible; padding-bottom:0; }
+    
+    .submenu-row{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:10px; align-items:start; }
+    .submenu-slot{ min-height:52px; display:none; flex-wrap:wrap; gap:10px; align-items:flex-start; overflow:visible; padding-bottom:0; justify-content:center; width:100%;}
     .submenu-slot.active{ display:flex; }
-    .submenu-slot.left{ grid-column:1 / span 3; }
-    .submenu-slot.middle{ grid-column:2 / span 3; }
     .submenu-btn{ border:1px solid rgba(75,135,165,.24); background:rgba(5,26,37,.92); color:#dff3ff; padding:11px 14px; min-height:42px; border-radius:12px; font-size:14px; font-weight:800; cursor:pointer; transition:.16s ease; box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 14px rgba(0,0,0,.18); white-space:nowrap; flex:0 0 auto; }
     .submenu-btn:hover{ transform:translateY(-1px); border-color:var(--accent-border); background:#082738; }
     .submenu-btn.active{ color:#fff; border-color:var(--accent-border); background:#082738; box-shadow: inset 3px 0 0 var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 20%, transparent); }
@@ -75,40 +80,51 @@
 
     .table-shell, .matchday{ border:1px solid var(--line); background:linear-gradient(180deg, rgba(6,27,37,.96), rgba(4,20,28,.98)); box-shadow:0 18px 50px rgba(0,0,0,.35); border-radius:18px; }
     body[data-mode="DartCounter"] .table-shell, body[data-mode="DartCounter"] .matchday{ background:linear-gradient(180deg, rgba(48,24,8,.96), rgba(30,14,4,.98)); border-color:rgba(255,159,28,.22); box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+    body[data-mode="Scolia"] .table-shell, body[data-mode="Scolia"] .matchday{ background:linear-gradient(180deg, rgba(16,48,32,.96), rgba(10,30,20,.98)); border-color:rgba(61,220,151,.22); box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+    
     .table-shell{ overflow:hidden; }
 
     .section-head{ display:flex; justify-content:space-between; align-items:center; gap:14px; padding:18px 18px 12px; flex-wrap:wrap; }
     .section-title{ margin:0; font-size:18px; font-weight:900; letter-spacing:.01em; }
     .section-sub{ color:var(--muted); font-size:13px; }
     body[data-mode="DartCounter"] .section-sub{ color:#f3c98f; }
+    body[data-mode="Scolia"] .section-sub{ color:#9beebb; }
 
     .table-wrap{ overflow-x:auto; padding:0 0 6px; }
     table{ width:100%; border-collapse:collapse; min-width:760px; table-layout:fixed; }
-    thead th{ padding:14px 16px; color:#c8dce6; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line); background:#041722; white-space:nowrap; text-align:left; min-width:90px; }
+    thead th{ padding:14px 16px; color:#c8dce6; font-size:12px; font-weight:800; text-transform:uppercase; border-bottom:1px solid var(--line); background:#041722; white-space:nowrap; text-align:left; min-width:90px; }
     thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7){ text-align:center; }
+    
     body[data-mode="DartCounter"] thead th{ background:#3a1d08; color:#ffe2b8; border-bottom:1px solid rgba(255,159,28,.20); }
-    tbody tr:nth-child(odd) td{background:var(--row-a)}
-    tbody tr:nth-child(even) td{background:var(--row-b)}
     body[data-mode="DartCounter"] tbody tr:nth-child(odd) td{ background:#402008; }
     body[data-mode="DartCounter"] tbody tr:nth-child(even) td{ background:#2f1706; }
-    tbody td{ padding:14px 16px; border-bottom:1px solid rgba(120,170,195,.08); font-size:15px; color:#f1f8fb; white-space:nowrap; vertical-align:top; }
     body[data-mode="DartCounter"] tbody td{ border-bottom:1px solid rgba(255,159,28,.08); }
-    tbody tr:hover td{background:#0a2b3b}
     body[data-mode="DartCounter"] tbody tr:hover td{background:#5a2b08}
+    
+    body[data-mode="Scolia"] thead th{ background:#0e2a1c; color:#c2f5d6; border-bottom:1px solid rgba(61,220,151,.20); }
+    body[data-mode="Scolia"] tbody tr:nth-child(odd) td{ background:#143825; }
+    body[data-mode="Scolia"] tbody tr:nth-child(even) td{ background:#0f2a1b; }
+    body[data-mode="Scolia"] tbody td{ border-bottom:1px solid rgba(61,220,151,.08); }
+    body[data-mode="Scolia"] tbody tr:hover td{background:#1d5236}
 
-    /* HIER WAR DER FEHLER: content ist jetzt richtig leer! */
+    tbody tr:nth-child(odd) td{background:var(--row-a)}
+    tbody tr:nth-child(even) td{background:var(--row-b)}
+    tbody td{ padding:14px 16px; border-bottom:1px solid rgba(120,170,195,.08); font-size:15px; color:#f1f8fb; white-space:nowrap; vertical-align:top; }
+    tbody tr:hover td{background:#0a2b3b}
+
     .rank-col{ width:84px; font-weight:900; position:relative; }
     .rank-col.first::before, .rank-col.last::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:10px; }
     .rank-col.first::before{ background:var(--green); }
     .rank-col.last::before{ background:var(--red); }
 
-    /* Klickbare Elemente */
     .player-link { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.2); transition: 0.2s; font-weight:600; color:#fff; }
     .player-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
     .discord-link { cursor: pointer; font-weight: 700; font-size: 12px; transition: 0.2s; color: #8ec9ee; }
     .discord-link:hover { color: #fff; }
     body[data-mode="DartCounter"] .discord-link { color: #ffd08a; }
     body[data-mode="DartCounter"] .discord-link:hover { color: #fff; }
+    body[data-mode="Scolia"] .discord-link { color: #9beebb; }
+    body[data-mode="Scolia"] .discord-link:hover { color: #fff; }
 
     .player-cell{ width:140px; min-width:140px; font-weight:800; }
     .player-meta-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px; }
@@ -117,7 +133,7 @@
     .card-badge.yellow{ background:#f7c948; border-color:rgba(0,0,0,.22); }
     .card-badge.red{ background:#e74c3c; border-color:rgba(255,255,255,.14); }
     .points-cell{ font-weight:900; color:#fff; }
-    body[data-mode="DartCounter"] .points-cell{ color:#fff4e3; }
+    
     thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7),
     tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6), tbody td:nth-child(7){ width:110px; text-align:center; }
 
@@ -127,11 +143,11 @@
     .matchday-head{ width:100%; border:none; background:transparent; color:var(--text); padding:16px 16px; display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer; text-align:left; }
     .matchday-title{ font-size:16px; font-weight:900; flex:1; min-width:0; }
     .matchday-head-right{ display:flex; align-items:center; justify-content:flex-end; gap:10px; width:96px; min-width:96px; flex:0 0 96px; }
-    .matchday-progress{ width:46px; text-align:right; font-size:12px; font-weight:900; color:#cfe5ef; letter-spacing:.02em; white-space:nowrap; }
+    .matchday-progress{ width:46px; text-align:right; font-size:12px; font-weight:900; color:#cfe5ef; }
     .status-dot{ width:11px; height:11px; border-radius:50%; display:inline-block; flex:0 0 11px; }
     .status-dot.done{ background:var(--green); box-shadow:0 0 10px rgba(61,220,151,.65); }
     .status-dot.open{ background:var(--red); box-shadow:0 0 10px rgba(231,76,60,.65); }
-    .status-badge{ display:inline-flex; align-items:center; justify-content:center; width:38px; min-width:38px; height:28px; padding:0; border-radius:999px; font-size:12px; font-weight:800; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); white-space:nowrap; flex-shrink:0; }
+    .status-badge{ display:inline-flex; align-items:center; justify-content:center; width:38px; min-width:38px; height:28px; padding:0; border-radius:999px; font-size:12px; font-weight:800; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); }
     .status-badge.done{ color:var(--green); border-color:rgba(61,220,151,.28); }
     .status-badge.open{ color:var(--red); border-color:rgba(231,76,60,.28); }
     .matchday-body{ display:none; padding:0 14px 14px; }
@@ -139,16 +155,15 @@
     .match-table{ width:100%; min-width:100%; border-collapse:collapse; border-radius:12px; overflow:hidden; table-layout:auto; }
     .match-table td{ padding:12px 10px; font-size:13px; border-bottom:1px solid rgba(120,170,195,.08); white-space:normal; background:rgba(255,255,255,.02); color:#edf7fb; vertical-align:middle; }
     body[data-mode="DartCounter"] .match-table td{ background:rgba(255,255,255,.015); border-bottom:1px solid rgba(255,159,28,.08); }
+    body[data-mode="Scolia"] .match-table td{ background:rgba(255,255,255,.015); border-bottom:1px solid rgba(61,220,151,.08); }
     .match-table tbody tr:first-child td{ border-top:none; }
-    .match-player{ display:block; min-height:22px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .match-table td.col-player{ min-width:120px; }
-    .col-player{ width:auto; }
     .col-legs{ width:64px; text-align:center; }
-    .col-status{ width:96px; text-align:right; }
-    .status-cell{ width:96px; min-width:96px; text-align:right !important; vertical-align:middle; white-space:nowrap !important; overflow:visible; padding-right:10px !important; }
+    .status-cell{ width:96px; min-width:96px; text-align:right !important; vertical-align:middle; padding-right:10px !important; }
 
-    .empty{ border:1px dashed rgba(120,170,195,.18); border-radius:14px; padding:14px; color:var(--muted); font-size:14px; }
+    .empty{ border:1px dashed rgba(120,170,195,.18); border-radius:14px; padding:14px; color:var(--muted); font-size:14px; text-align:center;}
     body[data-mode="DartCounter"] .empty{ border-color:rgba(255,159,28,.24); color:#f3c98f; }
+    body[data-mode="Scolia"] .empty{ border-color:rgba(61,220,151,.24); color:#9beebb; }
 
     .footer{ margin-top:20px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
     .footer-note{ width:100%; text-align:center; color:#7c95a3; font-size:12px; margin-top:4px; }
@@ -158,51 +173,41 @@
     .modal{ width:min(840px, 100%); max-height:min(88vh, 920px); background:linear-gradient(180deg, rgba(6,27,37,.98), rgba(4,20,28,.99)); border:1px solid var(--line); border-radius:20px; box-shadow:0 24px 60px rgba(0,0,0,.45); overflow:hidden; display:flex; flex-direction:column; }
     .modal-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 18px 14px; border-bottom:1px solid rgba(120,170,195,.10); }
     .modal-title{ margin:0; font-size:18px; font-weight:900; }
-    .modal-close{ width:40px; height:40px; min-height:40px; padding:0; border-radius:12px; }
+    .modal-close{ width:40px; height:40px; border-radius:12px; border:none; background:rgba(255,255,255,0.1); color:#fff; cursor:pointer;}
+    .modal-close:hover{ background:rgba(255,255,255,0.2); }
     .modal-body{ padding:18px; color:#d7e8ef; line-height:1.6; font-size:14px; overflow:auto; }
     .modal-body p{ margin:0 0 12px; }
     .content-block{ margin-bottom:18px; padding:14px; border:1px solid rgba(120,170,195,.10); border-radius:14px; background:rgba(255,255,255,.02); }
     .content-block h4{ margin:0 0 8px; font-size:15px; color:#fff; }
-    .content-block:last-child{ margin-bottom:0; }
 
     .modal-profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
     .modal-profile-name { font-size: 20px; font-weight: 900; margin: 0; }
     
     .modal-discord-sub { font-size: 13px; color: #8ec9ee; font-weight: bold; cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
-    .modal-discord-sub:hover { color: #fff; }
-    
     .platform-link-btn { display: inline-block; background: rgba(32,183,255,0.15); border: 1px solid rgba(32,183,255,0.3); color: #20b7ff; padding: 2px 8px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 8px; transition: 0.2s; }
-    .platform-link-btn:hover { background: #20b7ff; color: #000; }
 
     @media (max-width:1180px){
       .banner-nav{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
-      .submenu-row{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
-      .submenu-slot.left, .submenu-slot.middle{ grid-column:auto; }
     }
     @media (max-width:1100px){
-      .hero-banner.image-banner{ min-height:260px; background-position:center center; }
       .main{grid-template-columns:1fr}
       .sidebar{order:2}
     }
     @media (max-width:760px){
       .wrap{width:min(100% - 16px, 1400px)}
       .button,.footer-btn,.footer-link{width:100%}
-      .hero-banner.image-banner{ min-height:180px; border-radius:20px; background-position:center center; background-size:cover; }
-      .banner-nav, .submenu-row{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
-      .hero-action-btn{ min-height:42px; border-radius:14px; font-size:13px; padding:0 10px; white-space:nowrap; }
+      .hero-banner.image-banner{ min-height:180px; border-radius:20px; background-size:cover; }
+      .banner-nav{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+      .hero-action-btn{ min-height:42px; font-size:13px; padding:0 10px; }
       .player-cell{ width:120px; min-width:120px; }
       thead th { padding: 10px 8px; font-size: 11px; }
       tbody td { padding: 10px 8px; font-size: 13px; }
       .rank-col { width: 60px; }
       .matchday-head-right{ width:92px; min-width:92px; flex:0 0 92px; }
-      .matchday-progress{ width:42px; }
-      .status-cell, .col-status{ width:92px; min-width:92px; }
-      .match-table td.col-player{ min-width:100px; }
       .modal { width: calc(100% - 24px); margin: 12px; max-height: calc(100vh - 24px); }
-      .modal-head, .modal-body { padding: 14px; }
     }
-    @media (max-width:560px){ .banner-nav, .submenu-row{ grid-template-columns:1fr; } }
+    @media (max-width:560px){ .banner-nav { grid-template-columns:1fr; } }
   </style>
 </head>
 <body data-mode="Home">
@@ -213,28 +218,17 @@
     <div class="top-nav-wrap">
       <section class="banner-nav-shell">
         <div class="banner-nav">
-          <button id="modeHome" class="hero-action-btn hero-btn-dark mode-btn active" type="button">
-            Neuigkeiten
-          </button>
-          <button id="modeAutodarts" class="hero-action-btn hero-btn-autodarts mode-btn" type="button">
-            Autodarts
-          </button>
-          <button id="modeDartCounter" class="hero-action-btn hero-btn-dartcounter mode-btn" type="button">
-            DartCounter
-          </button>
+          <button id="modeHome" class="hero-action-btn hero-btn-dark mode-btn active" type="button">Neuigkeiten</button>
+          <button id="modeAutodarts" class="hero-action-btn hero-btn-autodarts mode-btn" type="button">Autodarts</button>
+          <button id="modeDartCounter" class="hero-action-btn hero-btn-dartcounter mode-btn" type="button">DartCounter</button>
+          <button id="modeScolia" class="hero-action-btn hero-btn-scolia mode-btn" type="button">Scolia</button>
 
           <div class="discord-button-group">
-            <a href="https://discord.gg/DEINLINK" target="_blank" rel="noopener noreferrer" class="hero-action-btn hero-btn-discord discord-main-btn">
-              <svg class="discord-icon" viewBox="0 0 127.14 96.36" aria-hidden="true">
-                <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2A75.57,75.57,0,0,0,95.73,78c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C35.88,65.69,30.5,59.66,30.5,52.25s5.31-13.44,11.95-13.44S54.4,44.87,54.39,52.25,49,65.69,42.45,65.69Zm42.24,0c-6.57,0-11.95-6-11.95-13.44s5.31-13.44,11.95-13.44S96.64,44.87,96.63,52.25,91.26,65.69,84.69,65.69Z"/>
-              </svg>
+            <a href="https://discord.gg/DEINLINK" target="_blank" class="hero-action-btn hero-btn-discord discord-main-btn">
+              <svg class="discord-icon" viewBox="0 0 127.14 96.36"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2A75.57,75.57,0,0,0,95.73,78c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C35.88,65.69,30.5,59.66,30.5,52.25s5.31-13.44,11.95-13.44S54.4,44.87,54.39,52.25,49,65.69,42.45,65.69Zm42.24,0c-6.57,0-11.95-6-11.95-13.44s5.31-13.44,11.95-13.44S96.64,44.87,96.63,52.25,91.26,65.69,84.69,65.69Z"/></svg>
               <span>Discord</span>
             </a>
-            
             <button id="ligaLoginBtn" class="hero-action-btn hero-btn-discord discord-login-btn" type="button">
-              <svg class="discord-icon" viewBox="0 0 127.14 96.36" aria-hidden="true">
-                <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2A75.57,75.57,0,0,0,95.73,78c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C35.88,65.69,30.5,59.66,30.5,52.25s5.31-13.44,11.95-13.44S54.4,44.87,54.39,52.25,49,65.69,42.45,65.69Zm42.24,0c-6.57,0-11.95-6-11.95-13.44s5.31-13.44,11.95-13.44S96.64,44.87,96.63,52.25,91.26,65.69,84.69,65.69Z"/>
-              </svg>
               <span id="loginBtnText">Liga Login</span>
             </button>
           </div>
@@ -243,21 +237,10 @@
       </section>
 
       <div class="submenu-row">
-        <div id="autodartsSubmenu" class="submenu-slot left"></div>
-        <div id="dartcounterSubmenu" class="submenu-slot middle"></div>
+        <div id="autodartsSubmenu" class="submenu-slot"></div>
+        <div id="dartcounterSubmenu" class="submenu-slot"></div>
+        <div id="scoliaSubmenu" class="submenu-slot"></div>
       </div>
-    </div>
-
-    <div class="ad-banner-slot">
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="ca-pub-8141059951423155"
-           data-ad-slot="DEINE_SLOT_NUMMER_HIER_EINTRAGEN"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>
-           (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
     </div>
 
     <section class="main">
@@ -270,551 +253,320 @@
     <div class="footer">
       <button id="openImpressumBtn" class="footer-btn" type="button">Impressum</button>
       <button id="openLinksBtn" class="footer-btn" type="button">Links</button>
-      <a class="footer-link" href="https://www.paypal.com/pool/9nHfKrmgfD?sr=wccr" target="_blank" rel="noopener noreferrer">Spenden</a>
-      <div class="footer-note">Community Dart Liga • GitHub Pages Version</div>
+      <a class="footer-link" href="https://www.paypal.com/pool/9nHfKrmgfD?sr=wccr" target="_blank">Spenden</a>
+      <div class="footer-note">Community Dart Liga • Voll-Datenbank Version</div>
     </div>
   </div>
 
   <div id="playerProfileModal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="playerProfileTitle">
+    <div class="modal">
       <div class="modal-head">
         <h3 id="playerProfileTitle" class="modal-title">Spielerprofil</h3>
-        <button class="button modal-close" type="button" data-close-modal="playerProfileModal">✕</button>
+        <button class="modal-close" type="button" data-close-modal="playerProfileModal">✕</button>
       </div>
-      <div id="playerProfileContent" class="modal-body">
-        <p>Lade Spieler...</p>
-      </div>
+      <div id="playerProfileContent" class="modal-body"></div>
     </div>
   </div>
 
   <div id="impressumModal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
+    <div class="modal">
       <div class="modal-head">
-        <h3 id="impressumTitle" class="modal-title">Impressum</h3>
-        <button id="closeImpressumBtn" class="button modal-close" type="button">✕</button>
+        <h3 class="modal-title">Impressum</h3>
+        <button class="modal-close" type="button" data-close-modal="impressumModal">✕</button>
       </div>
       <div class="modal-body">
         <p><strong>Community Dart Liga</strong></p>
         <p>Oliver Eger<br>Bahnhofstraße 9<br>37520 Osterode am Harz<br>eintausend.os@gmail.com</p>
-        <p>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:<br>Oliver Eger</p>
       </div>
     </div>
   </div>
 
   <div id="regelwerkModal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="regelwerkTitle">
+    <div class="modal">
       <div class="modal-head">
-        <h3 id="regelwerkTitle" class="modal-title">Regelwerk</h3>
-        <button class="button modal-close" type="button" data-close-modal="regelwerkModal">✕</button>
+        <h3 class="modal-title">Regelwerk</h3>
+        <button class="modal-close" type="button" data-close-modal="regelwerkModal">✕</button>
       </div>
-      <div id="regelwerkContent" class="modal-body">
-        <p>Lade Regelwerk…</p>
-      </div>
+      <div id="regelwerkContent" class="modal-body"><p>Lade Regelwerk…</p></div>
     </div>
   </div>
 
   <div id="linksModal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="linksTitle">
+    <div class="modal">
       <div class="modal-head">
-        <h3 id="linksTitle" class="modal-title">Links</h3>
-        <button class="button modal-close" type="button" data-close-modal="linksModal">✕</button>
+        <h3 class="modal-title">Links</h3>
+        <button class="modal-close" type="button" data-close-modal="linksModal">✕</button>
       </div>
-      <div id="linksContent" class="modal-body">
-        <p>Lade Links…</p>
-      </div>
+      <div id="linksContent" class="modal-body"><p>Lade Links…</p></div>
     </div>
   </div>
 
   <script>
-    let supabaseClient = null;
-
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+    let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const SHEET_ID = "1P8aN20vfu6MLnMaEMXLv_OvOeXiF76-dAW1Fpy4DNe0";
-    const PLAYER_SHEET = "Spieler_Discord";
-    const RULES_SHEET = "Regelwerk";
-    const NEWS_SHEET = "Neuigkeiten";
-    const LINKS_SHEET = "Links";
+    const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
+    const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
+    const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
+    const ALL_LEAGUES = [...AD_LEAGUES, ...DC_LEAGUES, ...SC_LEAGUES];
 
-    const LEAGUES = [
-      "Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3",
-      "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6",
-      "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3",
-      "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"
-    ];
-
-    const state = { leagues: [], leagueData: {}, activeLeague: null, activeMode: "Home", playerMetaMap: {}, matchdayOpenState: {}, regelwerkRows: [], newsRows: [], linksRows: [], currentUser: null };
+    const state = { 
+        leagueData: {}, activeLeague: null, activeMode: "Home", 
+        currentSeason: "Saison 1", newsHtml: "", currentUser: null,
+        matchdayOpenState: {} 
+    };
 
     const tableAreaEl = document.getElementById("tableArea");
     const matchdayAreaEl = document.getElementById("matchdayArea");
-    const modeHomeBtn = document.getElementById("modeHome");
-    const modeAutodartsBtn = document.getElementById("modeAutodarts");
-    const modeDartCounterBtn = document.getElementById("modeDartCounter");
-    const autodartsSubmenuEl = document.getElementById("autodartsSubmenu");
-    const dartcounterSubmenuEl = document.getElementById("dartcounterSubmenu");
-    const openImpressumBtn = document.getElementById("openImpressumBtn");
-    const closeImpressumBtn = document.getElementById("closeImpressumBtn");
-    const impressumModal = document.getElementById("impressumModal");
-    const regelwerkBtn = document.getElementById("regelwerkBtn");
-    const regelwerkModal = document.getElementById("regelwerkModal");
-    const regelwerkContent = document.getElementById("regelwerkContent");
-    const openLinksBtn = document.getElementById("openLinksBtn");
-    const linksModal = document.getElementById("linksModal");
-    const linksContent = document.getElementById("linksContent");
-    const ligaLoginBtn = document.getElementById("ligaLoginBtn");
     const loginBtnText = document.getElementById("loginBtnText");
 
+    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+
     window.copyDiscord = function(name) {
-      navigator.clipboard.writeText(name).then(() => {
-        alert("Der Discord-Name '" + name + "' wurde in deine Zwischenablage kopiert!\n\nDu kannst ihn jetzt in Discord bei 'Freund hinzufügen' einfügen.");
-      }).catch(err => {
-        alert("Fehler beim Kopieren: " + err);
-      });
+      navigator.clipboard.writeText(name).then(() => alert("Der Discord-Name '" + name + "' wurde kopiert!"));
     };
 
     window.openPlayerProfile = async function(playerName) {
+        if(playerName === 'Freilos') return;
         const modal = document.getElementById("playerProfileModal");
         const content = document.getElementById("playerProfileContent");
-        document.getElementById("playerProfileTitle").innerText = "Spielerprofil";
-        content.innerHTML = "<p>Suche Spieler in der Datenbank...</p>";
+        content.innerHTML = "<p>Suche Spieler...</p>";
         openModal(modal);
 
         try {
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .or(`real_name.ilike.%${playerName}%,autodarts_name.ilike.%${playerName}%,dartcounter_name.ilike.%${playerName}%,scolia_name.ilike.%${playerName}%`)
-                .limit(1)
-                .single();
+            const { data } = await supabaseClient.from('profiles').select('*')
+                .or(`real_name.ilike.%${playerName}%,autodarts_name.ilike.%${playerName}%,dartcounter_name.ilike.%${playerName}%,scolia_name.ilike.%${playerName}%,discord_name.ilike.%${playerName}%`)
+                .limit(1).single();
 
-            if (error || !data) {
-                content.innerHTML = "<div class='empty'>Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>";
-                return;
-            }
+            if (!data) { content.innerHTML = "<div class='empty'>Spieler nicht gefunden.</div>"; return; }
 
             const avatarSrc = data.avatar_url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>";
-
-            let profileHtml = `
-                <div class="modal-profile-header">
-                    <img class="modal-avatar" src="${htmlEscape(avatarSrc)}" alt="Avatar">
-                    <div>
-                        <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>`;
+            let profileHtml = `<div class="modal-profile-header"><img class="modal-avatar" src="${htmlEscape(avatarSrc)}"><div><h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>`;
             
-            if (data.discord_id) {
-                profileHtml += `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-size:14px; text-decoration:none; font-weight:bold; display:block; margin-top:5px; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--accent)'">Nachricht per Discord an ${htmlEscape(data.discord_name || playerName)} senden 💬</a>`;
-            } else if (data.discord_name) {
-                profileHtml += `<span style="color:#90a9b7; font-size:13px; display:block; margin-top:5px;">Discord: ${htmlEscape(data.discord_name)}</span>`;
-            }
+            if (data.discord_id) profileHtml += `<a href="https://discord.com/users/${htmlEscape(data.discord_id)}" target="_blank" style="color:var(--accent); font-size:14px; font-weight:bold; display:block; margin-top:5px;">Nachricht in Discord 💬</a>`;
+            else if (data.discord_name) profileHtml += `<span style="color:#90a9b7; font-size:13px; display:block; margin-top:5px;">Discord: ${htmlEscape(data.discord_name)}</span>`;
+            
+            profileHtml += `</div></div>`;
 
-            profileHtml += `
-                    </div>
-                </div>
-            `;
-
-            if (data.dart_setup) {
-                profileHtml += `
-                <div class="content-block">
-                    <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Mein Dartsetup</h4>
-                    <p style="margin:0; font-size:14px; color:#edf7fb;">${htmlEscape(data.dart_setup)}</p>
-                </div>`;
-            }
+            if (data.dart_setup) profileHtml += `<div class="content-block"><h4>Mein Dartsetup</h4><p style="margin:0; font-size:14px; color:#edf7fb;">${htmlEscape(data.dart_setup)}</p></div>`;
 
             const adLink = data.autodarts_url ? `<a href="${htmlEscape(data.autodarts_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
             const dcLink = data.dartcounter_url ? `<a href="${htmlEscape(data.dartcounter_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
             const scLink = data.scolia_url ? `<a href="${htmlEscape(data.scolia_url)}" target="_blank" class="platform-link-btn">🔗 Profil</a>` : '';
 
-            profileHtml += `
-                <div class="content-block">
-                    <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Plattformen & AVG</h4>
-                    <p style="margin:4px 0;"><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em> ${adLink}</p>
-                    <p style="margin:4px 0;"><strong>DartCounter:</strong> ${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: ${htmlEscape(data.dartcounter_avg || '-')})</em> ${dcLink}</p>
-                    <p style="margin:4px 0;"><strong>Scolia:</strong> ${htmlEscape(data.scolia_name || '-')} <em>(AVG: ${htmlEscape(data.scolia_avg || '-')})</em> ${scLink}</p>
-                </div>
-                
-                <div class="content-block" style="margin-top:10px;">
-                    <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Wohnort</h4>
-                    <p style="margin:0;">${htmlEscape(data.plz || '')} ${htmlEscape(data.ort || '-')}</p>
-                </div>
-            `;
+            profileHtml += `<div class="content-block"><h4>Plattformen & AVG</h4>
+                <p style="margin:4px 0;"><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em> ${adLink}</p>
+                <p style="margin:4px 0;"><strong>DartCounter:</strong> ${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: ${htmlEscape(data.dartcounter_avg || '-')})</em> ${dcLink}</p>
+                <p style="margin:4px 0;"><strong>Scolia:</strong> ${htmlEscape(data.scolia_name || '-')} <em>(AVG: ${htmlEscape(data.scolia_avg || '-')})</em> ${scLink}</p>
+            </div>`;
             content.innerHTML = profileHtml;
-        } catch (err) {
-            content.innerHTML = "<div class='empty'>Fehler beim Laden des Profils.</div>";
-        }
+        } catch (err) { content.innerHTML = "<div class='empty'>Fehler beim Laden.</div>"; }
     };
 
-    function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
-    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
-
-    function makeClickable(text) {
-      if (!text) return "";
-      const urlRegex = /(https?:\/\/[^\s]+)/g;
-      return text.replace(urlRegex, function(url) { return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:underline; word-break:break-all;">${url}</a>`; });
-    }
-
-    function csvUrl(sheetName) {
-      if (sheetName === PLAYER_SHEET) { return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=2009950588`; }
-      return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-    }
-
-    function ergName(leagueName) { return `Erg ${leagueName}`; }
-
-    function parseCsv(text) {
-      const rows = []; let row = []; let cell = ""; let inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i]; const next = text[i + 1];
-        if (inQuotes) { if (char === '"' && next === '"') { cell += '"'; i++; } else if (char === '"') { inQuotes = false; } else { cell += char; } }
-        else { if (char === '"') { inQuotes = true; } else if (char === ',') { row.push(cell); cell = ""; } else if (char === '\n') { row.push(cell); rows.push(row); row = []; cell = ""; } else if (char !== '\r') { cell += char; } }
-      }
-      row.push(cell); rows.push(row); return rows;
-    }
-
-    async function loadCsv(sheetName) {
-      const response = await fetch(csvUrl(sheetName));
-      if (!response.ok) throw new Error(`${sheetName}: HTTP ${response.status}`);
-      return parseCsv(await response.text());
-    }
-
-    function safeCell(row, index) { return row && row[index] !== undefined ? String(row[index]).trim() : ""; }
-    function rowHasAnyContent(row) { return row && row.some(cell => normalize(cell) !== ""); }
-    function isFinishedMatch(statusValue, legs1, legs2) {
-      const statusText = String(statusValue || "").trim().toLowerCase();
-      return /fertig|abgeschlossen|done|closed/i.test(statusText) || (String(legs1 || "").trim() !== "" && String(legs2 || "").trim() !== "" && legs1 !== "-" && legs2 !== "-");
-    }
-
-    function parseCardInfo(rawValue) {
-      const value = normalize(rawValue).replace(/,/g, " ").replace(/;/g, " ").replace(/\s+/g, " ").trim();
-      if (!value) return { yellow: 0, red: 0, hasRed: false };
-      if (value.includes("rot")) return { yellow: 0, red: 1, hasRed: true };
-      const gelbCount = (value.match(/gelb/g) || []).length;
-      if (gelbCount >= 2 || value.includes("2x gelb") || value.includes("2xgelb") || value.includes("gelb gelb")) { return { yellow: 2, red: 0, hasRed: false }; }
-      if (gelbCount >= 1) return { yellow: 1, red: 0, hasRed: false };
-      return { yellow: 0, red: 0, hasRed: false };
-    }
-
-    function parsePlayerDiscordSheet(rows) {
-      if (!rows || !rows.length) return {};
-      const map = {};
-      for (let i = 0; i < rows.length; i++) {
-        const spieler = safeCell(rows[i], 0); const discord = safeCell(rows[i], 1); const karte = safeCell(rows[i], 6);
-        if (!spieler) continue;
-        const nSpieler = normalize(spieler);
-        if (!nSpieler || ["spieler", "name", "spielername"].includes(nSpieler)) continue;
-        map[nSpieler] = { discord: discord || "", ...parseCardInfo(karte) };
-      }
-      return map;
-    }
-
-    function parseStandingsFromLeagueSheet(rows) {
-      if (!rows || !rows.length) return { headers: [], rows: [] };
-      let tabelleMarker = -1; let spieltageMarker = -1;
-      for (let i = 0; i < rows.length; i++) {
-        const text = rows[i].map(c => normalize(c)).join(" | ");
-        if (tabelleMarker === -1 && text.includes("tabelle")) tabelleMarker = i;
-        if (spieltageMarker === -1 && (text.includes("spieltage") || text.includes("spieltag"))) spieltageMarker = i;
-      }
-      if (tabelleMarker === -1) return { headers: [], rows: [] };
-      const start = tabelleMarker + 1; const end = spieltageMarker > start ? spieltageMarker : rows.length;
-      const headers = ["Platz", "Spieler", "Siege", "Niederlagen", "Leg-Diff", "Punkte"]; const body = [];
-      for (let i = start; i < end; i++) {
-        const row = rows[i]; if (!rowHasAnyContent(row)) continue;
-        const platz = safeCell(row, 0); const spieler = safeCell(row, 1);
-        if (!platz || isNaN(parseInt(platz, 10))) continue;
-        const nSpieler = normalize(spieler);
-        if (!spieler || nSpieler === "" || nSpieler === "-" || ["spieler","name","freilos","tba"].includes(nSpieler) || nSpieler.startsWith("spieler ")) continue;
-        body.push([platz, spieler, safeCell(row, 2), safeCell(row, 3), safeCell(row, 4), safeCell(row, 5)]);
-      }
-      return { headers, rows: body };
-    }
-
-    function parseMatchdaysFromErgSheet(rows) {
-      if (!rows || !rows.length) return [];
-      const grouped = new Map();
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]; if (!rowHasAnyContent(row)) continue;
-        const spieltagNummer = safeCell(row, 0); const spieler1 = safeCell(row, 1); const spieler2 = safeCell(row, 3);
-        if (!spieltagNummer || isNaN(parseInt(spieltagNummer, 10))) continue;
-        if (!spieler1 || !spieler2 || normalize(spieler1).startsWith("spieler ") || normalize(spieler2).startsWith("spieler ")) continue;
-        const title = `Spieltag ${spieltagNummer}`;
-        if (!grouped.has(title)) grouped.set(title, []);
-        grouped.get(title).push([title, spieler1, safeCell(row, 2), spieler2, safeCell(row, 4), safeCell(row, 5), safeCell(row, 6), safeCell(row, 7)]);
-      }
-      return Array.from(grouped.entries()).map(([title, rowsForDay]) => {
-        const totalMatches = rowsForDay.length; const doneMatches = rowsForDay.filter(r => isFinishedMatch(r[7], r[5], r[6])).length;
-        return { title, status: totalMatches > 0 && doneMatches === totalMatches ? "fertig" : "offen", doneMatches, totalMatches, headers: ["Spieler 1", "Spieler 2", "Legs 1", "Legs 2", "Status"], rows: rowsForDay };
-      });
-    }
-
-    function renderSheetAsBlocks(rows) {
-      const validRows = (rows || []).filter(row => rowHasAnyContent(row));
-      if (!validRows.length) return `<p>Keine Inhalte gefunden.</p>`;
-      return validRows.map((row) => {
-        const filled = row.map(cell => String(cell || "").trim()).filter(cell => cell);
-        if (!filled.length) return "";
-        if (filled.length === 1) return `<div class="content-block"><p>${makeClickable(htmlEscape(filled[0]))}</p></div>`;
-        return `<div class="content-block"><h4>${makeClickable(htmlEscape(filled[0]))}</h4>${filled.slice(1).map(text => `<p>${makeClickable(htmlEscape(text))}</p>`).join("")}</div>`;
-      }).join("");
-    }
-
-    async function loadLeague(leagueName) {
-      let leagueRows = []; let ergRows = [];
-      try { leagueRows = await loadCsv(leagueName); } catch (e) { console.warn("Liga-Blatt nicht ladbar:", leagueName, e); }
-      try { ergRows = await loadCsv(ergName(leagueName)); } catch (e) { console.warn("Erg-Blatt nicht ladbar:", leagueName, e); }
-      return { standings: parseStandingsFromLeagueSheet(leagueRows), matchdays: parseMatchdaysFromErgSheet(ergRows) };
-    }
-
-    function leagueHasPlayers(data) { return data && data.standings && data.standings.rows && data.standings.rows.length > 0; }
-
-    function rankClass(rankValue, totalRows) {
-      const rank = parseInt(String(rankValue).replace(/\D/g, ""), 10);
-      if (!Number.isFinite(rank)) return "";
+    function rankClass(rank, total) {
       if (rank === 1) return "first";
-      if (rank === totalRows) return "last";
+      if (rank >= total && total > 1) return "last";
       return "";
     }
 
-    function sortStandingsWithCards(rows) {
-      return [...rows].sort((a, b) => {
-        const metaA = state.playerMetaMap[normalize(a[1])] || {}; const metaB = state.playerMetaMap[normalize(b[1])] || {};
-        if (!!metaA.hasRed !== !!metaB.hasRed) return metaA.hasRed ? 1 : -1;
-        const rankA = parseInt(String(a[0]).replace(/\D/g, ""), 10); const rankB = parseInt(String(b[0]).replace(/\D/g, ""), 10);
-        return (Number.isFinite(rankA) ? rankA : 9999) - (Number.isFinite(rankB) ? rankB : 9999);
-      });
+    function renderPlayerCards(yellow, red) {
+      let html = "";
+      for (let i = 0; i < (yellow || 0); i++) html += `<span class="card-badge yellow"></span>`;
+      for (let i = 0; i < (red || 0); i++) html += `<span class="card-badge red"></span>`;
+      return html ? `<span class="player-cards">${html}</span>` : "";
     }
 
-    function renderPlayerCards(meta) {
-      if (!meta) return "";
-      const cards = [];
-      for (let i = 0; i < (meta.yellow || 0); i++) cards.push(`<span class="card-badge yellow" title="Gelbe Karte"></span>`);
-      for (let i = 0; i < (meta.red || 0); i++) cards.push(`<span class="card-badge red" title="Rote Karte"></span>`);
-      return cards.length ? `<span class="player-cards">${cards.join("")}</span>` : "";
-    }
-
-    function renderStandingsTable(headers, rows) {
-      if (!headers.length || !rows.length) return `<div class="table-shell"><div class="section-head"><div class="section-title">Tabelle</div></div><div style="padding:18px"><div class="empty">Keine Daten.</div></div></div>`;
-      const displayHeaders = ["Platz", "Spieler", "Discord", "Siege", "Niederlagen", "Leg-Diff", "Punkte"];
-      const sortedRows = sortStandingsWithCards(rows).map((row, index, arr) => ({ displayRank: String(index + 1), originalRow: row, totalRows: arr.length }));
-      const thead = `<tr>${displayHeaders.map((h, i) => `<th${i === 0 ? ' class="rank-col"' : ""}>${htmlEscape(h)}</th>`).join("")}</tr>`;
-      const tbody = sortedRows.map(entry => {
-        const row = entry.originalRow; const spielerName = row[1] || "-";
-        const meta = state.playerMetaMap[normalize(spielerName)] || { discord: "" };
+    function renderStandingsTable(rows) {
+      if (!rows || rows.length === 0) return `<div class="table-shell"><div class="section-head"><div class="section-title">Tabelle</div></div><div style="padding:18px"><div class="empty">Keine Spieler in dieser Liga.</div></div></div>`;
+      
+      const tbody = rows.map((s, idx) => {
+        const rank = idx + 1;
         return `<tr>
-          <td class="rank-col ${rankClass(entry.displayRank, entry.totalRows)}">${htmlEscape(entry.displayRank)}</td>
+          <td class="rank-col ${rankClass(rank, rows.length)}">${rank}</td>
           <td class="player-cell">
-             <span class="player-link" onclick="openPlayerProfile('${htmlEscape(spielerName)}')">${htmlEscape(spielerName)}</span>
-             <div class="player-meta-row">${renderPlayerCards(meta)}</div>
+             <span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span>
+             <div class="player-meta-row">${renderPlayerCards(s.yellow, s.red)}</div>
           </td>
-          <td class="discord-cell">
-             ${meta.discord ? `<span class="discord-link" onclick="copyDiscord('${htmlEscape(meta.discord)}')">${htmlEscape(meta.discord)}</span>` : "-"}
-          </td>
-          <td>${htmlEscape(row[2])}</td><td>${htmlEscape(row[3])}</td><td>${htmlEscape(row[4])}</td><td class="points-cell">${htmlEscape(row[5])}</td>
+          <td class="discord-cell">${s.discord ? `<span class="discord-link" onclick="copyDiscord('${htmlEscape(s.discord)}')">${htmlEscape(s.discord)}</span>` : "-"}</td>
+          <td>${s.wins}</td><td>${s.losses}</td><td>${s.legDiff}</td><td class="points-cell">${s.points}</td>
         </tr>`;
       }).join("");
-      return `<div class="table-shell"><div class="section-head"><div><div class="section-title">Tabelle</div><div class="section-sub">Bo7 • 1 Spieltag pro Woche</div></div></div><div class="table-wrap"><table><thead>${thead}</thead><tbody>${tbody}</tbody></table></div></div>`;
-    }
 
-    function renderMatchdayStatusDot(statusValue, legs1, legs2) {
-      const done = isFinishedMatch(statusValue, legs1, legs2);
-      return `<span class="status-badge ${done ? "done" : "open"}"><span class="status-dot ${done ? "done" : "open"}"></span></span>`;
-    }
-
-    function renderMatchTable(headers, rows) {
-      if (!headers.length || !rows.length) return `<div class="empty">Keine Spiele.</div>`;
-      const tbody = rows.map(row => {
-        return `<tr>
-          <td class="col-player">
-             <span class="player-link" onclick="openPlayerProfile('${htmlEscape(row[1])}')">${htmlEscape(row[1])}</span>
-             ${row[2] ? `<span class="discord-link" style="display:block; margin-top:3px;" onclick="copyDiscord('${htmlEscape(row[2])}')">${htmlEscape(row[2])}</span>` : ""}
-          </td>
-          <td class="col-player">
-             <span class="player-link" onclick="openPlayerProfile('${htmlEscape(row[3])}')">${htmlEscape(row[3])}</span>
-             ${row[4] ? `<span class="discord-link" style="display:block; margin-top:3px;" onclick="copyDiscord('${htmlEscape(row[4])}')">${htmlEscape(row[4])}</span>` : ""}
-          </td>
-          <td class="col-legs">${htmlEscape(row[5])}</td><td class="col-legs">${htmlEscape(row[6])}</td>
-          <td class="status-cell">${renderMatchdayStatusDot(row[7], row[5], row[6])}</td>
-        </tr>`;
-      }).join("");
-      return `<table class="match-table"><tbody>${tbody}</tbody></table>`;
+      return `<div class="table-shell"><div class="section-head"><div><div class="section-title">Tabelle</div><div class="section-sub">Live berechnet • Bo7</div></div></div>
+      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>Discord</th><th>Siege</th><th>Niederlagen</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
     }
 
     function renderMatchdays(matchdays) {
-      if (!matchdays.length) return `<div class="empty">Keine Spieltage.</div>`;
-      const defOpen = matchdays.findIndex(day => !/fertig|abgeschlossen/i.test(day.status));
+      if (!matchdays || matchdays.length === 0) return `<div class="empty">Keine Spieltage.</div>`;
+      const defOpen = matchdays.findIndex(day => day.status !== 'fertig');
       const defaultOpenIndex = defOpen !== -1 ? defOpen : 0;
+
       return matchdays.map((day, idx) => {
         const key = `${state.activeLeague}__${day.title}`;
         const isOpen = key in state.matchdayOpenState ? state.matchdayOpenState[key] : idx === defaultOpenIndex;
+        
+        const tbody = day.rows.map(m => `<tr>
+          <td class="col-player"><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name)}</span></td>
+          <td class="col-player"><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name)}</span></td>
+          <td class="col-legs">${m.legs1 !== null ? m.legs1 : '-'}</td><td class="col-legs">${m.legs2 !== null ? m.legs2 : '-'}</td>
+          <td class="status-cell"><span class="status-badge ${m.status === 'done' ? 'done' : 'open'}"><span class="status-dot ${m.status === 'done' ? 'done' : 'open'}"></span></span></td>
+        </tr>`).join("");
+
         return `<div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
-          <button class="matchday-head" type="button">
+          <button class="matchday-head" onclick="toggleMatchday(this)">
             <span class="matchday-title">${htmlEscape(day.title)}</span>
-            <span class="matchday-head-right"><span class="matchday-progress">${htmlEscape(day.doneMatches)}/${htmlEscape(day.totalMatches)}</span><span class="status-badge ${day.status === "fertig" ? "done" : "open"}"><span class="status-dot ${day.status === "fertig" ? "done" : "open"}"></span></span></span>
+            <span class="matchday-head-right"><span class="matchday-progress">${day.doneMatches}/${day.totalMatches}</span>
+            <span class="status-badge ${day.status === 'fertig' ? 'done' : 'open'}"><span class="status-dot ${day.status === 'fertig' ? 'done' : 'open'}"></span></span></span>
           </button>
-          <div class="matchday-body">${renderMatchTable(day.headers, day.rows)}</div>
+          <div class="matchday-body"><table class="match-table"><tbody>${tbody}</tbody></table></div>
         </div>`;
       }).join("");
     }
 
-    function getVisibleModeLeagues() { return state.leagues.filter(l => l.name.startsWith(state.activeMode) && leagueHasPlayers(state.leagueData[l.name])); }
-
-    function renderSystemSubmenus() {
-      const renderSub = (el, prefix) => {
-        if (!el) return;
-        const filtered = state.leagues.filter(l => l.name.startsWith(prefix) && leagueHasPlayers(state.leagueData[l.name]));
-        el.innerHTML = filtered.map(l => `<button class="submenu-btn ${l.name === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l.name)}">${htmlEscape(l.name)}</button>`).join("");
-        el.classList.toggle("active", state.activeMode === prefix);
-        el.querySelectorAll(".submenu-btn").forEach(btn => btn.addEventListener("click", () => { state.activeLeague = btn.dataset.name; renderSystemSubmenus(); renderLeague(); }));
-      };
-      renderSub(autodartsSubmenuEl, "Autodarts");
-      renderSub(dartcounterSubmenuEl, "DartCounter");
-    }
-
-    function attachMatchdayEvents() {
-      if (!matchdayAreaEl) return;
-      matchdayAreaEl.querySelectorAll(".matchday").forEach(card => {
-        card.querySelector(".matchday-head").addEventListener("click", () => {
-          const isOpen = !card.classList.contains("open"); card.classList.toggle("open", isOpen);
-          state.matchdayOpenState[card.dataset.key] = isOpen;
-        });
-      });
-    }
-
-    function renderHome() {
-      if (!tableAreaEl) return;
-      tableAreaEl.innerHTML = `<div class="table-shell"><div class="section-head"><div><div class="section-title">Neuigkeiten & Ankündigungen</div><div class="section-sub">Aktuelle Infos unserer Community.</div></div></div><div style="padding:0 18px 18px">${renderSheetAsBlocks(state.newsRows)}</div></div>`;
-      if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
+    window.toggleMatchday = function(btn) {
+        const card = btn.parentElement;
+        const isOpen = !card.classList.contains("open");
+        card.classList.toggle("open", isOpen);
+        state.matchdayOpenState[card.dataset.key] = isOpen;
     }
 
     function renderLeague() {
       const data = state.leagueData[state.activeLeague];
-      if (!data) { tableAreaEl.innerHTML = `<div class="empty">Keine Liga gewählt.</div>`; matchdayAreaEl.innerHTML = ""; return; }
-      tableAreaEl.innerHTML = renderStandingsTable(data.standings.headers, data.standings.rows);
+      if (!data || !data.standings.rows.length) { tableAreaEl.innerHTML = `<div class="empty">Keine Liga gewählt oder Liga leer.</div>`; matchdayAreaEl.innerHTML = ""; return; }
+      tableAreaEl.innerHTML = renderStandingsTable(data.standings.rows);
       matchdayAreaEl.innerHTML = renderMatchdays(data.matchdays);
-      attachMatchdayEvents();
+    }
+
+    function renderHome() {
+      if (!tableAreaEl) return;
+      tableAreaEl.innerHTML = state.newsHtml;
+      if (matchdayAreaEl) matchdayAreaEl.innerHTML = "";
+    }
+
+    function renderSystemSubmenus() {
+      const renderSub = (elId, prefix) => {
+        const el = document.getElementById(elId); if (!el) return;
+        const filtered = ALL_LEAGUES.filter(l => l.startsWith(prefix) && state.leagueData[l] && state.leagueData[l].standings.rows.length > 0);
+        el.innerHTML = filtered.map(l => `<button class="submenu-btn ${l === state.activeLeague ? "active" : ""}" data-name="${htmlEscape(l)}">${htmlEscape(l)}</button>`).join("");
+        el.classList.toggle("active", state.activeMode === prefix);
+        el.querySelectorAll(".submenu-btn").forEach(btn => btn.onclick = () => { state.activeLeague = btn.dataset.name; renderSystemSubmenus(); renderLeague(); });
+      };
+      renderSub("autodartsSubmenu", "Autodarts");
+      renderSub("dartcounterSubmenu", "DartCounter");
+      renderSub("scoliaSubmenu", "Scolia");
     }
 
     function setMode(mode) {
       state.activeMode = mode;
       document.body.setAttribute("data-mode", mode);
-      if (modeHomeBtn) modeHomeBtn.classList.toggle("active", mode === "Home");
-      if (modeAutodartsBtn) modeAutodartsBtn.classList.toggle("active", mode === "Autodarts");
-      if (modeDartCounterBtn) modeDartCounterBtn.classList.toggle("active", mode === "DartCounter");
+      document.getElementById("modeHome").classList.toggle("active", mode === "Home");
+      document.getElementById("modeAutodarts").classList.toggle("active", mode === "Autodarts");
+      document.getElementById("modeDartCounter").classList.toggle("active", mode === "DartCounter");
+      document.getElementById("modeScolia").classList.toggle("active", mode === "Scolia");
+      
       if (mode === "Home") {
-        if (autodartsSubmenuEl) autodartsSubmenuEl.classList.remove("active");
-        if (dartcounterSubmenuEl) dartcounterSubmenuEl.classList.remove("active");
+        document.querySelectorAll('.submenu-slot').forEach(e => e.classList.remove('active'));
         renderHome();
       } else {
-        const visible = getVisibleModeLeagues();
-        if (!visible.some(l => l.name === state.activeLeague)) { state.activeLeague = visible[0]?.name || null; }
+        const visible = ALL_LEAGUES.filter(l => l.startsWith(mode) && state.leagueData[l] && state.leagueData[l].standings.rows.length > 0);
+        if (!visible.includes(state.activeLeague)) state.activeLeague = visible[0] || null;
         renderSystemSubmenus();
         renderLeague();
       }
     }
 
-    async function initAuth() {
-      if (!supabaseClient) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-
-      supabaseClient.auth.onAuthStateChange((event, currentSession) => { 
-        state.currentUser = currentSession ? currentSession.user : null;
-        if (loginBtnText) loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
-      });
-
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      state.currentUser = session ? session.user : null;
-      if (loginBtnText) loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
-
-      if (ligaLoginBtn) {
-        ligaLoginBtn.addEventListener("click", async () => {
-          if (!state.currentUser) {
-            const redirectUrl = "https://communitydart.github.io/CommunityDartLiga/";
-            await supabaseClient.auth.signInWithOAuth({
-              provider: 'discord',
-              options: { redirectTo: redirectUrl }
-            });
-          } else {
-            window.location.assign("profil.html");
-          }
-        });
-      }
-    }
-
-    function openModal(modal) { if (modal) { modal.classList.add("open"); modal.setAttribute("aria-hidden", "false"); } }
-    function closeModal(modal) { if (modal) { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); } }
-
-    async function loadStaticSheetContent() {
-      try {
-        const [regelwerkRows, newsRows, linksRows] = await Promise.all([
-          loadCsv(RULES_SHEET).catch(() => []),
-          loadCsv(NEWS_SHEET).catch(() => []),
-          loadCsv(LINKS_SHEET).catch(() => []),
-        ]);
-        state.regelwerkRows = regelwerkRows; state.newsRows = newsRows; state.linksRows = linksRows;
-        if (regelwerkContent) regelwerkContent.innerHTML = renderSheetAsBlocks(regelwerkRows);
-        if (linksContent) linksContent.innerHTML = renderSheetAsBlocks(linksRows);
-      } catch (e) { console.warn("Statische Inhalte nicht ladbar", e); }
-    }
-
     async function loadAll() {
-      if (window.location.search.includes("error")) {
-        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center; color: #e74c3c;"><h2>Login abgebrochen</h2><p>Es gab ein Problem mit der Discord-Anmeldung.</p></div>`;
-        await initAuth();
-        return; 
-      }
-
-      if (window.location.hash.includes("access_token") || window.location.search.includes("code")) {
-        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login wird verarbeitet...</h2><p>Leite zum Profil weiter...</p></div>`;
-        await initAuth();
+        tableAreaEl.innerHTML = `<div class="empty">Berechne Live-Tabellen...</div>`;
         
-        setTimeout(() => {
-           window.location.assign("profil.html");
-        }, 2000);
-        return; 
-      }
+        // 1. Auth Status prüfen
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        state.currentUser = session ? session.user : null;
+        loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
 
-      if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
-
-      await initAuth();
-
-      try {
-        state.leagues = LEAGUES.map(name => ({ name }));
         try {
-          const playerRows = await loadCsv(PLAYER_SHEET);
-          state.playerMetaMap = parsePlayerDiscordSheet(playerRows);
-        } catch (e) { state.playerMetaMap = {}; }
+            // 2. Lade HTML Dateien für Neuigkeiten, Regelwerk und Links
+            try { const r = await fetch('neuigkeiten.html'); state.newsHtml = r.ok ? await r.text() : "<div class='empty'>Bitte erstelle die neuigkeiten.html</div>"; } catch(e){}
+            try { const r = await fetch('regelwerk.html'); if(r.ok) document.getElementById('regelwerkContent').innerHTML = await r.text(); } catch(e){}
+            try { const r = await fetch('links.html'); if(r.ok) document.getElementById('linksContent').innerHTML = await r.text(); } catch(e){}
 
-        await loadStaticSheetContent();
-        const entries = await Promise.all(state.leagues.map(async league => [league.name, await loadLeague(league.name)]));
-        state.leagueData = Object.fromEntries(entries);
+            // 3. Datenbank-Abfragen
+            const { data: sys } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+            state.currentSeason = sys ? sys.current_season : 'Saison 1';
 
-        const visible = getVisibleModeLeagues();
-        state.activeLeague = visible[0]?.name || null;
+            const { data: profiles } = await supabaseClient.from('profiles').select('*');
+            const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', state.currentSeason);
 
-        if (!window.location.hash.includes("access_token") && !window.location.search.includes("code")) {
-          setMode("Home");
-        }
-      } catch (error) {
-        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden: ${htmlEscape(error?.message)}</div>`;
-      }
+            // 4. Tabellen & Spieltage berechnen
+            ALL_LEAGUES.forEach(league => {
+                const lMatches = matches ? matches.filter(m => m.league_name === league) : [];
+                const lPlayers = profiles ? profiles.filter(p => p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league) : [];
+                
+                if(lPlayers.length === 0 && lMatches.length === 0) return;
+
+                const stats = {};
+                lPlayers.forEach(p => stats[p.id] = { id: p.id, name: p.discord_name || p.real_name || 'Unbekannt', discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, yellow: p.yellow_cards, red: p.red_cards });
+
+                lMatches.forEach(m => {
+                    if(m.status === 'done' && m.player1_id && m.player2_id) {
+                        if(!stats[m.player1_id]) stats[m.player1_id] = { id: m.player1_id, name: "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0 };
+                        if(!stats[m.player2_id]) stats[m.player2_id] = { id: m.player2_id, name: "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0 };
+
+                        const l1 = parseInt(m.legs1) || 0; const l2 = parseInt(m.legs2) || 0;
+                        stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
+
+                        if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
+                        else if (l2 > l1) { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; } 
+                        else { stats[m.player1_id].points += 1; stats[m.player2_id].points += 1; }
+                    }
+                });
+
+                const standingsRows = Object.values(stats).sort((a,b) => {
+                    if(a.red !== b.red) return a.red - b.red;
+                    if(b.points !== a.points) return b.points - a.points;
+                    return b.legDiff - a.legDiff;
+                });
+
+                const groupedMatches = {};
+                lMatches.forEach(m => {
+                    const day = `Spieltag ${m.matchday}`;
+                    if(!groupedMatches[day]) groupedMatches[day] = [];
+                    groupedMatches[day].push({ 
+                        p1Name: m.player1_id ? (stats[m.player1_id]?.name || 'Unbekannt') : 'Freilos',
+                        p2Name: m.player2_id ? (stats[m.player2_id]?.name || 'Unbekannt') : 'Freilos',
+                        legs1: m.legs1, legs2: m.legs2, status: m.status
+                    });
+                });
+
+                const matchdays = Object.entries(groupedMatches).map(([title, rows]) => {
+                    const done = rows.filter(r => r.status === 'done').length;
+                    return { title, status: (rows.length>0 && done===rows.length)?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
+                });
+
+                state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
+            });
+
+            setMode("Home");
+        } catch (error) { tableAreaEl.innerHTML = `<div class="empty">Fehler: ${htmlEscape(error?.message)}</div>`; }
     }
 
-    if (modeHomeBtn) modeHomeBtn.addEventListener("click", () => setMode("Home"));
-    if (modeAutodartsBtn) modeAutodartsBtn.addEventListener("click", () => setMode("Autodarts"));
-    if (modeDartCounterBtn) modeDartCounterBtn.addEventListener("click", () => setMode("DartCounter"));
-    if (openImpressumBtn) openImpressumBtn.addEventListener("click", () => openModal(impressumModal));
-    if (closeImpressumBtn) closeImpressumBtn.addEventListener("click", () => closeModal(impressumModal));
-    if (openLinksBtn) openLinksBtn.addEventListener("click", () => openModal(linksModal));
-    if (regelwerkBtn) regelwerkBtn.addEventListener("click", () => openModal(regelwerkModal));
+    document.getElementById("modeHome").onclick = () => setMode("Home");
+    document.getElementById("modeAutodarts").onclick = () => setMode("Autodarts");
+    document.getElementById("modeDartCounter").onclick = () => setMode("DartCounter");
+    document.getElementById("modeScolia").onclick = () => setMode("Scolia");
+    
+    document.getElementById("openImpressumBtn").onclick = () => openModal(document.getElementById("impressumModal"));
+    document.getElementById("openLinksBtn").onclick = () => openModal(document.getElementById("linksModal"));
+    document.getElementById("regelwerkBtn").onclick = () => openModal(document.getElementById("regelwerkModal"));
 
-    document.querySelectorAll("[data-close-modal]").forEach(btn => {
-      btn.addEventListener("click", () => { closeModal(document.getElementById(btn.getAttribute("data-close-modal"))); });
-    });
+    document.querySelectorAll("[data-close-modal]").forEach(btn => btn.onclick = () => closeModal(document.getElementById(btn.getAttribute("data-close-modal"))));
+    document.querySelectorAll(".modal-backdrop").forEach(m => m.onclick = (e) => { if(e.target === m) closeModal(m); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.querySelectorAll('.modal-backdrop').forEach(closeModal); });
 
-    [impressumModal, regelwerkModal, linksModal, document.getElementById("playerProfileModal")].forEach(modal => {
-      if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(modal); });
-    });
-
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") [impressumModal, regelwerkModal, linksModal, document.getElementById("playerProfileModal")].forEach(closeModal); });
+    document.getElementById("ligaLoginBtn").onclick = () => {
+        if (!state.currentUser) supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: "https://communitydart.github.io/CommunityDartLiga/" }});
+        else window.location.assign("profil.html");
+    };
 
     loadAll();
   </script>
