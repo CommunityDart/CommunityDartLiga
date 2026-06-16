@@ -84,11 +84,11 @@
          return;
       }
 
-      supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
-          if (currentSession) {
-              currentUser = currentSession.user;
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+          if (session) {
+              currentUser = session.user;
               
-              const meta = currentSession.user.user_metadata || {};
+              const meta = session.user.user_metadata || {};
               const discordName = meta.full_name || meta.name || "Spieler";
               const avatarUrl = meta.avatar_url || meta.picture || "";
               
@@ -134,14 +134,13 @@
         const saveBtn = document.getElementById("saveBtn");
         
         const autoName = document.getElementById("autodarts_name").value.trim();
-        // Hier wandeln wir ein Komma in einen Punkt um!
         const autoAvg = document.getElementById("autodarts_avg").value.trim().replace(',', '.');
         const dcName = document.getElementById("dartcounter_name").value.trim();
         const dcAvg = document.getElementById("dartcounter_avg").value.trim().replace(',', '.');
         const scName = document.getElementById("scolia_name").value.trim();
         const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
 
-        // PFLICHTFELD LOGIK
+        // Pflichtfeld-Prüfung
         if (autoName !== "" && autoAvg === "") return showError("Fehler: Autodarts AVG fehlt!");
         if (dcName !== "" && dcAvg === "") return showError("Fehler: DartCounter AVG fehlt!");
         if (scName !== "" && scAvg === "") return showError("Fehler: Scolia AVG fehlt!");
@@ -152,18 +151,19 @@
         const meta = currentUser.user_metadata || {};
         const safeAvatarUrl = meta.avatar_url || meta.picture || "";
 
+        // HIER IST DER FIX: Wenn ein Wert leer ist (""), senden wir ein sauberes null (Datenbank-Leerzeichen)
         const updates = {
             id: currentUser.id,
-            real_name: document.getElementById("real_name").value.trim(),
-            plz: document.getElementById("plz").value.trim(),
-            ort: document.getElementById("ort").value.trim(),
-            autodarts_name: autoName,
-            autodarts_avg: autoAvg,
-            dartcounter_name: dcName,
-            dartcounter_avg: dcAvg,
-            scolia_name: scName,
-            scolia_avg: scAvg,
-            avatar_url: safeAvatarUrl, // Speichert das Bild jetzt sicher!
+            real_name: document.getElementById("real_name").value.trim() || null,
+            plz: document.getElementById("plz").value.trim() || null,
+            ort: document.getElementById("ort").value.trim() || null,
+            autodarts_name: autoName || null,
+            autodarts_avg: autoAvg || null,
+            dartcounter_name: dcName || null,
+            dartcounter_avg: dcAvg || null,
+            scolia_name: scName || null,
+            scolia_avg: scAvg || null,
+            avatar_url: safeAvatarUrl || null,
             updated_at: new Date()
         };
         
