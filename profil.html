@@ -66,61 +66,47 @@
       </div>
     </div>
     
-    <!-- SAISON-ABFRAGE BOX (Multi-Plattform) -->
     <div id="seasonRegistrationBox" class="registration-box">
       <h3>🎯 Anmeldung nächste Saison</h3>
-      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px; text-align: center;">Wähle die Plattformen aus, auf denen du nächste Saison spielen möchtest. Nimmst du alle Haken raus, setzt du aus.</p>
+      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px; text-align: center; color: #90a9b7;">Lade Status...</p>
       
-      <div id="registrationFormArea">
+      <div id="registrationFormArea" style="display:none;">
           <div class="checkbox-group">
             <label><input type="checkbox" id="want_ad"> Autodarts Liga spielen</label>
             <label><input type="checkbox" id="want_dc"> DartCounter Liga spielen</label>
             <label><input type="checkbox" id="want_sc"> Scolia Liga spielen</label>
           </div>
-          <button type="button" id="btnSaveRegistration" style="background: #20b7ff; color: #fff; width: 100%;">Anmeldung Speichern / Ändern</button>
+          <button type="button" id="btnSaveRegistration" style="background: #20b7ff; color: #fff; width: 100%;">Anmeldung Speichern</button>
       </div>
-
       <div id="assignmentArea"></div>
     </div>
 
-    <!-- Das eigentliche Profil-Formular -->
     <form id="profilForm" style="display:none;">
-      
       <div class="input-group">
         <div style="flex: 2;"><label>Echter Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
         <div style="flex: 1;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" inputmode="numeric" placeholder="12345"></div>
         <div style="flex: 2;"><label>Wohnort</label><input type="text" id="ort" placeholder="Musterstadt"></div>
       </div>
-
       <div class="divider"></div>
-
       <label>Mein Dartsetup (Welche Darts spiele ich derzeit?)</label>
       <input type="text" id="dart_setup" placeholder="z.B. Target Gabriel Clemens 21g, Condor Flights">
-
       <div class="divider"></div>
-
       <div class="input-group">
         <div style="flex: 2;"><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="autodarts_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
-      
       <div class="input-group">
         <div style="flex: 2;"><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="dartcounter_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
-
       <div class="input-group">
         <div style="flex: 2;"><label>Scolia Name</label><input type="text" id="scolia_name"></div>
         <div style="flex: 1;"><label>AVG</label><input type="text" id="scolia_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
       </div>
-
       <div class="divider"></div>
-
       <button type="submit" id="saveBtn">Profil Speichern</button>
       <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
-      
       <p class="hint-text">* wird benötigt für die Mitgliederkarte</p>
-      
       <div id="msgBox" style="margin-top:15px; font-weight:bold; padding: 12px; border-radius: 8px; display: none; text-align:center;"></div>
     </form>
   </div>
@@ -128,7 +114,6 @@
   <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
 
@@ -144,12 +129,11 @@
               const meta = session.user.user_metadata || {};
               document.getElementById("statusText").innerText = meta.full_name || meta.name || "Spieler";
               if (meta.avatar_url || meta.picture) document.getElementById("userAvatar").src = meta.avatar_url || meta.picture;
-              
               document.getElementById("profilForm").style.display = "block";
               
               try {
-                  const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                  const { data: sysData } = await supabaseClient.from('system_settings').select('registration_open').eq('id', 1).single();
+                  const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                  const { data: sysData } = await supabaseClient.from('system_settings').select('registration_open').eq('id', 1).maybeSingle();
                   const isRegistrationOpen = sysData ? sysData.registration_open : false;
 
                   if (data) {
@@ -169,7 +153,6 @@
                           document.getElementById("adminDashboardBtn").style.display = "inline-block";
                       }
 
-                      // SAISON ANMELDUNG LOGIK
                       const regBox = document.getElementById("seasonRegistrationBox");
                       const regText = document.getElementById("registrationStatusText");
                       const regForm = document.getElementById("registrationFormArea");
@@ -183,73 +166,66 @@
 
                       if (!isRegistrationOpen) {
                           regText.innerHTML = "🔒 <strong>Die Anmeldung für die neue Saison ist aktuell geschlossen.</strong>";
-                          regForm.style.display = "none";
+                          
+                          // Wenn zugeteilt, zeige die aktuellen Ligen
+                          if(data.status_neue_saison === 'assigned') {
+                              let assignHtml = "";
+                              if (data.assigned_ad_league) assignHtml += `<div>🎯 Autodarts: <strong>${data.assigned_ad_league}</strong></div>`;
+                              if (data.assigned_dc_league) assignHtml += `<div>📱 DartCounter: <strong>${data.assigned_dc_league}</strong></div>`;
+                              if (data.assigned_sc_league) assignHtml += `<div>🎥 Scolia: <strong>${data.assigned_sc_league}</strong></div>`;
+                              assignArea.innerHTML = `<div class="league-assignment-text">🏆 Deine aktuellen Ligen:<br>${assignHtml}</div>`;
+                          }
                       } else {
-                          regText.innerHTML = "Wähle die Plattformen aus, auf denen du nächste Saison spielen möchtest. Willst du pausieren, entferne alle Haken und klicke Speichern.";
-                      }
+                          // Anmeldung ist offen
+                          if (data.status_neue_saison === 'assigned') {
+                              regText.innerHTML = "✅ Du wurdest bereits von einem Admin eingeteilt. Viel Erfolg!";
+                              let assignHtml = "";
+                              if (data.assigned_ad_league) assignHtml += `<div>🎯 Autodarts: <strong>${data.assigned_ad_league}</strong></div>`;
+                              if (data.assigned_dc_league) assignHtml += `<div>📱 DartCounter: <strong>${data.assigned_dc_league}</strong></div>`;
+                              if (data.assigned_sc_league) assignHtml += `<div>🎥 Scolia: <strong>${data.assigned_sc_league}</strong></div>`;
+                              assignArea.innerHTML = `<div class="league-assignment-text">🏆 Deine neuen Ligen:<br>${assignHtml}</div>`;
+                          } else if (data.status_neue_saison === 'waiting') {
+                              regText.innerHTML = "⏳ Deine Anmeldung ist gespeichert. Du wartest auf die Liga-Einteilung durch die Admins. Du kannst deine Wahl noch anpassen.";
+                              regForm.style.display = "block";
+                          } else {
+                              regText.innerHTML = "Wähle die Plattformen aus, auf denen du nächste Saison spielen möchtest. Nimmst du alle Haken raus, setzt du aus.";
+                              regForm.style.display = "block";
+                          }
 
-                      // Zeige Zuteilungen, falls vorhanden
-                      let assignHtml = "";
-                      if (data.assigned_ad_league) assignHtml += `<div>🎯 Autodarts: <strong>${data.assigned_ad_league}</strong></div>`;
-                      if (data.assigned_dc_league) assignHtml += `<div>📱 DartCounter: <strong>${data.assigned_dc_league}</strong></div>`;
-                      if (data.assigned_sc_league) assignHtml += `<div>🎥 Scolia: <strong>${data.assigned_sc_league}</strong></div>`;
-                      
-                      if (assignHtml !== "") {
-                          assignArea.innerHTML = `<div class="league-assignment-text">✅ Du wurdest bereits eingeteilt:<br>${assignHtml}</div>`;
-                      } else if (data.want_autodarts || data.want_dartcounter || data.want_scolia) {
-                          assignArea.innerHTML = `<div style="text-align:center; color:#90a9b7; margin-top:10px;">⏳ Deine Anmeldung ist gespeichert. Du wartest auf die Liga-Einteilung.</div>`;
+                          document.getElementById("btnSaveRegistration").onclick = async () => {
+                              const btn = document.getElementById("btnSaveRegistration");
+                              btn.innerText = "Speichert...";
+                              const wantsAny = document.getElementById("want_ad").checked || document.getElementById("want_dc").checked || document.getElementById("want_sc").checked;
+                              
+                              await supabaseClient.from('profiles').update({
+                                  want_autodarts: document.getElementById("want_ad").checked,
+                                  want_dartcounter: document.getElementById("want_dc").checked,
+                                  want_scolia: document.getElementById("want_sc").checked,
+                                  status_neue_saison: wantsAny ? 'waiting' : 'none'
+                              }).eq('id', currentUser.id);
+                              window.location.reload();
+                          };
                       }
-
-                      document.getElementById("btnSaveRegistration").onclick = async () => {
-                          const btn = document.getElementById("btnSaveRegistration");
-                          btn.innerText = "Speichert...";
-                          
-                          await supabaseClient.from('profiles').update({
-                              want_autodarts: document.getElementById("want_ad").checked,
-                              want_dartcounter: document.getElementById("want_dc").checked,
-                              want_scolia: document.getElementById("want_sc").checked
-                          }).eq('id', currentUser.id);
-                          
-                          window.location.reload();
-                      };
                   }
               } catch (err) {}
           } else if (event === 'SIGNED_OUT') window.location.href = "index.html";
       });
     }
 
-    // Profilspeicherung (wie vorher)
     document.getElementById("profilForm").addEventListener("submit", async function(e) {
-        e.preventDefault(); 
-        const saveBtn = document.getElementById("saveBtn");
-        
-        const autoName = document.getElementById("autodarts_name").value.trim();
-        const autoAvg = document.getElementById("autodarts_avg").value.trim().replace(',', '.');
-        const dcName = document.getElementById("dartcounter_name").value.trim();
-        const dcAvg = document.getElementById("dartcounter_avg").value.trim().replace(',', '.');
-        const scName = document.getElementById("scolia_name").value.trim();
-        const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
-
-        saveBtn.innerText = "Speichert...";
-        saveBtn.disabled = true;
-
-        const meta = currentUser.user_metadata || {};
-        const safeAvatarUrl = meta.avatar_url || meta.picture || "";
-        const currentDiscordName = meta.full_name || meta.name || "";
-        const currentDiscordId = meta.sub || currentUser.id || "";
+        e.preventDefault(); const saveBtn = document.getElementById("saveBtn");
+        saveBtn.innerText = "Speichert..."; saveBtn.disabled = true;
 
         const updates = {
-            id: currentUser.id, discord_name: currentDiscordName || null, discord_id: currentDiscordId || null,
+            id: currentUser.id,
             real_name: document.getElementById("real_name").value.trim() || null, plz: document.getElementById("plz").value.trim() || null,
             ort: document.getElementById("ort").value.trim() || null, dart_setup: document.getElementById("dart_setup").value.trim() || null,
-            autodarts_name: autoName || null, autodarts_avg: autoAvg || null,
-            dartcounter_name: dcName || null, dartcounter_avg: dcAvg || null,
-            scolia_name: scName || null, scolia_avg: scAvg || null,
-            avatar_url: safeAvatarUrl || null, updated_at: new Date()
+            autodarts_name: document.getElementById("autodarts_name").value.trim() || null, autodarts_avg: document.getElementById("autodarts_avg").value.trim().replace(',', '.') || null,
+            dartcounter_name: document.getElementById("dartcounter_name").value.trim() || null, dartcounter_avg: document.getElementById("dartcounter_avg").value.trim().replace(',', '.') || null,
+            scolia_name: document.getElementById("scolia_name").value.trim() || null, scolia_avg: document.getElementById("scolia_avg").value.trim().replace(',', '.') || null,
+            updated_at: new Date()
         };
-        
         await supabaseClient.from('profiles').upsert(updates);
-        
         saveBtn.innerText = "Profil Speichern"; saveBtn.disabled = false;
         
         const msgBox = document.getElementById("msgBox");
