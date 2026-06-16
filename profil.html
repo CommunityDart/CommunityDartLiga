@@ -160,10 +160,12 @@
         const meta = currentUser.user_metadata || {};
         const safeAvatarUrl = meta.avatar_url || meta.picture || "";
         const currentDiscordName = meta.full_name || meta.name || "";
+        const currentDiscordId = meta.sub || currentUser.id || ""; // <-- Zieht die echte Discord-Zahlen-ID
 
         const updates = {
             id: currentUser.id,
-            discord_name: currentDiscordName || null, // <-- NEU: Speichert den Discord-Namen
+            discord_name: currentDiscordName || null,
+            discord_id: currentDiscordId || null, // <-- NEU: Speichert den Link-Code ab
             real_name: document.getElementById("real_name").value.trim() || null,
             plz: document.getElementById("plz").value.trim() || null,
             ort: document.getElementById("ort").value.trim() || null,
