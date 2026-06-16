@@ -164,10 +164,12 @@
     .content-block h4{ margin:0 0 8px; font-size:15px; color:#fff; }
     .content-block:last-child{ margin-bottom:0; }
 
-    /* NEU: Modal Profil Header & Avatar */
+    /* Modal Profil Header & Avatar */
     .modal-profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .modal-avatar { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #021017; }
     .modal-profile-name { font-size: 20px; font-weight: 900; margin: 0; }
+    .modal-discord-sub { font-size: 13px; color: #8ec9ee; font-weight: bold; cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
+    .modal-discord-sub:hover { color: #fff; }
 
     @media (max-width:1180px){
       .banner-nav{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
@@ -264,7 +266,6 @@
     </div>
   </div>
 
-  <!-- PLAYER PROFILE MODAL -->
   <div id="playerProfileModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="playerProfileTitle">
       <div class="modal-head">
@@ -277,7 +278,6 @@
     </div>
   </div>
 
-  <!-- EXISTING MODALS -->
   <div id="impressumModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="impressumTitle">
       <div class="modal-head">
@@ -356,9 +356,7 @@
     const ligaLoginBtn = document.getElementById("ligaLoginBtn");
     const loginBtnText = document.getElementById("loginBtnText");
 
-    // ==========================================
     // KLICK-FUNKTIONEN FÜR DISCORD & PROFIL
-    // ==========================================
     window.copyDiscord = function(name) {
       navigator.clipboard.writeText(name).then(() => {
         alert("Der Discord-Name '" + name + "' wurde in deine Zwischenablage kopiert!\n\nDu kannst ihn jetzt in Discord bei 'Freund hinzufügen' einfügen.");
@@ -367,6 +365,7 @@
       });
     };
 
+    // UPGRADE: Zeigt jetzt auch den echten Discord Namen und das Dartsetup im Popup an!
     window.openPlayerProfile = async function(playerName) {
         const modal = document.getElementById("playerProfileModal");
         const content = document.getElementById("playerProfileContent");
@@ -392,24 +391,35 @@
             content.innerHTML = `
                 <div class="modal-profile-header">
                     <img class="modal-avatar" src="${htmlEscape(avatarSrc)}" alt="Avatar">
-                    <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>
+                    <div>
+                        <h2 class="modal-profile-name">${htmlEscape(playerName)}</h2>
+                        ${data.discord_name ? `<span class="modal-discord-sub" onclick="copyDiscord('${htmlEscape(data.discord_name)}')">Discord: ${htmlEscape(data.discord_name)} 📋</span>` : ""}
+                    </div>
                 </div>
+                
+                ${data.dart_setup ? `
                 <div class="content-block">
-                    <h4 style="color:var(--accent); font-size:16px;">Plattformen & AVG</h4>
-                    <p><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em></p>
-                    <p><strong>DartCounter:</strong> ${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: ${htmlEscape(data.dartcounter_avg || '-')})</em></p>
-                    <p><strong>Scolia:</strong> ${htmlEscape(data.scolia_name || '-')} <em>(AVG: ${htmlEscape(data.scolia_avg || '-')})</em></p>
+                    <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Mein Dartsetup</h4>
+                    <p style="margin:0; font-size:14px; color:#edf7fb;">${htmlEscape(data.dart_setup)}</p>
                 </div>
+                ` : ""}
+
+                <div class="content-block">
+                    <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Plattformen & AVG</h4>
+                    <p style="margin:4px 0;"><strong>Autodarts:</strong> ${htmlEscape(data.autodarts_name || '-')} <em>(AVG: ${htmlEscape(data.autodarts_avg || '-')})</em></p>
+                    <p style="margin:4px 0;"><strong>DartCounter:</strong> ${htmlEscape(data.dartcounter_name || '-')} <em>(AVG: ${htmlEscape(data.dartcounter_avg || '-')})</em></p>
+                    <p style="margin:4px 0;"><strong>Scolia:</strong> ${htmlEscape(data.scolia_name || '-')} <em>(AVG: ${htmlEscape(data.scolia_avg || '-')})</em></p>
+                </div>
+                
                 <div class="content-block" style="margin-top:10px;">
-                    <h4 style="color:var(--accent); font-size:16px;">Wohnort</h4>
-                    <p>${htmlEscape(data.plz || '')} ${htmlEscape(data.ort || '-')}</p>
+                    <h4 style="color:var(--accent); font-size:14px; margin:0 0 5px 0;">Wohnort</h4>
+                    <p style="margin:0;">${htmlEscape(data.plz || '')} ${htmlEscape(data.ort || '-')}</p>
                 </div>
             `;
         } catch (err) {
             content.innerHTML = `<div class="empty">Dieser Spieler hat sich noch nicht in der neuen Datenbank angemeldet.</div>`;
         }
     };
-    // ==========================================
 
     function normalize(value) { return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " "); }
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
@@ -581,7 +591,7 @@
       return `<div class="table-shell"><div class="section-head"><div><div class="section-title">Tabelle</div><div class="section-sub">Bo7 • 1 Spieltag pro Woche</div></div></div><div class="table-wrap"><table><thead>${thead}</thead><tbody>${tbody}</tbody></table></div></div>`;
     }
 
-    function renderMatchStatusDot(statusValue, legs1, legs2) {
+    function renderMatchdayStatusDot(statusValue, legs1, legs2) {
       const done = isFinishedMatch(statusValue, legs1, legs2);
       return `<span class="status-badge ${done ? "done" : "open"}"><span class="status-dot ${done ? "done" : "open"}"></span></span>`;
     }
@@ -599,7 +609,7 @@
              ${row[4] ? `<span class="discord-link" style="display:block; margin-top:3px;" onclick="copyDiscord('${htmlEscape(row[4])}')">${htmlEscape(row[4])}</span>` : ""}
           </td>
           <td class="col-legs">${htmlEscape(row[5])}</td><td class="col-legs">${htmlEscape(row[6])}</td>
-          <td class="status-cell">${renderMatchStatusDot(row[7], row[5], row[6])}</td>
+          <td class="status-cell">${renderMatchdayStatusDot(row[7], row[5], row[6])}</td>
         </tr>`;
       }).join("");
       return `<table class="match-table"><tbody>${tbody}</tbody></table>`;
