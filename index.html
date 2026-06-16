@@ -676,27 +676,14 @@
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
 
-      supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
-        if (currentSession) {
-          state.currentUser = currentSession.user;
-          if (loginBtnText) loginBtnText.innerText = "Mein Profil";
-          
-          if (event === 'SIGNED_IN') {
-             setTimeout(() => {
-                 window.location.assign("profil.html");
-             }, 1500);
-          }
-        } else {
-          state.currentUser = null;
-          if (loginBtnText) loginBtnText.innerText = "Liga Login";
-        }
+      supabaseClient.auth.onAuthStateChange((event, currentSession) => {
+        state.currentUser = currentSession ? currentSession.user : null;
+        if (loginBtnText) loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
       });
 
       const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        state.currentUser = session.user;
-        if (loginBtnText) loginBtnText.innerText = "Mein Profil";
-      }
+      state.currentUser = session ? session.user : null;
+      if (loginBtnText) loginBtnText.innerText = state.currentUser ? "Mein Profil" : "Liga Login";
 
       if (ligaLoginBtn) {
         ligaLoginBtn.addEventListener("click", async () => {
@@ -736,17 +723,17 @@
         return; 
       }
 
-      if (window.location.hash.includes("access_token")) {
-        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login erfolgreich!</h2><p>Leite zum Profil weiter...</p></div>`;
+      if (window.location.hash.includes("access_token") || window.location.search.includes("code")) {
+        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login wird verarbeitet...</h2><p>Leite zum Profil weiter...</p></div>`;
         await initAuth();
         
         setTimeout(() => {
            window.location.assign("profil.html");
-        }, 2500);
+        }, 2000);
         return; 
-      } else {
-        if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
       }
+
+      if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
 
       await initAuth();
 
@@ -764,9 +751,8 @@
         const visible = getVisibleModeLeagues();
         state.activeLeague = visible[0]?.name || null;
 
-        if (!window.location.hash.includes("access_token") && !window.location.search.includes("code")) {
-          setMode("Home");
-        }
+        setMode("Home");
+        
       } catch (error) {
         if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Fehler beim Laden: ${htmlEscape(error?.message)}</div>`;
       }
