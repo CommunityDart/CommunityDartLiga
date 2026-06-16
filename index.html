@@ -798,6 +798,10 @@
       });
     }
 
+    // ===========================================================
+    // FEHLENDE FUNKTIONEN (waren nicht vorhanden -> Fehlerursache)
+    // ===========================================================
+
     function renderSheetAsBlocks(rows) {
       const validRows = (rows || []).filter(row => rowHasAnyContent(row));
       if (!validRows.length) return `<p>Keine Inhalte gefunden.</p>`;
@@ -934,6 +938,10 @@
       attachMatchdayEvents();
     }
 
+    // ===========================================================
+    // ENDE FEHLENDE FUNKTIONEN
+    // ===========================================================
+
     function setMode(mode) {
       state.activeMode = mode;
       document.body.setAttribute("data-mode", mode);
@@ -954,43 +962,37 @@
 
     async function initAuth() {
       if (!supabaseClient) {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+
+      // Prüfen, ob wir schon eingeloggt sind
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        state.currentUser = session.user;
+        if (loginBtnText) loginBtnText.innerText = "Mein Profil";
       }
 
       supabaseClient.auth.onAuthStateChange(async (event, currentSession) => { 
         if (currentSession) {
           state.currentUser = currentSession.user;
           if (loginBtnText) loginBtnText.innerText = "Mein Profil";
-          
-          if (event === 'SIGNED_IN' || window.location.hash.includes("access_token")) {
-             window.location.href = "profil.html";
-          }
         } else {
           state.currentUser = null;
           if (loginBtnText) loginBtnText.innerText = "Liga Login";
         }
       });
 
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        state.currentUser = session.user;
-        if (loginBtnText) loginBtnText.innerText = "Mein Profil";
-        
-        // ZUSATZ-CHECK: Falls das Token in der URL steht, sofort weiterleiten!
-        if (window.location.hash.includes("access_token")) {
-            window.location.href = "profil.html";
-        }
-      }
-
       if (ligaLoginBtn) {
         ligaLoginBtn.addEventListener("click", async () => {
           if (!state.currentUser) {
-            const redirectUrl = window.location.origin + window.location.pathname;
+            // FIX: Wir sagen Discord, es soll direkt zur Profilseite zurückkehren!
+            const redirectUrl = "https://communitydart.github.io/CommunityDartLiga/profil.html";
             await supabaseClient.auth.signInWithOAuth({
               provider: 'discord',
               options: { redirectTo: redirectUrl }
             });
           } else {
+            // Wenn schon eingeloggt, direkt rüber wechseln
             window.location.href = "profil.html";
           }
         });
@@ -1014,12 +1016,11 @@
     }
 
     async function loadAll() {
+      // HIER IST DER ENTSCHEIDENDE FIX EINGEBAUT!
       if (window.location.hash.includes("access_token")) {
         if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="text-align:center;"><h2>Login erfolgreich!</h2><p>Profil-Verwaltung wird geladen...</p></div>`;
-        
-        // WICHTIGSTER FIX: Hier abbrechen, damit die Tabellen nicht laden und die Weiterleitung stören!
         await initAuth();
-        return; 
+        return; // DIESES RETURN IST WICHTIG! Es verhindert, dass Tabellen laden und den Browser blockieren
       } else {
         if (tableAreaEl) tableAreaEl.innerHTML = `<div class="empty">Lade Daten…</div>`;
       }
