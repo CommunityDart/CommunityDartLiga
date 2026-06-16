@@ -172,6 +172,9 @@
     .modal-discord-sub { font-size: 13px; color: #8ec9ee; font-weight: bold; cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
     .modal-discord-sub:hover { color: #fff; }
 
+    /* ==========================================
+       MOBILE OPTIMIERUNG
+       ========================================== */
     @media (max-width:1180px){
       .banner-nav{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
       .submenu-row{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
@@ -188,11 +191,21 @@
       .hero-banner.image-banner{ min-height:180px; border-radius:20px; background-position:center center; background-size:cover; }
       .banner-nav, .submenu-row{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
       .hero-action-btn{ min-height:42px; border-radius:14px; font-size:13px; padding:0 10px; white-space:nowrap; }
-      .player-cell{ width:150px; min-width:150px; }
+      
+      /* Tabellen kompakter auf Mobile */
+      .player-cell{ width:120px; min-width:120px; }
+      thead th { padding: 10px 8px; font-size: 11px; }
+      tbody td { padding: 10px 8px; font-size: 13px; }
+      .rank-col { width: 60px; }
+      
       .matchday-head-right{ width:92px; min-width:92px; flex:0 0 92px; }
       .matchday-progress{ width:42px; }
       .status-cell, .col-status{ width:92px; min-width:92px; }
       .match-table td.col-player{ min-width:100px; }
+      
+      /* Modals bekommen Sicherheitsabstand auf Mobile */
+      .modal { width: calc(100% - 24px); margin: 12px; max-height: calc(100vh - 24px); }
+      .modal-head, .modal-body { padding: 14px; }
     }
     @media (max-width:560px){ .banner-nav, .submenu-row{ grid-template-columns:1fr; } }
   </style>
@@ -359,7 +372,6 @@
     const ligaLoginBtn = document.getElementById("ligaLoginBtn");
     const loginBtnText = document.getElementById("loginBtnText");
 
-    // KLICK-FUNKTIONEN FÜR DISCORD & PROFIL
     window.copyDiscord = function(name) {
       navigator.clipboard.writeText(name).then(() => {
         alert("Der Discord-Name '" + name + "' wurde in deine Zwischenablage kopiert!\n\nDu kannst ihn jetzt in Discord bei 'Freund hinzufügen' einfügen.");
