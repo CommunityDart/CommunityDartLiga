@@ -19,15 +19,15 @@
     * { box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; background: #0f1c24; color: var(--text); min-height: 100vh; margin: 0; padding: 20px; }
     .wrap { width: min(800px, 100%); margin: 0 auto; }
-    
+     
     .panel { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); backdrop-filter: blur(8px); margin-bottom: 20px; }
     h2, h3 { margin-top: 0; color: #fff; }
-    
+     
     .input-group { margin-bottom: 15px; }
     label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--muted); }
     .input-text, select { width: 100%; padding: 12px; border-radius: 10px; background: #1e293b; border: 1px solid var(--line); color: #fff; outline: none; font-size: 14px; }
     .input-text:focus, select:focus { border-color: var(--accent); }
-    
+     
     .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; text-align: center; display: block; text-decoration: none; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: #2980b9; }
@@ -35,40 +35,37 @@
     .btn-success:hover { background: #27ae60; }
     .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.1); margin-top: 10px; }
     .btn-secondary:hover { background: rgba(255,255,255,0.15); }
-    
+     
     .flex-group { display: flex; gap: 15px; }
     .flex-group .input-group { flex: 1; }
-    
+     
     .status-box { padding: 12px; border-radius: 10px; background: rgba(241,196,15,0.1); border: 1px solid #f1c40f; color: #f1c40f; font-weight: bold; text-align: center; margin-bottom: 20px; }
     .status-box.registered { background: rgba(46,204,113,0.1); border: 1px solid var(--green); color: var(--green); }
-    
+     
     @media (max-width: 600px) { .flex-group { flex-direction: column; gap: 0; } }
   </style>
 </head>
 <body>
 
   <div class="wrap">
-    
+     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
        <h2>👤 Mein Profil</h2>
        <button class="btn btn-secondary" style="width:auto; margin:0;" onclick="logout()">Abmelden</button>
     </div>
 
-    <!-- Admin-Button (wird nur angezeigt, wenn der Nutzer Admin ist) -->
     <div id="adminPanelLink" style="display:none; margin-bottom:20px;">
        <a href="admin.html" class="btn btn-primary" style="background:#e74c3c; text-align:center;">⚙️ Zur Kommandozentrale (Admin)</a>
     </div>
 
-    <!-- Anmeldestatus für die neue Saison -->
     <div id="registrationStatusBox" class="status-box">
        Du bist aktuell noch nicht für die kommende Saison angemeldet.
     </div>
 
-    <!-- Profil-Daten -->
     <div class="panel">
        <h3>Anmelde- &amp; Spielerdaten</h3>
        <form id="profileForm" onsubmit="saveProfile(event)">
-          
+           
           <div class="input-group">
              <label>Discord-Name (wird in der Tabelle angezeigt):</label>
              <input type="text" id="discordNameInput" class="input-text" required readonly style="opacity:0.6; cursor:not-allowed;">
@@ -139,7 +136,6 @@
     async function loadProfileData() {
         if(!currentUser) return;
 
-        // Versuche das Profil zu laden oder lege es an, wenn es neu ist
         let { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
         
         if (!profile) {
@@ -160,7 +156,6 @@
             document.getElementById("dcAvgInput").value = profile.dartcounter_avg || "";
             document.getElementById("scoliaNameInput").value = profile.scolia_name || "";
 
-            // Anmeldestatus visuell anpassen
             const statusBox = document.getElementById("registrationStatusBox");
             if (profile.status_neue_saison === 'waiting' || profile.status_neue_saison === 'assigned') {
                 statusBox.classList.add("registered");
@@ -170,7 +165,6 @@
                 statusBox.innerText = "🟨 Du bist aktuell noch nicht für die kommende Saison angemeldet. Bitte fülle deine Daten aus und klicke auf Speichern.";
             }
 
-            // Admin-Bedienfeld freischalten
             if (profile.is_admin === true) {
                 document.getElementById("adminPanelLink").style.display = "block";
             }
@@ -189,7 +183,6 @@
             dartcounter_name: document.getElementById("dcNameInput").value.trim(),
             dartcounter_avg: document.getElementById("dcAvgInput").value.trim(),
             scolia_name: document.getElementById("scoliaNameInput").value.trim(),
-            // Sobald der Spieler speichert, wird er automatisch als 'waiting' für die neue Saison markiert
             status_neue_saison: 'waiting'
         };
 
