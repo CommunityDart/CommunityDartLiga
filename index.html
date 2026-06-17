@@ -39,6 +39,7 @@
     .header-branding h2 { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #fff; }
     .header-branding span { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
 
+    /* FIX: SUPER KOMPAKTES GRID GEGEN DEN VERSCHENKTEN PLATZ */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin-bottom: 20px; align-items: stretch; }
     .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); position: relative; }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.12); padding-bottom: 4px; }
@@ -125,7 +126,6 @@
     .archive-control-box { display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); position: relative; z-index: 10; }
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
-    /* FIX: HIER WURDEN DIE ABMESSUNGEN FÜR DIE LOGOS DER PLATTFORMEN STABILISIERT */
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
     @media (max-width: 950px) {
@@ -426,14 +426,22 @@
     function renderHome() { tableAreaEl.innerHTML = state.newsHtml; matchdayAreaEl.innerHTML = ""; }
     function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
 
+    // FIX: Fehlerresistenter Ladevorgang für News, Session und das Regelwerk
     async function loadAll() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        state.currentUser = session ? session.user : null;
+        // Falls kein User eingeloggt ist, läuft die Seite trotzdem fehlerfrei weiter
+        try {
+            const { data: authData } = await supabaseClient.auth.getSession();
+            state.currentUser = authData && authData.session ? authData.session.user : null;
+        } catch(e) { state.currentUser = null; }
+        
         document.getElementById("loginBtnText").innerText = state.currentUser ? "👤 Mein Profil" : "👤 Liga Login";
 
+        state.isAdminUser = false;
         if (state.currentUser) {
-            const { data: pData } = await supabaseClient.from('profiles').select('is_admin').eq('id', state.currentUser.id).maybeSingle();
-            if (pData && pData.is_admin === true) state.isAdminUser = true;
+            try {
+                const { data: pData } = await supabaseClient.from('profiles').select('is_admin').eq('id', state.currentUser.id).maybeSingle();
+                if (pData && pData.is_admin === true) state.isAdminUser = true;
+            } catch(e){}
         }
 
         try {
@@ -456,9 +464,15 @@
             } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
             state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
 
-            const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
-            state.currentSeason = sys ? sys.current_season : 'Saison 1';
-            state.rulewerkHtml = sys && sys.regelwerk_html ? sys.regelwerk_html : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+            // Regelwerk-Fetch korrigiert (Laufzeitabsturz behoben)
+            try {
+                const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
+                state.currentSeason = sys ? sys.current_season : 'Saison 1';
+                state.rulewerkHtml = sys && sys.regelwerk_html ? sys.regelwerk_html : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+            } catch(e) {
+                state.currentSeason = 'Saison 1';
+                state.rulewerkHtml = '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+            }
 
             const { data: profiles } = await supabaseClient.from('profiles').select('*');
             state.allProfilesCache = profiles || [];
@@ -507,7 +521,7 @@
             });
 
             setMode("Home");
-        } catch (e) { tableAreaEl.innerHTML = `<div class="empty">Kritischer Ladefehler.</div>`; }
+        } catch (e) { tableAreaEl.innerHTML = `<div class="empty">Kritischer Ladefehler im Datenhub.</div>`; }
     }
 
     document.getElementById("modeHome").onclick = () => setMode("Home");
@@ -533,6 +547,13 @@
     document.querySelectorAll(".modal-close").forEach(btn => btn.onclick = () => closeModal(btn.closest(".modal-backdrop")));
     function openModal(m) { if(m) m.classList.add("open"); }
     function closeModal(m) { if(m) m.classList.remove("open"); }
+
+    window.toggleMatchday = function(btn) {
+        const card = btn.parentElement;
+        const isOpen = !card.classList.contains("open");
+        card.classList.toggle("open", isOpen);
+        state.matchdayOpenState[card.dataset.key] = isOpen;
+    }
 
     function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
 
