@@ -35,6 +35,7 @@
     .assign-btn { background: #2ecc71; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
     .assign-btn:hover { opacity: 0.8; }
     .del-btn { background: #e74c3c; }
+    .edit-btn { background: #3498db; }
     
     .plan-action-btn { width: 100%; background: rgba(52, 152, 219, 0.1); border: 1px solid #3498db; color: #fff; padding: 12px; text-align: left; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .plan-action-btn:hover { background: rgba(52, 152, 219, 0.25); transform: translateX(4px); }
@@ -50,7 +51,7 @@
     .player-meta-info { font-size: 11px; color: #a3b8c5; margin-top: 6px; display: block; line-height: 1.6; font-style: italic; }
     .prev-league-badge { font-size: 11px; color: #f1c40f; display: block; margin-bottom: 4px; font-weight: bold; }
     
-    .dot { inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
     .dot-blue { background: #0077ff; box-shadow: 0 0 6px #0077ff; }
     .dot-orange { background: #ff6a00; box-shadow: 0 0 6px #ff6a00; }
     .dot-green { background: #00ff66; box-shadow: 0 0 6px #00ff66; }
@@ -65,7 +66,7 @@
     .inputs-row { display: flex; gap: 15px; flex-wrap: wrap; width: 100%; margin-top: 5px; margin-bottom: 10px; }
 
     .ql-toolbar.ql-snow { background: #1e293b !important; border-color: #4b87a5 !important; border-radius: 8px 8px 0 0; }
-    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #1e293b; border-radius: 0 0 8px 8px; height: 300px; font-size: 15px; color: #fff; }
+    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #1e293b; border-radius: 0 0 8px 8px; height: 380px; font-size: 15px; color: #fff; }
   </style>
 </head>
 <body>
@@ -81,7 +82,6 @@
       <button class="tab-btn" onclick="switchTab('news-edit'); initNewsManager();">6. News verwalten</button>
     </div>
 
-    <!-- 1. LIGA ZUTEILUNG -->
     <div id="zuteilung" class="tab-content active">
       <div class="dummy-box">
          <span style="font-weight: bold; color: #20b7ff; font-size: 14px;">🎲 Testspieler-Tool:</span>
@@ -102,7 +102,6 @@
       </table>
     </div>
 
-    <!-- 2. SPIELPLÄNE & ERGEBNISSE -->
     <div id="spielplan" class="tab-content">
       <h3 style="margin-top:0; color:#3498db;">📅 Spielpläne erstellen &amp; Auf-/Abstiege regeln</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">Wähle die gewünschte Liga per Knopfdruck aus, um Regeln festzulegen oder neue Spielpläne zu erstellen.</p>
@@ -136,7 +135,6 @@
       <div style="display: flex; flex-direction: column; gap: 8px; max-width: 500px;" id="leaguePlanButtons"></div>
     </div>
     
-    <!-- 3. STRAFENKATALOG -->
     <div id="strafen" class="tab-content">
       <h3 style="margin-top:0; color:#f1c40f;">🟨 Kartensystem &amp; Verwarnungen verwalten</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Hier kannst du Spielern gelbe oder rote Karten zuweisen. Die Karten werden live in den Tabellen der Startseite gerendert.</p>
@@ -153,7 +151,6 @@
       </table>
     </div>
     
-    <!-- 4. SAISON BEENDEN -->
     <div id="saison" class="tab-content">
        <h3 style="margin-top:0; color:#e74c3c;">🏛️ Liga einzeln abschließen &amp; archivieren</h3>
        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Wähle eine spezifische Liga aus, um die aktuelle Tabelle einzufrieren, im Archiv zu speichern und die Spieler für die neue Saison freizugeben.</p>
@@ -167,7 +164,6 @@
        <div id="closeLeaguePreviewArea" style="margin-top: 20px;"></div>
     </div>
 
-    <!-- 5. REGELWERK BEARBEITEN -->
     <div id="regelwerk-edit" class="tab-content">
         <h3 style="margin-top:0; color:#2ecc71;">📑 Globales Regelwerk konfigurieren</h3>
         <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Der hier gespeicherte Text wird sofort live auf der Startseite für alle Spieler im Overlay angezeigt.</p>
@@ -177,12 +173,13 @@
         <button class="assign-btn" style="width:100%; min-height:45px; font-size:15px;" onclick="saveRules()">💾 Änderungen am Regelwerk live schalten</button>
     </div>
 
-    <!-- 6. NEWS VERWALTEN (NEU DAZUGEBAUT) -->
     <div id="news-edit" class="tab-content">
         <h3 style="margin-top:0; color:#3498db;">📰 Neuigkeiten &amp; Ankündigungen veröffentlichen</h3>
-        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Erstelle neue Beiträge für die Startseite oder lösche veraltete News-Einträge.</p>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Erstelle neue Beiträge für die Startseite, bearbeite bestehende oder lösche veraltete News-Einträge.</p>
         
         <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
+            <input type="hidden" id="editingNewsId" value="">
+            
             <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Titel der Ankündigung:</label>
             <input type="text" id="newsTitleInput" class="input-text" placeholder="z.B. Infos zum Start von Saison 2...">
             
@@ -190,7 +187,7 @@
             <div style="margin-bottom:20px;">
                 <div id="news-editor-container"></div>
             </div>
-            <button class="assign-btn" style="width:100%; min-height:40px;" onclick="publishNews()">📢 Nachricht veröffentlichen</button>
+            <button class="assign-btn" id="newsPublishBtn" style="width:100%; min-height:40px;" onclick="publishNews()">📢 Nachricht veröffentlichen</button>
         </div>
 
         <h4 style="color:#fff; margin-bottom:10px;">Bestehende Beiträge verwalten:</h4>
@@ -199,7 +196,7 @@
                 <tr>
                     <th>Datum</th>
                     <th>Titel</th>
-                    <th width="120px">Aktion</th>
+                    <th width="200px">Aktionen</th>
                 </tr>
             </thead>
             <tbody id="adminNewsListBody"><tr><td colspan="3" class="empty-msg">Lade Beiträge...</td></tr></tbody>
@@ -224,6 +221,7 @@
     let globalProfilesCache = [];
     let leagueMemoryConfig = {};
     let activeSelectedLeaguePlan = "";
+    let adminNewsCache = []; // Cache, um News-Inhalte sofort im Editor zu laden
 
     function switchTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -250,7 +248,6 @@
         alert("🎉 Das Regelwerk wurde erfolgreich aktualisiert!");
     }
 
-    // NEWS LOGIK (AUS DEM PROFIL EXTRAHIERT UND VERBESSERT)
     window.initNewsManager = function() {
         if (!newsQuill) {
             newsQuill = new Quill('#news-editor-container', {
@@ -268,29 +265,61 @@
             tbody.innerHTML = `<tr><td colspan="3" class="empty-msg">Keine Beiträge verfasst.</td></tr>`;
             return;
         }
+        adminNewsCache = newsData; // Im Cache sichern für das Editieren
         tbody.innerHTML = newsData.map(n => {
             const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
             return `<tr>
                 <td><span style="color:var(--muted); font-size:13px;">${date}</span></td>
                 <td><b>${htmlEscape(n.title)}</b></td>
-                <td><button class="assign-btn del-btn" onclick="deleteNewsConfirm('${n.id}')">🗑️ Löschen</button></td>
+                <td>
+                    <div style="display:flex; gap:6px;">
+                        <button class="assign-btn edit-btn" onclick="startEditNews('${n.id}')">✏️ Bearbeiten</button>
+                        <button class="assign-btn del-btn" onclick="deleteNewsConfirm('${n.id}')">🗑️</button>
+                    </div>
+                </td>
             </tr>`;
         }).join("");
+    }
+
+    // FIX: Funktion lädt bestehende News direkt zurück in den Editor hoch
+    window.startEditNews = function(id) {
+        const item = adminNewsCache.find(n => String(n.id) === String(id));
+        if(!item) return;
+
+        document.getElementById("editingNewsId").value = item.id;
+        document.getElementById("newsTitleInput").value = item.title;
+        newsQuill.root.innerHTML = item.content;
+        
+        // Button-Text anpassen, um den Update-Modus zu signalisieren
+        document.getElementById("newsPublishBtn").innerText = "💾 Änderungen am Beitrag speichern";
+        document.getElementById("newsTitleInput").scrollIntoView({ behavior: 'smooth' });
     }
 
     window.publishNews = async function() {
         const title = document.getElementById("newsTitleInput").value.trim();
         const content = newsQuill.root.innerHTML;
+        const editingId = document.getElementById("editingNewsId").value;
+        
         if(!title || newsQuill.getText().trim() === "") { alert("Bitte fülle Titel und Inhalt aus!"); return; }
 
-        const { error } = await supabaseClient.from('news').insert([{ title: title, content: content }]);
-        if(error) alert("Fehler: " + error.message);
-        else {
-            alert("📢 News erfolgreich veröffentlicht!");
-            document.getElementById("newsTitleInput").value = "";
-            newsQuill.root.innerHTML = "";
-            loadAdminNewsList();
+        if (editingId) {
+            // UPDATE-MODUS
+            const { error } = await supabaseClient.from('news').update({ title: title, content: content }).eq('id', editingId);
+            if(error) alert("Fehler beim Aktualisieren: " + error.message);
+            else alert("🎉 Der Beitrag wurde erfolgreich aktualisiert!");
+        } else {
+            // NEUANLAGE-MODUS
+            const { error } = await supabaseClient.from('news').insert([{ title: title, content: content }]);
+            if(error) alert("Fehler beim Erstellen: " + error.message);
+            else alert("📢 News erfolgreich veröffentlicht!");
         }
+
+        // Formular komplett zurücksetzen
+        document.getElementById("editingNewsId").value = "";
+        document.getElementById("newsTitleInput").value = "";
+        newsQuill.root.innerHTML = "";
+        document.getElementById("newsPublishBtn").innerText = "📢 Nachricht veröffentlichen";
+        loadAdminNewsList();
     }
 
     window.deleteNewsConfirm = async function(id) {
