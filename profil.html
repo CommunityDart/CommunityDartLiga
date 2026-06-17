@@ -10,164 +10,127 @@
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 
   <style>
-    body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
-    .shell { background: #041924; border: 1px solid rgba(32,183,255,0.2); padding: 30px; border-radius: 15px; max-width: 600px; margin: 20px auto; }
+    body { background: #0f1c24; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+    .shell { background: #162a35; border: 1px solid rgba(32,183,255,0.3); padding: 30px; border-radius: 15px; max-width: 600px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
     
     .top-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-    .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .back-btn:hover { background: rgba(32,183,255,0.1); }
     .admin-btn { border-color: #e74c3c; color: #e74c3c; }
-    .news-btn { border-color: #3ddc97; color: #3ddc97; }
+    .admin-btn:hover { background: rgba(231,76,60,0.1); }
+    .news-btn { border-color: #2ecc71; color: #2ecc71; }
+    .news-btn:hover { background: rgba(46,204,113,0.1); }
     
     .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
-    .avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #20b7ff; object-fit: cover; background: #021017; flex-shrink: 0; }
-    .admin-badge { background: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 10px; display: none; vertical-align: middle; }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #20b7ff; object-fit: cover; background: #0f1c24; flex-shrink: 0; }
+    .admin-badge { background: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 10px; display: none; }
     
-    label { display: block; font-size: 13px; color: #90a9b7; margin-bottom: 5px; font-weight: bold; }
-    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 15px; background: #021017; border: 1px solid #4b87a5; color: white; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-    input[type="text"]:focus { outline: none; border-color: #20b7ff; box-shadow: 0 0 8px rgba(32,183,255,0.3); }
+    label { display: block; font-size: 13px; color: #a3b8c5; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 15px; background: #0f1c24; border: 1px solid #4b87a5; color: white; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; transition: 0.2s; }
+    input[type="text"]:focus { border-color: #20b7ff; box-shadow: 0 0 8px rgba(32,183,255,0.3); }
     
-    .url-input { margin-top: -10px; border-color: rgba(120,170,195,0.3) !important; background: rgba(0,0,0,0.2) !important; font-size: 13px !important; }
+    .url-input { margin-top: -10px; border-color: rgba(120,170,195,0.2) !important; background: rgba(0,0,0,0.15) !important; font-size: 13px !important; }
 
     button { border: none; padding: 14px 24px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s ease; font-size: 15px; }
     button:hover { opacity: 0.8; }
-    #saveBtn { background: #3ddc97; color: #000; }
+    #saveBtn { background: #2ecc71; color: #fff; }
     .logout-btn { background: #e74c3c; color: white; margin-left: 10px; }
     
     .input-group { display: flex; gap: 15px; }
     .input-group > div { flex: 1; }
-    .divider { height: 1px; background: rgba(120,170,195,0.1); margin: 15px 0 20px 0; }
+    .divider { height: 1px; background: rgba(255,255,255,0.08); margin: 15px 0 20px 0; }
     
-    .hint-text { font-size: 12px; color: #90a9b7; margin-top: 15px; font-style: italic; text-align: center; }
+    .registration-box { background: rgba(32, 183, 255, 0.03); border: 1px dashed rgba(32,183,255,0.3); padding: 20px; border-radius: 12px; margin-bottom: 25px; display: none; }
+    .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 8px; }
+    .checkbox-group label { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; }
 
-    .registration-box { background: rgba(32, 183, 255, 0.05); border: 1px solid rgba(32,183,255,0.3); padding: 20px; border-radius: 12px; margin-bottom: 25px; display: none; }
-    .registration-box h3 { margin-top: 0; color: var(--accent); font-size: 18px; margin-bottom: 10px; text-align: center;}
-    .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; }
-    .checkbox-group label { display: flex; align-items: center; gap: 10px; font-size: 15px; color: #fff; cursor: pointer; margin: 0; }
-    .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
-    .league-assignment-text { color: #3ddc97; font-weight: bold; font-size: 14px; margin-top: 10px; text-align: center; background: rgba(61, 220, 151, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(61, 220, 151, 0.3);}
-
-    /* NEWS MODAL UPGRADE */
-    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:9999; padding: 20px; }
-    .modal-box { background:#041924; border:1px solid #3ddc97; padding:25px; border-radius:12px; width:100%; max-width:700px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    /* NEWS OVERLAY STYLES */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter: blur(4px); }
+    .modal-box { background:#162a35; border:1px solid #2ecc71; padding:25px; border-radius:12px; width:100%; max-width:700px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
     
-    /* Quill Container Anpassung an das dunkle Design */
-    .ql-toolbar.ql-snow { background: #021017 !important; border-color: #4b87a5 !important; border-radius: 8px 8px 0 0; }
-    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #021017; border-radius: 0 0 8px 8px; height: 250px; font-size: 15px; color: #fff; }
-    .ql-editor.ql-blank::before { color: #5a7585 !important; font-style: normal; }
-    .ql-snow .ql-stroke { stroke: #90a9b7 !important; }
-    .ql-snow .ql-fill { fill: #90a9b7 !important; }
-    .ql-snow .ql-picker { color: #90a9b7 !important; }
+    .ql-toolbar.ql-snow { background: #0f1c24 !important; border-color: #4b87a5 !important; border-radius: 8px 8px 0 0; }
+    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #0f1c24; border-radius: 0 0 8px 8px; height: 250px; font-size: 15px; color: #fff; }
+    .ql-editor.ql-blank::before { color: #5a7585 !important; }
 
-    /* Admin News Liste */
-    .admin-news-section { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-top: 25px; display: none; }
-    .admin-news-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 10px; }
-    .admin-news-item:last-child { border-bottom: none; }
+    .admin-news-section { background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-top: 25px; display: none; }
+    .admin-news-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .news-manage-btn { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .edit-btn { background: #20b7ff; color: #000; margin-right: 5px; }
     .delete-btn { background: #e74c3c; color: #fff; }
-
-    @media (max-width: 600px) {
-      body { padding: 10px; }
-      .shell { padding: 20px; margin: 10px auto; border-radius: 12px; }
-      .input-group { flex-direction: column; gap: 0; }
-      button { width: 100%; display: block; margin-bottom: 10px; }
-      .logout-btn { margin-left: 0; margin-top: 5px; }
-      .profile-header { flex-direction: column; text-align: center; gap: 10px; }
-      h2 { font-size: 22px; }
-      .top-buttons { flex-direction: column; }
-    }
   </style>
 </head>
 <body>
 
   <div id="newsModalOverlay" class="modal-overlay">
     <div class="modal-box">
-      <h3 id="newsModalTitle" style="margin-top:0; color:#3ddc97; text-align:center;">📰 Neuigkeit verfassen</h3>
+      <h3 id="newsModalTitle" style="margin-top:0; color:#2ecc71; text-align:center;">📰 Neuigkeit verfassen</h3>
       <input type="hidden" id="editNewsId" value="">
-      <input type="text" id="newsTitleInput" placeholder="Überschrift (z.B. Willkommen zur neuen Saison)">
-      
-      <div style="margin-bottom:15px;">
-        <div id="editor-container"></div>
-      </div>
-
-      <div style="display:flex; gap:10px; flex-wrap: wrap;">
-        <button onclick="saveNews()" style="background:#3ddc97; color:#000; flex:1;">Veröffentlichen / Speichern</button>
+      <input type="text" id="newsTitleInput" placeholder="Überschrift">
+      <div style="margin-bottom:15px;"><div id="editor-container"></div></div>
+      <div style="display:flex; gap:10px;">
+        <button onclick="saveNews()" style="background:#2ecc71; color:#fff; flex:1;">Speichern</button>
         <button onclick="closeNewsModal()" style="background:#e74c3c; color:#fff; flex:1;">Abbrechen</button>
       </div>
     </div>
   </div>
 
   <div class="shell">
-    
     <div class="top-buttons">
-        <button class="back-btn" onclick="window.location.href='index.html'">← Zurück zu den Ligen</button>
+        <button class="back-btn" onclick="window.location.href='index.html'">← Homepage</button>
         <button id="adminDashboardBtn" class="back-btn admin-btn" style="display:none;" onclick="window.location.href='admin.html'">⚙️ Admin Dashboard</button>
-        <button id="newsDashboardBtn" class="back-btn news-btn" style="display:none;" onclick="openNewsModalForCreate()">📰 News verfassen</button>
+        <button id="newsDashboardBtn" class="back-btn news-btn" style="display:none;" onclick="openNewsModalForCreate()">📰 News erstellen</button>
     </div>
     
     <div class="profile-header">
-      <img id="userAvatar" class="avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>" alt="Avatar">
-      <div>
-        <h2 style="margin: 0;"><span id="statusText">Lade Profil...</span> <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
-      </div>
+      <img id="userAvatar" class="avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>">
+      <h2><span id="statusText">Lade Profil...</span> <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
     </div>
     
     <div id="seasonRegistrationBox" class="registration-box">
       <h3>🎯 Anmeldung nächste Saison</h3>
-      <p id="registrationStatusText" style="font-size: 14px; margin-bottom: 15px; text-align: center; color: #90a9b7;">Lade Status...</p>
-      
+      <p id="registrationStatusText">Lade Status...</p>
       <div id="registrationFormArea" style="display:none;">
           <div class="checkbox-group">
-            <label><input type="checkbox" id="want_ad"> Autodarts Liga spielen</label>
-            <label><input type="checkbox" id="want_dc"> DartCounter Liga spielen</label>
-            <label><input type="checkbox" id="want_sc"> Scolia Liga spielen</label>
+            <label><input type="checkbox" id="want_ad"> Autodarts Liga</label>
+            <label><input type="checkbox" id="want_dc"> DartCounter Liga</label>
+            <label><input type="checkbox" id="want_sc"> Scolia Liga</label>
           </div>
-          <button type="button" id="btnSaveRegistration" style="background: #20b7ff; color: #fff; width: 100%;">Anmeldung Speichern / Ändern</button>
+          <button type="button" id="btnSaveRegistration" style="background: #20b7ff; color: #fff; width: 100%;">Anmeldung Speichern</button>
       </div>
       <div id="assignmentArea"></div>
     </div>
 
     <div id="adminNewsSection" class="admin-news-section">
-        <h3 style="margin-top:0; color:#3ddc97; font-size:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">📰 Geschriebene News verwalten</h3>
-        <div id="adminNewsList">Lade Nachrichten-Historie...</div>
+        <h3 style="margin-top:0; color:#2ecc71; font-size:16px;">Newsverwaltung</h3>
+        <div id="adminNewsList">Lade...</div>
     </div>
 
     <div class="divider"></div>
 
     <form id="profilForm" style="display:none;">
       <div class="input-group">
-        <div style="flex: 2;"><label>Echter Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
-        <div style="flex: 1;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" inputmode="numeric" placeholder="12345"></div>
-        <div style="flex: 2;"><label>Wohnort</label><input type="text" id="ort" placeholder="Musterstadt"></div>
+        <div><label>Vorname</label><input type="text" id="real_name"></div>
+        <div style="flex:0 0 90px;"><label>PLZ</label><input type="text" id="plz" maxlength="5"></div>
+        <div><label>Wohnort</label><input type="text" id="ort"></div>
       </div>
-      <div class="divider"></div>
-      <label>Mein Dartsetup (Welche Darts spiele ich derzeit?)</label>
-      <input type="text" id="dart_setup" placeholder="z.B. Target Gabriel Clemens 21g, Condor Flights">
-      <div class="divider"></div>
+      <label>Dartsetup</label><input type="text" id="dart_setup">
       
       <div class="input-group">
-        <div style="flex: 2;"><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
-        <div style="flex: 1;"><label>AVG</label><input type="text" id="autodarts_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
+        <div><label>Autodarts Name</label><input type="text" id="autodarts_name"></div>
+        <div style="flex:0 0 90px;"><label>AVG</label><input type="text" id="autodarts_avg"></div>
       </div>
-      <input type="text" id="autodarts_url" class="url-input" placeholder="URL zum Autodarts Profil (optional)">
+      <input type="text" id="autodarts_url" class="url-input" placeholder="Profil URL">
       
-      <div class="input-group" style="margin-top: 10px;">
-        <div style="flex: 2;"><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
-        <div style="flex: 1;"><label>AVG</label><input type="text" id="dartcounter_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
+      <div class="input-group" style="margin-top:10px;">
+        <div><label>DartCounter Name</label><input type="text" id="dartcounter_name"></div>
+        <div style="flex:0 0 90px;"><label>AVG</label><input type="text" id="dartcounter_avg"></div>
       </div>
-      <input type="text" id="dartcounter_url" class="url-input" placeholder="URL zum DartCounter Profil (optional)">
-      
-      <div class="input-group" style="margin-top: 10px;">
-        <div style="flex: 2;"><label>Scolia Name</label><input type="text" id="scolia_name"></div>
-        <div style="flex: 1;"><label>AVG</label><input type="text" id="scolia_avg" inputmode="decimal" placeholder="z.B. 45.6"></div>
-      </div>
-      <input type="text" id="scolia_url" class="url-input" placeholder="URL zum Scolia Profil (optional)">
+      <input type="text" id="dartcounter_url" class="url-input" placeholder="Profil URL">
 
       <div class="divider"></div>
       <button type="submit" id="saveBtn">Profil Speichern</button>
       <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
-      <p class="hint-text">* wird benötigt für die Mitgliederkarte</p>
-      <div id="msgBox" style="margin-top:15px; font-weight:bold; padding: 12px; border-radius: 8px; display: none; text-align:center;"></div>
+      <div id="msgBox" style="margin-top:15px; display:none; padding:10px; border-radius:8px; text-align:center;"></div>
     </form>
   </div>
 
@@ -175,270 +138,93 @@
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let currentUser = null;
-    let quillEditor = null;
+    let currentUser = null; let quillEditor = null;
 
-    // Quill Initialisieren (Word-Funktionen + Farben + Schriftgrößen + Bild-Symbol)
     function initQuill() {
         if (quillEditor) return;
-        quillEditor = new Quill('#editor-container', {
-            theme: 'snow',
-            placeholder: 'Schreibe deine News... Nutze die Leiste für Farben, Größen oder füge Bilder via URL ein!',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'size': ['small', false, 'large', 'huge'] }],
-                    ['image', 'clean']
-                ]
-            }
-        });
+        quillEditor = new Quill('#editor-container', { theme: 'snow', modules: { toolbar: [[{ 'header': [1, 2, false] }], ['bold', 'italic', 'underline'], [{ 'color': [] }], ['image', 'clean']] } });
     }
 
-    window.openNewsModalForCreate = () => {
-        initQuill();
-        document.getElementById('newsModalTitle').innerText = "💡 Neue Nachricht verfassen";
-        document.getElementById('editNewsId').value = "";
-        document.getElementById('newsTitleInput').value = "";
-        quillEditor.setContents([]); // Leeren
-        document.getElementById('newsModalOverlay').style.display = 'flex';
-    };
-
+    window.openNewsModalForCreate = () => { initQuill(); document.getElementById('newsModalTitle').innerText = "💡 Neue Nachricht"; document.getElementById('editNewsId').value = ""; document.getElementById('newsTitleInput').value = ""; quillEditor.setContents([]); document.getElementById('newsModalOverlay').style.display = 'flex'; };
     window.closeNewsModal = () => document.getElementById('newsModalOverlay').style.display = 'none';
-    
+
     window.saveNews = async () => {
         const title = document.getElementById('newsTitleInput').value.trim();
-        const htmlContent = quillEditor.getSemanticHTML(); // Holt das echte formatierte HTML
-        const textCheck = quillEditor.getText().trim();
+        const htmlContent = quillEditor.getSemanticHTML();
         const editId = document.getElementById('editNewsId').value;
+        if(!title) return alert('Titel fehlt!');
 
-        if(!title || !textCheck) return alert('Bitte Überschrift und Nachrichtentext eingeben!');
-        
-        if (editId) {
-            // BEARBEITEN Modus
-            const { error } = await supabaseClient.from('news').update({ title: title, content: htmlContent }).eq('id', editId);
-            if(error) return alert('Fehler: ' + error.message);
-            alert('News erfolgreich aktualisiert!');
-        } else {
-            // NEU Modus
-            const { error } = await supabaseClient.from('news').insert([{ title: title, content: htmlContent }]);
-            if(error) return alert('Fehler: ' + error.message);
-            alert('News erfolgreich veröffentlicht!');
-        }
-        
-        closeNewsModal();
-        loadAdminNewsList();
-    }
+        if (editId) { await supabaseClient.from('news').update({ title, content: htmlContent }).eq('id', editId); }
+        else { await supabaseClient.from('news').insert([{ title, content: htmlContent }]); }
+        closeNewsModal(); loadAdminNewsList();
+    };
 
-    // Lädt die Historie im Admin-Panel zum Ändern/Löschen
     async function loadAdminNewsList() {
-        const container = document.getElementById('adminNewsList');
-        const { data, error } = await supabaseClient.from('news').select('id, title, created_at').order('created_at', { ascending: false });
-        
-        if(error || !data || data.length === 0) {
-            container.innerHTML = "<div style='font-style:italic; color:#90a9b7; font-size:13px;'>Noch keine Nachrichten geschrieben.</div>";
-            return;
-        }
-
-        container.innerHTML = data.map(n => {
-            const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-            return `<div class="admin-news-item">
-                <span style="font-size:14px; color:#edf7fb;">[${date}] <b>${htmlEscape(n.title)}</b></span>
+        const { data } = await supabaseClient.from('news').select('id, title, created_at').order('created_at', { ascending: false });
+        document.getElementById('adminNewsList').innerHTML = (data || []).map(n => `
+            <div class="admin-news-item">
+                <span><b>${htmlEscape(n.title)}</b></span>
                 <div>
-                    <button type="button" class="news-manage-btn edit-btn" onclick="openNewsForEdit('${n.id}')">📝 Ändern</button>
-                    <button type="button" class="news-manage-btn delete-btn" onclick="deleteNews('${n.id}')">🗑️ Löschen</button>
+                    <button class="news-manage-btn edit-btn" onclick="openNewsForEdit('${n.id}')">✏️</button>
+                    <button class="news-manage-btn delete-btn" onclick="deleteNews('${n.id}')">🗑️</button>
                 </div>
-            </div>`;
-        }).join("");
+            </div>`).join("");
     }
 
-    window.openNewsForEdit = async (newsId) => {
-        initQuill();
-        const { data, error } = await supabaseClient.from('news').select('*').eq('id', newsId).single();
-        if(error || !data) return alert('Nachricht konnte nicht geladen werden.');
-
-        document.getElementById('newsModalTitle').innerText = "✏️ Nachricht bearbeiten";
+    window.openNewsForEdit = async (id) => {
+        initQuill(); const { data } = await supabaseClient.from('news').select('*').eq('id', id).single();
         document.getElementById('editNewsId').value = data.id;
         document.getElementById('newsTitleInput').value = data.title;
-        
-        quillEditor.clipboard.dangerouslyPasteHTML(data.content); // Fügt das HTML in den Editor ein
+        quillEditor.clipboard.dangerouslyPasteHTML(data.content);
         document.getElementById('newsModalOverlay').style.display = 'flex';
     };
 
-    window.deleteNews = async (newsId) => {
-        if(!confirm('Möchtest du diese Nachricht wirklich unwiderruflich von der Startseite löschen?')) return;
-        const { error } = await supabaseClient.from('news').delete().eq('id', newsId);
-        if(error) alert('Fehler beim Löschen: ' + error.message);
-        loadAdminNewsList();
-    };
+    window.deleteNews = async (id) => { if(confirm('Löschen?')) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); } };
 
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session && !window.location.hash.includes("access_token") && !window.location.search.includes("code")) {
-         window.location.href = "index.html"; return;
+      if (!session) { window.location.href = "index.html"; return; }
+      currentUser = session.user;
+      document.getElementById("statusText").innerText = currentUser.user_metadata.full_name || "Spieler";
+      document.getElementById("profilForm").style.display = "block";
+
+      const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+      if(data) {
+          document.getElementById("real_name").value = data.real_name || "";
+          document.getElementById("plz").value = data.plz || "";
+          document.getElementById("ort").value = data.ort || "";
+          document.getElementById("dart_setup").value = data.dart_setup || "";
+          document.getElementById("autodarts_name").value = data.autodarts_name || "";
+          document.getElementById("autodarts_avg").value = data.autodarts_avg || "";
+          document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
+          document.getElementById("dartcounter_avg").value = data.dartcounter_avg || "";
+          
+          if(data.is_admin) {
+              document.getElementById("adminBadge").style.display = "inline-block";
+              document.getElementById("adminDashboardBtn").style.display = "inline-block";
+              document.getElementById("newsDashboardBtn").style.display = "inline-block";
+              document.getElementById("adminNewsSection").style.display = "block";
+              loadAdminNewsList();
+          }
       }
-
-      supabaseClient.auth.onAuthStateChange(async (event, session) => {
-          if (session) {
-              currentUser = session.user;
-              const meta = session.user.user_metadata || {};
-              document.getElementById("statusText").innerText = meta.full_name || meta.name || "Spieler";
-              if (meta.avatar_url || meta.picture) document.getElementById("userAvatar").src = meta.avatar_url || meta.picture;
-              
-              document.getElementById("profilForm").style.display = "block";
-              
-              try {
-                  const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                  const { data: sysData } = await supabaseClient.from('system_settings').select('registration_open').eq('id', 1).maybeSingle();
-                  const isRegistrationOpen = sysData ? sysData.registration_open : false;
-
-                  if (data) {
-                      document.getElementById("real_name").value = data.real_name || "";
-                      document.getElementById("plz").value = data.plz || "";
-                      document.getElementById("ort").value = data.ort || "";
-                      document.getElementById("dart_setup").value = data.dart_setup || "";
-                      
-                      document.getElementById("autodarts_name").value = data.autodarts_name || "";
-                      document.getElementById("autodarts_avg").value = data.autodarts_avg || "";
-                      document.getElementById("autodarts_url").value = data.autodarts_url || "";
-                      
-                      document.getElementById("dartcounter_name").value = data.dartcounter_name || "";
-                      document.getElementById("dartcounter_avg").value = data.dartcounter_avg || "";
-                      document.getElementById("dartcounter_url").value = data.dartcounter_url || "";
-                      
-                      document.getElementById("scolia_name").value = data.scolia_name || "";
-                      document.getElementById("scolia_avg").value = data.scolia_avg || "";
-                      document.getElementById("scolia_url").value = data.scolia_url || "";
-                      
-                      if (data.is_admin === true) {
-                          document.getElementById("adminBadge").style.display = "inline-block";
-                          document.getElementById("adminDashboardBtn").style.display = "inline-block";
-                          document.getElementById("newsDashboardBtn").style.display = "inline-block";
-                          document.getElementById("adminNewsSection").style.display = "block";
-                          loadAdminNewsList(); // Liste für Admins laden
-                      }
-
-                      const regBox = document.getElementById("seasonRegistrationBox");
-                      const regText = document.getElementById("registrationStatusText");
-                      const regForm = document.getElementById("registrationFormArea");
-                      const assignArea = document.getElementById("assignmentArea");
-                      
-                      document.getElementById("want_ad").checked = data.want_autodarts || false;
-                      document.getElementById("want_dc").checked = data.want_dartcounter || false;
-                      document.getElementById("want_sc").checked = data.want_scolia || false;
-                      
-                      regBox.style.display = "block";
-
-                      if (!isRegistrationOpen) {
-                          regText.innerHTML = "🔒 <strong>Die Anmeldung für die neue Saison ist aktuell geschlossen.</strong>";
-                          
-                          if(data.status_neue_saison === 'assigned') {
-                              let assignHtml = "";
-                              if (data.assigned_ad_league) assignHtml += `<div>🎯 Autodarts: <strong>${data.assigned_ad_league}</strong></div>`;
-                              if (data.assigned_dc_league) assignHtml += `<div>📱 DartCounter: <strong>${data.assigned_dc_league}</strong></div>`;
-                              if (data.assigned_sc_league) assignHtml += `<div>🎥 Scolia: <strong>${data.assigned_sc_league}</strong></div>`;
-                              assignArea.innerHTML = `<div class="league-assignment-text">🏆 Deine aktuellen Ligen:<br>${assignHtml}</div>`;
-                          }
-                      } else {
-                          if (data.status_neue_saison === 'assigned') {
-                              regText.innerHTML = "✅ Du wurdest bereits von einem Admin eingeteilt. Viel Erfolg!";
-                              let assignHtml = "";
-                              if (data.assigned_ad_league) assignHtml += `<div>🎯 Autodarts: <strong>${data.assigned_ad_league}</strong></div>`;
-                              if (data.assigned_dc_league) assignHtml += `<div>📱 DartCounter: <strong>${data.assigned_dc_league}</strong></div>`;
-                              if (data.assigned_sc_league) assignHtml += `<div>🎥 Scolia: <strong>${data.assigned_sc_league}</strong></div>`;
-                              assignArea.innerHTML = `<div class="league-assignment-text">🏆 Deine neuen Ligen:<br>${assignHtml}</div>`;
-                          } else if (data.status_neue_saison === 'waiting') {
-                              regText.innerHTML = "⏳ Deine Anmeldung ist gespeichert. Du wartest auf die Liga-Einteilung durch die Admins. Du kannst deine Wahl noch anpassen.";
-                              regForm.style.display = "block";
-                          } else {
-                              regText.innerHTML = "Wähle die Plattformen aus, auf denen du nächste Saison spielen möchtest. Nimmst du alle Haken raus, setzt du aus.";
-                              regForm.style.display = "block";
-                          }
-
-                          document.getElementById("btnSaveRegistration").onclick = async () => {
-                              const wantAd = document.getElementById("want_ad").checked;
-                              const wantDc = document.getElementById("want_dc").checked;
-                              const wantSc = document.getElementById("want_sc").checked;
-
-                              const adName = document.getElementById("autodarts_name").value.trim();
-                              const adAvg = document.getElementById("autodarts_avg").value.trim().replace(',', '.');
-                              const adUrl = document.getElementById("autodarts_url").value.trim();
-                              
-                              const dcName = document.getElementById("dartcounter_name").value.trim();
-                              const dcAvg = document.getElementById("dartcounter_avg").value.trim().replace(',', '.');
-                              const dcUrl = document.getElementById("dartcounter_url").value.trim();
-                              
-                              const scName = document.getElementById("scolia_name").value.trim();
-                              const scAvg = document.getElementById("scolia_avg").value.trim().replace(',', '.');
-                              const scUrl = document.getElementById("scolia_url").value.trim();
-
-                              if (wantAd && (!adName || !adAvg)) return alert("❌ Bitte trage unten erst deinen Autodarts Namen und deinen AVG ein!");
-                              if (wantDc && (!dcName || !dcAvg)) return alert("❌ Bitte trage unten erst deinen DartCounter Namen und deinen AVG ein!");
-                              if (wantSc && (!scName || !scAvg)) return alert("❌ Bitte trage unten erst deinen Scolia Namen und deinen AVG ein!");
-
-                              const btn = document.getElementById("btnSaveRegistration");
-                              btn.innerText = "Speichert...";
-                              btn.disabled = true;
-
-                              const wantsAny = wantAd || wantDc || wantSc;
-                              
-                              await supabaseClient.from('profiles').update({
-                                  want_autodarts: wantAd, want_dartcounter: wantDc, want_scolia: wantSc,
-                                  status_neue_saison: wantsAny ? 'waiting' : 'none',
-                                  autodarts_name: adName || null, autodarts_avg: adAvg || null, autodarts_url: adUrl || null,
-                                  dartcounter_name: dcName || null, dartcounter_avg: dcAvg || null, dartcounter_url: dcUrl || null,
-                                  scolia_name: scName || null, scolia_avg: scAvg || null, scolia_url: scUrl || null
-                              }).eq('id', currentUser.id);
-                              
-                              window.location.reload();
-                          };
-                      }
-                  }
-              } catch (err) {}
-          } else if (event === 'SIGNED_OUT') window.location.href = "index.html";
-      });
     }
 
     document.getElementById("profilForm").addEventListener("submit", async function(e) {
-        e.preventDefault(); const saveBtn = document.getElementById("saveBtn");
-        saveBtn.innerText = "Speichert..."; saveBtn.disabled = true;
-
+        e.preventDefault();
         const updates = {
             id: currentUser.id,
-            real_name: document.getElementById("real_name").value.trim() || null, plz: document.getElementById("plz").value.trim() || null,
-            ort: document.getElementById("ort").value.trim() || null, dart_setup: document.getElementById("dart_setup").value.trim() || null,
-            
-            autodarts_name: document.getElementById("autodarts_name").value.trim() || null, 
-            autodarts_avg: document.getElementById("autodarts_avg").value.trim().replace(',', '.') || null,
-            autodarts_url: document.getElementById("autodarts_url").value.trim() || null,
-            
-            dartcounter_name: document.getElementById("dartcounter_name").value.trim() || null, 
-            dartcounter_avg: document.getElementById("dartcounter_avg").value.trim().replace(',', '.') || null,
-            dartcounter_url: document.getElementById("dartcounter_url").value.trim() || null,
-            
-            scolia_name: document.getElementById("scolia_name").value.trim() || null, 
-            scolia_avg: document.getElementById("scolia_avg").value.trim().replace(',', '.') || null,
-            scolia_url: document.getElementById("scolia_url").value.trim() || null,
-            
+            real_name: document.getElementById("real_name").value, plz: document.getElementById("plz").value,
+            ort: document.getElementById("ort").value, dart_setup: document.getElementById("dart_setup").value,
+            autodarts_name: document.getElementById("autodarts_name").value, autodarts_avg: document.getElementById("autodarts_avg").value,
+            dartcounter_name: document.getElementById("dartcounter_name").value, dartcounter_avg: document.getElementById("dartcounter_avg").value,
             updated_at: new Date()
         };
         await supabaseClient.from('profiles').upsert(updates);
-        saveBtn.innerText = "Profil Speichern"; saveBtn.disabled = false;
-        
-        const msgBox = document.getElementById("msgBox");
-        msgBox.style.display = "block"; msgBox.style.background = "rgba(61, 220, 151, 0.2)";
-        msgBox.style.color = "#3ddc97"; msgBox.style.border = "1px solid #3ddc97";
-        msgBox.innerText = "Profil erfolgreich gespeichert!";
-        setTimeout(() => msgBox.style.display = "none", 4000);
+        alert("Profil gespeichert!");
     });
 
-    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
-
-    document.getElementById("logoutBtn").addEventListener("click", async function(e) {
-        e.preventDefault(); await supabaseClient.auth.signOut(); window.location.href = "index.html"; 
-    });
-
+    document.getElementById("logoutBtn").onclick = async () => { await supabaseClient.auth.signOut(); window.location.href = "index.html"; };
+    function htmlEscape(v) { return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
     initProfile();
   </script>
 </body>
