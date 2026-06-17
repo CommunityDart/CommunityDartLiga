@@ -38,16 +38,15 @@
     
     .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
     
-    /* FIX: Großer, geräumiger Header für den späteren Banner-Einbau */
+    /* Großer Header für den späteren Werbebanner */
     .header-branding { text-align: center; margin-bottom: 25px; padding: 25px 15px; border-radius: 20px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
     .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
 
-    /* FIX: Das Grid rückt jetzt zentriert zusammen, keine unnötige Breite mehr links & rechts */
+    /* Kompaktes, zentriertes Grid */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
     .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); height: fit-content !important; align-self: start !important; }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 4px; }
 
-    /* Knackige, perfekt dimensionierte Buttons */
     .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 12px; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 12px; transition: .25s ease; text-decoration: none; }
     .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.12); }
     
@@ -82,7 +81,7 @@
     .table-wrap { overflow-x: auto; padding-bottom: 4px; }
     table { width: 100%; border-collapse: collapse; min-width: 700px; table-layout: fixed; }
     thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
-    thead th:nth-child(3), the th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { text-align: center; }
+    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { text-align: center; }
     
     tbody tr:nth-child(odd) td { background: var(--row-a); }
     tbody tr:nth-child(even) td { background: var(--row-b); }
@@ -131,7 +130,12 @@
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-    .ql-editor { padding: 0 !important; font-family: inherit !important; font-size: 14px; line-height: 1.6; }
+    
+    /* FIX: HIER WURDEN DIE ABSTÄNDE FÜR ABSÄTZE UND LISTEN AUS QUILL ERZWUNGEN */
+    .ql-editor p { margin-bottom: 14px !important; line-height: 1.6 !important; }
+    .ql-editor ul, .ql-editor ol { padding-left: 20px !important; margin-bottom: 14px !important; }
+    .ql-editor li { margin-bottom: 6px !important; line-height: 1.5 !important; }
+    .ql-editor h1, .ql-editor h2, .ql-editor h3 { margin-top: 18px !important; margin-bottom: 10px !important; color: #fff !important; }
   </style>
 </head>
 <body data-mode="Home">
@@ -485,7 +489,7 @@
             }
 
             try {
-                const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
+                const { data: sys = sys.current_season } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
                 state.currentSeason = sys && sys.current_season ? sys.current_season : 'Saison 1';
                 state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${decodeHtml(sys.regelwerk_html)}</div></div>` : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
             } catch(e) {
@@ -550,7 +554,7 @@
                     return { title, status: done===rows.length?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
                 });
 
-                state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
+                state.leagueData[league] = { standings: { standingsRows }, matchdays };
             });
 
             setMode("Home");
