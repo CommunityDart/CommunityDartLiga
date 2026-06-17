@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CDL Dart Liga</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
 
   <style>
@@ -29,8 +28,9 @@
     .header-branding h2 { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #fff; }
     .header-branding span { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
 
+    /* FIX: align-items: start und height: fit-content ZWINGT die Kacheln, klein zu bleiben! */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin-bottom: 20px; align-items: start; }
-    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
+    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); align-self: start; height: fit-content; }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.12); padding-bottom: 4px; }
 
     .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 10px; min-height: 40px; padding: 0 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 10px; transition: .22s ease; text-decoration: none; }
@@ -49,8 +49,8 @@
     .btn-discord { background: rgba(88,101,242,0.15); border-color: rgba(88,101,242,0.4); }
     .btn-discord:hover { background: rgba(88,101,242,0.25); border-color: #5865f2; box-shadow: 0 0 12px rgba(88,101,242,0.2); }
 
-    .dropdown-submenu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 100%; }
-    .dropdown-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #dff3ff; text-align: center; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.12s; }
+    .dropdown-submenu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; }
+    .dropdown-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #dff3ff; text-align: center; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.12s; }
     .dropdown-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-border); }
     .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; border-color: var(--accent); box-shadow: 0 0 12px rgba(32,183,255,0.3); }
 
@@ -105,7 +105,7 @@
     .news-action-link:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
     .footer { margin-top: 25px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; backdrop-filter: blur(5px); }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; backdrop-filter: blur(4px); }
     .modal-backdrop.open { display: flex; }
     .modal { width: min(840px, 100%); max-height: 85vh; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; }
     .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -116,8 +116,6 @@
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-
-    /* Bereinigung des Editor-Formats auf der Startseite */
     .ql-editor { padding: 0 !important; font-family: inherit !important; font-size: 14px; line-height: 1.6; }
 
     @media (max-width: 950px) {
@@ -242,32 +240,33 @@
     };
 
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    
+    // FIX: Diese Funktion repariert defekte, verschlüsselte HTML-Tags in deiner Datenbank sofort!
+    function decodeHtml(html) {
+        if (!html) return "";
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    }
 
-    window.copyDiscord = function(name) {
-      navigator.clipboard.writeText(name).then(() => alert("Der Discord-Name '" + name + "' wurde kopiert!"));
-    };
-
+    window.copyDiscord = function(name) { navigator.clipboard.writeText(name).then(() => alert("Kopiert!")); };
     window.directEditNews = function(id) { window.location.href = "profil.html"; };
-
     window.directDeleteNews = async function(id) {
-        if(!confirm("Möchtest du diesen News-Eintrag wirklich direkt löschen?")) return;
-        const { error } = await supabaseClient.from('news').delete().eq('id', id);
-        if(error) alert("Fehler: " + error.message);
-        else loadAll();
+        if(!confirm("News löschen?")) return;
+        await supabaseClient.from('news').delete().eq('id', id); loadAll();
     };
 
     window.loadArchiveData = async function() {
         const season = document.getElementById("archiveSeasonSelect").value;
         const league = document.getElementById("archiveLeagueSelect").value;
         const resultContainer = document.getElementById("archiveTableResult");
-
         if(!season || !league) return;
-        resultContainer.innerHTML = "<div class='empty'>Lade historische Tabellendaten...</div>";
-
+        
+        resultContainer.innerHTML = "<div class='empty'>Lade Daten...</div>";
         const { data: matches, error } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
         
         if (error || !matches || matches.length === 0) {
-            resultContainer.innerHTML = "<div class='empty'>Für diese Kombination liegen keine Spieldaten vor.</div>";
+            resultContainer.innerHTML = "<div class='empty'>Keine Spieldaten für diese Liga in der ausgewählten Saison vorhanden.</div>";
             return;
         }
 
@@ -282,17 +281,14 @@
                     const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
                     stats[m.player2_id] = { name: p ? (p.discord_name || p.real_name) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
                 }
-
                 const l1 = parseInt(m.legs1) || 0; const l2 = parseInt(m.legs2) || 0;
                 stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
-
                 if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
                 else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
             }
         });
 
         const rows = Object.values(stats).sort((a,b) => b.points !== a.points ? b.points - a.points : b.legDiff - a.legDiff);
-
         let html = `<table><thead><tr><th width="80px">Platz</th><th>Spieler</th><th>Siege</th><th>Niederlagen</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>`;
         rows.forEach((r, idx) => {
             html += `<tr><td>${idx+1}</td><td><b>${htmlEscape(r.name)}</b></td><td>${r.wins}</td><td>${r.losses}</td><td>${r.legDiff}</td><td style="color:#2ecc71; font-weight:bold;">${r.points}</td></tr>`;
@@ -350,6 +346,13 @@
       updateRightNavBlock();
     }
 
+    function renderPlayerCards(yellow, red) {
+        let html = "";
+        for (let i = 0; i < (yellow || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--yellow); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(241,196,15,0.4);"></span>`;
+        for (let i = 0; i < (red || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--red); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(231,76,60,0.4);"></span>`;
+        return html;
+    }
+
     function renderLeague() {
       if(!state.activeLeague) {
           tableAreaEl.innerHTML = `<div class="table-shell"><div class="section-head"><div class="section-title">Plattformübersicht</div></div><div style="padding:18px"><div class="empty">⚠️ In dieser Sektion ist derzeit keine Liga aktiv geschaltet.</div></div></div>`;
@@ -359,14 +362,6 @@
       const data = state.leagueData[state.activeLeague];
       tableAreaEl.innerHTML = renderStandingsTable(data.standings.rows);
       matchdayAreaEl.innerHTML = renderMatchdays(data.matchdays);
-    }
-
-    // FIX: GELBE UND ROTE KARTEN WIEDERHERGESTELLT
-    function renderPlayerCards(yellow, red) {
-        let html = "";
-        for (let i = 0; i < (yellow || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--yellow); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(241,196,15,0.4);"></span>`;
-        for (let i = 0; i < (red || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--red); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(231,76,60,0.4);"></span>`;
-        return html;
     }
 
     function renderStandingsTable(rows) {
@@ -452,14 +447,14 @@
                     const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                     const adminActionsHtml = state.isAdminUser ? `<div class="news-admin-actions"><span class="news-action-link" onclick="directEditNews('${n.id}')">✏️ Edit</span><span class="news-action-link" onclick="directDeleteNews('${n.id}')">🗑️</span></div>` : '';
                     
-                    // FIX: Quill-Editor Rendering Klasse für sauberes Design
+                    // FIX: decodeHtml repariert deine defekten News-Einträge aus der Datenbank
                     nHtml += `<div class="content-block">
                                 ${adminActionsHtml}
                                 <div class="news-header-wrapper">
                                     <h4 class="news-title-text">${htmlEscape(n.title)}</h4>
                                     <span class="news-date-text">${date}</span>
                                 </div>
-                                <div class="ql-snow"><div class="ql-editor">${n.content}</div></div>
+                                <div class="ql-snow"><div class="ql-editor">${decodeHtml(n.content)}</div></div>
                               </div>`;
                 });
             } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
@@ -468,7 +463,8 @@
             try {
                 const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
                 state.currentSeason = sys ? sys.current_season : 'Saison 1';
-                state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${sys.regelwerk_html}</div></div>` : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+                // FIX: decodeHtml repariert dein Regelwerk
+                state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${decodeHtml(sys.regelwerk_html)}</div></div>` : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
             } catch(e) {
                 state.currentSeason = 'Saison 1';
                 state.rulewerkHtml = '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
@@ -533,7 +529,7 @@
             });
 
             setMode("Home");
-        } catch (e) { tableAreaEl.innerHTML = `<div class="empty">Kritischer Ladefehler im Datenhub.</div>`; }
+        } catch (e) { tableAreaEl.innerHTML = `<div class="empty">Kritischer Ladefehler.</div>`; }
     }
 
     document.getElementById("modeHome").onclick = () => setMode("Home");
