@@ -38,10 +38,15 @@
     .dummy-box { background: rgba(32,183,255,0.04); border: 1px dashed rgba(32,183,255,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
     .empty-msg { text-align: center; color: #a3b8c5; padding: 40px; font-style: italic; }
 
-    .player-meta-info { font-size: 11px; color: #a3b8c5; margin-top: 4px; display: block; line-height: 1.4; font-style: italic; }
+    .player-meta-info { font-size: 11px; color: #a3b8c5; margin-top: 4px; display: block; line-height: 1.5; font-style: italic; }
     .prev-league-badge { font-size: 11px; color: #f1c40f; display: block; margin-bottom: 4px; font-weight: bold; }
     
-    /* Dynamische Tabellenmarkierungen für Auf/Abstiege */
+    /* Farb-Punkte für die Zuordnung */
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+    .dot-blue { background: #0077ff; box-shadow: 0 0 6px #0077ff; }
+    .dot-orange { background: #ff6a00; box-shadow: 0 0 6px #ff6a00; }
+    .dot-green { background: #00ff66; box-shadow: 0 0 6px #00ff66; }
+
     .row-up { background: rgba(46, 204, 113, 0.15) !important; }
     .row-relegation { background: rgba(241, 196, 15, 0.1) !important; }
     .row-down { background: rgba(231, 76, 60, 0.15) !important; }
@@ -84,7 +89,7 @@
       </table>
     </div>
 
-    <!-- 2. SPIELPLÄNE & DYNAMISCHE AUF-/ABSTIEGE (REPARIERT UND ERWEITERT) -->
+    <!-- 2. SPIELPLÄNE & DYNAMISCHE AUF-/ABSTIEGE -->
     <div id="spielplan" class="tab-content">
       <h3 style="margin-top:0; color:#3498db;">📈 Dynamische Auf- und Abstiegsregelungen</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Konfiguriere hier pro Plattform und Liga, wie viele Plätze die Farbe wechseln und für die Folgesaison vorgemerkt werden.</p>
@@ -170,7 +175,7 @@
     let currentSeasonGlobal = "Saison 1";
     let ruleQuill = null;
     let globalProfilesCache = [];
-    let leagueMemoryConfig = {}; // Temporärer Speicher für die Regeln der Ligen
+    let leagueMemoryConfig = {};
 
     function switchTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -232,8 +237,8 @@
             return;
         }
 
+        // FIX: Punkte-Indikatoren sowie SCOLIA-NAME wiederhergestellt
         document.getElementById("waitingListBody").innerHTML = players.map(p => {
-            // Zeigt an, was für die neue Saison vermerkt wurde (Auf-/Absteiger-Badge)
             let hint = "";
             if(p.next_season_target === 'up') hint = " <span style='color:#2ecc71; font-size:11px;'>(🟢 Aufsteiger)</span>";
             if(p.next_season_target === 'down') hint = " <span style='color:#e74c3c; font-size:11px;'>(🔴 Absteiger)</span>";
@@ -241,7 +246,11 @@
             return `<tr>
                 <td>
                     <b style="font-size:15px; color:#fff;">${htmlEscape(p.discord_name || p.real_name)}</b> ${hint}
-                    <span class="player-meta-info">🎯 AD: ${htmlEscape(p.autodarts_name || 'Kein')} | 📱 DC: ${htmlEscape(p.dartcounter_name || 'Kein')}</span>
+                    <span class="player-meta-info">
+                        <span class="dot dot-blue"></span>AD: ${htmlEscape(p.autodarts_name || 'Kein Name')}<br>
+                        <span class="dot dot-orange"></span>DC: ${htmlEscape(p.dartcounter_name || 'Kein Name')}<br>
+                        <span class="dot dot-green"></span>SC: ${htmlEscape(p.scolia_name || 'Kein Name')}
+                    </span>
                 </td>
                 <td><select id="ad_${p.id}" class="league-select">${getPlatformOptions(p.assigned_ad_league, AD_LEAGUES)}</select></td>
                 <td><select id="dc_${p.id}" class="league-select">${getPlatformOptions(p.assigned_dc_league, DC_LEAGUES)}</select></td>
@@ -251,7 +260,6 @@
         }).join("");
     }
 
-    // INTERNE DYNAMISCHE LOGIK FÜR DAS AUF- UND ABSTIEGSSYSTEM
     window.loadPlanConfig = function() {
         document.getElementById("configLeagueSelect").innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
         calculateDynamicStandings();
@@ -355,7 +363,6 @@
         const league = document.getElementById("closeLeagueSelect").value;
         if (!confirm(`Möchtest du "${league}" beenden?`)) return;
 
-        // Nutze Konfiguration zur Zuteilung für die nächste Saison
         const conf = leagueMemoryConfig[league] || { up: 2, rel: 1, down: 2 };
         const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', currentSeasonGlobal).eq('league_name', league).eq('status', 'done');
         
@@ -373,7 +380,6 @@
 
         const sorted = Object.values(stats).sort((a,b) => b.points - a.points);
 
-        // Schreibe Marker in Profile für Folgesaison
         for(let i=0; i<sorted.length; i++) {
             let target = "stay";
             if(i < conf.up) target = "up";
@@ -382,12 +388,11 @@
             await supabaseClient.from('profiles').update({ next_season_target: target }).eq('id', sorted[i].id);
         }
 
-        // Spieler entkoppeln
         let updateField = AD_LEAGUES.includes(league) ? "assigned_ad_league" : (DC_LEAGUES.includes(league) ? "assigned_dc_league" : "assigned_sc_league");
         const up = { status_neue_saison: 'waiting' }; up[updateField] = null;
         await supabaseClient.from('profiles').update(up).eq(updateField, league);
 
-        alert("🎉 Liga erfolgreich geschlossen! Die Auf- und Absteiger sind für die neue Saison vermerkt!");
+        alert("🎉 Liga erfolgreich geschlossen!");
         loadWaitingList();
     }
 
