@@ -2,85 +2,112 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <title>Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Dashboard - CDL</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; }
-    .shell { background: #041924; padding: 30px; border-radius: 15px; max-width: 1200px; margin: auto; }
-    .tab-btn { background: #021017; color: #90a9b7; border: 1px solid #4b87a5; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
-    .tab-btn.active { background: #e74c3c; color: #fff; }
+    body { background: #03131b; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+    .shell { background: #041924; border: 1px solid rgba(231,76,60,0.4); padding: 30px; border-radius: 15px; max-width: 1400px; margin: 20px auto; }
+    h1 { color: #e74c3c; margin-top: 0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;}
+    .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-weight:bold; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; overflow-x: auto; }
+    .tab-btn { background: rgba(0,0,0,0.3); color: #90a9b7; border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s; }
+    .tab-btn.active { background: rgba(231,76,60,0.2); color: #e74c3c; border-color: #e74c3c; }
     .tab-content { display: none; } .tab-content.active { display: block; }
-    .league-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #444; }
-    .assign-btn { background: #3ddc97; border: none; padding: 8px; cursor: pointer; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    th, td { padding: 15px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    th { background: rgba(0,0,0,0.2); color: #90a9b7; font-size: 13px; text-transform: uppercase; }
+    .league-select, .leg-input { padding: 8px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 13px;}
+    .leg-input { width: 50px; text-align: center; }
+    .assign-btn { background: #3ddc97; color: #000; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+    .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+    .card-btn { background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+    .empty-msg { text-align: center; color: #90a9b7; padding: 40px; }
+    .dummy-box { background: rgba(32,183,255,0.05); border: 1px dashed rgba(32,183,255,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
-<div class="shell">
-  <h1>⚙️ Kommandozentrale</h1>
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('zuteilung')">1. Spieler & Testspieler</button>
-    <button class="tab-btn" onclick="switchTab('saison')">2. Ligen & Saison</button>
+  <div class="shell">
+    <h1>⚙️ Kommandozentrale <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('zuteilung')">1. Zuteilung</button>
+      <button class="tab-btn" onclick="switchTab('spielplan'); loadMatchSettings();">2. Spielpläne</button>
+      <button class="tab-btn" onclick="switchTab('strafen'); loadCards();">3. Strafen</button>
+      <button class="tab-btn" onclick="switchTab('saison'); loadSaisonSettings();">4. Saison</button>
+    </div>
+
+    <div id="zuteilung" class="tab-content active">
+      <div class="dummy-box">
+         <input type="text" id="dummyNameInput" placeholder="Name Testspieler">
+         <button onclick="createDummyPlayer()" class="assign-btn">➕ Spieler anlegen</button>
+      </div>
+      <table><thead><tr><th>Spieler</th><th>Autodarts</th><th>DartCounter</th><th>Scolia</th><th>Aktion</th></tr></thead><tbody id="waitingListBody"></tbody></table>
+    </div>
+
+    <div id="spielplan" class="tab-content">
+      <select id="leagueSelector" onchange="loadMatchesForLeague()"><option>-- Liga --</option></select>
+      <button id="generateScheduleBtn" onclick="generateSchedule()">🎲 Spielplan generieren</button>
+      <div id="matchesArea"></div>
+    </div>
+
+    <div id="strafen" class="tab-content">
+      <table><thead><tr><th>Spieler</th><th>Gelb</th><th>Rot</th><th>Aktion</th></tr></thead><tbody id="cardsListBody"></tbody></table>
+    </div>
+
+    <div id="saison" class="tab-content">
+      <h3>Saison: <span id="currentSeasonNameDisplay"></span></h3>
+      <button onclick="endCurrentLeaguesAndCalculate()">🏁 Liga beenden</button>
+      <input type="text" id="newSeasonNameInput" placeholder="Neue Saison">
+      <button onclick="openNewSeason()">Anmeldung öffnen</button>
+    </div>
   </div>
 
-  <div id="zuteilung" class="tab-content active">
-     <div class="dummy-box" style="background:#052130; padding:15px; border-radius:8px; margin-bottom:20px;">
-         <input type="text" id="dummyNameInput" placeholder="Name für Testspieler">
-         <button onclick="createDummyPlayer()" class="assign-btn">➕ Testspieler anlegen</button>
-     </div>
-     <table id="playerTable"><thead><tr><th>Name</th><th>Aktion</th></tr></thead><tbody id="playerBody"></tbody></table>
-  </div>
-
-  <div id="saison" class="tab-content">
-      <div id="leagueStatusList">Lade Ligen...</div>
-      <hr>
-      <button class="assign-btn" style="background:#e74c3c;" onclick="openNewSeason()">Saisonwechsel erzwingen</button>
-  </div>
-</div>
-
-<script>
+  <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const ALL_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "DartCounter Liga 1", "DartCounter Liga 2", "Scolia Liga 1"];
+    let currentSeasonGlobal = "Saison 1";
 
-    window.switchTab = (id) => {
+    function switchTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.getElementById(id).style.display = 'block';
     }
 
-    // SICHERES ANLEGEN OHNE CRYPTO.RANDOMUUID
+    async function initAdmin() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if(!session) return window.location.href="index.html";
+        loadWaitingList();
+    }
+
     window.createDummyPlayer = async function() {
-        const name = document.getElementById("dummyNameInput").value.trim();
+        const name = document.getElementById("dummyNameInput").value;
         if(!name) return;
-        
-        // Supabase generiert die ID automatisch, wenn wir sie weglassen (oder wir nutzen einen Timestamp)
-        const { error } = await supabaseClient.from('profiles').insert([{
-            discord_name: name,
-            real_name: name + " (Dummy)",
-            status_neue_saison: 'waiting'
-        }]);
-        if(error) alert(error.message); else { alert("Spieler angelegt!"); location.reload(); }
+        await supabaseClient.from('profiles').insert([{ discord_name: name, real_name: name+" (Dummy)", status_neue_saison: 'waiting' }]);
+        location.reload();
     }
 
-    async function loadSaisonSettings() {
-        const container = document.getElementById("leagueStatusList");
-        const { data: leagues } = await supabaseClient.from('league_status').select('*');
-        container.innerHTML = leagues.map(l => `
-            <div class="league-row">
-                <span>${l.league_name} ${l.is_finished ? '✅ (Beendet)' : '⏳ (Läuft)'}</span>
-                ${!l.is_finished ? `<button class="assign-btn" onclick="finishLeague('${l.league_name}')">Liga beenden</button>` : ''}
-            </div>
-        `).join("");
+    window.loadWaitingList = async function() {
+        const { data: players } = await supabaseClient.from('profiles').select('*').in('status_neue_saison', ['waiting', 'assigned']);
+        document.getElementById("waitingListBody").innerHTML = (players || []).map(p => `<tr>
+            <td>${htmlEscape(p.discord_name)}</td>
+            <td><select id="ad_${p.id}"><option value="REMOVE">❌</option>${getOptions(p.assigned_ad_league)}</select></td>
+            <td><select id="dc_${p.id}"><option value="REMOVE">❌</option>${getOptions(p.assigned_dc_league)}</select></td>
+            <td><select id="sc_${p.id}"><option value="REMOVE">❌</option>${getOptions(p.assigned_sc_league)}</select></td>
+            <td><button onclick="saveAssignments('${p.id}')">💾</button></td>
+        </tr>`).join("");
     }
 
-    window.finishLeague = async (name) => {
-        // 1. Markiere Liga als fertig
-        await supabaseClient.from('league_status').update({is_finished: true}).eq('league_name', name);
-        // 2. Berechne Auf/Abstieg (Logik wie vorher)
-        alert("Liga " + name + " beendet!");
-        loadSaisonSettings();
+    function getOptions(val) { return ALL_LEAGUES.map(l => `<option value="${l}" ${val===l?'selected':''}>${l}</option>`).join(""); }
+
+    window.saveAssignments = async function(id) {
+        const up = { status_neue_saison:'assigned', assigned_ad_league: document.getElementById('ad_'+id).value==='REMOVE'?null:document.getElementById('ad_'+id).value, assigned_dc_league: document.getElementById('dc_'+id).value==='REMOVE'?null:document.getElementById('dc_'+id).value, assigned_sc_league: document.getElementById('sc_'+id).value==='REMOVE'?null:document.getElementById('sc_'+id).value };
+        await supabaseClient.from('profiles').update(up).eq('id', id);
+        loadWaitingList();
     }
 
+    function htmlEscape(v) { return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
     initAdmin();
-</script>
+  </script>
 </body>
 </html>
