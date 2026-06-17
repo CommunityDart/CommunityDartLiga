@@ -36,19 +36,18 @@
     *{box-sizing:border-box} html,body{margin:0;padding:0}
     body{ font-family:Arial,Helvetica,sans-serif; background: radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 20%, transparent), transparent 45%), linear-gradient(180deg, var(--bg) 0%, #1e293b 100%); color:var(--text); min-height:100vh; transition:background .3s ease; }
     
-    /* Der Hauptcontainer zentriert das kompaktere Layout */
     .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
     
-    /* FIX 1: Extrem geschrumpfter oberer Header-Bereich */
-    .header-branding { text-align: center; margin-bottom: 15px; padding: 6px 12px; border-radius: 12px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 4px 15px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
-    .header-branding h2 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 1.5px; color: #fff; }
+    /* FIX: Großer, geräumiger Header für den späteren Banner-Einbau */
+    .header-branding { text-align: center; margin-bottom: 25px; padding: 25px 15px; border-radius: 20px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
+    .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
 
-    /* FIX 2: dashboard-nav eingekürzt auf eine maximale Breite von 1000px, damit die Spalten nicht in die Breite fliegen */
-    .dashboard-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 0 auto 20px auto; max-width: 1000px; align-items: start !important; }
-    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); height: fit-content !important; }
+    /* FIX: Das Grid rückt jetzt zentriert zusammen, keine unnötige Breite mehr links & rechts */
+    .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
+    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); height: fit-content !important; align-self: start !important; }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 4px; }
 
-    /* Höhe der Buttons bleibt exakt wie von dir gewünscht erhalten */
+    /* Knackige, perfekt dimensionierte Buttons */
     .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 12px; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 12px; transition: .25s ease; text-decoration: none; }
     .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.12); }
     
@@ -83,7 +82,7 @@
     .table-wrap { overflow-x: auto; padding-bottom: 4px; }
     table { width: 100%; border-collapse: collapse; min-width: 700px; table-layout: fixed; }
     thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { text-align: center; }
+    thead th:nth-child(3), the th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { text-align: center; }
     
     tbody tr:nth-child(odd) td { background: var(--row-a); }
     tbody tr:nth-child(even) td { background: var(--row-b); }
@@ -133,11 +132,6 @@
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
     .ql-editor { padding: 0 !important; font-family: inherit !important; font-size: 14px; line-height: 1.6; }
-
-    @media (max-width: 950px) {
-      .dashboard-nav { grid-template-columns: 1fr; gap: 15px; }
-      .main { grid-template-columns: 1fr; }
-    }
   </style>
 </head>
 <body data-mode="Home">
@@ -200,7 +194,7 @@
 
     <div class="footer">
       <button id="openImpressumBtn" class="nav-btn" style="min-height:32px; padding:0 12px; font-size:11px; width:auto;" type="button">Impressum</button>
-      <button id="openLinksBtn" class="nav-btn" style="min-height:32px; padding:0 12px; font-size:11px; width:auto;" type="button">Links</button>
+      <button id="openLinksBtn" class="nav-btn" style="min-height:36px; padding:0 12px; font-size:11px; width:auto;" type="button">Links</button>
     </div>
   </div>
 
