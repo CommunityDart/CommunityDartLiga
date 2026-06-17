@@ -131,7 +131,6 @@
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
     
-    /* FIX: HIER WURDEN DIE ABSTÄNDE, REIHENFOLGEN UND ZAHLEN-LISTEN STRIKT ERZWUNGEN */
     .ql-editor p { margin-bottom: 12px !important; line-height: 1.6 !important; color: #f1f8fb !important; }
     .ql-editor ol { list-style-type: decimal !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
     .ql-editor ul { list-style-type: disc !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
@@ -555,6 +554,7 @@
                     return { title, status: done===rows.length?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
                 });
 
+                // FIX: Hier stand vorher fälschlicherweise { standingsRows } statt { rows: standingsRows }
                 state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
             });
 
