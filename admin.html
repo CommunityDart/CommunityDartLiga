@@ -166,16 +166,19 @@
         return html;
     }
 
-    // STRENG GEFILTERT: Holt NUR Spieler aus der DB, die aktiv angemeldet oder bereits provisorisch eingeteilt sind
+    // FIX: Kompletten Table-Dump laden und die Filterung via JavaScript vornehmen (Keine Supabase-Syntax-Konflikte)
     window.loadWaitingList = async function() {
-        const { data: players, error } = await supabaseClient.from('profiles').select('*').or('status_neue_saison.eq.waiting,status_neue_saison.eq.assigned');
+        const { data: allPlayers, error } = await supabaseClient.from('profiles').select('*');
         
         if (error) {
             document.getElementById("waitingListBody").innerHTML = `<tr><td colspan="5" class="empty-msg" style="color:red;">Fehler beim Laden: ${error.message}</td></tr>`;
             return;
         }
 
-        if (!players || players.length === 0) {
+        // JS-Filter für registrierte Zustände
+        const players = allPlayers ? allPlayers.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
+
+        if (players.length === 0) {
             document.getElementById("waitingListBody").innerHTML = `<tr><td colspan="5" class="empty-msg">Aktuell haben sich keine Spieler für die neue Saison angemeldet.</td></tr>`;
             return;
         }
