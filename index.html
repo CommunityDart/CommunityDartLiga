@@ -8,7 +8,6 @@
 
   <style>
     :root{
-      /* HELLERES MODERNES SLATE DESIGN */
       --bg: #1e293b;
       --panel: #2c3e50;
       --panel-glass: rgba(44, 62, 80, 0.85);
@@ -23,7 +22,6 @@
       --row-a: #334155;
       --row-b: #273746;
       
-      /* SATTEL, INTENSIVE NEON FARBEN */
       --ad-color: #0077ff;
       --dc-color: #ff6a00;
       --sc-color: #00ff66;
@@ -48,7 +46,6 @@
     .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 12px; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 12px; transition: .25s cubic-bezier(0.4, 0, 0.2, 1); text-decoration: none; }
     .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.12); }
     
-    /* EXTRA INTENSIVE EFFEKTE FÜR DIE PLATTFORMEN */
     .btn-autodarts { border-color: rgba(0,119,255,0.4); background: rgba(0,119,255,0.05); color: #99ccff; }
     .btn-autodarts:hover, .btn-autodarts.active { background: linear-gradient(90deg, #0055d4, #0077ff); border-color: #00a2ff; box-shadow: 0 0 25px rgba(0,119,255,0.6); color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     
@@ -125,6 +122,7 @@
     .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
     .modal-body { padding: 18px; overflow-y: auto; color: #d7e8ef; line-height: 1.6; }
 
+    /* REREINIGTE ARCHIV CONTAINER OPTIK */
     .archive-control-box { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
@@ -251,6 +249,7 @@
         else loadAll();
     };
 
+    // BEHOBEN: Der JavaScript-Buchstabendreher (prof vs pr) wurde restlos repariert!
     window.loadArchiveData = async function() {
         const season = document.getElementById("archiveSeasonSelect").value;
         const league = document.getElementById("archiveLeagueSelect").value;
@@ -437,6 +436,7 @@
             state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
 
             try { const r = await fetch('regelwerk.html'); if(r.ok) state.rulewerkHtml = await r.text(); } catch(e){}
+            try { const r = await fetch('links.html'); if(r.ok) document.getElementById('linksContent').innerHTML = await r.text(); } catch(e){}
 
             const { data: sys } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
             state.currentSeason = sys ? sys.current_season : 'Saison 1';
@@ -448,7 +448,9 @@
 
             const { data: seasons } = await supabaseClient.from('matches').select('season');
             const uniqueSeasons = [...new Set((seasons || []).map(m => m.season))];
-            document.getElementById("archiveSeasonSelect").innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
+            
+            const seasonSelect = document.getElementById("archiveSeasonSelect");
+            seasonSelect.innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
             document.getElementById("archiveLeagueSelect").innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
 
             ALL_LEAGUES.forEach(league => {
