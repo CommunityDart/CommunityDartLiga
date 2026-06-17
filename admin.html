@@ -82,6 +82,7 @@
       <button class="tab-btn" onclick="switchTab('news-edit'); initNewsManager();">6. News verwalten</button>
     </div>
 
+    <!-- 1. LIGA ZUTEILUNG -->
     <div id="zuteilung" class="tab-content active">
       <div class="dummy-box" style="background: rgba(32, 183, 255, 0.06); border-color: var(--accent);">
          <span style="font-weight: bold; color: #20b7ff; font-size: 14px;">🎲 Testspieler- &amp; Simulations-Tool:</span>
@@ -107,6 +108,7 @@
       </table>
     </div>
 
+    <!-- 2. SPIELPLÄNE & ERGEBNISSE -->
     <div id="spielplan" class="tab-content">
       <h3 style="margin-top:0; color:#3498db;">📅 Spielpläne erstellen &amp; Auf-/Abstiege regeln</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">Wähle die gewünschte Liga per Knopfdruck aus, um Regeln festzulegen oder neue Spielpläne zu erstellen.</p>
@@ -140,6 +142,7 @@
       <div style="display: flex; flex-direction: column; gap: 8px; max-width: 500px;" id="leaguePlanButtons"></div>
     </div>
     
+    <!-- 3. STRAFENKATALOG -->
     <div id="strafen" class="tab-content">
       <h3 style="margin-top:0; color:#f1c40f;">🟨 Kartensystem &amp; Verwarnungen verwalten</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Hier kannst du Spielern gelbe oder rote Karten zuweisen. Die Karten werden live in den Tabellen der Startseite gerendert.</p>
@@ -156,6 +159,7 @@
       </table>
     </div>
     
+    <!-- 4. SAISON BEENDEN -->
     <div id="saison" class="tab-content">
        <h3 style="margin-top:0; color:#e74c3c;">🏛️ Liga einzeln abschließen &amp; archivieren</h3>
        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Wähle eine spezifische Liga aus, um die aktuelle Tabelle einzufrieren, im Archiv zu speichern und die Spieler für die neue Saison freizugeben.</p>
@@ -169,6 +173,7 @@
        <div id="closeLeaguePreviewArea" style="margin-top: 20px;"></div>
     </div>
 
+    <!-- 5. REGELWERK BEARBEITEN -->
     <div id="regelwerk-edit" class="tab-content">
         <h3 style="margin-top:0; color:#2ecc71;">📑 Globales Regelwerk konfigurieren</h3>
         <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Der hier gespeicherte Text wird sofort live auf der Startseite für alle Spieler im Overlay angezeigt.</p>
@@ -178,6 +183,7 @@
         <button class="assign-btn" style="width:100%; min-height:45px; font-size:15px;" onclick="saveRules()">💾 Änderungen am Regelwerk live schalten</button>
     </div>
 
+    <!-- 6. NEWS VERWALTEN -->
     <div id="news-edit" class="tab-content">
         <h3 style="margin-top:0; color:#3498db;">📰 Neuigkeiten &amp; Ankündigungen veröffentlichen</h3>
         <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Erstelle neue Beiträge für die Startseite, bearbeite bestehende oder lösche veraltete News-Einträge.</p>
@@ -226,6 +232,14 @@
     let leagueMemoryConfig = {};
     let activeSelectedLeaguePlan = "";
     let adminNewsCache = [];
+
+    // Hilfsfunktion zur Generierung einer zufälligen Schein-ID (UUID), damit Supabase nicht meckert
+    function generateFakeUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
 
     function switchTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -329,15 +343,24 @@
         loadWaitingList();
     }
 
+    // FIX: Einzelnen Dummy anlegen mit künstlicher ID
     window.createDummyPlayer = async function() {
         const name = document.getElementById("dummyNameInput").value.trim();
         if(!name) return;
-        await supabaseClient.from('profiles').insert([{ discord_name: name, real_name: name + " (Dummy)", status_neue_saison: 'waiting', want_autodarts:true, want_dartcounter:true, want_scolia:true }]);
+        await supabaseClient.from('profiles').insert([{ 
+            id: generateFakeUUID(),
+            discord_name: name, 
+            real_name: name + " (Dummy)", 
+            status_neue_saison: 'waiting', 
+            want_autodarts: true, 
+            want_dartcounter: true, 
+            want_scolia: true 
+        }]);
         loadWaitingList();
         document.getElementById("dummyNameInput").value = "";
     }
 
-    // FIX: 10 Testspieler gleichzeitig mit fortlaufender ID und Plattformzuweisungen anlegen
+    // FIX: 10 Testspieler gleichzeitig mit künstlicher ID erzeugen, um die Datenbank-Restriktion zu umgehen
     window.generateMultipleDummys = async function(count) {
         const { data: currentPlayers } = await supabaseClient.from('profiles').select('discord_name');
         const existingCount = currentPlayers ? currentPlayers.filter(p => p.discord_name.includes('Sim_Spieler')).length : 0;
@@ -346,6 +369,7 @@
         for (let i = 1; i <= count; i++) {
             const num = existingCount + i;
             dummys.push({
+                id: generateFakeUUID(), // Fügt die künstliche ID hinzu, um den Not-Null-Constraint Fehler zu brechen
                 discord_name: `Sim_Spieler_${num}`,
                 real_name: `Sim_Spieler_${num} (Dummy)`,
                 autodarts_name: `AD_Sim_${num}`,
@@ -364,7 +388,6 @@
         loadWaitingList();
     }
 
-    // FIX: Alle Testspieler, die das Suffix "(Dummy)" im echten Namen tragen, komplett entfernen
     window.deleteAllDummys = async function() {
         if (!confirm("⚠️ WARNUNG: Möchtest du wirklich ALLE Testspieler komplett aus der Datenbank löschen?\nEchte Spielerdaten bleiben unberührt!")) return;
         
