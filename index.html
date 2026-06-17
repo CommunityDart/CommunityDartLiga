@@ -105,7 +105,7 @@
     .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: rgba(231,76,60,0.2); color: #fff; border: 1px solid rgba(231,76,60,0.3); }
     .status-badge.done { background: rgba(46,204,113,0.2); color: #fff; border: 1px solid rgba(46,204,113,0.3); }
 
-    /* FIX: HEADER ALS FLEX-BOX UM ÜBERLAPPUNGEN BEI DEN NEWS AUSZUSCHLIESSEN */
+    /* FIXED NEWS-HEADER GEGEN ÜBERLAPPUNGEN */
     .content-block { margin-bottom: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; background: rgba(255,255,255,0.03); position: relative; }
     .news-header-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 8px; margin-bottom: 12px; gap: 15px; padding-right: 90px; }
     .news-title-text { margin: 0; font-size: 16px; color: #fff; font-weight: bold; }
@@ -114,7 +114,6 @@
     .content-block img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; }
     .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 20px; color: var(--muted); font-size: 14px; text-align: center; }
 
-    /* FIX: GEORDNETE POSITIONIERUNG DER ADMIN-BUTTONS OBEN RECHTS */
     .news-admin-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 5; }
     .news-action-link { font-size: 11px; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-weight: bold; color: var(--text); border: 1px solid rgba(255,255,255,0.05); }
     .news-action-link:hover { background: var(--accent); color: #000; border-color: var(--accent); }
@@ -328,7 +327,6 @@
         renderLeague();
     };
 
-    // HIER WURDE DIE NEWS-STRUKTUR ANGEPASST (Flexbox-Wrapper eingefügt gegen Überlappung)
     function setMode(mode) {
       state.activeMode = mode;
       document.body.setAttribute("data-mode", mode);
@@ -435,7 +433,6 @@
                     const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                     const adminActionsHtml = state.isAdminUser ? `<div class="news-admin-actions"><span class="news-action-link" onclick="directEditNews('${n.id}')">✏️ Edit</span><span class="news-action-link" onclick="directDeleteNews('${n.id}')">🗑️</span></div>` : '';
                     
-                    // FIX: .news-header-wrapper eingefügt, um Titel, Datum und Buttons sauber zu separieren
                     nHtml += `<div class="content-block">
                                 ${adminActionsHtml}
                                 <div class="news-header-wrapper">
@@ -448,11 +445,12 @@
             } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
             state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
 
-            try { const r = await fetch('regelwerk.html'); if(r.ok) state.rulewerkHtml = await r.text(); } catch(e){}
-            try { const r = await fetch('links.html'); if(r.ok) document.getElementById('linksContent').innerHTML = await r.text(); } catch(e){}
-
-            const { data: sys } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+            // LIVE-LADEN DES REGELWERKS AUS SUPABASE (Wie gewünscht!)
+            const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
             state.currentSeason = sys ? sys.current_season : 'Saison 1';
+            state.rulewerkHtml = sys && sys.regelwerk_html ? sys.regelwerk_html : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+
+            try { const r = await fetch('links.html'); if(r.ok) document.getElementById('linksContent').innerHTML = await r.text(); } catch(e){}
 
             const { data: profiles } = await supabaseClient.from('profiles').select('*');
             state.allProfilesCache = profiles || [];
@@ -462,8 +460,7 @@
             const { data: seasons } = await supabaseClient.from('matches').select('season');
             const uniqueSeasons = [...new Set((seasons || []).map(m => m.season))];
             
-            const seasonSelect = document.getElementById("archiveSeasonSelect");
-            seasonSelect.innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
+            document.getElementById("archiveSeasonSelect").innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
             document.getElementById("archiveLeagueSelect").innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
 
             ALL_LEAGUES.forEach(league => {
@@ -528,6 +525,13 @@
     document.querySelectorAll(".modal-close").forEach(btn => btn.onclick = () => closeModal(btn.closest(".modal-backdrop")));
     function openModal(m) { if(m) m.classList.add("open"); }
     function closeModal(m) { if(m) m.classList.remove("open"); }
+
+    window.toggleMatchday = function(btn) {
+        const card = btn.parentElement;
+        const isOpen = !card.classList.contains("open");
+        card.classList.toggle("open", isOpen);
+        state.matchdayOpenState[card.dataset.key] = isOpen;
+    }
 
     function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
 
