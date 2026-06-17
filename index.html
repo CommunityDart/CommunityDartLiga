@@ -46,6 +46,7 @@
     .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); color: #edf7fb; border-radius: 12px; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 12px; transition: .25s ease; text-decoration: none; }
     .nav-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.3); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
     
+    /* LEUCHTENDE PLATTFORM HOVER-EFFEKTE (Wie gewünscht!) */
     .btn-autodarts { border-color: rgba(52,152,219,0.3); }
     .btn-autodarts:hover, .btn-autodarts.active { background: rgba(52,152,219,0.15); border-color: var(--ad-color); box-shadow: 0 0 20px rgba(52,152,219,0.25); color: #fff; }
     .btn-dartcounter { border-color: rgba(230,126,34,0.3); }
@@ -215,7 +216,7 @@
 
   <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3IDE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
@@ -233,6 +234,64 @@
     const matchdayAreaEl = document.getElementById("matchdayArea");
 
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    window.copyDiscord = function(name) {
+      navigator.clipboard.writeText(name).then(() => alert("Der Discord-Name '" + name + "' wurde kopiert!"));
+    };
+
+    window.directEditNews = function(id) { window.location.href = "profil.html"; };
+
+    window.directDeleteNews = async function(id) {
+        if(!confirm("Möchtest du diesen News-Eintrag wirklich direkt löschen?")) return;
+        const { error } = await supabaseClient.from('news').delete().eq('id', id);
+        if(error) alert("Fehler: " + error.message);
+        else loadAll();
+    };
+
+    window.loadArchiveData = async function() {
+        const season = document.getElementById("archiveSeasonSelect").value;
+        const league = document.getElementById("archiveLeagueSelect").value;
+        const resultContainer = document.getElementById("archiveTableResult");
+
+        if(!season || !league) return;
+        resultContainer.innerHTML = "<div class='empty'>Lade historische Tabellendaten...</div>";
+
+        const { data: matches, error } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
+        
+        if (error || !matches || matches.length === 0) {
+            resultContainer.innerHTML = "<div class='empty'>Für diese Kombination liegen keine Spieldaten vor.</div>";
+            return;
+        }
+
+        const stats = {};
+        matches.forEach(m => {
+            if(m.player1_id && m.player2_id) {
+                if(!stats[m.player1_id]) {
+                    const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
+                    stats[m.player1_id] = { name: p ? (p.discord_name || p.real_name) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
+                }
+                if(!stats[m.player2_id]) {
+                    const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
+                    stats[m.player2_id] = { name: p ? (p.discord_name || p.real_name) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
+                }
+
+                const l1 = parseInt(m.legs1) || 0; const l2 = parseInt(m.legs2) || 0;
+                stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
+
+                if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
+                else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+            }
+        });
+
+        const rows = Object.values(stats).sort((a,b) => b.points !== a.points ? b.points - a.points : b.legDiff - a.legDiff);
+
+        let html = `<table><thead><tr><th width="80px">Platz</th><th>Spieler</th><th>Siege</th><th>Niederlagen</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>`;
+        rows.forEach((r, idx) => {
+            html += `<tr><td>${idx+1}</td><td><b>${htmlEscape(r.name)}</b></td><td>${r.wins}</td><td>${r.losses}</td><td>${r.legDiff}</td><td style="color:#2ecc71; font-weight:bold;">${r.points}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        resultContainer.innerHTML = `<div class="table-wrap" style="background:rgba(0,0,0,0.1); border-radius:10px; margin-top:10px;">${html}</div>`;
+    };
 
     function updateRightNavBlock() {
         const defaultBlock = document.getElementById("defaultRightContent");
@@ -297,7 +356,7 @@
     function renderStandingsTable(rows) {
       const tbody = rows.map((s, idx) => `<tr>
           <td class="rank-col ${rankClass(idx+1, rows.length)}">${idx+1}</td>
-          <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
+          <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span></td>
           <td>${s.discord ? `<span style="color:var(--muted); font-size:12px;">${htmlEscape(s.discord)}</span>` : "-"}</td>
           <td>${s.wins}</td><td>${s.losses}</td><td>${s.legDiff}</td><td style="font-weight:bold; color:var(--accent);">${s.points}</td>
         </tr>`).join("");
@@ -331,21 +390,6 @@
       }).join("");
     }
 
-    function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
-    function renderPlayerCards(yellow, red) {
-      let html = "";
-      for (let i = 0; i < (yellow || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--yellow); margin-left:3px; border-radius:2px;"></span>`;
-      for (let i = 0; i < (red || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--red); margin-left:3px; border-radius:2px;"></span>`;
-      return html;
-    }
-
-    window.toggleMatchday = function(btn) {
-        const card = btn.parentElement;
-        const isOpen = !card.classList.contains("open");
-        card.classList.toggle("open", isOpen);
-        state.matchdayOpenState[card.dataset.key] = isOpen;
-    }
-
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
         const modal = document.getElementById("playerProfileModal");
@@ -354,7 +398,7 @@
         openModal(modal);
 
         const p = state.allProfilesCache.find(prof => prof.discord_name === playerName || prof.real_name === playerName);
-        if(!p) { content.innerHTML = "<div class='empty'>Keine Profildaten gefunden.</div>"; return; }
+        if(!p) { content.innerHTML = "<div class='empty'>Keine Profildaten im Cache gefunden.</div>"; return; }
 
         content.innerHTML = `<div class="content-block">
             <h4>🎯 ${htmlEscape(playerName)}</h4>
@@ -390,6 +434,8 @@
             state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
 
             try { const r = await fetch('regelwerk.html'); if(r.ok) state.rulewerkHtml = await r.text(); } catch(e){}
+            
+            try { const r = await fetch('links.html'); if(r.ok) document.getElementById('linksContent').innerHTML = await r.text(); } catch(e){}
 
             const { data: sys } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
             state.currentSeason = sys ? sys.current_season : 'Saison 1';
@@ -401,7 +447,9 @@
 
             const { data: seasons } = await supabaseClient.from('matches').select('season');
             const uniqueSeasons = [...new Set((seasons || []).map(m => m.season))];
-            document.getElementById("archiveSeasonSelect").innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
+            
+            const seasonSelect = document.getElementById("archiveSeasonSelect");
+            seasonSelect.innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
             document.getElementById("archiveLeagueSelect").innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
 
             ALL_LEAGUES.forEach(league => {
@@ -466,6 +514,8 @@
     document.querySelectorAll(".modal-close").forEach(btn => btn.onclick = () => closeModal(btn.closest(".modal-backdrop")));
     function openModal(m) { if(m) m.classList.add("open"); }
     function closeModal(m) { if(m) m.classList.remove("open"); }
+
+    function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
 
     loadAll();
   </script>
