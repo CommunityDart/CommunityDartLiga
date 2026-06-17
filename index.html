@@ -33,57 +33,57 @@
     
     *{box-sizing:border-box} html,body{margin:0;padding:0}
     body{ font-family:Arial,Helvetica,sans-serif; background: radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 20%, transparent), transparent 45%), linear-gradient(180deg, var(--bg) 0%, #1e293b 100%); color:var(--text); min-height:100vh; transition:background .3s ease; }
-    .wrap{ width:min(1400px, calc(100% - 28px)); margin:0 auto; padding:15px 0 42px; }
+    .wrap{ width:min(1400px, calc(100% - 28px)); margin:0 auto; padding:20px 0 42px; }
     
-    .header-branding { text-align: center; margin-bottom: 15px; padding: 10px; border-radius: 16px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
-    .header-branding h2 { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #fff; }
-    .header-branding span { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
+    .header-branding { text-align: center; margin-bottom: 25px; padding: 15px; border-radius: 20px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
+    .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
+    .header-branding span { font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
 
-    /* FIX: SUPER KOMPAKTES GRID GEGEN DEN VERSCHENKTEN PLATZ */
-    .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin-bottom: 20px; align-items: stretch; }
-    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); position: relative; }
-    .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.12); padding-bottom: 4px; }
+    /* FIX: dashboard-nav auf align-items: start setzen, damit die Kacheln bei Inhaltswechsel mitschrumpfen */
+    .dashboard-nav { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 20px; margin-bottom: 25px; align-items: start; }
+    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.12); backdrop-filter: blur(10px); position: relative; height: auto; }
+    .nav-card-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 6px; }
 
-    .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 10px; min-height: 40px; padding: 0 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 10px; transition: .22s ease; text-decoration: none; }
-    .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 12px; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 12px; transition: .25s ease; text-decoration: none; }
+    .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.12); }
     
-    .btn-autodarts { border-color: rgba(0,119,255,0.3); background: rgba(0,119,255,0.03); }
-    .btn-autodarts:hover, .btn-autodarts.active { background: linear-gradient(90deg, #0055d4, #0077ff); border-color: #00a2ff; box-shadow: 0 0 20px rgba(0,119,255,0.5); color: #fff; }
+    .btn-autodarts { border-color: rgba(0,119,255,0.4); background: rgba(0,119,255,0.05); color: #99ccff; }
+    .btn-autodarts:hover, .btn-autodarts.active { background: linear-gradient(90deg, #0055d4, #0077ff); border-color: #00a2ff; box-shadow: 0 0 25px rgba(0,119,255,0.6); color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     
-    .btn-dartcounter { border-color: rgba(255,106,0,0.3); background: rgba(255,106,0,0.03); }
-    .btn-dartcounter:hover, .btn-dartcounter.active { background: linear-gradient(90deg, #cc4400, #ff6a00); border-color: #ff943d; box-shadow: 0 0 20px rgba(255,106,0,0.5); color: #fff; }
+    .btn-dartcounter { border-color: rgba(255,106,0,0.4); background: rgba(255,106,0,0.04); color: #ffcc99; }
+    .btn-dartcounter:hover, .btn-dartcounter.active { background: linear-gradient(90deg, #cc4400, #ff6a00); border-color: #ff943d; box-shadow: 0 0 25px rgba(255,106,0,0.6); color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     
-    .btn-scolia { border-color: rgba(0,255,102,0.3); background: rgba(0,255,102,0.03); }
-    .btn-scolia:hover, .btn-scolia.active { background: linear-gradient(90deg, #00b344, #00ff66); border-color: #33ff88; box-shadow: 0 0 20px rgba(0,255,102,0.5); color: #fff; }
+    .btn-scolia { border-color: rgba(0,255,102,0.4); background: rgba(0,255,102,0.05); color: #99ffbb; }
+    .btn-scolia:hover, .btn-scolia.active { background: linear-gradient(90deg, #00b344, #00ff66); border-color: #33ff88; box-shadow: 0 0 25px rgba(0,255,102,0.6); color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     
-    .btn-home.active, .btn-info.active { border-color: var(--accent); background: rgba(52,152,219,0.2); color: #fff; box-shadow: 0 0 12px rgba(52,152,219,0.25); }
-    .btn-discord { background: rgba(88,101,242,0.15); border-color: rgba(88,101,242,0.4); }
-    .btn-discord:hover { background: rgba(88,101,242,0.25); border-color: #5865f2; box-shadow: 0 0 12px rgba(88,101,242,0.2); }
+    .btn-home.active, .btn-info.active { border-color: var(--accent); background: rgba(52,152,219,0.25); color: #fff; box-shadow: 0 0 15px rgba(52,152,219,0.3); }
+    .btn-discord { background: rgba(88,101,242,0.2); border-color: rgba(88,101,242,0.5); }
+    .btn-discord:hover { background: rgba(88,101,242,0.3); border-color: #5865f2; box-shadow: 0 0 15px rgba(88,101,242,0.3); }
 
-    .dropdown-submenu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 100%; height: 100%; align-content: start; }
-    .dropdown-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #dff3ff; text-align: center; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.12s; }
-    .dropdown-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-border); }
-    .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; border-color: var(--accent); box-shadow: 0 0 12px rgba(32,183,255,0.3); }
+    .dropdown-submenu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; align-content: start; }
+    .dropdown-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #dff3ff; text-align: center; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.15s; }
+    .dropdown-btn:hover { background: rgba(255,255,255,0.12); border-color: var(--accent-border); }
+    .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; border-color: var(--accent); box-shadow: 0 0 15px rgba(32,183,255,0.4); }
 
     .main { display: grid; grid-template-columns: minmax(0,1.7fr) minmax(340px,.8fr); gap: 20px; align-items: start; }
     body[data-mode="Home"] .main { grid-template-columns: 1fr; }
     body[data-mode="Home"] .sidebar { display: none; }
 
-    .table-shell, .matchday { border: 1px solid var(--line); background: linear-gradient(180deg, rgba(44,62,80,.95), rgba(30,43,56,.98)); box-shadow: 0 15px 40px rgba(0,0,0,0.1); border-radius: 16px; overflow: hidden; }
+    .table-shell, .matchday { border: 1px solid var(--line); background: linear-gradient(180deg, rgba(44,62,80,.95), rgba(30,43,56,.98)); box-shadow: 0 18px 50px rgba(0,0,0,0.12); border-radius: 18px; overflow: hidden; }
     
-    .section-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .section-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .section-title { margin: 0; font-size: 18px; font-weight: 900; }
     .section-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
     .table-wrap { overflow-x: auto; padding-bottom: 4px; }
     table { width: 100%; border-collapse: collapse; min-width: 700px; table-layout: fixed; }
-    thead th { padding: 12px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
+    thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
     thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { text-align: center; }
     
     tbody tr:nth-child(odd) td { background: var(--row-a); }
     tbody tr:nth-child(even) td { background: var(--row-b); }
-    tbody td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #f1f8fb; white-space: nowrap; }
-    tbody tr:hover td { background: rgba(255, 255, 255, 0.04); }
+    tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #f1f8fb; white-space: nowrap; }
+    tbody tr:hover td { background: rgba(255, 255, 255, 0.05); }
 
     .rank-col { width: 75px; font-weight: 900; text-align: center !important; position: relative; }
     .rank-col.first::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); }
@@ -197,7 +197,7 @@
     </section>
 
     <div class="footer">
-      <button id="openImpressumBtn" class="nav-btn" style="min-height:32px; padding:0 12px; font-size:11px; width:auto;" type="button">Impressum</button>
+      <button id="openImpressumBtn" class="nav-btn" style="min-height:36px; padding:0 12px; font-size:11px; width:auto;" type="button">Impressum</button>
       <button id="openLinksBtn" class="nav-btn" style="min-height:36px; padding:0 12px; font-size:11px; width:auto;" type="button">Links</button>
     </div>
   </div>
@@ -426,9 +426,8 @@
     function renderHome() { tableAreaEl.innerHTML = state.newsHtml; matchdayAreaEl.innerHTML = ""; }
     function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
 
-    // FIX: Fehlerresistenter Ladevorgang für News, Session und das Regelwerk
+    // RENDER FIX: Fehlerresistenter asynchroner Core-Load
     async function loadAll() {
-        // Falls kein User eingeloggt ist, läuft die Seite trotzdem fehlerfrei weiter
         try {
             const { data: authData } = await supabaseClient.auth.getSession();
             state.currentUser = authData && authData.session ? authData.session.user : null;
@@ -464,7 +463,6 @@
             } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
             state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
 
-            // Regelwerk-Fetch korrigiert (Laufzeitabsturz behoben)
             try {
                 const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
                 state.currentSeason = sys ? sys.current_season : 'Saison 1';
