@@ -43,13 +43,12 @@
     .count-btn { background: #34495e; color: #fff; border: 1px solid #5d6d7e; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .count-btn:hover { background: #5d6d7e; }
 
-    .dummy-box { background: rgba(32,183,255,0.04); border: 1px dashed rgba(32,183,255,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+    .dummy-box { background: rgba(32,183,255,0.04); border: 1px dashed rgba(32,183,255,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; position: relative; }
     .empty-msg { text-align: center; color: #a3b8c5; padding: 40px; font-style: italic; }
 
     .player-meta-info { font-size: 11px; color: #a3b8c5; margin-top: 6px; display: block; line-height: 1.6; font-style: italic; }
     .prev-league-badge { font-size: 11px; color: #f1c40f; display: block; margin-bottom: 4px; font-weight: bold; }
     
-    /* Farb-Punkte */
     .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
     .dot-blue { background: #0077ff; box-shadow: 0 0 6px #0077ff; }
     .dot-orange { background: #ff6a00; box-shadow: 0 0 6px #ff6a00; }
@@ -59,6 +58,13 @@
     .row-relegation { background: rgba(241, 196, 15, 0.1) !important; }
     .row-down { background: rgba(231, 76, 60, 0.15) !important; }
     .badge-status { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 10px; }
+
+    /* Schließen-Button oben rechts in der Box */
+    .close-box-btn { position: absolute; top: 12px; right: 15px; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .close-box-btn:hover { background: rgba(231, 76, 60, 0.1); }
+
+    /* Reihe für Inputs nebeneinander */
+    .inputs-row { display: flex; gap: 15px; flex-wrap: wrap; width: 100%; margin-top: 5px; margin-bottom: 10px; }
 
     .ql-toolbar.ql-snow { background: #1e293b !important; border-color: #4b87a5 !important; border-radius: 8px 8px 0 0; }
     .ql-container.ql-snow { border-color: #4b87a5 !important; background: #1e293b; border-radius: 0 0 8px 8px; height: 380px; font-size: 15px; color: #fff; }
@@ -100,24 +106,29 @@
       <h3 style="margin-top:0; color:#3498db;">📅 Spielpläne erstellen &amp; Auf-/Abstiege regeln</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">Wähle die gewünschte Liga per Knopfdruck aus, um Regeln festzulegen oder neue Spielpläne zu erstellen.</p>
       
-      <div class="dummy-box" id="globalLeagueRulesBox" style="display:none; background: rgba(52, 152, 219, 0.05);">
+      <div class="dummy-box" id="globalLeagueRulesBox" style="display:none; background: rgba(52, 152, 219, 0.05); padding-top: 40px;">
+         <button class="close-box-btn" onclick="closePlanEditor()">✕ Ansicht schließen</button>
          <h4 id="rulesEditorTitle" style="margin:0 0 10px 0; width:100%; color:#3498db;">Regeln bearbeiten</h4>
-         <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#2ecc71;">🏆 Aufsteiger:</label>
-            <input type="number" id="inputUpCount" class="num-input" value="2" min="0" onchange="calculateDynamicStandings()">
+         
+         <div class="inputs-row">
+             <div>
+                <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#2ecc71;">🏆 Aufsteiger:</label>
+                <input type="number" id="inputUpCount" class="num-input" value="2" min="0" onchange="calculateDynamicStandings()">
+             </div>
+             <div>
+                <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#f1c40f;">🤝 Relegation:</label>
+                <input type="number" id="inputRelCount" class="num-input" value="1" min="0" onchange="calculateDynamicStandings()">
+             </div>
+             <div>
+                <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#e74c3c;">🔻 Absteiger:</label>
+                <input type="number" id="inputDownCount" class="num-input" value="2" min="0" onchange="calculateDynamicStandings()">
+             </div>
+             <div style="align-self: flex-end; display: flex; gap: 8px;">
+                <button class="assign-btn" onclick="saveLeagueRuleConfig()">💾 Regelung merken</button>
+                <button class="assign-btn" style="background:#34495e;" onclick="generateSaisonPlan()">📅 Spielplan generieren</button>
+             </div>
          </div>
-         <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#f1c40f;">🤝 Relegation:</label>
-            <input type="number" id="inputRelCount" class="num-input" value="1" min="0" onchange="calculateDynamicStandings()">
-         </div>
-         <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#e74c3c;">🔻 Absteiger:</label>
-            <input type="number" id="inputDownCount" class="num-input" value="2" min="0" onchange="calculateDynamicStandings()">
-         </div>
-         <div style="align-self: flex-end;">
-            <button class="assign-btn" onclick="saveLeagueRuleConfig()">💾 Regelung merken</button>
-            <button class="assign-btn" style="background:#34495e;" onclick="generateSaisonPlan()">📅 Spielplan generieren</button>
-         </div>
+         
          <div id="dynamicStandingsArea" style="width:100%; margin-top:15px;"></div>
       </div>
 
@@ -262,12 +273,11 @@
         }).join("");
     }
 
-    // INTERNE LOGIK FÜR KNÖPFE UNTEREINANDER WEG
     window.initPlanButtons = function() {
         const container = document.getElementById("leaguePlanButtons");
         if(container) {
             container.innerHTML = ALL_LEAGUES.map(league => `
-                <button class="plan-action-btn" onclick="openPlanEditor('${league}')">
+                <button class="plan-action-btn" id="btn_plan_${league.replace(/\s+/g, '_')}" onclick="openPlanEditor('${league}')">
                     📊 Spielplan &amp; Regeln für ${league} öffnen
                 </button>
             `).join("");
@@ -279,6 +289,12 @@
         document.getElementById("globalLeagueRulesBox").style.display = "block";
         document.getElementById("rulesEditorTitle").innerText = `⚙️ Regeln & Spielplan für: ${league}`;
         calculateDynamicStandings();
+    }
+
+    // FIX: Funktion zum Schließen der Einzelansicht per "X" Button
+    window.closePlanEditor = function() {
+        activeSelectedLeaguePlan = "";
+        document.getElementById("globalLeagueRulesBox").style.display = "none";
     }
 
     window.calculateDynamicStandings = async function() {
