@@ -105,14 +105,19 @@
     .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: rgba(231,76,60,0.2); color: #fff; border: 1px solid rgba(231,76,60,0.3); }
     .status-badge.done { background: rgba(46,204,113,0.2); color: #fff; border: 1px solid rgba(46,204,113,0.3); }
 
+    /* FIX: HEADER ALS FLEX-BOX UM ÜBERLAPPUNGEN BEI DEN NEWS AUSZUSCHLIESSEN */
     .content-block { margin-bottom: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; background: rgba(255,255,255,0.03); position: relative; }
-    .content-block h4 { margin: 0 0 8px; font-size: 15px; color: #fff; }
+    .news-header-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 8px; margin-bottom: 12px; gap: 15px; padding-right: 90px; }
+    .news-title-text { margin: 0; font-size: 16px; color: #fff; font-weight: bold; }
+    .news-date-text { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
     .content-block img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; }
     .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 20px; color: var(--muted); font-size: 14px; text-align: center; }
 
-    .news-admin-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
-    .news-action-link { font-size: 11px; background: rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; color: var(--muted); }
-    .news-action-link:hover { background: var(--accent); color: #000; }
+    /* FIX: GEORDNETE POSITIONIERUNG DER ADMIN-BUTTONS OBEN RECHTS */
+    .news-admin-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 5; }
+    .news-action-link { font-size: 11px; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-weight: bold; color: var(--text); border: 1px solid rgba(255,255,255,0.05); }
+    .news-action-link:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
     .footer { margin-top: 25px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
     .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; backdrop-filter: blur(4px); }
@@ -122,8 +127,7 @@
     .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
     .modal-body { padding: 18px; overflow-y: auto; color: #d7e8ef; line-height: 1.6; }
 
-    /* REREINIGTE ARCHIV CONTAINER OPTIK */
-    .archive-control-box { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+    .archive-control-box { display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); position: relative; z-index: 10; }
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
     @media (max-width: 950px) {
@@ -249,7 +253,6 @@
         else loadAll();
     };
 
-    // BEHOBEN: Der JavaScript-Buchstabendreher (prof vs pr) wurde restlos repariert!
     window.loadArchiveData = async function() {
         const season = document.getElementById("archiveSeasonSelect").value;
         const league = document.getElementById("archiveLeagueSelect").value;
@@ -325,6 +328,7 @@
         renderLeague();
     };
 
+    // HIER WURDE DIE NEWS-STRUKTUR ANGEPASST (Flexbox-Wrapper eingefügt gegen Überlappung)
     function setMode(mode) {
       state.activeMode = mode;
       document.body.setAttribute("data-mode", mode);
@@ -430,7 +434,16 @@
                 newsData.forEach(n => {
                     const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                     const adminActionsHtml = state.isAdminUser ? `<div class="news-admin-actions"><span class="news-action-link" onclick="directEditNews('${n.id}')">✏️ Edit</span><span class="news-action-link" onclick="directDeleteNews('${n.id}')">🗑️</span></div>` : '';
-                    nHtml += `<div class="content-block">${adminActionsHtml}<h4>${htmlEscape(n.title)} <span style="font-size:11px; color:var(--muted); float:right;">${date}</span></h4><div>${n.content}</div></div>`;
+                    
+                    // FIX: .news-header-wrapper eingefügt, um Titel, Datum und Buttons sauber zu separieren
+                    nHtml += `<div class="content-block">
+                                ${adminActionsHtml}
+                                <div class="news-header-wrapper">
+                                    <h4 class="news-title-text">${htmlEscape(n.title)}</h4>
+                                    <span class="news-date-text">${date}</span>
+                                </div>
+                                <div>${n.content}</div>
+                              </div>`;
                 });
             } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
             state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
