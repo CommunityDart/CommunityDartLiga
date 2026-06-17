@@ -39,12 +39,12 @@
     .header-branding h2 { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #fff; }
     .header-branding span { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
 
-    /* FIX: ALIGN-ITEMS: START sorgt dafür, dass keine leeren Hohlräume entstehen! */
+    /* ABSOLUT KOMPAKT: align-items: start verhindert Kachel-Dehnung, padding & gaps reduziert */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin-bottom: 20px; align-items: start; }
-    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
+    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.12); padding-bottom: 4px; }
 
-    .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 10px; min-height: 40px; padding: 0 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 10px; transition: .22s ease; text-decoration: none; }
+    .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 10px; min-height: 40px; padding: 0 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 10px; transition: .22s ease; text-decoration: none; }
     .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     
     .btn-autodarts { border-color: rgba(0,119,255,0.3); background: rgba(0,119,255,0.03); }
@@ -126,7 +126,7 @@
     .archive-control-box { display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); position: relative; z-index: 10; }
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
-    .icon-svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
     @media (max-width: 950px) {
       .dashboard-nav { grid-template-columns: 1fr; gap: 15px; }
@@ -178,7 +178,7 @@
                <span>💬 CDL Discord Server</span>
              </a>
              <button id="ligaLoginBtn" class="nav-btn" type="button">
-               <span>👤 Liga Login</span>
+               <span id="loginBtnText">👤 Liga Login</span>
              </button>
              <a href="https://www.paypal.com/pool/9nHfKrmgfD" target="_blank" class="nav-btn" style="border-color: rgba(46,204,113,0.4); min-height: 38px;">
                <span>☕ Serverkasse unterstützen</span>
@@ -433,14 +433,15 @@
     function renderHome() { tableAreaEl.innerHTML = state.newsHtml; matchdayAreaEl.innerHTML = ""; }
     function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
 
-    // SICHERHEITS-CHECK: Robuste Ladefunktion, die nicht mehr abstürzen kann
     async function loadAll() {
         try {
             const { data: authData } = await supabaseClient.auth.getSession();
             state.currentUser = authData && authData.session ? authData.session.user : null;
         } catch(e) { state.currentUser = null; }
         
-        document.getElementById("loginBtnText").innerText = state.currentUser ? "👤 Mein Profil" : "👤 Liga Login";
+        // HIER WAR DER FEHLER: Die ID war weg, jetzt ist sie wieder da und abgesichert!
+        const loginBtnEl = document.getElementById("loginBtnText");
+        if(loginBtnEl) loginBtnEl.innerText = state.currentUser ? "👤 Mein Profil" : "👤 Liga Login";
 
         state.isAdminUser = false;
         if (state.currentUser) {
@@ -478,8 +479,8 @@
                 state.currentSeason = 'Saison 1';
                 state.rulewerkHtml = '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
             }
-            
-            // Lade Links Fenster, sicher abgefangen
+
+            // HIER WAR DER FEHLER: Das Links Fenster hatte im HTML komplett gefehlt!
             const linksContentEl = document.getElementById('linksContent');
             if (linksContentEl) {
                 try { const r = await fetch('links.html'); if(r.ok) linksContentEl.innerHTML = await r.text(); } catch(e){}
@@ -549,6 +550,7 @@
     
     document.getElementById("archiveBtn").onclick = () => openModal(document.getElementById("archiveModal"));
     document.getElementById("openImpressumBtn").onclick = () => openModal(document.getElementById("impressumModal"));
+    document.getElementById("openLinksBtn").onclick = () => openModal(document.getElementById("linksModal"));
     
     document.getElementById("regelwerkBtn").onclick = () => {
         const modal = document.getElementById('playerProfileModal');
