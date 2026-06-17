@@ -34,6 +34,12 @@
     .assign-btn:hover { opacity: 0.8; }
     .del-btn { background: #e74c3c; }
     
+    /* Karten Counter Buttons */
+    .card-counter-wrap { display: flex; align-items: center; gap: 8px; }
+    .counter-num { font-weight: bold; font-size: 16px; min-width: 20px; text-align: center; }
+    .count-btn { background: #34495e; color: #fff; border: 1px solid #5d6d7e; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .count-btn:hover { background: #5d6d7e; }
+
     .dummy-box { background: rgba(32,183,255,0.04); border: 1px dashed rgba(32,183,255,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .empty-msg { text-align: center; color: #a3b8c5; padding: 40px; font-style: italic; }
 
@@ -51,7 +57,7 @@
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('zuteilung')">1. Liga Zuteilung</button>
       <button class="tab-btn" onclick="switchTab('spielplan')">2. Spielpläne & Ergebnisse</button>
-      <button class="tab-btn" onclick="switchTab('strafen')">3. Strafenkatalog</button>
+      <button class="tab-btn" onclick="switchTab('strafen'); loadPenaltyCatalog();">3. Strafenkatalog</button>
       <button class="tab-btn" onclick="switchTab('saison')">4. Saison Beenden</button>
       <button class="tab-btn" onclick="switchTab('regelwerk-edit'); loadRuleEditor();">5. Regelwerk bearbeiten</button>
     </div>
@@ -81,7 +87,19 @@
     </div>
     
     <div id="strafen" class="tab-content">
-      <p style="color:var(--muted);">Karten verwalten.</p>
+      <h3 style="margin-top:0; color:#f1c40f;">🟨 Kartensystem &amp; Verwarnungen verwalten</h3>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Hier kannst du Spielern gelbe oder rote Karten zuweisen. Die Karten werden live in den Tabellen der Startseite gerendert.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Spieler</th>
+            <th>Gelbe Karten (🟨)</th>
+            <th>Rote Karten (🟥)</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody id="penaltyListBody"><tr><td colspan="4" class="empty-msg">Wird geladen...</td></tr></tbody>
+      </table>
     </div>
     
     <div id="saison" class="tab-content">
@@ -166,16 +184,9 @@
         return html;
     }
 
-    // FIX: Kompletten Table-Dump laden und die Filterung via JavaScript vornehmen (Keine Supabase-Syntax-Konflikte)
     window.loadWaitingList = async function() {
         const { data: allPlayers, error } = await supabaseClient.from('profiles').select('*');
-        
-        if (error) {
-            document.getElementById("waitingListBody").innerHTML = `<tr><td colspan="5" class="empty-msg" style="color:red;">Fehler beim Laden: ${error.message}</td></tr>`;
-            return;
-        }
-
-        // JS-Filter für registrierte Zustände
+        if (error) return;
         const players = allPlayers ? allPlayers.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
 
         if (players.length === 0) {
@@ -213,38 +224,79 @@
         </tr>`).join("");
     }
 
+    // VOLLSTÄNDIGE STRAFENKATALOG LOGIK
+    window.loadPenaltyCatalog = async function() {
+        const { data: allPlayers, error } = await supabaseClient.from('profiles').select('*');
+        if (error) {
+            document.getElementById("penaltyListBody").innerHTML = `<tr><td colspan="4" class="empty-msg">Fehler beim Laden.</td></tr>`;
+            return;
+        }
+        const players = allPlayers ? allPlayers.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
+
+        if (players.length === 0) {
+            document.getElementById("penaltyListBody").innerHTML = `<tr><td colspan="4" class="empty-msg">Aktuell keine angemeldeten Spieler für Strafen vorhanden.</td></tr>`;
+            return;
+        }
+
+        document.getElementById("penaltyListBody").innerHTML = players.map(p => {
+            const yellow = p.yellow_cards || 0;
+            const red = p.red_cards || 0;
+            return `<tr>
+                <td><b>${htmlEscape(p.discord_name || p.real_name)}</b></td>
+                <td>
+                    <div class="card-counter-wrap">
+                        <button class="count-btn" onclick="adjustCard('${p.id}', 'yellow', -1)">-</button>
+                        <span id="y_count_${p.id}" class="counter-num">${yellow}</span>
+                        <button class="count-btn" onclick="adjustCard('${p.id}', 'yellow', 1)">+</button>
+                    </div>
+                </td>
+                <td>
+                    <div class="card-counter-wrap">
+                        <button class="count-btn" onclick="adjustCard('${p.id}', 'red', -1)">-</button>
+                        <span id="r_count_${p.id}" class="counter-num">${red}</span>
+                        <button class="count-btn" onclick="adjustCard('${p.id}', 'red', 1)">+</button>
+                    </div>
+                </td>
+                <td>
+                    <button class="assign-btn" onclick="savePenalties('${p.id}')">💾 Speichern</button>
+                </td>
+            </tr>`;
+        }).join("");
+    }
+
+    window.adjustCard = function(id, type, amount) {
+        const span = document.getElementById(`${type === 'yellow' ? 'y' : 'r'}_count_${id}`);
+        let current = parseInt(span.innerText) || 0;
+        current = Math.max(0, current + amount); // Verhindert Werte unter 0
+        span.innerText = current;
+    }
+
+    window.savePenalties = async function(id) {
+        const yellowVal = parseInt(document.getElementById(`y_count_${id}`).innerText) || 0;
+        const redVal = parseInt(document.getElementById(`r_count_${id}`).innerText) || 0;
+
+        const { error } = await supabaseClient.from('profiles').update({ yellow_cards: yellowVal, red_cards: redVal }).eq('id', id);
+        if (error) alert("Fehler beim Speichern: " + error.message);
+        else alert("Strafenkatalog erfolgreich aktualisiert! 🟨🟥");
+    }
+
     window.saveAssignments = async function(id) {
         const adVal = document.getElementById('ad_'+id).value;
         const dcVal = document.getElementById('dc_'+id).value;
         const scVal = document.getElementById('sc_'+id).value;
         
-        const up = { 
-            status_neue_saison: 'assigned', 
-            assigned_ad_league: adVal === 'REMOVE' ? null : adVal, 
-            assigned_dc_league: dcVal === 'REMOVE' ? null : dcVal, 
-            assigned_sc_league: scVal === 'REMOVE' ? null : scVal 
-        };
-        
-        await supabaseClient.from('profiles').update(up).eq('id', id); 
+        await supabaseClient.from('profiles').update({ status_neue_saison: 'assigned', assigned_ad_league: adVal==='REMOVE'?null:adVal, assigned_dc_league: dcVal==='REMOVE'?null:dcVal, assigned_sc_league: scVal==='REMOVE'?null:scVal }).eq('id', id); 
         alert("Zuteilung erfolgreich gespeichert!");
         loadWaitingList();
     }
 
     window.removeFromList = async function(id) {
-        if(!confirm("Möchtest du diesen Spieler aus der Anmeldung für die neue Saison entfernen?")) return;
-        
-        await supabaseClient.from('profiles').update({
-            status_neue_saison: null, 
-            assigned_ad_league: null, 
-            assigned_dc_league: null, 
-            assigned_sc_league: null
-        }).eq('id', id);
-        
+        if(!confirm("Möchtest du diesen Spieler aus der Anmeldung entfernen?")) return;
+        await supabaseClient.from('profiles').update({ status_neue_saison: null, assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null }).eq('id', id);
         loadWaitingList();
     }
 
     function htmlEscape(v) { return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
-    
     initAdmin();
   </script>
 </body>
