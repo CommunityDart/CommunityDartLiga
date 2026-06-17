@@ -131,11 +131,12 @@
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
     
-    /* FIX: HIER WURDEN DIE ABSTÄNDE FÜR ABSÄTZE UND LISTEN AUS QUILL ERZWUNGEN */
-    .ql-editor p { margin-bottom: 14px !important; line-height: 1.6 !important; }
-    .ql-editor ul, .ql-editor ol { padding-left: 20px !important; margin-bottom: 14px !important; }
-    .ql-editor li { margin-bottom: 6px !important; line-height: 1.5 !important; }
-    .ql-editor h1, .ql-editor h2, .ql-editor h3 { margin-top: 18px !important; margin-bottom: 10px !important; color: #fff !important; }
+    /* FIX: HIER WURDEN DIE ABSTÄNDE, REIHENFOLGEN UND ZAHLEN-LISTEN STRIKT ERZWUNGEN */
+    .ql-editor p { margin-bottom: 12px !important; line-height: 1.6 !important; color: #f1f8fb !important; }
+    .ql-editor ol { list-style-type: decimal !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
+    .ql-editor ul { list-style-type: disc !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
+    .ql-editor li { display: list-item !important; list-style-position: outside !important; margin-bottom: 8px !important; line-height: 1.5 !important; color: #edf7fb !important; }
+    .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
   </style>
 </head>
 <body data-mode="Home">
@@ -217,7 +218,7 @@
 
   <div id="playerProfileModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head"><h3 id="playerProfileTitle">Spielerprofil</h3><button class="modal-close" type="button">✕</button></div>
+      <div class="modal-head"><h3>Spielerprofil</h3><button class="modal-close" type="button">✕</button></div>
       <div id="playerProfileContent" class="modal-body"></div>
     </div>
   </div>
@@ -489,7 +490,7 @@
             }
 
             try {
-                const { data: sys = sys.current_season } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
+                const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
                 state.currentSeason = sys && sys.current_season ? sys.current_season : 'Saison 1';
                 state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${decodeHtml(sys.regelwerk_html)}</div></div>` : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
             } catch(e) {
@@ -554,7 +555,7 @@
                     return { title, status: done===rows.length?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
                 });
 
-                state.leagueData[league] = { standings: { standingsRows }, matchdays };
+                state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
             });
 
             setMode("Home");
