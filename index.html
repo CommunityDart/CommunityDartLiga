@@ -5,26 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CDL Dart Liga</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
 
   <style>
     :root{
-      --bg: #1e293b;
-      --panel: #2c3e50;
-      --panel-glass: rgba(44, 62, 80, 0.85);
-      --line: rgba(52, 152, 219, 0.35);
-      --text: #f8fafc;
-      --muted: #cbd5e1;
-      --green: #2ecc71;
-      --red: #e74c3c;
-      --yellow: #f1c40f;
-      --accent: #3498db;
-      --accent-border: rgba(52, 152, 219, 0.6);
-      --row-a: #334155;
-      --row-b: #273746;
-      
-      --ad-color: #0077ff;
-      --dc-color: #ff6a00;
-      --sc-color: #00ff66;
+      --bg: #1e293b; --panel: #2c3e50; --panel-glass: rgba(44, 62, 80, 0.85);
+      --line: rgba(52, 152, 219, 0.35); --text: #f8fafc; --muted: #cbd5e1;
+      --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f; --accent: #3498db;
+      --accent-border: rgba(52, 152, 219, 0.6); --row-a: #334155; --row-b: #273746;
+      --ad-color: #0077ff; --dc-color: #ff6a00; --sc-color: #00ff66;
     }
 
     body[data-mode="DartCounter"]{ --accent: var(--dc-color); --accent-border: rgba(255,106,0,.6); }
@@ -39,12 +29,11 @@
     .header-branding h2 { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #fff; }
     .header-branding span { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
 
-    /* ABSOLUT KOMPAKT: align-items: start verhindert Kachel-Dehnung, padding & gaps reduziert */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin-bottom: 20px; align-items: start; }
-    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
+    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.12); padding-bottom: 4px; }
 
-    .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 10px; min-height: 40px; padding: 0 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 10px; transition: .22s ease; text-decoration: none; }
+    .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 10px; min-height: 40px; padding: 0 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 10px; transition: .22s ease; text-decoration: none; }
     .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     
     .btn-autodarts { border-color: rgba(0,119,255,0.3); background: rgba(0,119,255,0.03); }
@@ -116,7 +105,7 @@
     .news-action-link:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
     .footer { margin-top: 25px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; backdrop-filter: blur(5px); }
     .modal-backdrop.open { display: flex; }
     .modal { width: min(840px, 100%); max-height: 85vh; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; }
     .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -127,6 +116,9 @@
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+    /* Bereinigung des Editor-Formats auf der Startseite */
+    .ql-editor { padding: 0 !important; font-family: inherit !important; font-size: 14px; line-height: 1.6; }
 
     @media (max-width: 950px) {
       .dashboard-nav { grid-template-columns: 1fr; gap: 15px; }
@@ -154,17 +146,14 @@
 
        <div class="nav-card">
           <div class="nav-card-title">Wähle deine Plattform</div>
-          
           <button id="modeAutodarts" class="nav-btn btn-autodarts" type="button">
              <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
              <span>Autodarts</span>
           </button>
-          
           <button id="modeDartCounter" class="nav-btn btn-dartcounter" type="button">
              <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
              <span>DartCounter</span>
           </button>
-          
           <button id="modeScolia" class="nav-btn btn-scolia" type="button">
              <svg class="icon-svg" viewBox="0 0 24 24"><path d="M23 7a2 2 0 0 0-2-2h-4l-2-3H9L7 5H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2z"/><circle cx="12" cy="13" r="4"/></svg>
              <span>Scolia</span>
@@ -251,9 +240,6 @@
         currentSeason: "Saison 1", newsHtml: "", rulewerkHtml: "", currentUser: null,
         matchdayOpenState: {}, isAdminUser: false, allProfilesCache: []
     };
-
-    const tableAreaEl = document.getElementById("tableArea");
-    const matchdayAreaEl = document.getElementById("matchdayArea");
 
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
@@ -375,10 +361,18 @@
       matchdayAreaEl.innerHTML = renderMatchdays(data.matchdays);
     }
 
+    // FIX: GELBE UND ROTE KARTEN WIEDERHERGESTELLT
+    function renderPlayerCards(yellow, red) {
+        let html = "";
+        for (let i = 0; i < (yellow || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--yellow); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(241,196,15,0.4);"></span>`;
+        for (let i = 0; i < (red || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--red); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(231,76,60,0.4);"></span>`;
+        return html;
+    }
+
     function renderStandingsTable(rows) {
       const tbody = rows.map((s, idx) => `<tr>
           <td class="rank-col ${rankClass(idx+1, rows.length)}">${idx+1}</td>
-          <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span></td>
+          <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
           <td>${s.discord ? `<span style="color:var(--muted); font-size:12px;">${htmlEscape(s.discord)}</span>` : "-"}</td>
           <td>${s.wins}</td><td>${s.losses}</td><td>${s.legDiff}</td><td style="font-weight:bold; color:var(--accent);">${s.points}</td>
         </tr>`).join("");
@@ -439,7 +433,6 @@
             state.currentUser = authData && authData.session ? authData.session.user : null;
         } catch(e) { state.currentUser = null; }
         
-        // HIER WAR DER FEHLER: Die ID war weg, jetzt ist sie wieder da und abgesichert!
         const loginBtnEl = document.getElementById("loginBtnText");
         if(loginBtnEl) loginBtnEl.innerText = state.currentUser ? "👤 Mein Profil" : "👤 Liga Login";
 
@@ -459,13 +452,14 @@
                     const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                     const adminActionsHtml = state.isAdminUser ? `<div class="news-admin-actions"><span class="news-action-link" onclick="directEditNews('${n.id}')">✏️ Edit</span><span class="news-action-link" onclick="directDeleteNews('${n.id}')">🗑️</span></div>` : '';
                     
+                    // FIX: Quill-Editor Rendering Klasse für sauberes Design
                     nHtml += `<div class="content-block">
                                 ${adminActionsHtml}
                                 <div class="news-header-wrapper">
                                     <h4 class="news-title-text">${htmlEscape(n.title)}</h4>
                                     <span class="news-date-text">${date}</span>
                                 </div>
-                                <div>${n.content}</div>
+                                <div class="ql-snow"><div class="ql-editor">${n.content}</div></div>
                               </div>`;
                 });
             } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
@@ -474,13 +468,12 @@
             try {
                 const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
                 state.currentSeason = sys ? sys.current_season : 'Saison 1';
-                state.rulewerkHtml = sys && sys.regelwerk_html ? sys.regelwerk_html : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+                state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${sys.regelwerk_html}</div></div>` : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
             } catch(e) {
                 state.currentSeason = 'Saison 1';
                 state.rulewerkHtml = '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
             }
 
-            // HIER WAR DER FEHLER: Das Links Fenster hatte im HTML komplett gefehlt!
             const linksContentEl = document.getElementById('linksContent');
             if (linksContentEl) {
                 try { const r = await fetch('links.html'); if(r.ok) linksContentEl.innerHTML = await r.text(); } catch(e){}
