@@ -83,10 +83,15 @@
     </div>
 
     <div id="zuteilung" class="tab-content active">
-      <div class="dummy-box">
-         <span style="font-weight: bold; color: #20b7ff; font-size: 14px;">🎲 Testspieler-Tool:</span>
-         <input type="text" id="dummyNameInput" class="league-select" style="width: 200px; margin: 0;" placeholder="Spielername eingeben">
-         <button onclick="createDummyPlayer()" class="assign-btn" style="width: auto; background: #20b7ff; color: #000;">➕ Spieler anlegen</button>
+      <div class="dummy-box" style="background: rgba(32, 183, 255, 0.06); border-color: var(--accent);">
+         <span style="font-weight: bold; color: #20b7ff; font-size: 14px;">🎲 Testspieler- &amp; Simulations-Tool:</span>
+         <input type="text" id="dummyNameInput" class="league-select" style="width: 180px; margin: 0;" placeholder="Einzelner Name">
+         <button onclick="createDummyPlayer()" class="assign-btn" style="background: #20b7ff; color: #000;">➕ 1 Spieler</button>
+         
+         <div style="border-left: 1px dashed rgba(255,255,255,0.2); padding-left: 15px; display: flex; gap: 8px;">
+             <button onclick="generateMultipleDummys(10)" class="assign-btn" style="background: #2ecc71;">⚡ 10 Testspieler erzeugen</button>
+             <button onclick="deleteAllDummys()" class="assign-btn del-btn">🗑️ Alle Testspieler löschen</button>
+         </div>
       </div>
       <table>
         <thead>
@@ -179,7 +184,6 @@
         
         <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
             <input type="hidden" id="editingNewsId" value="">
-            
             <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Titel der Ankündigung:</label>
             <input type="text" id="newsTitleInput" class="input-text" placeholder="z.B. Infos zum Start von Saison 2...">
             
@@ -221,7 +225,7 @@
     let globalProfilesCache = [];
     let leagueMemoryConfig = {};
     let activeSelectedLeaguePlan = "";
-    let adminNewsCache = []; // Cache, um News-Inhalte sofort im Editor zu laden
+    let adminNewsCache = [];
 
     function switchTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -265,7 +269,7 @@
             tbody.innerHTML = `<tr><td colspan="3" class="empty-msg">Keine Beiträge verfasst.</td></tr>`;
             return;
         }
-        adminNewsCache = newsData; // Im Cache sichern für das Editieren
+        adminNewsCache = newsData;
         tbody.innerHTML = newsData.map(n => {
             const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
             return `<tr>
@@ -281,16 +285,12 @@
         }).join("");
     }
 
-    // FIX: Funktion lädt bestehende News direkt zurück in den Editor hoch
     window.startEditNews = function(id) {
         const item = adminNewsCache.find(n => String(n.id) === String(id));
         if(!item) return;
-
         document.getElementById("editingNewsId").value = item.id;
         document.getElementById("newsTitleInput").value = item.title;
         newsQuill.root.innerHTML = item.content;
-        
-        // Button-Text anpassen, um den Update-Modus zu signalisieren
         document.getElementById("newsPublishBtn").innerText = "💾 Änderungen am Beitrag speichern";
         document.getElementById("newsTitleInput").scrollIntoView({ behavior: 'smooth' });
     }
@@ -299,22 +299,15 @@
         const title = document.getElementById("newsTitleInput").value.trim();
         const content = newsQuill.root.innerHTML;
         const editingId = document.getElementById("editingNewsId").value;
-        
         if(!title || newsQuill.getText().trim() === "") { alert("Bitte fülle Titel und Inhalt aus!"); return; }
 
         if (editingId) {
-            // UPDATE-MODUS
-            const { error } = await supabaseClient.from('news').update({ title: title, content: content }).eq('id', editingId);
-            if(error) alert("Fehler beim Aktualisieren: " + error.message);
-            else alert("🎉 Der Beitrag wurde erfolgreich aktualisiert!");
+            await supabaseClient.from('news').update({ title: title, content: content }).eq('id', editingId);
+            alert("🎉 Der Beitrag wurde erfolgreich aktualisiert!");
         } else {
-            // NEUANLAGE-MODUS
-            const { error } = await supabaseClient.from('news').insert([{ title: title, content: content }]);
-            if(error) alert("Fehler beim Erstellen: " + error.message);
-            else alert("📢 News erfolgreich veröffentlicht!");
+            await supabaseClient.from('news').insert([{ title: title, content: content }]);
+            alert("📢 News erfolgreich veröffentlicht!");
         }
-
-        // Formular komplett zurücksetzen
         document.getElementById("editingNewsId").value = "";
         document.getElementById("newsTitleInput").value = "";
         newsQuill.root.innerHTML = "";
@@ -342,6 +335,43 @@
         await supabaseClient.from('profiles').insert([{ discord_name: name, real_name: name + " (Dummy)", status_neue_saison: 'waiting', want_autodarts:true, want_dartcounter:true, want_scolia:true }]);
         loadWaitingList();
         document.getElementById("dummyNameInput").value = "";
+    }
+
+    // FIX: 10 Testspieler gleichzeitig mit fortlaufender ID und Plattformzuweisungen anlegen
+    window.generateMultipleDummys = async function(count) {
+        const { data: currentPlayers } = await supabaseClient.from('profiles').select('discord_name');
+        const existingCount = currentPlayers ? currentPlayers.filter(p => p.discord_name.includes('Sim_Spieler')).length : 0;
+        
+        const dummys = [];
+        for (let i = 1; i <= count; i++) {
+            const num = existingCount + i;
+            dummys.push({
+                discord_name: `Sim_Spieler_${num}`,
+                real_name: `Sim_Spieler_${num} (Dummy)`,
+                autodarts_name: `AD_Sim_${num}`,
+                dartcounter_name: `DC_Sim_${num}`,
+                scolia_name: `SC_Sim_${num}`,
+                status_neue_saison: 'waiting',
+                want_autodarts: true,
+                want_dartcounter: true,
+                want_scolia: true
+            });
+        }
+        
+        const { error } = await supabaseClient.from('profiles').insert(dummys);
+        if(error) alert("Fehler beim Massen-Insert: " + error.message);
+        else alert(`🎰 ${count} Testspieler erfolgreich für die Simulation generiert!`);
+        loadWaitingList();
+    }
+
+    // FIX: Alle Testspieler, die das Suffix "(Dummy)" im echten Namen tragen, komplett entfernen
+    window.deleteAllDummys = async function() {
+        if (!confirm("⚠️ WARNUNG: Möchtest du wirklich ALLE Testspieler komplett aus der Datenbank löschen?\nEchte Spielerdaten bleiben unberührt!")) return;
+        
+        const { error } = await supabaseClient.from('profiles').delete().like('real_name', '%(Dummy)%');
+        if(error) alert("Fehler beim Bereinigen: " + error.message);
+        else alert("🧹 Alle Simulations-Testspieler wurden restlos gelöscht!");
+        loadWaitingList();
     }
 
     function getPlatformOptions(currentVal, platformArray) {
