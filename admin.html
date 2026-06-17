@@ -30,6 +30,7 @@
     
     .league-select { padding: 8px; border-radius: 6px; background: #0f1c24; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 13px; width: 100%; max-width: 220px; }
     .num-input { padding: 8px; border-radius: 6px; background: #0f1c24; color: #fff; border: 1px solid #4b87a5; width: 70px; text-align: center; }
+    .input-text { padding: 10px; border-radius: 6px; background: #0f1c24; color: #fff; border: 1px solid #4b87a5; width: 100%; font-size: 14px; margin-bottom: 15px; outline: none; }
     
     .assign-btn { background: #2ecc71; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
     .assign-btn:hover { opacity: 0.8; }
@@ -49,7 +50,7 @@
     .player-meta-info { font-size: 11px; color: #a3b8c5; margin-top: 6px; display: block; line-height: 1.6; font-style: italic; }
     .prev-league-badge { font-size: 11px; color: #f1c40f; display: block; margin-bottom: 4px; font-weight: bold; }
     
-    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    .dot { inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
     .dot-blue { background: #0077ff; box-shadow: 0 0 6px #0077ff; }
     .dot-orange { background: #ff6a00; box-shadow: 0 0 6px #ff6a00; }
     .dot-green { background: #00ff66; box-shadow: 0 0 6px #00ff66; }
@@ -59,15 +60,12 @@
     .row-down { background: rgba(231, 76, 60, 0.15) !important; }
     .badge-status { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 10px; }
 
-    /* Schließen-Button oben rechts in der Box */
     .close-box-btn { position: absolute; top: 12px; right: 15px; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     .close-box-btn:hover { background: rgba(231, 76, 60, 0.1); }
-
-    /* Reihe für Inputs nebeneinander */
     .inputs-row { display: flex; gap: 15px; flex-wrap: wrap; width: 100%; margin-top: 5px; margin-bottom: 10px; }
 
     .ql-toolbar.ql-snow { background: #1e293b !important; border-color: #4b87a5 !important; border-radius: 8px 8px 0 0; }
-    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #1e293b; border-radius: 0 0 8px 8px; height: 380px; font-size: 15px; color: #fff; }
+    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #1e293b; border-radius: 0 0 8px 8px; height: 300px; font-size: 15px; color: #fff; }
   </style>
 </head>
 <body>
@@ -80,8 +78,10 @@
       <button class="tab-btn" onclick="switchTab('strafen'); loadPenaltyCatalog();">3. Strafenkatalog</button>
       <button class="tab-btn" onclick="switchTab('saison'); prepareSeasonEnd();">4. Saison Beenden</button>
       <button class="tab-btn" onclick="switchTab('regelwerk-edit'); loadRuleEditor();">5. Regelwerk bearbeiten</button>
+      <button class="tab-btn" onclick="switchTab('news-edit'); initNewsManager();">6. News verwalten</button>
     </div>
 
+    <!-- 1. LIGA ZUTEILUNG -->
     <div id="zuteilung" class="tab-content active">
       <div class="dummy-box">
          <span style="font-weight: bold; color: #20b7ff; font-size: 14px;">🎲 Testspieler-Tool:</span>
@@ -102,6 +102,7 @@
       </table>
     </div>
 
+    <!-- 2. SPIELPLÄNE & ERGEBNISSE -->
     <div id="spielplan" class="tab-content">
       <h3 style="margin-top:0; color:#3498db;">📅 Spielpläne erstellen &amp; Auf-/Abstiege regeln</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">Wähle die gewünschte Liga per Knopfdruck aus, um Regeln festzulegen oder neue Spielpläne zu erstellen.</p>
@@ -135,6 +136,7 @@
       <div style="display: flex; flex-direction: column; gap: 8px; max-width: 500px;" id="leaguePlanButtons"></div>
     </div>
     
+    <!-- 3. STRAFENKATALOG -->
     <div id="strafen" class="tab-content">
       <h3 style="margin-top:0; color:#f1c40f;">🟨 Kartensystem &amp; Verwarnungen verwalten</h3>
       <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Hier kannst du Spielern gelbe oder rote Karten zuweisen. Die Karten werden live in den Tabellen der Startseite gerendert.</p>
@@ -151,6 +153,7 @@
       </table>
     </div>
     
+    <!-- 4. SAISON BEENDEN -->
     <div id="saison" class="tab-content">
        <h3 style="margin-top:0; color:#e74c3c;">🏛️ Liga einzeln abschließen &amp; archivieren</h3>
        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Wähle eine spezifische Liga aus, um die aktuelle Tabelle einzufrieren, im Archiv zu speichern und die Spieler für die neue Saison freizugeben.</p>
@@ -164,6 +167,7 @@
        <div id="closeLeaguePreviewArea" style="margin-top: 20px;"></div>
     </div>
 
+    <!-- 5. REGELWERK BEARBEITEN -->
     <div id="regelwerk-edit" class="tab-content">
         <h3 style="margin-top:0; color:#2ecc71;">📑 Globales Regelwerk konfigurieren</h3>
         <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Der hier gespeicherte Text wird sofort live auf der Startseite für alle Spieler im Overlay angezeigt.</p>
@@ -171,6 +175,35 @@
             <div id="rule-editor-container"></div>
         </div>
         <button class="assign-btn" style="width:100%; min-height:45px; font-size:15px;" onclick="saveRules()">💾 Änderungen am Regelwerk live schalten</button>
+    </div>
+
+    <!-- 6. NEWS VERWALTEN (NEU DAZUGEBAUT) -->
+    <div id="news-edit" class="tab-content">
+        <h3 style="margin-top:0; color:#3498db;">📰 Neuigkeiten &amp; Ankündigungen veröffentlichen</h3>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Erstelle neue Beiträge für die Startseite oder lösche veraltete News-Einträge.</p>
+        
+        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
+            <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Titel der Ankündigung:</label>
+            <input type="text" id="newsTitleInput" class="input-text" placeholder="z.B. Infos zum Start von Saison 2...">
+            
+            <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Inhalt:</label>
+            <div style="margin-bottom:20px;">
+                <div id="news-editor-container"></div>
+            </div>
+            <button class="assign-btn" style="width:100%; min-height:40px;" onclick="publishNews()">📢 Nachricht veröffentlichen</button>
+        </div>
+
+        <h4 style="color:#fff; margin-bottom:10px;">Bestehende Beiträge verwalten:</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>Titel</th>
+                    <th width="120px">Aktion</th>
+                </tr>
+            </thead>
+            <tbody id="adminNewsListBody"><tr><td colspan="3" class="empty-msg">Lade Beiträge...</td></tr></tbody>
+        </table>
     </div>
 
   </div>
@@ -187,6 +220,7 @@
     
     let currentSeasonGlobal = "Saison 1";
     let ruleQuill = null;
+    let newsQuill = null;
     let globalProfilesCache = [];
     let leagueMemoryConfig = {};
     let activeSelectedLeaguePlan = "";
@@ -214,6 +248,55 @@
         const htmlContent = ruleQuill.root.innerHTML;
         await supabaseClient.from('system_settings').update({ regelwerk_html: htmlContent }).eq('id', 1);
         alert("🎉 Das Regelwerk wurde erfolgreich aktualisiert!");
+    }
+
+    // NEWS LOGIK (AUS DEM PROFIL EXTRAHIERT UND VERBESSERT)
+    window.initNewsManager = function() {
+        if (!newsQuill) {
+            newsQuill = new Quill('#news-editor-container', {
+                theme: 'snow',
+                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }
+            });
+        }
+        loadAdminNewsList();
+    }
+
+    window.loadAdminNewsList = async function() {
+        const { data: newsData, error } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
+        const tbody = document.getElementById("adminNewsListBody");
+        if (error || !newsData || newsData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="empty-msg">Keine Beiträge verfasst.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = newsData.map(n => {
+            const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            return `<tr>
+                <td><span style="color:var(--muted); font-size:13px;">${date}</span></td>
+                <td><b>${htmlEscape(n.title)}</b></td>
+                <td><button class="assign-btn del-btn" onclick="deleteNewsConfirm('${n.id}')">🗑️ Löschen</button></td>
+            </tr>`;
+        }).join("");
+    }
+
+    window.publishNews = async function() {
+        const title = document.getElementById("newsTitleInput").value.trim();
+        const content = newsQuill.root.innerHTML;
+        if(!title || newsQuill.getText().trim() === "") { alert("Bitte fülle Titel und Inhalt aus!"); return; }
+
+        const { error } = await supabaseClient.from('news').insert([{ title: title, content: content }]);
+        if(error) alert("Fehler: " + error.message);
+        else {
+            alert("📢 News erfolgreich veröffentlicht!");
+            document.getElementById("newsTitleInput").value = "";
+            newsQuill.root.innerHTML = "";
+            loadAdminNewsList();
+        }
+    }
+
+    window.deleteNewsConfirm = async function(id) {
+        if(!confirm("Möchtest du diesen Beitrag wirklich unwiderruflich löschen?")) return;
+        await supabaseClient.from('news').delete().eq('id', id);
+        loadAdminNewsList();
     }
 
     async function initAdmin() {
@@ -291,7 +374,6 @@
         calculateDynamicStandings();
     }
 
-    // FIX: Funktion zum Schließen der Einzelansicht per "X" Button
     window.closePlanEditor = function() {
         activeSelectedLeaguePlan = "";
         document.getElementById("globalLeagueRulesBox").style.display = "none";
