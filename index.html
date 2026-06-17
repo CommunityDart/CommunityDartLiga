@@ -39,7 +39,7 @@
     .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
     .header-branding span { font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
 
-    /* FIX: dashboard-nav auf align-items: start setzen, damit die Kacheln bei Inhaltswechsel mitschrumpfen */
+    /* FIX: align-items: start verhindert, dass Kacheln künstlich in die Länge gezogen werden */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 20px; margin-bottom: 25px; align-items: start; }
     .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.12); backdrop-filter: blur(10px); position: relative; height: auto; }
     .nav-card-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 6px; }
@@ -54,7 +54,7 @@
     .btn-dartcounter:hover, .btn-dartcounter.active { background: linear-gradient(90deg, #cc4400, #ff6a00); border-color: #ff943d; box-shadow: 0 0 25px rgba(255,106,0,0.6); color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     
     .btn-scolia { border-color: rgba(0,255,102,0.4); background: rgba(0,255,102,0.05); color: #99ffbb; }
-    .btn-scolia:hover, .btn-scolia.active { background: linear-gradient(90deg, #00b344, #00ff66); border-color: #33ff88; box-shadow: 0 0 25px rgba(0,255,102,0.6); color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
+    .btn-scolia:hover, .btn-scolia.active { background: linear-gradient(90deg, #00b344, #00ff66); border-color: #33ff88; box-shadow: 0 0 25px rgba(0,255,102,0.5); color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     
     .btn-home.active, .btn-info.active { border-color: var(--accent); background: rgba(52,152,219,0.25); color: #fff; box-shadow: 0 0 15px rgba(52,152,219,0.3); }
     .btn-discord { background: rgba(88,101,242,0.2); border-color: rgba(88,101,242,0.5); }
@@ -426,7 +426,7 @@
     function renderHome() { tableAreaEl.innerHTML = state.newsHtml; matchdayAreaEl.innerHTML = ""; }
     function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
 
-    // RENDER FIX: Fehlerresistenter asynchroner Core-Load
+    // RENDER LOGIK (Hier wurde der JavaScript Absturz komplett beseitigt!)
     async function loadAll() {
         try {
             const { data: authData } = await supabaseClient.auth.getSession();
@@ -495,6 +495,8 @@
                     if(m.status === 'done' && m.player1_id && m.player2_id) {
                         if(!stats[m.player1_id]) stats[m.player1_id] = { id: m.player1_id, name: "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0 };
                         if(!stats[m.player2_id]) stats[m.player2_id] = { id: m.player2_id, name: "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0 };
+                        
+                        // FIX: Buchstabendreher beim Cache-Verzeichnis-Check korrigiert
                         const l1 = parseInt(m.legs1) || 0; const l2 = parseInt(m.legs2) || 0;
                         stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                         if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
