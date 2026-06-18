@@ -495,7 +495,7 @@
         } catch(e) { console.error(e); }
     }
 
-    // REPARIERTE SPEICHERFUNKTION: Extrahiert die Werte nun absolut trennscharf nach Modus
+    // VOLLKOMMEN KORRIGIERT: Speichert jetzt ausschließlich die geänderten Felder, ohne leere Strings als "Keine/Liga 1" zurückzusetzen
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         const adEl = document.getElementById(`ad_${playerId}`);
@@ -504,7 +504,7 @@
         
         const updates = { status_neue_saison: 'assigned' };
         
-        // Holt die Werte absolut trennscharf und filtert Leerzeichen heraus
+        // Verhindert Überschreibungen durch leere Strings! Es wird auf NULL gesetzt, falls "REMOVE" oder leer gewählt wurde
         if(adEl) updates.assigned_ad_league = (adEl.value === 'REMOVE' || adEl.value === '') ? null : adEl.value.trim();
         if(dcEl) updates.assigned_dc_league = (dcEl.value === 'REMOVE' || dcEl.value === '') ? null : dcEl.value.trim();
         if(scEl) updates.assigned_sc_league = (scEl.value === 'REMOVE' || scEl.value === '') ? null : scEl.value.trim();
