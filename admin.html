@@ -1,777 +1,712 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Admin Dashboard - CDL</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
-  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-
-  <style>
-    body { background: #0f1c24; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
-    .shell { background: #162a35; border: 1px solid rgba(231,76,60,0.4); padding: 30px; border-radius: 15px; max-width: 1450px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-    
-    h1 { color: #e74c3c; margin-top: 0; display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;}
-    .back-btn { background: transparent; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 15px; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; }
-    .back-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); }
-    
-    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; overflow-x: auto; }
-    .tab-btn { background: rgba(0,0,0,0.2); color: #a3b8c5; border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s; }
-    .tab-btn:hover { background: rgba(255,255,255,0.05); }
-    .tab-btn.active { background: rgba(231,76,60,0.2); color: #e74c3c; border-color: #e74c3c; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    table { width: 100%; border-collapse: collapse; min-width: 900px; margin-bottom: 20px; }
-    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
-    th { background: rgba(0,0,0,0.15); color: #a3b8c5; font-size: 13px; text-transform: uppercase; }
-    
-    .league-select { padding: 8px; border-radius: 6px; background: #0f1c24; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 13px; width: 100%; max-width: 220px; }
-    .num-input { padding: 8px; border-radius: 6px; background: #0f1c24; color: #fff; border: 1px solid #4b87a5; width: 70px; text-align: center; }
-    .score-input { padding: 6px; border-radius: 6px; background: #0f1c24; color: #fff; border: 1px solid #4b87a5; width: 50px; text-align: center; font-weight: bold; }
-    .input-text { padding: 10px; border-radius: 6px; background: #0f1c24; color: #fff; border: 1px solid #4b87a5; width: 100%; font-size: 14px; margin-bottom: 15px; outline: none; }
-    
-    .assign-btn { background: #2ecc71; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
-    .assign-btn:hover { opacity: 0.8; }
-    .del-btn { background: #e74c3c; }
-    .edit-btn { background: #3498db; }
-    
-    .plan-action-btn { width: 100%; background: rgba(52, 152, 219, 0.1); border: 1px solid #3498db; color: #fff; padding: 12px; text-align: left; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .plan-action-btn:hover { background: rgba(52, 152, 219, 0.25); transform: translateX(4px); }
-
-    .card-counter-wrap { display: flex; align-items: center; gap: 8px; }
-    .counter-num { font-weight: bold; font-size: 16px; min-width: 20px; text-align: center; }
-    .count-btn { background: #34495e; color: #fff; border: 1px solid #5d6d7e; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .count-btn:hover { background: #5d6d7e; }
-
-    .dummy-box { background: rgba(32,183,255,0.04); border: 1px dashed rgba(32,183,255,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; position: relative; }
-    .empty-msg { text-align: center; color: #a3b8c5; padding: 40px; font-style: italic; }
-
-    .player-meta-info { font-size: 11px; color: #a3b8c5; margin-top: 6px; display: block; line-height: 1.6; font-style: italic; }
-    .prev-league-badge { font-size: 11px; color: #f1c40f; display: block; margin-bottom: 4px; font-weight: bold; }
-    
-    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-    .dot-blue { background: #0077ff; box-shadow: 0 0 6px #0077ff; }
-    .dot-orange { background: #ff6a00; box-shadow: 0 0 6px #ff6a00; }
-    .dot-green { background: #00ff66; box-shadow: 0 0 6px #00ff66; }
-
-    .row-up { background: rgba(46, 204, 113, 0.15) !important; }
-    .row-relegation { background: rgba(241, 196, 15, 0.1) !important; }
-    .row-down { background: rgba(231, 76, 60, 0.15) !important; }
-    .badge-status { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 10px; }
-
-    .close-box-btn { position: absolute; top: 12px; right: 15px; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .close-box-btn:hover { background: rgba(231, 76, 60, 0.1); }
-    .inputs-row { display: flex; gap: 15px; flex-wrap: wrap; width: 100%; margin-top: 5px; margin-bottom: 10px; }
-
-    .matchday-header-title { color: #20b7ff; font-size: 16px; font-weight: bold; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 5px;}
-
-    .ql-toolbar.ql-snow { background: #1e293b !important; border-color: #4b87a5 !important; border-radius: 8px 8px 0 0; }
-    .ql-container.ql-snow { border-color: #4b87a5 !important; background: #1e293b; border-radius: 0 0 8px 8px; height: 380px; font-size: 15px; color: #fff; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kommandozentrale - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #010a0f;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #021622;
+            border: 1px solid rgba(75, 135, 165, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        h1, h2 {
+            color: #3ddc97;
+            margin-top: 0;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: #021017;
+            color: #90a9b7;
+            border: 1px solid #4b87a5;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: #3ddc97;
+            color: #000;
+            border-color: #3ddc97;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 15px 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: middle;
+        }
+        th {
+            background: rgba(0,0,0,0.2);
+            color: #90a9b7;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+        .league-select, .leg-input {
+            padding: 8px;
+            border-radius: 6px;
+            background: #021017;
+            color: #fff;
+            border: 1px solid #4b87a5;
+            outline: none;
+            font-size: 13px;
+        }
+        .leg-input {
+            width: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .assign-btn {
+            background: #3ddc97;
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .assign-btn:hover { opacity: 0.8; }
+        .remove-btn {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: 0.2s;
+            margin-top: 5px;
+            width: 100%;
+        }
+        .remove-btn:hover { opacity: 0.8; }
+        .card-btn {
+            background: #021017;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .card-btn.yellow:hover { background: #f7c948; color: #000; }
+        .card-btn.red:hover { background: #e74c3c; color: #fff; }
+        
+        /* TESTSPIELER GENERATOR KASTEN */
+        .dummy-box {
+            background: rgba(32,183,255,0.05);
+            border: 1px dashed rgba(32,183,255,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .dummy-input {
+            padding: 10px;
+            border-radius: 6px;
+            background: #021017;
+            color: #fff;
+            border: 1px solid #20b7ff;
+            flex: 1;
+            min-width: 200px;
+        }
+        .dummy-btn {
+            background: #20b7ff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .editor-container {
+            background: #fff;
+            color: #000;
+            border-radius: 0 0 8px 8px;
+            min-height: 300px;
+        }
+        .ql-toolbar {
+            background: #eee;
+            border-radius: 8px 8px 0 0;
+        }
+        .save-banner-btn {
+            background: #3ddc97;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+            font-size: 15px;
+        }
+    </style>
 </head>
 <body>
-  <div class="shell">
-    <h1>⚙️ Kommandozentrale <button class="back-btn" onclick="window.location.href='profil.html'">← Zurück</button></h1>
+
+<div class="admin-container">
+    <h1>🎯 Community Dart Liga - Cockpit</h1>
     
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('zuteilung')">1. Liga Zuteilung</button>
-      <button class="tab-btn" onclick="switchTab('spielplan'); initPlanButtons();">2. Spielpläne &amp; Ergebnisse</button>
-      <button class="tab-btn" onclick="switchTab('strafen'); loadPenaltyCatalog();">3. Strafenkatalog</button>
-      <button class="tab-btn" onclick="switchTab('saison'); prepareSeasonEnd();">4. Saison Beenden</button>
-      <button class="tab-btn" onclick="switchTab('regelwerk-edit'); loadRuleEditor();">5. Regelwerk bearbeiten</button>
-      <button class="tab-btn" onclick="switchTab('news-edit'); initNewsManager();">6. News verwalten</button>
+        <button class="tab-btn active" onclick="switchTab('tabZuteilung')">1. Liga Zuteilung</button>
+        <button class="tab-btn" onclick="switchTab('tabSpielplaene')">2. Spielpläne & Ergebnisse</button>
+        <button class="tab-btn" onclick="switchTab('tabStrafen')">3. Strafenkatalog</button>
+        <button class="tab-btn" onclick="switchTab('tabNews')">4. News verfassen</button>
+        <button class="tab-btn" onclick="switchTab('tabRegelwerk')" id="btnTabRegelwerk">5. Regelwerk bearbeiten</button>
     </div>
 
-    <!-- 1. LIGA ZUTEILUNG -->
-    <div id="zuteilung" class="tab-content active">
-      <div class="dummy-box" style="background: rgba(32, 183, 255, 0.06); border-color: var(--accent);">
-         <span style="font-weight: bold; color: #20b7ff; font-size: 14px;">🎲 Testspieler- &amp; Simulations-Tool:</span>
-         <input type="text" id="dummyNameInput" class="league-select" style="width: 180px; margin: 0;" placeholder="Einzelner Name">
-         <button onclick="createDummyPlayer()" class="assign-btn" style="background: #20b7ff; color: #000;">➕ 1 Spieler</button>
-         
-         <div style="border-left: 1px dashed rgba(255,255,255,0.2); padding-left: 15px; display: flex; gap: 8px;">
-             <button onclick="generateMultipleDummys(10)" class="assign-btn" style="background: #2ecc71;">⚡ 10 Testspieler erzeugen</button>
-             <button onclick="deleteAllDummys()" class="assign-btn del-btn">🗑️ Alle Testspieler löschen</button>
-         </div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Spieler &amp; Plattform-Namen</th>
-            <th>Autodarts (Soll/Ist)</th>
-            <th>DartCounter (Soll/Ist)</th>
-            <th>Scolia (Soll/Ist)</th>
-            <th>Aktionen</th>
-          </tr>
-        </thead>
-        <tbody id="waitingListBody"><tr><td colspan="5" class="empty-msg">Lade Daten...</td></tr></tbody>
-      </table>
-    </div>
-
-    <!-- 2. SPIELPLÄNE & ERGEBNISSE -->
-    <div id="spielplan" class="tab-content">
-      <h3 style="margin-top:0; color:#3498db;">📅 Spielpläne erstellen &amp; Ergebnisse eintragen</h3>
-      <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">Wähle die gewünschte Liga per Knopfdruck aus, um Regeln festzulegen oder neue Spielpläne zu erstellen.</p>
-      
-      <div class="dummy-box" id="globalLeagueRulesBox" style="display:none; background: rgba(52, 152, 219, 0.05); padding-top: 40px;">
-         <button class="close-box-btn" onclick="closePlanEditor()">✕ Ansicht schließen</button>
-         <h4 id="rulesEditorTitle" style="margin:0 0 10px 0; width:100%; color:#3498db;">Regeln bearbeiten</h4>
-         
-         <div class="inputs-row">
-             <div>
-                <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#2ecc71;">🏆 Aufsteiger:</label>
-                <input type="number" id="inputUpCount" class="num-input" value="2" min="0" onchange="calculateDynamicStandings()">
-             </div>
-             <div>
-                <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#f1c40f;">🤝 Relegation:</label>
-                <input type="number" id="inputRelCount" class="num-input" value="1" min="0" onchange="calculateDynamicStandings()">
-             </div>
-             <div>
-                <label style="display:block; font-size:11px; margin-bottom:4px; font-weight:bold; color:#e74c3c;">🔻 Absteiger:</label>
-                <input type="number" id="inputDownCount" class="num-input" value="2" min="0" onchange="calculateDynamicStandings()">
-             </div>
-             <div style="align-self: flex-end; display: flex; gap: 8px;">
-                <button class="assign-btn" onclick="saveLeagueRuleConfig()">💾 Regelung merken</button>
-                <button class="assign-btn" style="background:#3498db;" onclick="generateSaisonPlan()">📅 Spielplan generieren</button>
-                <button class="assign-btn del-btn" onclick="clearLeagueMatches()">🗑️ Spielplan löschen</button>
-             </div>
-         </div>
-         
-         <div id="dynamicStandingsArea" style="width:100%; margin-top:15px;"></div>
-         <div id="matchesEditorArea" style="width:100%; margin-top:20px;"></div>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 500px;" id="leaguePlanButtons"></div>
-    </div>
-    
-    <!-- 3. STRAFENKATALOG -->
-    <div id="strafen" class="tab-content">
-      <h3 style="margin-top:0; color:#f1c40f;">🟨 Kartensystem &amp; Verwarnungen verwalten</h3>
-      <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Hier kannst du Spielern gelbe oder rote Karten zuweisen. Die Karten werden live in den Tabellen der Startseite gerendert.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Spieler</th>
-            <th>Gelbe Karten (🟨)</th>
-            <th>Rote Karten (🟥)</th>
-            <th>Aktion</th>
-          </tr>
-        </thead>
-        <tbody id="penaltyListBody"><tr><td colspan="4" class="empty-msg">Wird geladen...</td></tr></tbody>
-      </table>
-    </div>
-    
-    <!-- 4. SAISON BEENDEN -->
-    <div id="saison" class="tab-content">
-       <h3 style="margin-top:0; color:#e74c3c;">🏛️ Liga einzeln abschließen &amp; archivieren</h3>
-       <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Wähle eine spezifische Liga aus, um die aktuelle Tabelle einzufrieren, im Archiv zu speichern und die Spieler für die neue Saison freizugeben.</p>
-       
-       <div class="dummy-box">
-          <span style="font-weight: bold; color: #e74c3c;">Wähle die Liga:</span>
-          <select id="closeLeagueSelect" class="league-select" onchange="previewLeagueTable()"></select>
-          <button class="assign-btn del-btn" onclick="executeSingleLeagueEnd()">🔒 Ausgewählte Liga schließen</button>
-       </div>
-
-       <div id="closeLeaguePreviewArea" style="margin-top: 20px;"></div>
-    </div>
-
-    <!-- 5. REGELWERK BEARBEITEN -->
-    <div id="regelwerk-edit" class="tab-content">
-        <h3 style="margin-top:0; color:#2ecc71;">📑 Globales Regelwerk konfigurieren</h3>
-        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Der hier gespeicherte Text wird sofort live auf der Startseite für alle Spieler im Overlay angezeigt.</p>
-        <div style="margin-bottom:20px;">
-            <div id="rule-editor-container"></div>
-        </div>
-        <button class="assign-btn" style="width:100%; min-height:45px; font-size:15px;" onclick="saveRules()">💾 Änderungen am Regelwerk live schalten</button>
-    </div>
-
-    <!-- 6. NEWS VERWALTEN -->
-    <div id="news-edit" class="tab-content">
-        <h3 style="margin-top:0; color:#3498db;">📰 Neuigkeiten &amp; Ankündigungen veröffentlichen</h3>
-        <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">Erstelle neue Beiträge für die Startseite, bearbeite bestehende oder lösche veraltete News-Einträge.</p>
+    <div id="tabZuteilung" class="tab-content active">
+        <h2>Spieler für die neue Saison einteilen</h2>
         
-        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px;">
-            <input type="hidden" id="editingNewsId" value="">
-            <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Titel der Ankündigung:</label>
-            <input type="text" id="newsTitleInput" class="input-text" placeholder="z.B. Infos zum Start von Saison 2...">
-            
-            <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px;">Inhalt:</label>
-            <div style="margin-bottom:20px;">
-                <div id="news-editor-container"></div>
-            </div>
-            <button class="assign-btn" id="newsPublishBtn" style="width:100%; min-height:40px;" onclick="publishNews()">📢 Nachricht veröffentlichen</button>
+        <div class="dummy-box">
+            <span style="color: #20b7ff; font-weight: bold;">🛠️ Testspieler-Tool:</span>
+            <input type="text" id="dummyNameInput" class="dummy-input" placeholder="Name des Dummy-Spielers eingeben...">
+            <button class="dummy-btn" onclick="createDummyPlayer()">➕ Spieler anlegen</button>
         </div>
 
-        <h4 style="color:#fff; margin-bottom:10px;">Bestehende Beiträge verwalten:</h4>
-        <table>
-            <thead>
-                <tr>
-                    <th>Datum</th>
-                    <th>Titel</th>
-                    <th width="200px">Aktionen</th>
-                </tr>
-            </thead>
-            <tbody id="adminNewsListBody"><tr><td colspan="3" class="empty-msg">Lade Beiträge...</td></tr></tbody>
-        </table>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Spieler (Discord / Real)</th>
+                        <th>Autodarts Zuteilung</th>
+                        <th>DartCounter Zuteilung</th>
+                        <th>Scolia Zuteilung</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="waitingListBody">
+                    <tr><td colspan="5">Warteliste wird geladen...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-  </div>
+    <div id="tabSpielplaene" class="tab-content">
+        <h2>Ergebnisse & Spieltage eintragen</h2>
+        <div style="margin-bottom: 15px;">
+            <select id="leagueSelector" class="league-select" onchange="loadMatchdayPlan()">
+                <option value="" disabled selected>-- Liga Auswählen --</option>
+            </select>
+            <button class="dummy-btn" id="btnGeneratePlan" style="display:none; margin-left:10px;" onclick="generateSchedules()">Spielplan generieren</button>
+        </div>
+        <div id="scheduleArea">Bitte wähle zuerst eine Liga aus.</div>
+    </div>
 
-  <script>
-    const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnRudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <div id="tabStrafen" class="tab-content">
+        <h2>Karten & Strafen verwalten</h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Spieler</th>
+                        <th>Gelbe Karten</th>
+                        <th>Rote Karten</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="strafenListBody">
+                    <tr><td colspan="4">Lade angestellte Spieler...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tabNews" class="tab-content">
+        <h2>Neuigkeiten auf der Startseite veröffentlichen</h2>
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="newsTitleInput" class="dummy-input" placeholder="Überschrift der News..." style="width:100%; box-sizing:border-box; margin-bottom:10px; font-size:16px;">
+        </div>
+        <div id="newsEditor" class="editor-container"></div>
+        <button class="save-banner-btn" onclick="publishNews()">📢 News veröffentlichen</button>
+        
+        <h3 style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">Bestehende News verwalten</h3>
+        <div id="adminNewsContainer">Lade geschriebene Beiträge...</div>
+    </div>
+
+    <div id="tabRegelwerk" class="tab-content">
+        <h2>Globales Regelwerk anpassen</h2>
+        <p style="color: #90a9b7; size: 13px;">Formatierungen, Tabellen oder Listen, die du hier speicherst, werden sofort live auf der Startseite ausgegeben.</p>
+        <div id="ruleEditor" class="editor-container"></div>
+        <button class="save-banner-btn" onclick="saveRegelwerkHtml()">💾 Regelwerk live speichern</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+
+<script>
+    // ===========================================================
+    // 1. CONFIGURATION & STATE
+    // ===========================================================
+    const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
+    const SUPABASE_ANON_KEY = "DEIN_ECHTER_SUPABASE_ANON_KEY"; // HIER TRÄGST DU DEINEN KEY EIN
     
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
     const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
     const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
     const ALL_LEAGUES = [...AD_LEAGUES, ...DC_LEAGUES, ...SC_LEAGUES];
-    
-    let currentSeasonGlobal = "Saison 1";
-    let ruleQuill = null;
-    let newsQuill = null;
-    let globalProfilesCache = [];
-    let leagueMemoryConfig = {};
-    let activeSelectedLeaguePlan = "";
-    let adminNewsCache = [];
 
-    // FIX: Erzeugt eine 100% kryptografisch gültige v4 UUID für PostgreSQL Spalten-Zwänge
-    function generateUUIDv4() {
+    let currentSeasonGlobal = "Saison 1";
+    let newsQuill = null;
+    let ruleQuill = null;
+    let editingNewsId = null;
+
+    // ===========================================================
+    // 2. AUXILIARY FUNCTIONS & HELPER TOOLS
+    // ===========================================================
+    function htmlEscape(str) {
+        if (!str) return "";
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+
+        if (tabId === 'tabRegelwerk' && !ruleQuill) {
+            initRuleEditor();
+        }
+    }
+
+    function generateLegacyUuid() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     }
 
-    function switchTab(id) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if (window.event && window.event.currentTarget) window.event.currentTarget.classList.add('active');
-    }
-
-    window.loadRuleEditor = function() {
-        if (!ruleQuill) {
-            ruleQuill = new Quill('#rule-editor-container', {
-                theme: 'snow',
-                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }
-            });
-        }
-        supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single().then(({data}) => {
-            if(data && data.regelwerk_html) ruleQuill.root.innerHTML = data.regelwerk_html;
-        });
-    }
-
-    window.saveRules = async function() {
-        const htmlContent = ruleQuill.root.innerHTML;
-        await supabaseClient.from('system_settings').update({ regelwerk_html: htmlContent }).eq('id', 1);
-        alert("🎉 Das Regelwerk wurde erfolgreich aktualisiert!");
-    }
-
-    window.initNewsManager = function() {
-        if (!newsQuill) {
-            newsQuill = new Quill('#news-editor-container', {
-                theme: 'snow',
-                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }
-            });
-        }
-        loadAdminNewsList();
-    }
-
-    window.loadAdminNewsList = async function() {
-        const { data: newsData, error } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
-        const tbody = document.getElementById("adminNewsListBody");
-        if (error || !newsData || newsData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" class="empty-msg">Keine Beiträge verfasst.</td></tr>`;
-            return;
-        }
-        adminNewsCache = newsData;
-        tbody.innerHTML = newsData.map(n => {
-            const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            return `<tr>
-                <td><span style="color:var(--muted); font-size:13px;">${date}</span></td>
-                <td><b>${htmlEscape(n.title)}</b></td>
-                <td>
-                    <div style="display:flex; gap:6px;">
-                        <button class="assign-btn edit-btn" onclick="startEditNews('${n.id}')">✏️ Bearbeiten</button>
-                        <button class="assign-btn del-btn" onclick="deleteNewsConfirm('${n.id}')">🗑️</button>
-                    </div>
-                </td>
-            </tr>`;
-        }).join("");
-    }
-
-    window.startEditNews = function(id) {
-        const item = adminNewsCache.find(n => String(n.id) === String(id));
-        if(!item) return;
-        document.getElementById("editingNewsId").value = item.id;
-        document.getElementById("newsTitleInput").value = item.title;
-        newsQuill.root.innerHTML = item.content;
-        document.getElementById("newsPublishBtn").innerText = "💾 Änderungen am Beitrag speichern";
-        document.getElementById("newsTitleInput").scrollIntoView({ behavior: 'smooth' });
-    }
-
-    window.publishNews = async function() {
-        const title = document.getElementById("newsTitleInput").value.trim();
-        const content = newsQuill.root.innerHTML;
-        const editingId = document.getElementById("editingNewsId").value;
-        if(!title || newsQuill.getText().trim() === "") { alert("Bitte fülle Titel und Inhalt aus!"); return; }
-
-        if (editingId) {
-            await supabaseClient.from('news').update({ title: title, content: content }).eq('id', editingId);
-            alert("🎉 Der Beitrag wurde erfolgreich aktualisiert!");
-        } else {
-            await supabaseClient.from('news').insert([{ title: title, content: content }]);
-            alert("📢 News erfolgreich veröffentlicht!");
-        }
-        document.getElementById("editingNewsId").value = "";
-        document.getElementById("newsTitleInput").value = "";
-        newsQuill.root.innerHTML = "";
-        document.getElementById("newsPublishBtn").innerText = "📢 Nachricht veröffentlichen";
-        loadAdminNewsList();
-    }
-
-    window.deleteNewsConfirm = async function(id) {
-        if(!confirm("Möchtest du diesen Beitrag wirklich unwiderruflich löschen?")) return;
-        await supabaseClient.from('news').delete().eq('id', id);
-        loadAdminNewsList();
-    }
-
-    async function initAdmin() {
-        try {
-            const { data: sysData } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
-            if(sysData) currentSeasonGlobal = sysData.current_season;
-        } catch(e) {}
-        loadWaitingList();
-    }
-
-    // FIX: Nutzt jetzt eine mathematisch korrekte UUIDv4
+    // ===========================================================
+    // 3. LOGIC & DATA HANDLING (TAB CONTENT WORKERS)
+    // ===========================================================
+    
+    // --- TAB 1: GENERATE TESTPLAYERS & ASSIGNMENTS ---
     window.createDummyPlayer = async function() {
         const name = document.getElementById("dummyNameInput").value.trim();
-        if(!name) return;
-        
-        const { error } = await supabaseClient.from('profiles').insert([{ 
-            id: generateUUIDv4(),
-            discord_name: name, 
-            real_name: name + " (Dummy)", 
-            status_neue_saison: 'waiting', 
-            want_autodarts: true, 
-            want_dartcounter: true, 
-            want_scolia: true 
-        }]);
-        
-        if(error) alert("Fehler: " + error.message);
-        document.getElementById("dummyNameInput").value = "";
-        loadWaitingList();
-    }
+        if(!name) return alert("Bitte gib erst einen Namen für den Spieler ein!");
 
-    // FIX: Generiert 10 Testspieler mit echten UUIDs für den Primary-Key
-    window.generateMultipleDummys = async function(count) {
-        const { data: currentPlayers } = await supabaseClient.from('profiles').select('discord_name');
-        const existingCount = currentPlayers ? currentPlayers.filter(p => p.discord_name.includes('Sim_Spieler')).length : 0;
-        
-        const dummys = [];
-        for (let i = 1; i <= count; i++) {
-            const num = existingCount + i;
-            dummys.push({
-                id: generateUUIDv4(), // Gültiges Format umgeht alle fkey und uuid Fehler restlos!
-                discord_name: `Sim_Spieler_${num}`,
-                real_name: `Sim_Spieler_${num} (Dummy)`,
-                autodarts_name: `AD_Sim_${num}`,
-                dartcounter_name: `DC_Sim_${num}`,
-                scolia_name: `SC_Sim_${num}`,
-                status_neue_saison: 'waiting',
-                want_autodarts: true,
-                want_dartcounter: true,
-                want_scolia: true
-            });
+        const dummyId = generateLegacyUuid();
+        const dummyRow = {
+            id: dummyId,
+            username: name,
+            discord_name: name,
+            real_name: "Testspieler",
+            status_neue_saison: 'waiting',
+            want_autodarts: true,
+            want_dartcounter: true,
+            want_scolia: true,
+            role: 'user'
+        };
+
+        const { error } = await supabaseClient.from('profiles').insert([dummyRow]);
+        if (error) {
+            alert("Fehler beim Erstellen: " + error.message);
+        } else {
+            alert(`🎉 Spieler "${name}" erfolgreich angelegt!`);
+            document.getElementById("dummyNameInput").value = "";
+            loadWaitingList();
+            loadStrafenkatalogList();
         }
-        
-        const { error } = await supabaseClient.from('profiles').insert(dummys);
-        if(error) alert("Fehler beim Massen-Insert: " + error.message);
-        else alert(`🎰 ${count} Testspieler erfolgreich in der DB gespeichert!`);
-        loadWaitingList();
-    }
+    };
 
-    window.deleteAllDummys = async function() {
-        if (!confirm("⚠️ WARNUNG: Möchtest du wirklich ALLE Testspieler komplett aus der Datenbank löschen?\nEchte Spielerdaten bleiben unberührt!")) return;
-        
-        const { error } = await supabaseClient.from('profiles').delete().like('real_name', '%(Dummy)%');
-        if(error) alert("Fehler beim Bereinigen: " + error.message);
-        else alert("🧹 Alle Simulations-Testspieler wurden restlos gelöscht!");
-        loadWaitingList();
-    }
-
-    function getPlatformOptions(currentVal, platformArray) {
-        let html = `<option value="REMOVE">❌ Keine Liga</option>`;
-        platformArray.forEach(l => {
+    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
+        if (!isWanted) return `<span style="color:#666;">Nicht angemeldet</span>`;
+        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
+        html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
+        html += `<option value="REMOVE">❌ Komplett entfernen</option>`;
+        optionsArr.forEach(l => {
             html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
         });
+        html += `</select>`;
         return html;
     }
 
-    window.loadWaitingList = async function() {
-        const { data: allPlayers, error } = await supabaseClient.from('profiles').select('*');
-        if (error) return;
-        globalProfilesCache = allPlayers || [];
-        
-        const players = allPlayers ? allPlayers.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
+    async function loadWaitingList() {
+        const tbody = document.getElementById("waitingListBody");
+        if (!tbody) return;
 
-        if (players.length === 0) {
-            document.getElementById("waitingListBody").innerHTML = `<tr><td colspan="5" class="empty-msg">Aktuell keine Anmeldungen vorhanden.</td></tr>`;
+        // Sicherheitsupdate: Wir laden alle angemeldeten Profile ohne blockierende OR-Klauseln
+        const { data: players, error } = await supabaseClient.from('profiles').select('*');
+        
+        if (error) {
+            tbody.innerHTML = `<tr><td colspan="5">Fehler beim Laden: ${error.message}</td></tr>`;
             return;
         }
 
-        document.getElementById("waitingListBody").innerHTML = players.map(p => {
-            let hint = "";
-            if(p.next_season_target === 'up') hint = " <span style='color:#2ecc71; font-size:11px;'>(🟢 Aufsteiger)</span>";
-            if(p.next_season_target === 'down') hint = " <span style='color:#e74c3c; font-size:11px;'>(🔴 Absteiger)</span>";
-            const isDummy = String(p.real_name).includes("(Dummy)");
+        const activePlayers = players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned');
 
-            return `<tr>
-                <td>
-                    <b style="font-size:15px; color:${isDummy ? '#20b7ff' : '#fff'};">${htmlEscape(p.discord_name || p.real_name)}</b> ${isDummy ? '<span style="font-size:10px; color:#f1c40f;">[Testspieler]</span>' : ''} ${hint}
-                    <span class="player-meta-info">
-                        <span class="dot dot-blue"></span>AD: ${htmlEscape(p.autodarts_name || 'Kein Name')}<br>
-                        <span class="dot dot-orange"></span>DC: ${htmlEscape(p.dartcounter_name || 'Kein Name')}<br>
-                        <span class="dot dot-green"></span>SC: ${htmlEscape(p.scolia_name || 'Kein Name')}
-                    </span>
-                </td>
-                <td><select id="ad_${p.id}" class="league-select">${getPlatformOptions(p.assigned_ad_league, AD_LEAGUES)}</select></td>
-                <td><select id="dc_${p.id}" class="league-select">${getPlatformOptions(p.assigned_dc_league, DC_LEAGUES)}</select></td>
-                <td><select id="sc_${p.id}" class="league-select">${getPlatformOptions(p.assigned_sc_league, SC_LEAGUES)}</select></td>
-                <td><button class="assign-btn" onclick="saveAssignments('${p.id}')">💾 Speichern</button></td>
-            </tr>`;
+        if (activePlayers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">Aktuell haben sich keine Spieler angemeldet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = activePlayers.map(p => {
+            const isEingeteilt = p.status_neue_saison === 'assigned';
+            return `
+                <tr id="row_${p.id}">
+                    <td>
+                        <strong style="color:#20b7ff;">${htmlEscape(p.discord_name || p.username)}</strong><br>
+                        <small style="color:#aaa;">Echt: ${htmlEscape(p.real_name || '-')}</small>
+                    </td>
+                    <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.want_autodarts, p.assigned_ad_league)}</td>
+                    <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.want_dartcounter, p.assigned_dc_league)}</td>
+                    <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league)}</td>
+                    <td>
+                        <button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button>
+                        <button class="remove-btn" onclick="removePlayerCompletely('${p.id}')">🗑️ Löschen</button>
+                        ${isEingeteilt ? '<br><span style="color:#3ddc97; font-size:11px;">✓ Eingeteilt</span>' : ''}
+                    </td>
+                </tr>
+            `;
         }).join("");
     }
 
-    window.saveAssignments = async function(id) {
-        const adVal = document.getElementById('ad_'+id).value;
-        const dcVal = document.getElementById('dc_'+id).value;
-        const scVal = document.getElementById('sc_'+id).value;
-        
-        await supabaseClient.from('profiles').update({ status_neue_saison: 'assigned', assigned_ad_league: adVal==='REMOVE'?null:adVal, assigned_dc_league: dcVal==='REMOVE'?null:dcVal, assigned_sc_league: scVal==='REMOVE'?null:scVal }).eq('id', id); 
-        alert("Zuteilung erfolgreich in DB gespeichert!");
-        loadWaitingList();
-    }
+    window.saveSingleAssignment = async function(playerId) {
+        const adEl = document.getElementById(`ad_${playerId}`);
+        const dcEl = document.getElementById(`dc_${playerId}`);
+        const scEl = document.getElementById(`sc_${playerId}`);
 
-    window.initPlanButtons = function() {
-        const container = document.getElementById("leaguePlanButtons");
-        if(container) {
-            container.innerHTML = ALL_LEAGUES.map(league => `
-                <button class="plan-action-btn" id="btn_plan_${league.replace(/\s+/g, '_')}" onclick="openPlanEditor('${league}')">
-                    📊 Spielplan &amp; Ergebnisse für ${league} öffnen
-                </button>
-            `).join("");
+        const updates = { status_neue_saison: 'assigned' };
+
+        if(adEl) updates.assigned_ad_league = adEl.value === 'REMOVE' || adEl.value === '' ? null : adEl.value;
+        if(dcEl) updates.assigned_dc_league = dcEl.value === 'REMOVE' || dcEl.value === '' ? null : dcEl.value;
+        if(scEl) updates.assigned_sc_league = scEl.value === 'REMOVE' || scEl.value === '' ? null : scEl.value;
+
+        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
+        if(error) {
+            alert("Fehler beim Zuteilen: " + error.message);
+        } else {
+            alert("Zuteilung erfolgreich abgespeichert!");
+            loadWaitingList();
+        }
+    };
+
+    window.removePlayerCompletely = async function(playerId) {
+        if(!confirm("Möchtest du diesen Spieler wirklich aus der Zuweisungsliste entfernen?")) return;
+        const { error } = await supabaseClient.from('profiles').update({
+            status_neue_saison: 'none',
+            assigned_ad_league: null,
+            assigned_dc_league: null,
+            assigned_sc_league: null
+        }).eq('id', playerId);
+
+        if(error) alert(error.message);
+        loadWaitingList();
+    };
+
+    // --- TAB 2: SCHEDULES & SCORES ---
+    function initLeagueSelector() {
+        const sel = document.getElementById("leagueSelector");
+        if(sel && sel.options.length === 1) {
+            ALL_LEAGUES.forEach(l => {
+                sel.innerHTML += `<option value="${l}">${l}</option>`;
+            });
         }
     }
 
-    window.openPlanEditor = function(league) {
-        activeSelectedLeaguePlan = league;
-        document.getElementById("globalLeagueRulesBox").style.display = "block";
-        document.getElementById("rulesEditorTitle").innerText = `⚙️ Regeln & Spielplan für: ${league}`;
-        calculateDynamicStandings();
-        loadLeagueMatchesFromDB();
-    }
+    window.loadMatchdayPlan = async function() {
+        const league = document.getElementById("leagueSelector").value;
+        const area = document.getElementById("scheduleArea");
+        if(!league) return;
 
-    window.closePlanEditor = function() {
-        activeSelectedLeaguePlan = "";
-        document.getElementById("globalLeagueRulesBox").style.display = "none";
-    }
+        area.innerHTML = "Lade Spielplan aus der Datenbank...";
+        
+        const { data: matches, error } = await supabaseClient.from('matches')
+            .select('*, player1:profiles!player1_id(discord_name), player2:profiles!player2_id(discord_name)')
+            .eq('league_name', league).eq('season_name', currentSeasonGlobal).order('matchday', {ascending: true});
 
-    window.loadLeagueMatchesFromDB = async function() {
-        if(!activeSelectedLeaguePlan) return;
-        const area = document.getElementById("matchesEditorArea");
-        area.innerHTML = "<p class='empty-msg'>Lade Spielpaarungen...</p>";
-
-        const { data: matches, error } = await supabaseClient.from('matches').select('*').eq('season', currentSeasonGlobal).eq('league_name', activeSelectedLeaguePlan).order('matchday', { ascending: true });
-
-        if(error || !matches || matches.length === 0) {
-            area.innerHTML = "<div class='empty-msg'>Für diese Liga ist noch kein Spielplan generiert worden. Klicke oben auf 'Spielplan generieren'.</div>";
+        if(error) {
+            area.innerHTML = "Fehler beim Laden: " + error.message;
             return;
         }
 
-        const grouped = {};
+        if(!matches || matches.length === 0) {
+            document.getElementById("btnGeneratePlan").style.display = "inline-block";
+            area.innerHTML = `Noch kein Spielplan für ${league} in dieser Saison vorhanden.`;
+            return;
+        }
+
+        document.getElementById("btnGeneratePlan").style.display = "none";
+        
+        let grouped = {};
         matches.forEach(m => {
             if(!grouped[m.matchday]) grouped[m.matchday] = [];
             grouped[m.matchday].push(m);
         });
 
         let html = "";
-        Object.entries(grouped).forEach(([day, rows]) => {
-            html += `<div class="matchday-header-title">📅 Spieltag ${day}</div><table><tbody>`;
-            rows.forEach(m => {
-                const p1 = m.player1_name || "Unbekannt";
-                const p2 = m.player2_name || "Unbekannt";
-                const l1 = m.legs1 !== null ? m.legs1 : "";
-                const l2 = m.legs2 !== null ? m.legs2 : "";
-                const isDone = m.status === 'done';
+        for (const [day, list] of Object.entries(grouped)) {
+            html += `<h3 style="color:#20b7ff; margin-top:20px; border-bottom:1px solid #4b87a5;">Spieltag ${day}</h3>`;
+            html += `<table><thead><tr><th>Heim</th><th>Auswärts</th><th>Ergebnis (Legs)</th><th>Aktion</th></tr></thead><tbody>`;
+            
+            list.forEach(m => {
+                const p1 = m.player1?.discord_name || "Freilos";
+                const p2 = m.player2?.discord_name || "Freilos";
+                const isFreilos = !m.player1_id || !m.player2_id;
 
-                html += `<tr style="${isDone ? 'opacity: 0.6; background: rgba(0,0,0,0.1);' : ''}">
-                    <td><b>${htmlEscape(p1)}</b></td>
-                    <td width="30px">vs</td>
-                    <td><b>${htmlEscape(p2)}</b></td>
-                    <td width="150px">
-                        <input type="number" id="l1_${m.id}" class="score-input" value="${l1}" min="0" max="7" ${isDone ? 'disabled' : ''}> : 
-                        <input type="number" id="l2_${m.id}" class="score-input" value="${l2}" min="0" max="7" ${isDone ? 'disabled' : ''}>
-                    </td>
-                    <td width="120px">
-                        <button class="assign-btn" onclick="saveAdminMatchScore('${m.id}')" ${isDone ? 'style="background:#34495e;"' : ''}>💾 Speichern</button>
-                    </td>
-                </tr>`;
+                html += `
+                    <tr>
+                        <td>${htmlEscape(p1)}</td>
+                        <td>${htmlEscape(p2)}</td>
+                        <td>
+                            <input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
+                            <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}>
+                        </td>
+                        <td>
+                            <button class="card-btn" onclick="saveMatchScore('${m.id}')" ${isFreilos?'disabled':''}>💾</button>
+                        </td>
+                    </tr>
+                `;
             });
             html += `</tbody></table>`;
-        });
+        }
         area.innerHTML = html;
+    };
+
+    window.saveMatchScore = async function(matchId) {
+        const l1 = document.getElementById(`l1_${matchId}`).value;
+        const l2 = document.getElementById(`l2_${matchId}`).value;
+
+        const updates = {
+            legs_player1: l1 === "" ? null : parseInt(l1),
+            legs_player2: l2 === "" ? null : parseInt(l2),
+            status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
+        };
+
+        const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
+        if(error) alert("Fehler: " + error.message);
+        else alert("Ergebnis gespeichert!");
+    };
+
+    // --- TAB 3: STRAFENKATALOG LOGIC ---
+    async function loadStrafenkatalogList() {
+        const tbody = document.getElementById("strafenListBody");
+        if(!tbody) return;
+
+        const { data: players, error } = await supabaseClient.from('profiles').select('*');
+        if(error) {
+            tbody.innerHTML = `<tr><td colspan="4">Fehler: ${error.message}</td></tr>`;
+            return;
+        }
+
+        const activePlayers = players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned');
+
+        if(activePlayers.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4">Keine aktiven Spieler gefunden.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = activePlayers.map(p => {
+            return `
+                <tr>
+                    <td><strong>${htmlEscape(p.discord_name || p.username)}</strong></td>
+                    <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${p.yellow_cards || 0}"> 🟨</td>
+                    <td><input type="number" id="red_${p.id}" class="leg-input" value="${p.red_cards || 0}"> 🟥</td>
+                    <td>
+                        <button class="assign-btn" style="padding:5px 10px;" onclick="savePlayerCards('${p.id}')">💾 Speichern</button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
     }
 
-    window.saveAdminMatchScore = async function(matchId) {
-        const legs1 = document.getElementById(`l1_${matchId}`).value;
-        const legs2 = document.getElementById(`l2_${matchId}`).value;
+    window.savePlayerCards = async function(playerId) {
+        const y = parseInt(document.getElementById(`yellow_${playerId}`).value) || 0;
+        const r = parseInt(document.getElementById(`red_${playerId}`).value) || 0;
 
-        if(legs1 === "" || legs2 === "") return alert("Bitte beide Werte eintragen!");
-
-        const { error } = await supabaseClient.from('matches').update({
-            legs1: parseInt(legs1),
-            legs2: parseInt(legs2),
-            status: 'done'
-        }).eq('id', matchId);
+        const { error } = await supabaseClient.from('profiles').update({
+            yellow_cards: y,
+            red_cards: r
+        }).eq('id', playerId);
 
         if(error) alert("Fehler: " + error.message);
-        else {
-            alert("Ergebnis erfolgreich eingetragen! 🎯");
-            calculateDynamicStandings();
-            loadLeagueMatchesFromDB();
+        else alert("Karten erfolgreich aktualisiert!");
+    };
+
+    // --- TAB 4: NEWS LOGIC ---
+    function initNewsEditor() {
+        if(!newsQuill) {
+            newsQuill = new Quill('#newsEditor', { theme: 'snow' });
         }
+        loadAdminNewsList();
     }
 
-    window.generateSaisonPlan = async function() {
-        if(!activeSelectedLeaguePlan) return;
-        
-        const list = globalProfilesCache.filter(p => p.assigned_ad_league === activeSelectedLeaguePlan || p.assigned_dc_league === activeSelectedLeaguePlan || p.assigned_sc_league === activeSelectedLeaguePlan).map(p => ({ id: p.id, name: p.discord_name || p.real_name }));
+    async function loadAdminNewsList() {
+        const container = document.getElementById("adminNewsContainer");
+        if(!container) return;
 
-        if(list.length < 2) return alert("Es müssen mindestens 2 Spieler in der Liga eingeteilt sein!");
-
-        if(!confirm(`Möchtest du einen neuen Spielplan für ${activeSelectedLeaguePlan} generieren?\nBestehende Spielpläne dieser Liga werden überschrieben.`)) return;
-
-        await supabaseClient.from('matches').delete().eq('season', currentSeasonGlobal).eq('league_name', activeSelectedLeaguePlan);
-
-        if (list.length % 2 !== 0) list.push({ id: "freilos", name: "Freilos" });
-
-        const numPlayers = list.length;
-        const rounds = numPlayers - 1;
-        const matchesPerRound = numPlayers / 2;
-        const inserts = [];
-
-        for (let round = 0; round < rounds; round++) {
-            for (let match = 0; match < matchesPerRound; match++) {
-                const home = (round + match) % (numPlayers - 1);
-                let away = (numPlayers - 1 - match + round) % (numPlayers - 1);
-
-                if (match === 0) away = numPlayers - 1;
-
-                const p1 = list[home];
-                const p2 = list[away];
-
-                if(p1.id !== 'freilos' && p2.id !== 'freilos') {
-                    inserts.push({
-                        season: currentSeasonGlobal,
-                        league_name: activeSelectedLeaguePlan,
-                        matchday: round + 1,
-                        player1_id: p1.id, 
-                        player2_id: p2.id,
-                        player1_name: p1.name, 
-                        player2_name: p2.name,
-                        status: 'open'
-                    });
-                }
-            }
-        }
-
-        const { error } = await supabaseClient.from('matches').insert(inserts);
-        if(error) alert("Fehler beim Erzeugen: " + error.message);
-        else {
-            alert(`🎉 Spielplan für ${activeSelectedLeaguePlan} wurde live generiert!`);
-            calculateDynamicStandings();
-            loadLeagueMatchesFromDB();
-        }
-    }
-
-    window.clearLeagueMatches = async function() {
-        if(!activeSelectedLeaguePlan || !confirm("Möchtest du den Spielplan dieser Liga komplett löschen?")) return;
-        await supabaseClient.from('matches').delete().eq('season', currentSeasonGlobal).eq('league_name', activeSelectedLeaguePlan);
-        calculateDynamicStandings();
-        loadLeagueMatchesFromDB();
-    }
-
-    window.calculateDynamicStandings = async function() {
-        if(!activeSelectedLeaguePlan) return;
-        const area = document.getElementById("dynamicStandingsArea");
-        
-        const upCount = parseInt(document.getElementById("inputUpCount").value) || 0;
-        const relCount = parseInt(document.getElementById("inputRelCount").value) || 0;
-        const downCount = parseInt(document.getElementById("inputDownCount").value) || 0;
-
-        const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', currentSeasonGlobal).eq('league_name', activeSelectedLeaguePlan).eq('status', 'done');
-        
-        const stats = {};
-        const allMatched = globalProfilesCache.filter(p => p.assigned_ad_league === activeSelectedLeaguePlan || p.assigned_dc_league === activeSelectedLeaguePlan || p.assigned_sc_league === activeSelectedLeaguePlan);
-        
-        allMatched.forEach(p => stats[p.discord_name || p.real_name] = { name: p.discord_name || p.real_name, points: 0, wins: 0, losses: 0 });
-
-        if (matches) {
-            matches.forEach(m => {
-                if(!stats[m.player1_name]) stats[m.player1_name] = { name: m.player1_name, points: 0, wins: 0, losses: 0 };
-                if(!stats[m.player2_name]) stats[m.player2_name] = { name: m.player2_name, points: 0, wins: 0, losses: 0 };
-
-                if(parseInt(m.legs1) > parseInt(m.legs2)) {
-                    stats[m.player1_name].points += 2; stats[m.player1_name].wins++; stats[m.player2_name].losses++;
-                } else {
-                    stats[m.player2_name].points += 2; stats[m.player2_name].wins++; stats[m.player1_name].losses++;
-                }
-            });
-        }
-
-        const sorted = Object.values(stats).sort((a,b) => b.points - a.points);
-        if(sorted.length === 0) {
-            area.innerHTML = "<p class='empty-msg'>Keine Live-Daten für diese Liga gefunden.</p>";
+        const { data: news, error } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
+        if(error) {
+            container.innerHTML = "Fehler beim Laden: " + error.message;
             return;
         }
 
-        let html = `<table><thead><tr><th>Platz</th><th>Spieler</th><th>Siege</th><th>Niederlagen</th><th>Punkte</th><th>Status</th></tr></thead><tbody>`;
-        sorted.forEach((r, i) => {
-            let cssClass = ""; let statusText = "Klassenerhalt";
-            if (i < upCount) { cssClass = "row-up"; statusText = "🏆 Aufsteiger"; }
-            else if (i >= sorted.length - downCount) { cssClass = "row-down"; statusText = "🔻 Absteiger"; }
-            else if (i >= sorted.length - downCount - relCount) { cssClass = "row-relegation"; statusText = "🤝 Relegation"; }
-
-            html += `<tr class="${cssClass}"><td>${i+1}</td><td><b>${htmlEscape(r.name)}</b></td><td>${r.wins}</td><td>${r.losses}</td><td>${r.points} Pkt.</td><td><span class="badge-status">${statusText}</span></td></tr>`;
-        });
-        html += `</tbody></table>`;
-        area.innerHTML = html;
-    }
-
-    window.saveLeagueRuleConfig = function() {
-        if(!activeSelectedLeaguePlan) return;
-        leagueMemoryConfig[activeSelectedLeaguePlan] = {
-            up: parseInt(document.getElementById("inputUpCount").value) || 0,
-            rel: parseInt(document.getElementById("inputRelCount").value) || 0,
-            down: parseInt(document.getElementById("inputDownCount").value) || 0
-        };
-        alert(`Regelung für "${activeSelectedLeaguePlan}" gespeichert!`);
-    }
-
-    window.loadPenaltyCatalog = function() {
-        const combined = globalProfilesCache.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned');
-        
-        if (combined.length === 0) {
-            document.getElementById("penaltyListBody").innerHTML = `<tr><td colspan="4" class="empty-msg">Aktuell keine Spieler vorhanden.</td></tr>`;
-            return;
-        }
-        document.getElementById("penaltyListBody").innerHTML = combined.map(p => `<tr>
-            <td><b>${htmlEscape(p.discord_name || p.real_name)}</b></td>
-            <td><div class="card-counter-wrap"><button class="count-btn" onclick="adjustCard('${p.id}', 'yellow', -1)">-</button><span id="y_count_${p.id}" class="counter-num">${p.yellow_cards || 0}</span><button class="count-btn" onclick="adjustCard('${p.id}', 'yellow', 1)">+</button></div></td>
-            <td><div class="card-counter-wrap"><button class="count-btn" onclick="adjustCard('${p.id}', 'red', -1)">-</button><span id="r_count_${p.id}" class="counter-num">${p.red_cards || 0}</span><button class="count-btn" onclick="adjustCard('${p.id}', 'red', 1)">+</button></div></td>
-            <td><button class="assign-btn" onclick="savePenalties('${p.id}')">💾 Speichern</button></td>
-        </tr>`).join("");
-    }
-
-    window.adjustCard = function(id, type, amount) {
-        const span = document.getElementById(`${type === 'yellow' ? 'y' : 'r'}_count_${id}`);
-        let current = parseInt(span.innerText) || 0;
-        current = Math.max(0, current + amount);
-        span.innerText = current;
-    }
-
-    window.savePenalties = async function(id) {
-        const yellowVal = parseInt(document.getElementById(`y_count_${id}`).innerText) || 0;
-        const redVal = parseInt(document.getElementById(`r_count_${id}`).innerText) || 0;
-        await supabaseClient.from('profiles').update({ yellow_cards: yellowVal, red_cards: redVal }).eq('id', id);
-        alert("Strafen gespeichert!");
-    }
-
-    window.prepareSeasonEnd = function() {
-        document.getElementById("closeLeagueSelect").innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
-        previewLeagueTable();
-    }
-
-    window.previewLeagueTable = async function() {
-        const league = document.getElementById("closeLeagueSelect").value;
-        const previewArea = document.getElementById("closeLeaguePreviewArea");
-        const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', currentSeasonGlobal).eq('league_name', league).eq('status', 'done');
-        
-        const stats = {};
-        const allMatched = globalProfilesCache.filter(p => p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league);
-        
-        allMatched.forEach(p => stats[p.discord_name || p.real_name] = { name: p.discord_name || p.real_name, points: 0 });
-
-        if (matches) {
-            matches.forEach(m => {
-                if(stats[m.player1_name] && stats[m.player2_name]) {
-                    if(parseInt(m.legs1) > parseInt(m.legs2)) stats[m.player1_name].points += 2; else stats[m.player2_name].points += 2;
-                }
-            });
-        }
-
-        const sorted = Object.values(stats).sort((a,b) => b.points - a.points);
-        if(sorted.length === 0) {
-            previewArea.innerHTML = "<p class='empty-msg'>Keine Spieldaten vorhanden.</p>";
+        if(!news || news.length === 0) {
+            container.innerHTML = "Noch keine News verfasst.";
             return;
         }
 
-        let html = `<table><thead><tr><th>Platz</th><th>Spieler</th><th>Punkte</th></tr></thead><tbody>`;
-        sorted.forEach((r, i) => { html += `<tr><td>${i+1}</td><td><b>${htmlEscape(r.name)}</b></td><td>${r.points}</td></tr>`; });
-        html += `</tbody></table>`;
-        previewArea.innerHTML = html;
+        container.innerHTML = news.map(n => {
+            return `
+                <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>${htmlEscape(n.title)}</strong> 
+                        <span style="color:#666; font-size:12px; margin-left:10px;">${new Date(n.created_at).toLocaleDateString('de-DE')}</span>
+                    </div>
+                    <div>
+                        <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️ Bearbeiten</button>
+                        <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️ Löschen</button>
+                    </div>
+                </div>
+            `;
+        }).join("");
     }
 
-    window.executeSingleLeagueEnd = async function() {
-        const league = document.getElementById("closeLeagueSelect").value;
-        if (!confirm(`Möchtest du "${league}" beenden?`)) return;
+    window.publishNews = async function() {
+        const title = document.getElementById("newsTitleInput").value.trim();
+        const htmlContent = newsQuill.root.innerHTML; // Absätze und Styling sauber auslesen
 
-        const conf = leagueMemoryConfig[league] || { up: 2, rel: 1, down: 2 };
-        const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', currentSeasonGlobal).eq('league_name', league).eq('status', 'done');
-        
-        const stats = {};
-        const allMatched = globalProfilesCache.filter(p => p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league);
-        
-        allMatched.forEach(p => stats[p.id] = { id: p.id, points: 0 });
+        if(!title) return alert("Bitte gib eine Überschrift an!");
 
-        if (matches) {
-            matches.forEach(m => {
-                if(stats[m.player1_id] && stats[m.player2_id]) {
-                    if(parseInt(m.legs1) > parseInt(m.legs2)) stats[m.player1_id].points += 2; else stats[m.player2_id].points += 2;
-                }
-            });
+        if (editingNewsId) {
+            // Editieren
+            const { error } = await supabaseClient.from('news').update({ title: title, content: htmlContent }).eq('id', editingNewsId);
+            if(error) alert(error.message);
+            else alert("News erfolgreich aktualisiert!");
+            editingNewsId = null;
+        } else {
+            // Neu erstellen
+            const { error } = await supabaseClient.from('news').insert([{ title: title, content: htmlContent }]);
+            if(error) alert(error.message);
+            else alert("News erfolgreich veröffentlicht!");
         }
 
-        const sorted = Object.values(stats).sort((a,b) => b.points - a.points);
+        document.getElementById("newsTitleInput").value = "";
+        newsQuill.root.innerHTML = "";
+        loadAdminNewsList();
+    };
 
-        for(let i=0; i<sorted.length; i++) {
-            let target = "stay";
-            if(i < conf.up) target = "up";
-            else if(i >= sorted.length - conf.down) target = "down";
-            await supabaseClient.from('profiles').update({ next_season_target: target }).eq('id', sorted[i].id);
+    window.editNews = async function(id, escapedTitle) {
+        editingNewsId = id;
+        document.getElementById("newsTitleInput").value = unescape(escapedTitle);
+        
+        const { data, error } = await supabaseClient.from('news').select('content').eq('id', id).single();
+        if(data) {
+            newsQuill.root.innerHTML = data.content || "";
+            document.getElementById("newsTitleInput").scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    window.deleteNews = async function(id) {
+        if(!confirm("Möchtest du diese Nachricht wirklich unwiderruflich löschen?")) return;
+        const { error } = await supabaseClient.from('news').delete().eq('id', id);
+        if(error) alert(error.message);
+        loadAdminNewsList();
+    };
+
+    // --- TAB 5: REGELWERK DYNAMIC LOGIC ---
+    function initRuleEditor() {
+        if(!ruleQuill) {
+            ruleQuill = new Quill('#ruleEditor', { theme: 'snow' });
+            loadCurrentRegelwerk();
+        }
+    }
+
+    async function loadCurrentRegelwerk() {
+        const { data, error } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
+        if(data && data.regelwerk_html) {
+            ruleQuill.root.innerHTML = data.regelwerk_html;
+        }
+    }
+
+    window.saveRegelwerkHtml = async function() {
+        const htmlContent = ruleQuill.root.innerHTML; // Speichert reines, unkomprimiertes HTML
+        const { error } = await supabaseClient.from('system_settings').update({ regelwerk_html: htmlContent }).eq('id', 1);
+        
+        if (error) {
+            alert("Fehler beim Speichern des Regelwerks: " + error.message);
+        } else {
+            alert("🎉 Regelwerk erfolgreich in der Live-Datenbank gespeichert!");
+        }
+    };
+
+    // ===========================================================
+    // 4. MAIN ENTRANCE SECURITY & SYSTEM BOOT
+    // ===========================================================
+    async function initAdmin() {
+        const { data: { session }, error: sErr } = await supabaseClient.auth.getSession();
+        
+        if (sErr || !session) {
+            return window.location.href = "index.html";
         }
 
-        let updateField = AD_LEAGUES.includes(league) ? "assigned_ad_league" : (DC_LEAGUES.includes(league) ? "assigned_dc_league" : "assigned_sc_league");
-        const up = { status_neue_saison: 'waiting' }; up[updateField] = null;
-        await supabaseClient.from('profiles').update(up).eq(updateField, league);
+        // Admin Security Check
+        const { data: profile } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
+        if (!profile || profile.is_admin !== true) {
+            alert("Zugriff verweigert: Du bist kein Administrator!");
+            return window.location.href = "index.html";
+        }
 
-        alert("🎉 Liga erfolgreich geschlossen!");
-        initAdmin();
+        // Globalen Saisonnamen ermitteln
+        const { data: sysData } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
+        if(sysData) {
+            currentSeasonGlobal = sysData.current_season || "Saison 1";
+        }
+
+        // Sub-Komponenten asynchron und sicher booten
+        loadWaitingList();
+        loadStrafenkatalogList();
+        initLeagueSelector();
+        initNewsEditor();
     }
 
-    window.removeFromList = async function(id) {
-        await supabaseClient.from('profiles').update({ status_neue_saison: null, assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null }).eq('id', id);
-        initAdmin();
-    }
-
-    function htmlEscape(v) { return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+    // Unzerstörbarer Startbefehl ganz am Ende
     initAdmin();
-  </script>
+</script>
+
 </body>
 </html>
