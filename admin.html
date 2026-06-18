@@ -23,9 +23,37 @@
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
         h1, h2 {
             color: #3ddc97;
-            margin-top: 0;
+            margin: 0;
+        }
+        /* DESIGN FÜR DEN ZURÜCK BUTTON */
+        .back-home-btn {
+            background: #021017;
+            color: #20b7ff;
+            border: 1px solid #20b7ff;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .back-home-btn:hover {
+            background: #20b7ff;
+            color: #000;
         }
         .tabs {
             display: flex;
@@ -169,7 +197,6 @@
             background: #eee;
             border-radius: 8px 8px 0 0;
         }
-        /* Fix, damit Dropdowns auf dunklen Seiten lesbar bleiben */
         .ql-snow .ql-picker-options {
             background-color: #fff !important;
             color: #000 !important;
@@ -190,7 +217,10 @@
 <body>
 
 <div class="admin-container">
-    <h1>🎯 Community Dart Liga - Cockpit</h1>
+    <div class="header-row">
+        <h1>🎯 Community Dart Liga - Cockpit</h1>
+        <a href="index.html" class="back-home-btn">🏠 Zurück zur Hauptseite</a>
+    </div>
     
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tabZuteilung')">1. Liga Zuteilung</button>
@@ -288,21 +318,19 @@
     
     let supabaseClient = null;
 
-    // Keine blockierenden Textprüfungen mehr: Verbindung direkt initialisieren
     try {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } catch(e) {
         console.error("Kritischer Fehler bei Client-Initialisierung:", e);
     }
 
-    // Volles Toolbar-Profil für Farben, Listen und Ausrichtungen definieren
     const quillToolbarOptions = [
         [{ 'header': [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],        // Text-Styles
-        [{ 'color': [] }, { 'background': [] }],          // Farben & Textmarker aktivieren
+        ['bold', 'italic', 'underline', 'strike'],        
+        [{ 'color': [] }, { 'background': [] }],          
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'align': [] }],
-        ['link', 'clean']                                 // Links setzen & Formatierung löschen
+        ['link', 'clean']                                 
     ];
 
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
