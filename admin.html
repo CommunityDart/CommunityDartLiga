@@ -103,8 +103,8 @@
         .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
         .txt-input { width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
         
-        /* Spezielles Design für das neue lange Bemerkungsfeld */
-        .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; }
+        /* Sauberes Bemerkungsfeld ohne die Tabellenoptik zu zerstören */
+        .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; box-sizing: border-box; }
         
         .assign-btn {
             background: #3ddc97;
@@ -303,7 +303,7 @@
     let newsQuill = null;
     let ruleQuill = null;
     let editingNewsId = null;
-    let globalLeagueRules = {};
+    let globalLeagueRules = null; // Als null starten für sicheren Typ-Abgleich
 
     function htmlEscape(str) {
         if (!str) return "-";
@@ -316,7 +316,8 @@
         document.getElementById(tabId).classList.add('active');
         if(event && event.currentTarget) event.currentTarget.classList.add('active');
         if (tabId === 'tabRegelwerk' && !ruleQuill) initRuleEditor();
-        if (tabId === 'tabStrafen') loadStrafenkatalogList(); // Jedes Mal beim Klick frisch laden
+        if (tabId === 'tabStrafen') loadStrafenkatalogList();
+        if (tabId === 'tabZuteilung') loadWaitingList();
     }
 
     function formatAllPlattformNames(prof) {
@@ -347,7 +348,7 @@
 
     function renderRulesSummary() {
         const summary = document.getElementById("leagueRulesSummary");
-        if(!summary) return;
+        if(!summary || !globalLeagueRules) return;
         let html = "<strong>Aktive Vorgaben:</strong> ";
         Object.values(globalLeagueRules).forEach(r => {
             html += `[${r.league_name}: 🟢${r.aufsteiger} 🔴${r.absteiger} 🟡${r.relegation}] | `;
@@ -356,6 +357,7 @@
     }
 
     window.loadLeagueRules = function() {
+        if(!globalLeagueRules) return;
         const league = document.getElementById("configLeagueSelect").value;
         const rule = globalLeagueRules[league] || { aufsteiger: 0, absteiger: 0, relegation: 0 };
         document.getElementById("inputAuf").value = rule.aufsteiger;
@@ -381,7 +383,7 @@
     };
 
     // ===========================================================
-    // WARTELISTE (VÖLLIG ABSICHERT GEGEN FEHLENDE REGEL-CRASHES)
+    // WARTELISTE (KOMPLETT ISOLIERT UND ABSURD CRASH-SICHER)
     // ===========================================================
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
@@ -398,18 +400,20 @@
                 const isEingeteilt = p.status_neue_saison === 'assigned';
                 let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
                 
-                // Crash-Safe Herkunfts-Auswertung
-                if(p.voriga_liga) {
-                    const rule = globalLeagueRules ? globalLeagueRules[p.voriga_liga] : null;
+                // Ultimative Absicherung: Rules werden nur ausgewertet, wenn sie existieren
+                if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
+                    const rule = globalLeagueRules[p.voriga_liga];
                     let statusBadge = "";
-                    if(rule && p.voriga_platzierung) {
+                    if(p.voriga_platzierung) {
                         const pos = p.voriga_platzierung;
                         if(pos <= rule.aufsteiger) statusBadge = `<span class="badge badge-up"> Aufsteiger (Platz ${pos})</span>`;
                         else if(rule.absteiger > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down"> Absteiger (Platz ${pos})</span>`;
                         else if(rule.relegation > 0 && pos > (10 - rule.absteiger - rule.relegation) && pos <= (10 - rule.absteiger)) statusBadge = `<span class="badge badge-rel"> Relegation (Platz ${pos})</span>`;
                         else statusBadge = `<span class="badge" style="background:rgba(255,255,255,0.05);">Klassenerhalt (Platz ${pos})</span>`;
-                    } else if (p.voriga_platzierung) { statusBadge = ` (Platz ${p.voriga_platzierung})`; }
+                    }
                     herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong><br>${statusBadge}`;
+                } else if (p.voriga_liga) {
+                    herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong>${p.voriga_platzierung ? ` (Platz ${p.voriga_platzierung})` : ''}`;
                 }
 
                 return `
@@ -436,7 +440,7 @@
                         </td>
                     </tr>`;
             }).join("");
-        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Zuteilung vorübergehend verzögert.</td></tr>`; }
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Zuteilungsdaten laden verzögert...</td></tr>`; }
     }
 
     window.saveSingleAssignment = async function(playerId) {
@@ -459,7 +463,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK
+    // SPIELPLAN-LOGIK (VÖLLIG UNABHÄNGIG)
     // ===========================================================
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
@@ -601,17 +605,17 @@
     };
 
     // ===========================================================
-    // STRAFENKATALOG LOGIC (AUTARK GELADEN + NEUES BEMERKUNGSFELD)
+    // STRAFENKATALOG LOGIC (VÖLLIG UNABHÄNGIG LIVE GELADEN)
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
         if(!tbody || !supabaseClient) return;
         try {
             const { data: players, error } = await supabaseClient.from('profiles').select('*');
-            if (error) { tbody.innerHTML = `<tr><td colspan="5">Fehler: ${error.message}</td></tr>`; return; }
+            if (error) { tbody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`; return; }
 
             const active = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
-            if (active.length === 0) { tbody.innerHTML = '<tr><td colspan="5">Keine aktiven Spieler gefunden.</td></tr>'; return; }
+            if (active.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine aktiven Spieler gefunden.</td></tr>'; return; }
 
             tbody.innerHTML = active.map(p => {
                 const pName = p.discord_name || p.username;
@@ -632,7 +636,7 @@
                         <td><button class="assign-btn" style="padding:8px;" onclick="savePlayerCards('${p.id}')">💾 Speichern</button></td>
                     </tr>`;
             }).join("");
-        } catch(e) { tbody.innerHTML = `<tr><td colspan="5">Fehler beim Laden des Strafenkatalogs.</td></tr>`; }
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden des Strafenkatalogs.</td></tr>`; }
     }
 
     window.savePlayerCards = async function(playerId) {
@@ -717,14 +721,15 @@
         alert("Regelwerk live!");
     };
 
-    // Jede Sektion zündet isoliert. Wenn eine Tabelle hängt, läuft das restliche Cockpit stabil weiter!
+    // Voneinander isolierter asynchroner Start
     function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
         
-        loadAllLeagueRules(); 
-        loadWaitingList(); 
-        loadStrafenkatalogList();
+        // Vollkommen entkoppelte Timeouts ohne gegenseitige Blockaden
+        setTimeout(() => { loadAllLeagueRules(); }, 50);
+        setTimeout(() => { loadWaitingList(); }, 150);
+        setTimeout(() => { loadStrafenkatalogList(); }, 250);
     }
 
     initAdmin();
