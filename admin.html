@@ -314,6 +314,18 @@
         if (tabId === 'tabRegelwerk' && !ruleQuill) initRuleEditor();
     }
 
+    // Shared formatter function, absolutely crash-safe
+    function formatAllPlattformNames(prof) {
+        if(!prof) return "";
+        return `
+            <div style="margin-top:6px; font-size:12px; line-height:1.35; color:#90a9b7; background:rgba(0,0,0,0.15); padding:6px; border-radius:6px; border:1px solid rgba(75, 135, 165, 0.1);">
+                <div>🎯 AD: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span></div>
+                <div>🔥 DC: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span></div>
+                <div>🛡️ SC: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span></div>
+            </div>
+        `;
+    }
+
     // ===========================================================
     // LIGA CONFIG LOGIC
     // ===========================================================
@@ -367,18 +379,6 @@
     // ===========================================================
     // WARTELISTE
     // ===========================================================
-    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
-        if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
-        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
-        html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
-        html += `<option value="REMOVE">❌ Entfernen</option>`;
-        optionsArr.forEach(l => {
-            html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
-        });
-        html += `</select>`;
-        return html;
-    }
-
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -455,6 +455,17 @@
     // ===========================================================
     // SPIELPLAN-LOGIK
     // ===========================================================
+    function initLeagueSelector() {
+        const sel = document.getElementById("leagueSelector");
+        const cfgSel = document.getElementById("configLeagueSelect");
+        if(sel && sel.options.length === 1) {
+            ALL_LEAGUES.forEach(l => {
+                sel.innerHTML += `<option value="${l}">${l}</option>`;
+                if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+        }
+    }
+
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
         const league = document.getElementById("leagueSelector").value;
@@ -489,17 +500,6 @@
             area.innerHTML = "Kritischer Ladefehler im System.";
         }
     };
-
-    function formatAllPlattformNames(prof) {
-        if(!prof) return "";
-        return `
-            <div style="margin-top:6px; font-size:12px; line-height:1.35; color:#90a9b7; background:rgba(0,0,0,0.15); padding:6px; border-radius:6px; border:1px solid rgba(75, 135, 165, 0.1);">
-                <div>🎯 AD: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span></div>
-                <div>🔥 DC: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span></div>
-                <div>🛡️ SC: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span></div>
-            </div>
-        `;
-    }
 
     function renderMatchesPlan(matches, playersList, area, league) {
         if(!matches || matches.length === 0) {
@@ -606,15 +606,19 @@
     };
 
     // ===========================================================
-    // STRAFENKATALOG LOGIC (JETZT VOLLSTÄNDIG ERWEITERT)
+    // STRAFENKATALOG LOGIC (JETZT ABSOLUT SEPARAT LIVE GELADEN)
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
         if(!tbody || !supabaseClient) return;
         try {
-            const { data: players } = await supabaseClient.from('profiles').select('*');
+            // Unabhängige Direktabfrage live beim Tab-Aufruf
+            const { data: players, error } = await supabaseClient.from('profiles').select('*');
+            if (error) { tbody.innerHTML = `<tr><td colspan="5">Fehler: ${error.message}</td></tr>`; return; }
+
             const active = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
-            
+            if (active.length === 0) { tbody.innerHTML = '<tr><td colspan="5">Keine aktiven Spieler gefunden.</td></tr>'; return; }
+
             tbody.innerHTML = active.map(p => {
                 const pName = p.discord_name || p.username;
                 const ingameBox = formatAllPlattformNames(p);
@@ -631,10 +635,11 @@
                         <td><button class="assign-btn" style="padding:8px;" onclick="savePlayerCards('${p.id}')">💾 Speichern</button></td>
                     </tr>`;
             }).join("");
-        } catch(e) {}
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="5">Ladefehler im Strafenkatalog.</td></tr>`; }
     }
 
     window.savePlayerCards = async function(playerId) {
+        if(!supabaseClient) return;
         await supabaseClient.from('profiles').update({
             yellow_cards: parseInt(document.getElementById(`yellow_${playerId}`).value) || 0,
             red_cards: parseInt(document.getElementById(`red_${playerId}`).value) || 0
@@ -653,17 +658,19 @@
     async function loadAdminNewsList() {
         const container = document.getElementById("adminNewsContainer");
         if(!container || !supabaseClient) return;
-        const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
-        if(news) {
-            container.innerHTML = news.map(n => `
-                <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div><strong>${htmlEscape(n.title)}</strong></div>
-                    <div>
-                        <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
-                        <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
-                    </div>
-                </div>`).join("");
-        }
+        try {
+            const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
+            if(news) {
+                container.innerHTML = news.map(n => `
+                    <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div><strong>${htmlEscape(n.title)}</strong></div>
+                        <div>
+                            <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
+                            <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
+                        </div>
+                    </div>`).join("");
+            }
+        } catch(e) {}
     }
 
     window.publishNews = async function() {
@@ -706,6 +713,7 @@
         alert("Regelwerk live!");
     };
 
+    // Komplett isolierter Systemboot – Jede Funktion läuft autark
     function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
