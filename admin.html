@@ -233,14 +233,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Spieler</th>
-                        <th>Gelbe Karten</th>
-                        <th>Rote Karten</th>
-                        <th>Aktion</th>
+                        <th style="width: 30%;">Spieler & Name</th>
+                        <th style="width: 30%;">Plattform Ingame-Namen</th>
+                        <th style="width: 15%;">Gelbe Karten</th>
+                        <th style="width: 15%;">Rote Karten</th>
+                        <th style="width: 10%;">Aktion</th>
                     </tr>
                 </thead>
                 <tbody id="strafenListBody">
-                    <tr><td colspan="4">Lade angestellte Spieler...</td></tr>
+                    <tr><td colspan="5">Lade angemeldete Spieler...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -366,6 +367,18 @@
     // ===========================================================
     // WARTELISTE
     // ===========================================================
+    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
+        if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
+        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
+        html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
+        html += `<option value="REMOVE">❌ Entfernen</option>`;
+        optionsArr.forEach(l => {
+            html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
+        });
+        html += `</select>`;
+        return html;
+    }
+
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -477,7 +490,6 @@
         }
     };
 
-    // JETZT OPTIMIERT: Zeigt immer exakt dieselbe Ingame-Namen-Struktur wie in Tab 1
     function formatAllPlattformNames(prof) {
         if(!prof) return "";
         return `
@@ -594,7 +606,7 @@
     };
 
     // ===========================================================
-    // STRAFEN, NEWS & RULES REST
+    // STRAFENKATALOG LOGIC (JETZT VOLLSTÄNDIG ERWEITERT)
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
@@ -602,13 +614,23 @@
         try {
             const { data: players } = await supabaseClient.from('profiles').select('*');
             const active = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
-            tbody.innerHTML = active.map(p => `
-                <tr>
-                    <td><strong>${htmlEscape(p.discord_name || p.username)}</strong></td>
-                    <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${p.yellow_cards || 0}"> 🟨</td>
-                    <td><input type="number" id="red_${p.id}" class="leg-input" value="${p.red_cards || 0}"> 🟥</td>
-                    <td><button class="assign-btn" style="padding:5px;" onclick="savePlayerCards('${p.id}')">💾</button></td>
-                </tr>`).join("");
+            
+            tbody.innerHTML = active.map(p => {
+                const pName = p.discord_name || p.username;
+                const ingameBox = formatAllPlattformNames(p);
+
+                return `
+                    <tr>
+                        <td>
+                            <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(pName)}</strong><br>
+                            <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
+                        </td>
+                        <td>${ingameBox}</td>
+                        <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${p.yellow_cards || 0}"> 🟨</td>
+                        <td><input type="number" id="red_${p.id}" class="leg-input" value="${p.red_cards || 0}"> 🟥</td>
+                        <td><button class="assign-btn" style="padding:8px;" onclick="savePlayerCards('${p.id}')">💾 Speichern</button></td>
+                    </tr>`;
+            }).join("");
         } catch(e) {}
     }
 
@@ -620,6 +642,9 @@
         alert("Karten aktualisiert!");
     };
 
+    // ===========================================================
+    // NEWS & RULES REST
+    // ===========================================================
     function initNewsEditor() {
         if(!newsQuill) newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
         loadAdminNewsList();
