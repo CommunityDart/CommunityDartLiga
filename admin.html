@@ -269,7 +269,7 @@
     // 1. CONFIGURATION & STATE
     // ===========================================================
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnRudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; 
     
     let supabaseClient = null;
     try {
@@ -347,15 +347,16 @@
         const league = document.getElementById("configLeagueSelect").value;
         if(!league) return alert("Bitte wähle zuerst eine Liga aus!");
 
-        const { error } = await supabaseClient.from('league_rules').upsert({
-            league_name: league,
-            aufsteiger: parseInt(document.getElementById("inputAuf").value) || 0,
-            absteiger: parseInt(document.getElementById("inputAb").value) || 0,
-            relegation: parseInt(document.getElementById("inputRel").value) || 0
-        });
-
-        if(error) alert(error.message);
-        else { alert("Liga-Einstellungen gespeichert!"); loadAllLeagueRules(); loadWaitingList(); }
+        try {
+            const { error } = await supabaseClient.from('league_rules').upsert({
+                league_name: league,
+                aufsteiger: parseInt(document.getElementById("inputAuf").value) || 0,
+                absteiger: parseInt(document.getElementById("inputAb").value) || 0,
+                relegation: parseInt(document.getElementById("inputRel").value) || 0
+            });
+            if(error) alert(error.message);
+            else { alert("Liga-Einstellungen gespeichert!"); await loadAllLeagueRules(); loadWaitingList(); }
+        } catch(e) { console.error(e); }
     };
 
     // ===========================================================
@@ -447,7 +448,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (ABSOLUT ENTCOPPELT & FEHLERSICHER)
+    // SPIELPLAN-LOGIK (ABSOLUT UNZERSTÖRBAR)
     // ===========================================================
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
@@ -469,12 +470,10 @@
         area.innerHTML = "Lade Spielplan und Profile...";
         
         try {
-            // Holt die Profile autark und direkt bei jedem Klick ab
             const { data: profilesData, error: pErr } = await supabaseClient.from('profiles').select('*');
             if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
             const localPlayersList = profilesData || [];
 
-            // Holt die Matches ab
             let { data: matches, error: mErr } = await supabaseClient.from('matches')
                 .select('*')
                 .eq('league_name', league).eq('season_name', currentSeasonGlobal);
@@ -628,17 +627,19 @@
     async function loadAdminNewsList() {
         const container = document.getElementById("adminNewsContainer");
         if(!container || !supabaseClient) return;
-        const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
-        if(news) {
-            container.innerHTML = news.map(n => `
-                <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div><strong>${htmlEscape(n.title)}</strong></div>
-                    <div>
-                        <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
-                        <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
-                    </div>
-                </div>`).join("");
-        }
+        try {
+            const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
+            if(news) {
+                container.innerHTML = news.map(n => `
+                    <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div><strong>${htmlEscape(n.title)}</strong></div>
+                        <div>
+                            <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
+                            <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
+                        </div>
+                    </div>`).join("");
+            }
+        } catch(e) {}
     }
 
     window.publishNews = async function() {
@@ -672,8 +673,10 @@
     }
 
     async function loadCurrentRegelwerk() {
-        const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
-        if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
+        try {
+            const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
+            if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
+        } catch(e) {}
     }
 
     window.saveRegelwerkHtml = async function() {
@@ -681,12 +684,15 @@
         alert("Regelwerk live!");
     };
 
-    async function initAdmin() {
+    // Isolation: Jede Funktion wird autark aufgerufen, Fehler blockieren sich nicht gegenseitig
+    function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
-        await loadAllLeagueRules(); 
-        await loadWaitingList(); 
-        loadStrafenkatalogList();
+        
+        // Unabhängige Starter
+        setTimeout(() => { loadAllLeagueRules(); }, 50);
+        setTimeout(() => { loadWaitingList(); }, 100);
+        setTimeout(() => { loadStrafenkatalogList(); }, 150);
     }
 
     initAdmin();
