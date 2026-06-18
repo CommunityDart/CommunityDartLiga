@@ -127,6 +127,21 @@
             margin-top: 4px;
             width: 100%;
         }
+        .generate-btn {
+            background: #20b7ff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .generate-btn:hover { opacity: 0.9; }
         .card-btn {
             background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2);
             padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold;
@@ -246,6 +261,7 @@
             <select id="leagueSelector" class="league-select" onchange="loadMatchdayPlan()">
                 <option value="" disabled selected>-- Liga Auswählen --</option>
             </select>
+            <div id="generatePlanArea" style="display:none; margin-top:10px;"></div>
         </div>
         <div style="overflow-x: auto;">
             <div id="scheduleArea">Bitte wähle zuerst eine Liga aus.</div>
@@ -326,6 +342,7 @@
     let ruleQuill = null;
     let editingNewsId = null;
     let globalLeagueRules = {}; 
+    let allLoadedProfilesMap = {}; // Globale Zuordnung der Spielerdaten für den Spielplaner
 
     function htmlEscape(str) {
         if (!str) return "-";
@@ -355,7 +372,6 @@
         `;
     }
 
-    // VOLLKOMMEN UNABHÄNGIGE LIGEN-PROJEKTION IM SPIELPLAN
     function formatSpielplanPlattformNames(prof, leagueName) {
         if(!prof) return "";
         return `
@@ -435,7 +451,7 @@
     };
 
     // ===========================================================
-    // WARTELISTE
+    // WARTELISTE & SCHUTZ VOR LEEREN INGAME-NAMEN (PUNKT 1 REPARIERT)
     // ===========================================================
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
@@ -447,6 +463,10 @@
 
             const activePlayers = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
             if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Anmeldungen vorhanden.</td></tr>'; return; }
+
+            // Cache befüllen für den Zuteilungskontext
+            allLoadedProfilesMap = {};
+            activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
 
             tbody.innerHTML = activePlayers.map(p => {
                 const isEingeteilt = p.status_neue_saison === 'assigned';
@@ -494,17 +514,38 @@
         } catch(e) { console.error(e); }
     }
 
+    // ABSOLUTE SPERRE: Verhindert das Abspeichern, wenn der Plattformname fehlt! (Punkt 1 implementiert)
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         const adEl = document.getElementById(`ad_${playerId}`);
         const dcEl = document.getElementById(`dc_${playerId}`);
         const scEl = document.getElementById(`sc_${playerId}`);
         
+        const playerProfile = allLoadedProfilesMap[playerId];
+        if(!playerProfile) return alert("Fehler beim Abruf des Spielerprofils.");
+
         const updates = { status_neue_saison: 'assigned' };
         
-        if(adEl) updates.assigned_ad_league = (adEl.value === 'REMOVE' || adEl.value === '') ? null : adEl.value.trim();
-        if(dcEl) updates.assigned_dc_league = (dcEl.value === 'REMOVE' || dcEl.value === '') ? null : dcEl.value.trim();
-        if(scEl) updates.assigned_sc_league = (scEl.value === 'REMOVE' || scEl.value === '') ? null : scEl.value.trim();
+        if(adEl && adEl.value !== 'REMOVE' && adEl.value !== '') {
+            if(!playerProfile.autodarts_name || playerProfile.autodarts_name.trim() === "" || playerProfile.autodarts_name === "-") {
+                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht für ${adEl.value} eingeteilt werden, da kein Autodarts-Name hinterlegt ist!`);
+            }
+            updates.assigned_ad_league = adEl.value.trim();
+        } else if(adEl) { updates.assigned_ad_league = null; }
+
+        if(dcEl && dcEl.value !== 'REMOVE' && dcEl.value !== '') {
+            if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name.trim() === "" || playerProfile.dartcounter_name === "-") {
+                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht für ${dcEl.value} eingeteilt werden, da kein DartCounter-Name hinterlegt ist!`);
+            }
+            updates.assigned_dc_league = dcEl.value.trim();
+        } else if(dcEl) { updates.assigned_dc_league = null; }
+
+        if(scEl && scEl.value !== 'REMOVE' && scEl.value !== '') {
+            if(!playerProfile.scolia_name || playerProfile.scolia_name.trim() === "" || playerProfile.scolia_name === "-") {
+                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht für ${scEl.value} eingeteilt werden, da kein Scolia-Name hinterlegt ist!`);
+            }
+            updates.assigned_sc_league = scEl.value.trim();
+        } else if(scEl) { updates.assigned_sc_league = null; }
 
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
         if(error) {
@@ -522,47 +563,118 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK
+    // SPIELPLAN-LOGIK MIT DYNAMISCHER GENERIERUNGS-OPTION
     // ===========================================================
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
         const league = document.getElementById("leagueSelector").value;
         const area = document.getElementById("scheduleArea");
+        const genArea = document.getElementById("generatePlanArea");
         if(!league) return;
 
         area.innerHTML = "Lade Spielplan und Profile...";
+        genArea.style.display = "none";
         
         try {
             const { data: profilesData, error: pErr } = await supabaseClient.from('profiles').select('*');
             if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
             const localPlayersList = profilesData || [];
 
-            // Lädt absolut bündig die Begegnungen genau der Liga aus der Dropdown-Auswahl!
             let query = supabaseClient.from('matches').select('*').eq('league_name', league);
             const { data: matches, error: mErr } = await query;
 
             if(mErr) {
-                if(mErr.message && mErr.message.includes('season_name')) {
-                    let fallbackQuery = await supabaseClient.from('matches').select('*').eq('league_name', league);
-                    if(fallbackQuery.data) {
-                        renderMatchesPlan(fallbackQuery.data, localPlayersList, area, league);
-                        return;
-                    }
-                }
                 area.innerHTML = "Fehler beim Laden der Matches: " + mErr.message; 
                 return; 
             }
             
             const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season_name') || m.season_name === currentSeasonGlobal) : [];
+            
+            // Wenn für diese Liga in dieser Saison NULL Einträge existieren, blenden wir den Erstellungs-Button ein!
+            if(filteredMatches.length === 0) {
+                genArea.style.display = "block";
+                genArea.innerHTML = `<button class="generate-btn" onclick="generateScheduleForLeague('${league}')">📅 Spielplan für ${league} jetzt frisch generieren</button>`;
+                area.innerHTML = `Es existiert noch kein aktiver Spielplan in der Datenbank für die ausgewählte **${league}**. Nutze den obigen blauen Button, um einen Spielplan aus den aktuell zugeteilten Spielern zu berechnen.`;
+                return;
+            }
+
             renderMatchesPlan(filteredMatches, localPlayersList, area, league);
         } catch(err) { area.innerHTML = "Kritischer Ladefehler im System."; }
     };
 
+    // GENERATOR: Berechnet vollautomatisch Hin- und Rückspiele aus den aktuellen Zuweisungen
+    window.generateScheduleForLeague = async function(leagueName) {
+        if(!supabaseClient) return;
+        if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen basierend auf den Zuteilungen generieren?`)) return;
+
+        try {
+            // Hole alle Profile, die dieser Liga händisch zugewiesen sind
+            const { data: players, error } = await supabaseClient.from('profiles').select('id');
+            if(error) return alert("Fehler beim Abruf der Spieler: " + error.message);
+
+            let leaguePlayers = [];
+            if(leagueName.includes("Autodarts")) leaguePlayers = players.filter(p => p.assigned_ad_league === leagueName);
+            if(leagueName.includes("DartCounter")) leaguePlayers = players.filter(p => p.assigned_dc_league === leagueName);
+            if(leagueName.includes("Scolia")) leaguePlayers = players.filter(p => p.assigned_sc_league === leagueName);
+
+            if(leaguePlayers.length < 2) {
+                return alert("❌ Fehler: Es müssen mindestens 2 Spieler dieser Liga zugewiesen sein, um Begegnungen zu generieren!");
+            }
+
+            let playerIds = leaguePlayers.map(p => p.id);
+            if (playerIds.length % 2 !== 0) {
+                playerIds.push(null); // Freilos hinzufügen, falls ungerade Anzahl
+            }
+
+            let numPlayers = playerIds.length;
+            let numRounds = numPlayers - 1;
+            let matchesToInsert = [];
+
+            // Berger-System Algorithmus für faire Runden-Generierung
+            for (let round = 0; round < numRounds; round++) {
+                for (let i = 0; i < numPlayers / 2; i++) {
+                    let home = playerIds[i];
+                    let away = playerIds[numPlayers - 1 - i];
+
+                    if (home !== null || away !== null) {
+                        // Hinrunde
+                        matchesToInsert.push({
+                            id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
+                            league_name: leagueName,
+                            season_name: currentSeasonGlobal,
+                            matchday: round + 1,
+                            player1_id: home,
+                            player2_id: away,
+                            status: 'offen'
+                        });
+                        
+                        // Rückrunde (gespiegelt)
+                        matchesToInsert.push({
+                            id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
+                            league_name: leagueName,
+                            season_name: currentSeasonGlobal,
+                            matchday: round + 1 + numRounds,
+                            player1_id: away,
+                            player2_id: home,
+                            status: 'offen'
+                        });
+                    }
+                }
+                // Rotieren der IDs ( Berger-Rotations-Prinzip )
+                playerIds.splice(1, 0, playerIds.pop());
+            }
+
+            const { error: insErr } = await supabaseClient.from('matches').insert(matchesToInsert);
+            if(insErr) alert("Fehler beim Schreiben der Spiele: " + insErr.message);
+            else {
+                alert(`🎉 Spielplan für ${leagueName} erfolgreich mit ${matchesToInsert.length} Begegnungen erstellt!`);
+                loadMatchdayPlan();
+            }
+
+        } catch(e) { alert("Generierungsfehler."); }
+    };
+
     function renderMatchesPlan(matches, playersList, area, league) {
-        if(!matches || matches.length === 0) {
-            area.innerHTML = `Noch kein Spielplan für ${league} vorhanden.`;
-            return;
-        }
         let grouped = {};
         matches.forEach(m => {
             if(!grouped[m.matchday]) grouped[m.matchday] = [];
@@ -821,7 +933,7 @@
     function initAdmin() {
         initLeagueSelector();
         
-        // Vollkommen entkoppelte Timeouts verhindern gegenseitige Startblockaden komplett
+        // Entkoppelte Timeouts starten das System fehlerfrei
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
         setTimeout(() => { loadStrafenkatalogList(); }, 250);
