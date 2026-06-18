@@ -295,6 +295,7 @@
     let ruleQuill = null;
     let editingNewsId = null;
     let globalLeagueRules = {};
+    let globalPlayersCache = []; // Cache, um verschachtelte Joins im Spielplan abzusichern
 
     function htmlEscape(str) {
         if (!str) return "-";
@@ -314,12 +315,14 @@
     // ===========================================================
     async function loadAllLeagueRules() {
         if(!supabaseClient) return;
-        const { data } = await supabaseClient.from('league_rules').select('*');
-        if(data) {
-            globalLeagueRules = {};
-            data.forEach(r => { globalLeagueRules[r.league_name] = r; });
-            renderRulesSummary();
-        }
+        try {
+            const { data } = await supabaseClient.from('league_rules').select('*');
+            if(data) {
+                globalLeagueRules = {};
+                data.forEach(r => { globalLeagueRules[r.league_name] = r; });
+                renderRulesSummary();
+            }
+        } catch(e) { console.error("Rules laden verzögert."); }
     }
 
     function renderRulesSummary() {
@@ -367,7 +370,9 @@
             const { data: players, error } = await supabaseClient.from('profiles').select('*');
             if (error) { tbody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`; return; }
 
-            const activePlayers = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
+            globalPlayersCache = players || []; // Cache befüllen für Spielplan-Auswertung
+
+            const activePlayers = globalPlayersCache.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned');
             if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Anmeldungen.</td></tr>'; return; }
 
             tbody.innerHTML = activePlayers.map(p => {
@@ -433,7 +438,7 @@
     };
 
     // ===========================================================
-    // ERWEITERTE SPIELPLAN-LOGIK MIT AVG & HIGHLIGHTS & PLATFORMNAMEN
+    // SPIELPLAN-LOGIK (ABGESICHERT GEGEN JOIN-FEHLER)
     // ===========================================================
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
@@ -454,16 +459,12 @@
 
         area.innerHTML = "Lade Spielplan aus der Datenbank...";
         
-        // Wir holen die Matches und laden parallel alle Spalten der Profile (Ingame Namen) mit ein
+        // Vollkommen sichere Abfrage: Wir holen nur die Rohdaten der Tabelle 'matches'
         let { data: matches, error } = await supabaseClient.from('matches')
-            .select(`
-                *,
-                player1:profiles!player1_id(discord_name, username, autodarts_name, dartcounter_name, scolia_name),
-                player2:profiles!player2_id(discord_name, username, autodarts_name, dartcounter_name, scolia_name)
-            `)
+            .select('*')
             .eq('league_name', league).eq('season_name', currentSeasonGlobal);
 
-        if(error) { area.innerHTML = "Fehler: " + error.message; return; }
+        if(error) { area.innerHTML = "Fehler beim Laden: " + error.message; return; }
         renderMatchesPlan(matches, area, league);
     };
 
@@ -504,12 +505,16 @@
                 <tbody>`;
                 
             list.forEach(m => {
-                const p1Name = m.player1 ? (m.player1.discord_name || m.player1.username) : "Freilos";
-                const p2Name = m.player2 ? (m.player2.discord_name || m.player2.username) : "Freilos";
+                // Wir mappen die Spieler-IDs händisch über den lokalen sicheren Cache, um relationale Join-Crashes zu vermeiden
+                const p1 = globalPlayersCache.find(x => x.id === m.player1_id);
+                const p2 = globalPlayersCache.find(x => x.id === m.player2_id);
+
+                const p1Name = p1 ? (p1.discord_name || p1.username) : "Freilos";
+                const p2Name = p2 ? (p2.discord_name || p2.username) : "Freilos";
                 const isFreilos = !m.player1_id || !m.player2_id;
                 
-                const p1Ingame = formatPlattformNames(m.player1, league);
-                const p2Ingame = formatPlattformNames(m.player2, league);
+                const p1Ingame = formatPlattformNames(p1, league);
+                const p2Ingame = formatPlattformNames(p2, league);
 
                 html += `
                     <tr>
@@ -572,14 +577,12 @@
     };
 
     // ===========================================================
-    // STRAFEN, NEWS & RULES REST
+    // STRAFEN, NEWS & RULES
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
         if(!tbody || !supabaseClient) return;
-        const { data: players } = await supabaseClient.from('profiles').select('*');
-        const active = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
-        tbody.innerHTML = active.map(p => `
+        tbody.innerHTML = globalPlayersCache.map(p => `
             <tr>
                 <td><strong>${htmlEscape(p.discord_name || p.username)}</strong></td>
                 <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${p.yellow_cards || 0}"> 🟨</td>
@@ -661,7 +664,7 @@
         initLeagueSelector();
         initNewsEditor();
         await loadAllLeagueRules(); 
-        loadWaitingList();
+        await loadWaitingList(); // Lädt Profile in den sicheren Cache
         loadStrafenkatalogList();
     }
 
