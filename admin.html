@@ -100,8 +100,8 @@
         }
         .num-input { width: 50px; text-align: center; }
         .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 15px; }
-        .stat-input { width: 55px; text-align: center; font-size: 13px; border-color: #20b7ff; }
-        .txt-input { width: 130px; font-size: 12px; border-color: #ffd08a; }
+        .stat-input { width: 60px; text-align: center; font-size: 13px; border-color: #20b7ff; }
+        .txt-input { width: 140px; font-size: 12px; border-color: #ffd08a; }
         .assign-btn {
             background: #3ddc97;
             color: #000;
@@ -347,19 +347,20 @@
         const league = document.getElementById("configLeagueSelect").value;
         if(!league) return alert("Bitte wähle zuerst eine Liga aus!");
 
-        const { error } = await supabaseClient.from('league_rules').upsert({
-            league_name: league,
-            aufsteiger: parseInt(document.getElementById("inputAuf").value) || 0,
-            absteiger: parseInt(document.getElementById("inputAb").value) || 0,
-            relegation: parseInt(document.getElementById("inputRel").value) || 0
-        });
-
-        if(error) alert(error.message);
-        else { alert("Liga-Einstellungen gespeichert!"); loadAllLeagueRules(); loadWaitingList(); }
+        try {
+            const { error } = await supabaseClient.from('league_rules').upsert({
+                league_name: league,
+                aufsteiger: parseInt(document.getElementById("inputAuf").value) || 0,
+                absteiger: parseInt(document.getElementById("inputAb").value) || 0,
+                relegation: parseInt(document.getElementById("inputRel").value) || 0
+            });
+            if(error) alert(error.message);
+            else { alert("Liga-Einstellungen gespeichert!"); loadAllLeagueRules(); loadWaitingList(); }
+        } catch(e) { console.error(e); }
     };
 
     // ===========================================================
-    // WARTELISTE & LOGINS
+    // WARTELISTE
     // ===========================================================
     function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
         if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
@@ -447,7 +448,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (EIGENSTÄNDIG UND ABSOLUT ABGESICHERT)
+    // SPIELPLAN-LOGIK (ABSOLUT AUTARK & HOCHAUFLÖSEND)
     // ===========================================================
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
@@ -469,19 +470,20 @@
         area.innerHTML = "Lade Spielplan und Profile...";
         
         try {
-            // Erst holen wir uns alle Profile frisch aus der DB, damit wir die Namen zuweisen können
-            const { data: profilesData } = await supabaseClient.from('profiles').select('*');
+            // Holt Profile direkt live ab
+            const { data: profilesData, error: pErr } = await supabaseClient.from('profiles').select('*');
+            if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
             const localPlayersList = profilesData || [];
 
-            // Danach laden wir die reinen Matches
-            let { data: matches, error } = await supabaseClient.from('matches')
+            // Holt Begegnungen live ab
+            let { data: matches, error: mErr } = await supabaseClient.from('matches')
                 .select('*')
                 .eq('league_name', league).eq('season_name', currentSeasonGlobal);
 
-            if(error) { area.innerHTML = "Fehler beim Laden: " + error.message; return; }
+            if(mErr) { area.innerHTML = "Fehler beim Laden der Matches: " + mErr.message; return; }
             renderMatchesPlan(matches, localPlayersList, area, league);
         } catch(err) {
-            area.innerHTML = "Fehler beim Laden der Spieldaten.";
+            area.innerHTML = "Kritischer Ladefehler im System.";
         }
     };
 
@@ -555,8 +557,8 @@
                             <input type="number" step="0.01" id="avg2_${m.id}" class="stat-input" placeholder="AVG A" value="${m.avg_player2 ?? ''}" ${isFreilos?'disabled':''}>
                         </td>
                         <td>
-                            <input type="text" id="hl1_${m.id}" class="txt-input" placeholder="Highlights Heim..." value="${htmlEscape(m.highlights_player1)}" ${isFreilos?'disabled':''}>
-                            <input type="text" id="hl2_${m.id}" class="txt-input" placeholder="Highlights Ausw..." style="margin-top:4px;" value="${htmlEscape(m.highlights_player2)}" ${isFreilos?'disabled':''}>
+                            <input type="text" id="hl1_${m.id}" class="txt-input" placeholder="Highlights Heim..." value="${m.highlights_player1 ? htmlEscape(m.highlights_player1) : ''}" ${isFreilos?'disabled':''}>
+                            <input type="text" id="hl2_${m.id}" class="txt-input" placeholder="Highlights Ausw..." style="margin-top:4px;" value="${m.highlights_player2 ? htmlEscape(m.highlights_player2) : ''}" ${isFreilos?'disabled':''}>
                         </td>
                         <td>
                             <button class="assign-btn" style="padding:8px;" onclick="saveMatchFullStats('${m.id}')" ${isFreilos?'disabled':''}>💾</button>
@@ -593,7 +595,7 @@
     };
 
     // ===========================================================
-    // STRAFEN, NEWS & RULES
+    // STRAFEN, NEWS & RULES REST
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
@@ -680,12 +682,14 @@
         alert("Regelwerk live!");
     };
 
-    async function initAdmin() {
+    // Voneinander isolierter asynchroner Parallelstart
+    function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
-        await loadAllLeagueRules(); 
-        await loadWaitingList(); 
-        loadStrafenkatalogList();
+        
+        setTimeout(() => { loadAllLeagueRules(); }, 50);
+        setTimeout(() => { loadWaitingList(); }, 150);
+        setTimeout(() => { loadStrafenkatalogList(); }, 250);
     }
 
     initAdmin();
