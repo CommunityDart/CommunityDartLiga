@@ -342,7 +342,7 @@
     let ruleQuill = null;
     let editingNewsId = null;
     let globalLeagueRules = {}; 
-    let allLoadedProfilesMap = {}; // Globale Zuordnung der Spielerdaten für den Spielplaner
+    let allLoadedProfilesMap = {}; 
 
     function htmlEscape(str) {
         if (!str) return "-";
@@ -451,7 +451,7 @@
     };
 
     // ===========================================================
-    // WARTELISTE & SCHUTZ VOR LEEREN INGAME-NAMEN (PUNKT 1 REPARIERT)
+    // WARTELISTE
     // ===========================================================
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
@@ -464,7 +464,6 @@
             const activePlayers = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
             if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Anmeldungen vorhanden.</td></tr>'; return; }
 
-            // Cache befüllen für den Zuteilungskontext
             allLoadedProfilesMap = {};
             activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
 
@@ -514,7 +513,6 @@
         } catch(e) { console.error(e); }
     }
 
-    // ABSOLUTE SPERRE: Verhindert das Abspeichern, wenn der Plattformname fehlt! (Punkt 1 implementiert)
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         const adEl = document.getElementById(`ad_${playerId}`);
@@ -563,7 +561,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK MIT DYNAMISCHER GENERIERUNGS-OPTION
+    // SPIELPLAN-LOGIK
     // ===========================================================
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
@@ -590,7 +588,6 @@
             
             const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season_name') || m.season_name === currentSeasonGlobal) : [];
             
-            // Wenn für diese Liga in dieser Saison NULL Einträge existieren, blenden wir den Erstellungs-Button ein!
             if(filteredMatches.length === 0) {
                 genArea.style.display = "block";
                 genArea.innerHTML = `<button class="generate-btn" onclick="generateScheduleForLeague('${league}')">📅 Spielplan für ${league} jetzt frisch generieren</button>`;
@@ -602,42 +599,40 @@
         } catch(err) { area.innerHTML = "Kritischer Ladefehler im System."; }
     };
 
-    // GENERATOR: Berechnet vollautomatisch Hin- und Rückspiele aus den aktuellen Zuweisungen
+    // GENERATOR KORREKTUR: Zieht jetzt dynamisch und exakt die zur Liga passende Tabellenspalte!
     window.generateScheduleForLeague = async function(leagueName) {
         if(!supabaseClient) return;
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen basierend auf den Zuteilungen generieren?`)) return;
 
         try {
-            // Hole alle Profile, die dieser Liga händisch zugewiesen sind
-            const { data: players, error } = await supabaseClient.from('profiles').select('id');
+            const { data: players, error } = await supabaseClient.from('profiles').select('*');
             if(error) return alert("Fehler beim Abruf der Spieler: " + error.message);
 
             let leaguePlayers = [];
+            // FILTER KORREKTUR: Filtert nun trennscharf nach der richtigen Tabellenspalte
             if(leagueName.includes("Autodarts")) leaguePlayers = players.filter(p => p.assigned_ad_league === leagueName);
             if(leagueName.includes("DartCounter")) leaguePlayers = players.filter(p => p.assigned_dc_league === leagueName);
             if(leagueName.includes("Scolia")) leaguePlayers = players.filter(p => p.assigned_sc_league === leagueName);
 
             if(leaguePlayers.length < 2) {
-                return alert("❌ Fehler: Es müssen mindestens 2 Spieler dieser Liga zugewiesen sein, um Begegnungen zu generieren!");
+                return alert(`❌ Fehler: Es müssen mindestens 2 Spieler dieser Liga händisch zugewiesen sein. Aktuell zugewiesen: ${leaguePlayers.length} Spieler.`);
             }
 
             let playerIds = leaguePlayers.map(p => p.id);
             if (playerIds.length % 2 !== 0) {
-                playerIds.push(null); // Freilos hinzufügen, falls ungerade Anzahl
+                playerIds.push(null); 
             }
 
             let numPlayers = playerIds.length;
             let numRounds = numPlayers - 1;
             let matchesToInsert = [];
 
-            // Berger-System Algorithmus für faire Runden-Generierung
             for (let round = 0; round < numRounds; round++) {
                 for (let i = 0; i < numPlayers / 2; i++) {
                     let home = playerIds[i];
                     let away = playerIds[numPlayers - 1 - i];
 
                     if (home !== null || away !== null) {
-                        // Hinrunde
                         matchesToInsert.push({
                             id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
                             league_name: leagueName,
@@ -648,7 +643,6 @@
                             status: 'offen'
                         });
                         
-                        // Rückrunde (gespiegelt)
                         matchesToInsert.push({
                             id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
                             league_name: leagueName,
@@ -660,7 +654,6 @@
                         });
                     }
                 }
-                // Rotieren der IDs ( Berger-Rotations-Prinzip )
                 playerIds.splice(1, 0, playerIds.pop());
             }
 
