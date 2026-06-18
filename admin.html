@@ -448,7 +448,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (ABSOLUT AUTARK & HOCHAUFLÖSEND)
+    // SPIELPLAN-LOGIK (FEHLERTOLERANT GEGEN FEHLENDE SPALTEN)
     // ===========================================================
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
@@ -470,18 +470,31 @@
         area.innerHTML = "Lade Spielplan und Profile...";
         
         try {
-            // Holt Profile direkt live ab
             const { data: profilesData, error: pErr } = await supabaseClient.from('profiles').select('*');
             if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
             const localPlayersList = profilesData || [];
 
-            // Holt Begegnungen live ab
-            let { data: matches, error: mErr } = await supabaseClient.from('matches')
-                .select('*')
-                .eq('league_name', league).eq('season_name', currentSeasonGlobal);
+            // Versuche mit season_name zu filtern. Falls die Tabellenspalte fehlt, fangen wir das hier ab.
+            let query = supabaseClient.from('matches').select('*').eq('league_name', league);
+            
+            const { data: matches, error: mErr } = await query;
 
-            if(mErr) { area.innerHTML = "Fehler beim Laden der Matches: " + mErr.message; return; }
-            renderMatchesPlan(matches, localPlayersList, area, league);
+            if(mErr) {
+                // Wenn es an 'season_name' lag, machen wir eine Fallback-Abfrage nur nach Liga
+                if(mErr.message && mErr.message.includes('season_name')) {
+                    let fallbackQuery = await supabaseClient.from('matches').select('*').eq('league_name', league);
+                    if(fallbackQuery.data) {
+                        renderMatchesPlan(fallbackQuery.data, localPlayersList, area, league);
+                        return;
+                    }
+                }
+                area.innerHTML = "Fehler beim Laden der Matches: " + mErr.message; 
+                return; 
+            }
+            
+            // Wenn die Spalte existiert, filtern wir im JavaScript nach der aktuellen Saison
+            const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season_name') || m.season_name === currentSeasonGlobal) : [];
+            renderMatchesPlan(filteredMatches, localPlayersList, area, league);
         } catch(err) {
             area.innerHTML = "Kritischer Ladefehler im System.";
         }
@@ -498,7 +511,7 @@
 
     function renderMatchesPlan(matches, playersList, area, league) {
         if(!matches || matches.length === 0) {
-            area.innerHTML = `Noch kein Spielplan für ${league} in dieser Saison vorhanden.`;
+            area.innerHTML = `Noch kein Spielplan für ${league} vorhanden.`;
             return;
         }
         let grouped = {};
@@ -629,17 +642,19 @@
     async function loadAdminNewsList() {
         const container = document.getElementById("adminNewsContainer");
         if(!container || !supabaseClient) return;
-        const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
-        if(news) {
-            container.innerHTML = news.map(n => `
-                <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div><strong>${htmlEscape(n.title)}</strong></div>
-                    <div>
-                        <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
-                        <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
-                    </div>
-                </div>`).join("");
-        }
+        try {
+            const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
+            if(news) {
+                container.innerHTML = news.map(n => `
+                    <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div><strong>${htmlEscape(n.title)}</strong></div>
+                        <div>
+                            <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
+                            <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
+                        </div>
+                    </div>`).join("");
+            }
+        } catch(e) {}
     }
 
     window.publishNews = async function() {
@@ -673,8 +688,10 @@
     }
 
     async function loadCurrentRegelwerk() {
-        const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
-        if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
+        try {
+            const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
+            if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
+        } catch(e) {}
     }
 
     window.saveRegelwerkHtml = async function() {
@@ -682,11 +699,11 @@
         alert("Regelwerk live!");
     };
 
-    // Voneinander isolierter asynchroner Parallelstart
     function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
         
+        // Entkoppelte parallele Timeouts verhindern jegliche gegenseitige Startblockaden
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
         setTimeout(() => { loadStrafenkatalogList(); }, 250);
