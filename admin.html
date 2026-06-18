@@ -158,6 +158,7 @@
             font-weight: bold;
         }
         
+        /* EDITOR ANPASSUNGEN */
         .editor-container {
             background: #fff;
             color: #000;
@@ -167,6 +168,11 @@
         .ql-toolbar {
             background: #eee;
             border-radius: 8px 8px 0 0;
+        }
+        /* Fix, damit Dropdowns auf dunklen Seiten lesbar bleiben */
+        .ql-snow .ql-picker-options {
+            background-color: #fff !important;
+            color: #000 !important;
         }
         .save-banner-btn {
             background: #3ddc97;
@@ -289,19 +295,18 @@
     // 1. CONFIGURATION & STATE
     // ===========================================================
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; // <-- TRAGE HIER DEINEN SUPABASE KEY EIN
+    const SUPABASE_ANON_KEY = "DEIN_ECHTER_SUPABASE_ANON_KEY"; // <-- HIER DEINEN SUPABASE KEY EINTRAGEN
     
     let supabaseClient = null;
 
-    // Supabase-Initialisierung absichern, damit Skriptabstürze verhindert werden
     try {
         if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("DEIN_ECHTER_SUPABASE_ANON_KEY")) {
-            console.error("Supabase Anon Key fehlt oder steht auf Platzhalter!");
+            console.error("Supabase Anon Key fehlt!");
             document.addEventListener("DOMContentLoaded", () => {
                 const errBox = document.getElementById("connectionErrorBanner");
                 if(errBox) {
                     errBox.style.display = "block";
-                    errBox.innerHTML = "⚠️ <strong>Konfigurationsfehler:</strong> In Zeile 229 der `admin.html` fehlt dein echter Supabase Anon Key. Bitte trage diesen ein, damit Daten geladen werden können.";
+                    errBox.innerHTML = "⚠️ <strong>Konfigurationsfehler:</strong> In Zeile 234 fehlt dein Supabase Anon Key.";
                 }
             });
         } else {
@@ -310,6 +315,16 @@
     } catch(e) {
         console.error("Kritischer Fehler bei Client-Initialisierung:", e);
     }
+
+    // Volles Toolbar-Profil für Farben, Listen und Ausrichtungen definieren
+    const quillToolbarOptions = [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],        // Text-Styles
+        [{ 'color': [] }, { 'background': [] }],          // <--- FARBEN & TEXTMARKER HINZUGEFÜGT
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        ['link', 'clean']                                 // Links setzen & Formatierung löschen
+    ];
 
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
     const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
@@ -354,7 +369,6 @@
     // 3. LOGIC & DATA HANDLING (TAB CONTENT WORKERS)
     // ===========================================================
     
-    // --- TAB 1: GENERATE TESTPLAYERS & ASSIGNMENTS ---
     window.createDummyPlayer = async function() {
         if(!supabaseClient) return alert("Datenbank nicht verbunden (Key prüfen).");
         const name = document.getElementById("dummyNameInput").value.trim();
@@ -477,7 +491,6 @@
         loadWaitingList();
     };
 
-    // --- TAB 2: SCHEDULES & SCORES ---
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
         if(sel && sel.options.length === 1) {
@@ -563,7 +576,6 @@
         else alert("Ergebnis gespeichert!");
     };
 
-    // --- TAB 3: STRAFENKATALOG LOGIC ---
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
         if(!tbody) return;
@@ -616,7 +628,10 @@
     // --- TAB 4: NEWS LOGIC ---
     function initNewsEditor() {
         if(!newsQuill) {
-            newsQuill = new Quill('#newsEditor', { theme: 'snow' });
+            newsQuill = new Quill('#newsEditor', { 
+                theme: 'snow',
+                modules: { toolbar: quillToolbarOptions } // Volle Toolbar zuweisen
+            });
         }
         loadAdminNewsList();
     }
@@ -702,7 +717,10 @@
     // --- TAB 5: REGELWERK DYNAMIC LOGIC ---
     function initRuleEditor() {
         if(!ruleQuill) {
-            ruleQuill = new Quill('#ruleEditor', { theme: 'snow' });
+            ruleQuill = new Quill('#ruleEditor', { 
+                theme: 'snow',
+                modules: { toolbar: quillToolbarOptions } // Volle Toolbar zuweisen
+            });
             loadCurrentRegelwerk();
         }
     }
@@ -731,7 +749,6 @@
     // 4. MAIN ENTRANCE SECURITY & SYSTEM BOOT
     // ===========================================================
     async function initAdmin() {
-        // Die Editoren und Grundstrukturen unabhängig von Supabase starten, um leere Sektionen zu verhindern
         initLeagueSelector();
         initNewsEditor();
 
@@ -745,13 +762,11 @@
                 console.log("System-Settings Tabelle verzögert."); 
             }
 
-            // Tabellen-Inhalte befüllen
             loadWaitingList();
             loadStrafenkatalogList();
         }
     }
 
-    // Startet das Dashboard
     initAdmin();
 </script>
 
