@@ -54,7 +54,7 @@
         .tabs {
             display: flex;
             gap: 10px;
-            border-bottom: 2px solid rgba(75, 135, 165, 0.2);
+            border-bottom: 2px solid rgba(255,255,255,0.05);
             padding-bottom: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
@@ -163,31 +163,7 @@
         
         .flex-row-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
         .flex-col-gap { display: flex; flex-direction: column; gap: 4px; }
-
-        /* REPARIERTE OPTIK NEWS- UND REGELWERK-EDITOREN */
-        .editor-container { 
-            background: #fff; 
-            color: #000; 
-            border-radius: 0 0 8px 8px; 
-            min-height: 350px; 
-            margin-bottom: 15px;
-        }
-        .ql-editor { font-size: 15px; line-height: 1.6; color: #222; }
-        .ql-toolbar.ql-snow { background: #eee; border-radius: 8px 8px 0 0; border-color: #ccc; }
-        .ql-snow .ql-picker-options { background-color: #fff !important; color: #000 !important; }
-        .save-banner-btn {
-            background: #3ddc97;
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 15px;
-            transition: 0.2s;
-        }
-        .save-banner-btn:hover { opacity: 0.9; }
-    </script>
+    </style>
 </head>
 <body>
 
@@ -305,7 +281,7 @@
     let supabaseClient = null;
     try {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch(e) { console.error("Supabase Client konnte nicht geladen werden:", e); }
+    } catch(e) { console.error("Supabase Init Fehler:", e); }
 
     const quillToolbarOptions = [
         [{ 'header': [1, 2, 3, false] }],
@@ -325,7 +301,7 @@
     let newsQuill = null;
     let ruleQuill = null;
     let editingNewsId = null;
-    let globalLeagueRules = {}; 
+    let globalLeagueRules = {}; // Als leeres Objekt initialisieren, damit es niemals null ist
 
     function htmlEscape(str) {
         if (!str) return "-";
@@ -338,9 +314,8 @@
         document.getElementById(tabId).classList.add('active');
         if(event && event.currentTarget) event.currentTarget.classList.add('active');
         
-        // Radikale Absicherung beim Tab-Wechsel
-        if (tabId === 'tabRegelwerk') initRuleEditor();
-        if (tabId === 'tabNews') initNewsEditor();
+        // Defensives Nachladen je nach Tab-Klick
+        if (tabId === 'tabRegelwerk' && !ruleQuill) initRuleEditor();
         if (tabId === 'tabStrafen') loadStrafenkatalogList();
         if (tabId === 'tabZuteilung') loadWaitingList();
     }
@@ -368,7 +343,7 @@
                 data.forEach(r => { globalLeagueRules[r.league_name] = r; });
                 renderRulesSummary();
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Regeln aus DB laden fehlgeschlagen:", e); }
     }
 
     function renderRulesSummary() {
@@ -412,7 +387,7 @@
     };
 
     // ===========================================================
-    // WARTELISTE
+    // WARTELISTE (ABSOLUT KRISENSICHER GEGEN NULL-POINTER)
     // ===========================================================
     function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
         if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
@@ -441,6 +416,7 @@
                 const isEingeteilt = p.status_neue_saison === 'assigned';
                 let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
                 
+                // Extrem defensive Abfrage der Auf-/Abstiegsregeln
                 if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
                     const rule = globalLeagueRules[p.voriga_liga];
                     let statusBadge = "";
@@ -480,7 +456,10 @@
                         </td>
                     </tr>`;
             }).join("");
-        } catch(e) { console.error(e); }
+        } catch(e) { 
+            console.error(e);
+            tbody.innerHTML = `<tr><td colspan="6" style="color:#e74c3c;">Fehler beim Aufbau der Zuteilungstabelle. Bitte Seite neu laden.</td></tr>`; 
+        }
     }
 
     window.saveSingleAssignment = async function(playerId) {
@@ -535,7 +514,9 @@
             
             const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season_name') || m.season_name === currentSeasonGlobal) : [];
             renderMatchesPlan(filteredMatches, localPlayersList, area, league);
-        } catch(err) { area.innerHTML = "Kritischer Ladefehler im System."; }
+        } catch(err) {
+            area.innerHTML = "Kritischer Ladefehler im System.";
+        }
     };
 
     function renderMatchesPlan(matches, playersList, area, league) {
@@ -643,7 +624,7 @@
     };
 
     // ===========================================================
-    // STRAFENKATALOG LOGIC
+    // STRAFENKATALOG
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
@@ -674,7 +655,7 @@
                         <td><button class="assign-btn" style="padding:8px;" onclick="savePlayerCards('${p.id}')">💾 Speichern</button></td>
                     </tr>`;
             }).join("");
-        } catch(e) { console.error(e); }
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden des Strafenkatalogs.</td></tr>`; }
     }
 
     window.savePlayerCards = async function(playerId) {
@@ -698,9 +679,7 @@
     // ===========================================================
     function initNewsEditor() {
         try {
-            if(!newsQuill) {
-                newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
-            }
+            if(!newsQuill) newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
             loadAdminNewsList();
         } catch(e) { console.error(e); }
     }
@@ -715,8 +694,8 @@
                     <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                         <div><strong>${htmlEscape(n.title)}</strong></div>
                         <div>
-                            <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️ Bearbeiten</button>
-                            <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️ Löschen</button>
+                            <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
+                            <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
                         </div>
                     </div>`).join("");
             }
@@ -726,7 +705,6 @@
     window.publishNews = async function() {
         if(!supabaseClient) return;
         const title = document.getElementById("newsTitleInput").value.trim();
-        if(!title) return alert("Bitte eine Überschrift eingeben!");
         const content = newsQuill.root.innerHTML;
         
         try {
@@ -739,7 +717,6 @@
             document.getElementById("newsTitleInput").value = "";
             newsQuill.root.innerHTML = "";
             loadAdminNewsList();
-            alert("News erfolgreich verarbeitet!");
         } catch(e) { console.error(e); }
     };
 
@@ -748,7 +725,7 @@
         editingNewsId = id;
         document.getElementById("newsTitleInput").value = unescape(title);
         const { data } = await supabaseClient.from('news').select('content').eq('id', id).single();
-        if(data && newsQuill) newsQuill.root.innerHTML = data.content;
+        if(data) newsQuill.root.innerHTML = data.content;
     };
 
     window.deleteNews = async function(id) {
@@ -766,8 +743,8 @@
         try {
             if(!ruleQuill) {
                 ruleQuill = new Quill('#ruleEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
+                loadCurrentRegelwerk();
             }
-            loadCurrentRegelwerk();
         } catch(e) { console.error(e); }
     }
 
@@ -775,7 +752,7 @@
         if(!supabaseClient) return;
         try {
             const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
-            if(data && ruleQuill) ruleQuill.root.innerHTML = data.regelwerk_html;
+            if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
         } catch(e) { console.error(e); }
     }
 
@@ -787,6 +764,7 @@
         } catch(e) { console.error(e); }
     };
 
+    // Befüllt die Dropdowns sofort synchron bei Seitenstart
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
         const cfgSel = document.getElementById("configLeagueSelect");
@@ -798,14 +776,14 @@
         }
     }
 
+    // Unabhängige Starterblöcke: Ein Fehler reißt niemals die anderen Komponenten mit!
     function initAdmin() {
         initLeagueSelector();
+        initNewsEditor();
         
-        // Vollkommen entkoppelte Timeouts ohne gegenseitige Startblockaden
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
         setTimeout(() => { loadStrafenkatalogList(); }, 250);
-        setTimeout(() => { initNewsEditor(); }, 350);
     }
 
     initAdmin();
