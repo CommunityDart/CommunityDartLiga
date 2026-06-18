@@ -269,11 +269,15 @@
     // 1. CONFIGURATION & STATE
     // ===========================================================
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnRudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; 
+    
+    // !!! SETZE HIER DEINEN AKTUELLEN KEY DIREKT ZWISCHEN DIE ANFÜHRUNGSZEICHEN !!!
+    const SUPABASE_ANON_KEY = "DEIN_API_KEY_HIER"; 
     
     let supabaseClient = null;
     try {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        if(SUPABASE_ANON_KEY !== "DEIN_API_KEY_HIER") {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY.trim());
+        }
     } catch(e) { console.error(e); }
 
     const quillToolbarOptions = [
@@ -362,18 +366,6 @@
     // ===========================================================
     // WARTELISTE
     // ===========================================================
-    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
-        if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
-        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
-        html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
-        html += `<option value="REMOVE">❌ Entfernen</option>`;
-        optionsArr.forEach(l => {
-            html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
-        });
-        html += `</select>`;
-        return html;
-    }
-
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -448,7 +440,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (ABSOLUT UNZERSTÖRBAR)
+    // SPIELPLAN-LOGIK
     // ===========================================================
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
@@ -462,7 +454,7 @@
     }
 
     window.loadMatchdayPlan = async function() {
-        if(!supabaseClient) return;
+        if(!supabaseClient) return alert("Bitte trage zuerst deinen gültigen Key in Zeile 238 ein!");
         const league = document.getElementById("leagueSelector").value;
         const area = document.getElementById("scheduleArea");
         if(!league) return;
@@ -684,12 +676,11 @@
         alert("Regelwerk live!");
     };
 
-    // Isolation: Jede Funktion wird autark aufgerufen, Fehler blockieren sich nicht gegenseitig
     function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
         
-        // Unabhängige Starter
+        // Vollkommen entkoppelte Timeouts ohne gegenseitige Blockaden
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 100);
         setTimeout(() => { loadStrafenkatalogList(); }, 150);
