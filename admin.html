@@ -15,7 +15,7 @@
             padding: 20px;
         }
         .admin-container {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
             background: #021622;
             border: 1px solid rgba(75, 135, 165, 0.2);
@@ -90,7 +90,7 @@
             font-size: 12px;
             text-transform: uppercase;
         }
-        .league-select, .leg-input, .num-input {
+        .league-select, .leg-input, .num-input, .stat-input, .txt-input {
             padding: 6px;
             border-radius: 6px;
             background: #021017;
@@ -99,7 +99,9 @@
             outline: none;
         }
         .num-input { width: 50px; text-align: center; }
-        .leg-input { width: 50px; text-align: center; font-weight: bold; font-size: 16px; }
+        .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 15px; }
+        .stat-input { width: 55px; text-align: center; font-size: 13px; border-color: #20b7ff; }
+        .txt-input { width: 130px; font-size: 12px; border-color: #ffd08a; }
         .assign-btn {
             background: #3ddc97;
             color: #000;
@@ -145,6 +147,7 @@
             margin-top: 10px;
         }
         .meta-text { font-size: 12px; color: #90a9b7; margin-top: 2px; }
+        .player-info-block { font-size: 13px; line-height: 1.4; }
         .badge {
             padding: 2px 6px;
             border-radius: 4px;
@@ -174,7 +177,6 @@
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
-        
         <div class="config-box">
             <h3>⚙️ Auf- / Abstiegseinstellungen pro Liga festlegen</h3>
             <div class="config-row">
@@ -210,14 +212,15 @@
     </div>
 
     <div id="tabSpielplaene" class="tab-content">
-        <h2>Ergebnisse & Spieltage eintragen</h2>
+        <h2>Ergebnisse, Averages & Highlights eintragen</h2>
         <div style="margin-bottom: 15px;">
             <select id="leagueSelector" class="league-select" onchange="loadMatchdayPlan()">
                 <option value="" disabled selected>-- Liga Auswählen --</option>
             </select>
-            <button class="dummy-btn" id="btnGeneratePlan" style="display:none; margin-left:10px;" onclick="generateSchedules()">Spielplan generieren</button>
         </div>
-        <div id="scheduleArea">Bitte wähle zuerst eine Liga aus.</div>
+        <div style="overflow-x: auto;">
+            <div id="scheduleArea">Bitte wähle zuerst eine Liga aus.</div>
+        </div>
     </div>
 
     <div id="tabStrafen" class="tab-content">
@@ -291,7 +294,7 @@
     let newsQuill = null;
     let ruleQuill = null;
     let editingNewsId = null;
-    let globalLeagueRules = {}; // Cache für Auf-/Abstiegsregeln
+    let globalLeagueRules = {};
 
     function htmlEscape(str) {
         if (!str) return "-";
@@ -307,16 +310,14 @@
     }
 
     // ===========================================================
-    // LIGA AUF- UND ABSTIEGSLOGIK (NEU)
+    // LIGA CONFIG LOGIC
     // ===========================================================
     async function loadAllLeagueRules() {
         if(!supabaseClient) return;
-        const { data, error } = await supabaseClient.from('league_rules').select('*');
+        const { data } = await supabaseClient.from('league_rules').select('*');
         if(data) {
             globalLeagueRules = {};
-            data.forEach(r => {
-                globalLeagueRules[r.league_name] = r;
-            });
+            data.forEach(r => { globalLeagueRules[r.league_name] = r; });
             renderRulesSummary();
         }
     }
@@ -344,37 +345,20 @@
         const league = document.getElementById("configLeagueSelect").value;
         if(!league) return alert("Bitte wähle zuerst eine Liga aus!");
 
-        const auf = parseInt(document.getElementById("inputAuf").value) || 0;
-        const ab = parseInt(document.getElementById("inputAb").value) || 0;
-        const rel = parseInt(document.getElementById("inputRel").value) || 0;
-
         const { error } = await supabaseClient.from('league_rules').upsert({
-            league_name: league, aufsteiger: auf, absteiger: ab, relegation: rel
+            league_name: league,
+            aufsteiger: parseInt(document.getElementById("inputAuf").value) || 0,
+            absteiger: parseInt(document.getElementById("inputAb").value) || 0,
+            relegation: parseInt(document.getElementById("inputRel").value) || 0
         });
 
         if(error) alert(error.message);
-        else {
-            alert("Liga-Einstellungen erfolgreich gespeichert!");
-            loadAllLeagueRules();
-            loadWaitingList(); // Aktualisiert die Tabelle mit den visuellen Indikatoren
-        }
+        else { alert("Liga-Einstellungen erfolgreich gespeichert!"); loadAllLeagueRules(); loadWaitingList(); }
     };
 
     // ===========================================================
-    // ERWEITERTE WARTELISTE & ZUTEILUNG (Zahlen-Logik)
+    // WARTELISTE & LOGINS
     // ===========================================================
-    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
-        if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
-        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
-        html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
-        html += `<option value="REMOVE">❌ Entfernen</option>`;
-        optionsArr.forEach(l => {
-            html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
-        });
-        html += `</select>`;
-        return html;
-    }
-
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -388,31 +372,19 @@
 
             tbody.innerHTML = activePlayers.map(p => {
                 const isEingeteilt = p.status_neue_saison === 'assigned';
-                
-                // Sportliche Historie berechnen
                 let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
                 if(p.voriga_liga) {
                     const rule = globalLeagueRules[p.voriga_liga];
                     let statusBadge = "";
-                    
                     if(rule && p.voriga_platzierung) {
                         const pos = p.voriga_platzierung;
                         if(pos <= rule.aufsteiger) statusBadge = `<span class="badge badge-up"> Aufsteiger (Platz ${pos})</span>`;
                         else if(rule.absteiger > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down"> Absteiger (Platz ${pos})</span>`;
                         else if(rule.relegation > 0 && pos > (10 - rule.absteiger - rule.relegation) && pos <= (10 - rule.absteiger)) statusBadge = `<span class="badge badge-rel"> Relegation (Platz ${pos})</span>`;
                         else statusBadge = `<span class="badge" style="background:rgba(255,255,255,0.05);">Klassenerhalt (Platz ${pos})</span>`;
-                    } else if (p.voriga_platzierung) {
-                        statusBadge = ` (Platz ${p.voriga_platzierung})`;
-                    }
+                    } else if (p.voriga_platzierung) { statusBadge = ` (Platz ${p.voriga_platzierung})`; }
                     herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong><br>${statusBadge}`;
                 }
-
-                // Ingame Namen strukturieren
-                const ingameNamesHtml = `
-                    <div class="meta-text">🎯 AD: ${htmlEscape(p.autodarts_name)}</div>
-                    <div class="meta-text">🔥 DC: ${htmlEscape(p.dartcounter_name)}</div>
-                    <div class="meta-text">🛡️ SC: ${htmlEscape(p.scolia_name)}</div>
-                `;
 
                 return `
                     <tr id="row_${p.id}">
@@ -423,7 +395,11 @@
                                 <small style="color:#90a9b7;">Letzte Saison:</small><br>${herkunftHtml}
                             </div>
                         </td>
-                        <td>${ingameNamesHtml}</td>
+                        <td>
+                            <div class="meta-text">🎯 AD: ${htmlEscape(p.autodarts_name)}</div>
+                            <div class="meta-text">🔥 DC: ${htmlEscape(p.dartcounter_name)}</div>
+                            <div class="meta-text">🛡️ SC: ${htmlEscape(p.scolia_name)}</div>
+                        </td>
                         <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.want_autodarts, p.assigned_ad_league)}</td>
                         <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.want_dartcounter, p.assigned_dc_league)}</td>
                         <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league)}</td>
@@ -432,8 +408,7 @@
                             <button class="remove-btn" onclick="removePlayerCompletely('${p.id}')">🗑️ Löschen</button>
                             ${isEingeteilt ? '<br><span style="color:#3ddc97; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             }).join("");
         } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Verbindungsfehler.</td></tr>`; }
     }
@@ -443,29 +418,22 @@
         const adEl = document.getElementById(`ad_${playerId}`);
         const dcEl = document.getElementById(`dc_${playerId}`);
         const scEl = document.getElementById(`sc_${playerId}`);
-
         const updates = { status_neue_saison: 'assigned' };
         if(adEl) updates.assigned_ad_league = adEl.value === 'REMOVE' || adEl.value === '' ? null : adEl.value;
         if(dcEl) updates.assigned_dc_league = dcEl.value === 'REMOVE' || dcEl.value === '' ? null : dcEl.value;
         if(scEl) updates.assigned_sc_league = scEl.value === 'REMOVE' || scEl.value === '' ? null : scEl.value;
-
-        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
-        if(error) alert("Fehler: " + error.message);
-        else { alert("Zuteilung erfolgreich abgespeichert!"); loadWaitingList(); }
+        await supabaseClient.from('profiles').update(updates).eq('id', playerId);
+        alert("Zuteilung gespeichert!"); loadWaitingList();
     };
 
     window.removePlayerCompletely = async function(playerId) {
-        if(!supabaseClient) return;
-        if(!confirm("Spieler aus der Zuweisungsliste entfernen?")) return;
-        const { error } = await supabaseClient.from('profiles').update({
-            status_neue_saison: 'none', assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null
-        }).eq('id', playerId);
-        if(error) alert(error.message);
+        if(!supabaseClient || !confirm("Löschen?")) return;
+        await supabaseClient.from('profiles').update({ status_neue_saison: 'none', assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null }).eq('id', playerId);
         loadWaitingList();
     };
 
     // ===========================================================
-    // RESTLICHE SYSTEM-FUNKTIONEN (SPIELPLÄNE, NEWS, RULES)
+    // ERWEITERTE SPIELPLAN-LOGIK MIT AVG & HIGHLIGHTS & PLATFORMNAMEN
     // ===========================================================
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
@@ -485,16 +453,32 @@
         if(!league) return;
 
         area.innerHTML = "Lade Spielplan aus der Datenbank...";
+        
+        // Wir holen die Matches und laden parallel alle Spalten der Profile (Ingame Namen) mit ein
         let { data: matches, error } = await supabaseClient.from('matches')
-            .select('*, player1:profiles!player1_id(discord_name), player2:profiles!player2_id(discord_name)')
-            .eq('league_name', league);
+            .select(`
+                *,
+                player1:profiles!player1_id(discord_name, username, autodarts_name, dartcounter_name, scolia_name),
+                player2:profiles!player2_id(discord_name, username, autodarts_name, dartcounter_name, scolia_name)
+            `)
+            .eq('league_name', league).eq('season_name', currentSeasonGlobal);
 
-        if(!error) renderMatchesPlan(matches, area, league);
+        if(error) { area.innerHTML = "Fehler: " + error.message; return; }
+        renderMatchesPlan(matches, area, league);
     };
+
+    function formatPlattformNames(prof, mode) {
+        if(!prof) return "";
+        let names = [];
+        if(mode.includes("Autodarts") && prof.autodarts_name) names.push(`🎯 AD: ${prof.autodarts_name}`);
+        if(mode.includes("DartCounter") && prof.dartcounter_name) names.push(`🔥 DC: ${prof.dartcounter_name}`);
+        if(mode.includes("Scolia") && prof.scolia_name) names.push(`🛡️ SC: ${prof.scolia_name}`);
+        return names.length ? `<div style="color:#20b7ff; font-size:11px; margin-top:2px;">${names.join(' | ')}</div>` : "";
+    }
 
     function renderMatchesPlan(matches, area, league) {
         if(!matches || matches.length === 0) {
-            area.innerHTML = `Noch kein Spielplan für ${league} vorhanden.`;
+            area.innerHTML = `Noch kein Spielplan für ${league} in dieser Saison vorhanden.`;
             return;
         }
         let grouped = {};
@@ -505,16 +489,57 @@
 
         let html = "";
         for (const [day, list] of Object.entries(grouped)) {
-            html += `<h3 style="color:#20b7ff; margin-top:20px; border-bottom:1px solid #4b87a5;">Spieltag ${day}</h3>`;
-            html += `<table><thead><tr><th>Heim</th><th>Auswärts</th><th>Ergebnis</th><th>Aktion</th></tr></thead><tbody>`;
+            html += `<h3 style="color:#20b7ff; margin-top:20px; border-bottom:1px solid #4b87a5; padding-bottom:5px;">Spieltag ${day}</h3>`;
+            html += `<table>
+                <thead>
+                    <tr>
+                        <th style="width:25%;">Heimspieler</th>
+                        <th style="width:25%;">Auswärtsspieler</th>
+                        <th style="width:12%; text-align:center;">Legs</th>
+                        <th style="width:15%; text-align:center;">Averages (AVG)</th>
+                        <th style="width:18%;">Highlights (180er, HF...)</th>
+                        <th style="width:5%;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+                
             list.forEach(m => {
-                const p1 = m.player1?.discord_name || "Freilos";
-                const p2 = m.player2?.discord_name || "Freilos";
+                const p1Name = m.player1 ? (m.player1.discord_name || m.player1.username) : "Freilos";
+                const p2Name = m.player2 ? (m.player2.discord_name || m.player2.username) : "Freilos";
+                const isFreilos = !m.player1_id || !m.player2_id;
+                
+                const p1Ingame = formatPlattformNames(m.player1, league);
+                const p2Ingame = formatPlattformNames(m.player2, league);
+
                 html += `
                     <tr>
-                        <td>${htmlEscape(p1)}</td><td>${htmlEscape(p2)}</td>
-                        <td><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}"> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}"></td>
-                        <td><button class="card-btn" onclick="saveMatchScore('${m.id}')">💾</button></td>
+                        <td>
+                            <div class="player-info-block">
+                                <strong>${htmlEscape(p1Name)}</strong>
+                                ${p1Ingame}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="player-info-block">
+                                <strong>${htmlEscape(p2Name)}</strong>
+                                ${p2Ingame}
+                            </div>
+                        </td>
+                        <td style="text-align:center;">
+                            <input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
+                            <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}>
+                        </td>
+                        <td style="text-align:center;">
+                            <input type="number" step="0.01" id="avg1_${m.id}" class="stat-input" placeholder="AVG H" value="${m.avg_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
+                            <input type="number" step="0.01" id="avg2_${m.id}" class="stat-input" placeholder="AVG A" value="${m.avg_player2 ?? ''}" ${isFreilos?'disabled':''}>
+                        </td>
+                        <td>
+                            <input type="text" id="hl1_${m.id}" class="txt-input" placeholder="Highlights Heim..." value="${htmlEscape(m.highlights_player1)}" ${isFreilos?'disabled':''}>
+                            <input type="text" id="hl2_${m.id}" class="txt-input" placeholder="Highlights Ausw..." style="margin-top:4px;" value="${htmlEscape(m.highlights_player2)}" ${isFreilos?'disabled':''}>
+                        </td>
+                        <td>
+                            <button class="assign-btn" style="padding:8px;" onclick="saveMatchFullStats('${m.id}')" ${isFreilos?'disabled':''}>💾</button>
+                        </td>
                     </tr>`;
             });
             html += `</tbody></table>`;
@@ -522,17 +547,33 @@
         area.innerHTML = html;
     }
 
-    window.saveMatchScore = async function(matchId) {
+    window.saveMatchFullStats = async function(matchId) {
+        if(!supabaseClient) return;
         const l1 = document.getElementById(`l1_${matchId}`).value;
         const l2 = document.getElementById(`l2_${matchId}`).value;
-        await supabaseClient.from('matches').update({
+        const a1 = document.getElementById(`avg1_${matchId}`).value;
+        const a2 = document.getElementById(`avg2_${matchId}`).value;
+        const h1 = document.getElementById(`hl1_${matchId}`).value.trim();
+        const h2 = document.getElementById(`hl2_${matchId}`).value.trim();
+
+        const updates = {
             legs_player1: l1 === "" ? null : parseInt(l1),
             legs_player2: l2 === "" ? null : parseInt(l2),
+            avg_player1: a1 === "" ? null : parseFloat(a1),
+            avg_player2: a2 === "" ? null : parseFloat(a2),
+            highlights_player1: h1 === "" ? null : h1,
+            highlights_player2: h2 === "" ? null : h2,
             status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
-        }).eq('id', matchId);
-        alert("Gespeichert!");
+        };
+
+        const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
+        if(error) alert("Fehler beim Speichern: " + error.message);
+        else alert("Spielbericht erfolgreich aktualisiert!");
     };
 
+    // ===========================================================
+    // STRAFEN, NEWS & RULES REST
+    // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
         if(!tbody || !supabaseClient) return;
@@ -582,9 +623,7 @@
         if (editingNewsId) {
             await supabaseClient.from('news').update({ title, content }).eq('id', editingNewsId);
             editingNewsId = null;
-        } else {
-            await supabaseClient.from('news').insert([{ title, content }]);
-        }
+        } else { await supabaseClient.from('news').insert([{ title, content }]); }
         document.getElementById("newsTitleInput").value = "";
         newsQuill.root.innerHTML = "";
         loadAdminNewsList();
@@ -621,7 +660,7 @@
     async function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
-        await loadAllLeagueRules(); // Regeln laden, bevor die Warteliste rendert
+        await loadAllLeagueRules(); 
         loadWaitingList();
         loadStrafenkatalogList();
     }
