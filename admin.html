@@ -103,6 +103,9 @@
         .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
         .txt-input { width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
         
+        /* Spezielles Design für das neue lange Bemerkungsfeld */
+        .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; }
+        
         .assign-btn {
             background: #3ddc97;
             color: #000;
@@ -233,15 +236,16 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 30%;">Spieler & Name</th>
-                        <th style="width: 30%;">Plattform Ingame-Namen</th>
-                        <th style="width: 15%;">Gelbe Karten</th>
-                        <th style="width: 15%;">Rote Karten</th>
+                        <th style="width: 22%;">Spieler & Name</th>
+                        <th style="width: 22%;">Plattform Ingame-Namen</th>
+                        <th style="width: 10%;">Gelbe Karten</th>
+                        <th style="width: 10%;">Rote Karten</th>
+                        <th style="width: 26%;">Bemerkung / Strafe</th>
                         <th style="width: 10%;">Aktion</th>
                     </tr>
                 </thead>
                 <tbody id="strafenListBody">
-                    <tr><td colspan="5">Lade angemeldete Spieler...</td></tr>
+                    <tr><td colspan="6">Lade angemeldete Spieler...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -312,9 +316,9 @@
         document.getElementById(tabId).classList.add('active');
         if(event && event.currentTarget) event.currentTarget.classList.add('active');
         if (tabId === 'tabRegelwerk' && !ruleQuill) initRuleEditor();
+        if (tabId === 'tabStrafen') loadStrafenkatalogList(); // Jedes Mal beim Klick frisch laden
     }
 
-    // Shared formatter function, absolutely crash-safe
     function formatAllPlattformNames(prof) {
         if(!prof) return "";
         return `
@@ -372,12 +376,12 @@
                 relegation: parseInt(document.getElementById("inputRel").value) || 0
             });
             if(error) alert(error.message);
-            else { alert("Liga-Einstellungen gespeichert!"); loadAllLeagueRules(); loadWaitingList(); }
+            else { alert("Liga-Einstellungen gespeichert!"); await loadAllLeagueRules(); loadWaitingList(); }
         } catch(e) { console.error(e); }
     };
 
     // ===========================================================
-    // WARTELISTE
+    // WARTELISTE (VÖLLIG ABSICHERT GEGEN FEHLENDE REGEL-CRASHES)
     // ===========================================================
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
@@ -393,8 +397,10 @@
             tbody.innerHTML = activePlayers.map(p => {
                 const isEingeteilt = p.status_neue_saison === 'assigned';
                 let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
+                
+                // Crash-Safe Herkunfts-Auswertung
                 if(p.voriga_liga) {
-                    const rule = globalLeagueRules[p.voriga_liga];
+                    const rule = globalLeagueRules ? globalLeagueRules[p.voriga_liga] : null;
                     let statusBadge = "";
                     if(rule && p.voriga_platzierung) {
                         const pos = p.voriga_platzierung;
@@ -430,7 +436,7 @@
                         </td>
                     </tr>`;
             }).join("");
-        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Verbindungsfehler.</td></tr>`; }
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Zuteilung vorübergehend verzögert.</td></tr>`; }
     }
 
     window.saveSingleAssignment = async function(playerId) {
@@ -455,17 +461,6 @@
     // ===========================================================
     // SPIELPLAN-LOGIK
     // ===========================================================
-    function initLeagueSelector() {
-        const sel = document.getElementById("leagueSelector");
-        const cfgSel = document.getElementById("configLeagueSelect");
-        if(sel && sel.options.length === 1) {
-            ALL_LEAGUES.forEach(l => {
-                sel.innerHTML += `<option value="${l}">${l}</option>`;
-                if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`;
-            });
-        }
-    }
-
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
         const league = document.getElementById("leagueSelector").value;
@@ -606,13 +601,12 @@
     };
 
     // ===========================================================
-    // STRAFENKATALOG LOGIC (JETZT ABSOLUT SEPARAT LIVE GELADEN)
+    // STRAFENKATALOG LOGIC (AUTARK GELADEN + NEUES BEMERKUNGSFELD)
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
         if(!tbody || !supabaseClient) return;
         try {
-            // Unabhängige Direktabfrage live beim Tab-Aufruf
             const { data: players, error } = await supabaseClient.from('profiles').select('*');
             if (error) { tbody.innerHTML = `<tr><td colspan="5">Fehler: ${error.message}</td></tr>`; return; }
 
@@ -632,19 +626,29 @@
                         <td>${ingameBox}</td>
                         <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${p.yellow_cards || 0}"> 🟨</td>
                         <td><input type="number" id="red_${p.id}" class="leg-input" value="${p.red_cards || 0}"> 🟥</td>
+                        <td>
+                            <input type="text" id="note_${p.id}" class="comment-input" placeholder="Grund für Strafe eintragen..." value="${p.strafen_bemerkung ? htmlEscape(p.strafen_bemerkung) : ''}">
+                        </td>
                         <td><button class="assign-btn" style="padding:8px;" onclick="savePlayerCards('${p.id}')">💾 Speichern</button></td>
                     </tr>`;
             }).join("");
-        } catch(e) { tbody.innerHTML = `<tr><td colspan="5">Ladefehler im Strafenkatalog.</td></tr>`; }
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="5">Fehler beim Laden des Strafenkatalogs.</td></tr>`; }
     }
 
     window.savePlayerCards = async function(playerId) {
         if(!supabaseClient) return;
-        await supabaseClient.from('profiles').update({
-            yellow_cards: parseInt(document.getElementById(`yellow_${playerId}`).value) || 0,
-            red_cards: parseInt(document.getElementById(`red_${playerId}`).value) || 0
+        const yellow = parseInt(document.getElementById(`yellow_${playerId}`).value) || 0;
+        const red = parseInt(document.getElementById(`red_${playerId}`).value) || 0;
+        const note = document.getElementById(`note_${playerId}`).value.trim();
+
+        const { error } = await supabaseClient.from('profiles').update({
+            yellow_cards: yellow,
+            red_cards: red,
+            strafen_bemerkung: note === "" ? null : note
         }).eq('id', playerId);
-        alert("Karten aktualisiert!");
+
+        if(error) alert("Fehler: " + error.message);
+        else alert("Karten & Bemerkung erfolgreich aktualisiert!");
     };
 
     // ===========================================================
@@ -713,14 +717,14 @@
         alert("Regelwerk live!");
     };
 
-    // Komplett isolierter Systemboot – Jede Funktion läuft autark
+    // Jede Sektion zündet isoliert. Wenn eine Tabelle hängt, läuft das restliche Cockpit stabil weiter!
     function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
         
-        setTimeout(() => { loadAllLeagueRules(); }, 50);
-        setTimeout(() => { loadWaitingList(); }, 150);
-        setTimeout(() => { loadStrafenkatalogList(); }, 250);
+        loadAllLeagueRules(); 
+        loadWaitingList(); 
+        loadStrafenkatalogList();
     }
 
     initAdmin();
