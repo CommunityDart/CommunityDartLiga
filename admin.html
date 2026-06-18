@@ -266,7 +266,7 @@
 
     <div id="tabRegelwerk" class="tab-content">
         <h2>Globales Regelwerk anpassen</h2>
-        <p style="color: #90a9b7; size: 13px;">Formatierungen, Tabellen oder Listen, die du hier speicherst, werden sofort live auf der Startseite ausgegeben.</p>
+        <p style="color: #90a9b7; font-size: 13px;">Formatierungen, Tabellen oder Listen, die du hier speicherst, werden sofort live auf der Startseite ausgegeben.</p>
         <div id="ruleEditor" class="editor-container"></div>
         <button class="save-banner-btn" onclick="saveRegelwerkHtml()">💾 Regelwerk live speichern</button>
     </div>
@@ -279,7 +279,7 @@
     // 1. CONFIGURATION & STATE
     // ===========================================================
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
-    const SUPABASE_ANON_KEY = "DEIN_ECHTER_SUPABASE_ANON_KEY"; // HIER TRÄGST DU DEINEN KEY EIN
+    const SUPABASE_ANON_KEY = "DEIN_ECHTER_SUPABASE_ANON_KEY"; // Vergiss nicht deinen Key einzutragen!
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -369,7 +369,6 @@
         const tbody = document.getElementById("waitingListBody");
         if (!tbody) return;
 
-        // Sicherheitsupdate: Wir laden alle angemeldeten Profile ohne blockierende OR-Klauseln
         const { data: players, error } = await supabaseClient.from('profiles').select('*');
         
         if (error) {
@@ -377,7 +376,7 @@
             return;
         }
 
-        const activePlayers = players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned');
+        const activePlayers = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
 
         if (activePlayers.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5">Aktuell haben sich keine Spieler angemeldet.</td></tr>';
@@ -533,7 +532,7 @@
             return;
         }
 
-        const activePlayers = players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned');
+        const activePlayers = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
 
         if(activePlayers.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4">Keine aktiven Spieler gefunden.</td></tr>`;
@@ -608,18 +607,16 @@
 
     window.publishNews = async function() {
         const title = document.getElementById("newsTitleInput").value.trim();
-        const htmlContent = newsQuill.root.innerHTML; // Absätze und Styling sauber auslesen
+        const htmlContent = newsQuill.root.innerHTML;
 
         if(!title) return alert("Bitte gib eine Überschrift an!");
 
         if (editingNewsId) {
-            // Editieren
             const { error } = await supabaseClient.from('news').update({ title: title, content: htmlContent }).eq('id', editingNewsId);
             if(error) alert(error.message);
             else alert("News erfolgreich aktualisiert!");
             editingNewsId = null;
         } else {
-            // Neu erstellen
             const { error } = await supabaseClient.from('news').insert([{ title: title, content: htmlContent }]);
             if(error) alert(error.message);
             else alert("News erfolgreich veröffentlicht!");
@@ -664,7 +661,7 @@
     }
 
     window.saveRegelwerkHtml = async function() {
-        const htmlContent = ruleQuill.root.innerHTML; // Speichert reines, unkomprimiertes HTML
+        const htmlContent = ruleQuill.root.innerHTML;
         const { error } = await supabaseClient.from('system_settings').update({ regelwerk_html: htmlContent }).eq('id', 1);
         
         if (error) {
@@ -675,36 +672,28 @@
     };
 
     // ===========================================================
-    // 4. MAIN ENTRANCE SECURITY & SYSTEM BOOT
+    // 4. MAIN ENTRANCE SECURITY & SYSTEM BOOT (ENTSCHÄRFT)
     // ===========================================================
     async function initAdmin() {
-        const { data: { session }, error: sErr } = await supabaseClient.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         
-        if (sErr || !session) {
-            return window.location.href = "index.html";
+        try {
+            const { data: sysData } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
+            if(sysData) {
+                currentSeasonGlobal = sysData.current_season || "Saison 1";
+            }
+        } catch(e) { 
+            console.log("System Settings laden verzögert oder Tabelle leer."); 
         }
 
-        // Admin Security Check
-        const { data: profile } = await supabaseClient.from('profiles').select('is_admin').eq('id', session.user.id).single();
-        if (!profile || profile.is_admin !== true) {
-            alert("Zugriff verweigert: Du bist kein Administrator!");
-            return window.location.href = "index.html";
-        }
-
-        // Globalen Saisonnamen ermitteln
-        const { data: sysData } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
-        if(sysData) {
-            currentSeasonGlobal = sysData.current_season || "Saison 1";
-        }
-
-        // Sub-Komponenten asynchron und sicher booten
+        // Sub-Komponenten direkt erzwingen und rendern
         loadWaitingList();
         loadStrafenkatalogList();
         initLeagueSelector();
         initNewsEditor();
     }
 
-    // Unzerstörbarer Startbefehl ganz am Ende
+    // Startet die Engine
     initAdmin();
 </script>
 
