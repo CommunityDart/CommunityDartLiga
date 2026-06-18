@@ -100,8 +100,9 @@
         }
         .num-input { width: 50px; text-align: center; }
         .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 15px; }
-        .stat-input { width: 60px; text-align: center; font-size: 13px; border-color: #20b7ff; }
-        .txt-input { width: 140px; font-size: 12px; border-color: #ffd08a; }
+        .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
+        .txt-input { width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
+        
         .assign-btn {
             background: #3ddc97;
             color: #000;
@@ -158,6 +159,10 @@
         .badge-up { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
         .badge-down { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
         .badge-rel { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+        
+        /* Hilfsklassen für das Spieldaten-Layout */
+        .flex-row-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .flex-col-gap { display: flex; flex-direction: column; gap: 4px; }
     </style>
 </head>
 <body>
@@ -448,7 +453,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (FEHLERTOLERANT GEGEN FEHLENDE SPALTEN)
+    // SPIELPLAN-LOGIK (ERWEITERT UND KOMPLETT ALLER PLATTFORMNAMEN)
     // ===========================================================
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
@@ -474,13 +479,10 @@
             if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
             const localPlayersList = profilesData || [];
 
-            // Versuche mit season_name zu filtern. Falls die Tabellenspalte fehlt, fangen wir das hier ab.
             let query = supabaseClient.from('matches').select('*').eq('league_name', league);
-            
             const { data: matches, error: mErr } = await query;
 
             if(mErr) {
-                // Wenn es an 'season_name' lag, machen wir eine Fallback-Abfrage nur nach Liga
                 if(mErr.message && mErr.message.includes('season_name')) {
                     let fallbackQuery = await supabaseClient.from('matches').select('*').eq('league_name', league);
                     if(fallbackQuery.data) {
@@ -492,7 +494,6 @@
                 return; 
             }
             
-            // Wenn die Spalte existiert, filtern wir im JavaScript nach der aktuellen Saison
             const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season_name') || m.season_name === currentSeasonGlobal) : [];
             renderMatchesPlan(filteredMatches, localPlayersList, area, league);
         } catch(err) {
@@ -500,13 +501,15 @@
         }
     };
 
-    function formatPlattformNames(prof, mode) {
+    // ERWEITERT: Gibt jetzt immer alle verfügbaren Namen sauber aus
+    function formatAllPlattformNames(prof) {
         if(!prof) return "";
-        let names = [];
-        if(mode.includes("Autodarts") && prof.autodarts_name) names.push(`🎯 AD: ${prof.autodarts_name}`);
-        if(mode.includes("DartCounter") && prof.dartcounter_name) names.push(`🔥 DC: ${prof.dartcounter_name}`);
-        if(mode.includes("Scolia") && prof.scolia_name) names.push(`🛡️ SC: ${prof.scolia_name}`);
-        return names.length ? `<div style="color:#20b7ff; font-size:11px; margin-top:2px;">${names.join(' | ')}</div>` : "";
+        let html = '<div style="margin-top:4px; font-size:11px; line-height:1.3; color:#20b7ff;">';
+        if(prof.autodarts_name) html += `🎯 AD: ${htmlEscape(prof.autodarts_name)}<br>`;
+        if(prof.dartcounter_name) html += `🔥 DC: ${htmlEscape(prof.dartcounter_name)}<br>`;
+        if(prof.scolia_name) html += `🛡️ SC: ${htmlEscape(prof.scolia_name)}`;
+        html += '</div>';
+        return html;
     }
 
     function renderMatchesPlan(matches, playersList, area, league) {
@@ -526,11 +529,11 @@
             html += `<table>
                 <thead>
                     <tr>
-                        <th style="width:25%;">Heimspieler</th>
-                        <th style="width:25%;">Auswärtsspieler</th>
+                        <th style="width:23%;">Heimspieler</th>
+                        <th style="width:23%;">Auswärtsspieler</th>
                         <th style="width:12%; text-align:center;">Legs</th>
-                        <th style="width:15%; text-align:center;">Averages (AVG)</th>
-                        <th style="width:18%;">Highlights (180er, HF...)</th>
+                        <th style="width:16%; text-align:center;">Averages (AVG)</th>
+                        <th style="width:21%; text-align:center;">Highlights (180er, HF...)</th>
                         <th style="width:5%;">Aktion</th>
                     </tr>
                 </thead>
@@ -544,8 +547,8 @@
                 const p2Name = p2 ? (p2.discord_name || p2.username) : "Freilos";
                 const isFreilos = !m.player1_id || !m.player2_id;
                 
-                const p1Ingame = formatPlattformNames(p1, league);
-                const p2Ingame = formatPlattformNames(p2, league);
+                const p1Ingame = formatAllPlattformNames(p1);
+                const p2Ingame = formatAllPlattformNames(p2);
 
                 html += `
                     <tr>
@@ -561,17 +564,23 @@
                                 ${p2Ingame}
                             </div>
                         </td>
-                        <td style="text-align:center;">
-                            <input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
-                            <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}>
-                        </td>
-                        <td style="text-align:center;">
-                            <input type="number" step="0.01" id="avg1_${m.id}" class="stat-input" placeholder="AVG H" value="${m.avg_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
-                            <input type="number" step="0.01" id="avg2_${m.id}" class="stat-input" placeholder="AVG A" value="${m.avg_player2 ?? ''}" ${isFreilos?'disabled':''}>
+                        <td>
+                            <div class="flex-row-center">
+                                <input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
+                                <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}>
+                            </div>
                         </td>
                         <td>
-                            <input type="text" id="hl1_${m.id}" class="txt-input" placeholder="Highlights Heim..." value="${m.highlights_player1 ? htmlEscape(m.highlights_player1) : ''}" ${isFreilos?'disabled':''}>
-                            <input type="text" id="hl2_${m.id}" class="txt-input" placeholder="Highlights Ausw..." style="margin-top:4px;" value="${m.highlights_player2 ? htmlEscape(m.highlights_player2) : ''}" ${isFreilos?'disabled':''}>
+                            <div class="flex-row-center">
+                                <input type="number" step="0.01" id="avg1_${m.id}" class="stat-input" placeholder="AVG H" value="${m.avg_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
+                                <input type="number" step="0.01" id="avg2_${m.id}" class="stat-input" placeholder="AVG A" value="${m.avg_player2 ?? ''}" ${isFreilos?'disabled':''}>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex-col-gap">
+                                <input type="text" id="hl1_${m.id}" class="txt-input" placeholder="Highlights Heim..." value="${m.highlights_player1 ? htmlEscape(m.highlights_player1) : ''}" ${isFreilos?'disabled':''}>
+                                <input type="text" id="hl2_${m.id}" class="txt-input" placeholder="Highlights Ausw..." value="${m.highlights_player2 ? htmlEscape(m.highlights_player2) : ''}" ${isFreilos?'disabled':''}>
+                            </div>
                         </td>
                         <td>
                             <button class="assign-btn" style="padding:8px;" onclick="saveMatchFullStats('${m.id}')" ${isFreilos?'disabled':''}>💾</button>
@@ -642,19 +651,17 @@
     async function loadAdminNewsList() {
         const container = document.getElementById("adminNewsContainer");
         if(!container || !supabaseClient) return;
-        try {
-            const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
-            if(news) {
-                container.innerHTML = news.map(n => `
-                    <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <div><strong>${htmlEscape(n.title)}</strong></div>
-                        <div>
-                            <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
-                            <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
-                        </div>
-                    </div>`).join("");
-            }
-        } catch(e) {}
+        const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
+        if(news) {
+            container.innerHTML = news.map(n => `
+                <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong>${htmlEscape(n.title)}</strong></div>
+                    <div>
+                        <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
+                        <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
+                    </div>
+                </div>`).join("");
+        }
     }
 
     window.publishNews = async function() {
@@ -688,10 +695,8 @@
     }
 
     async function loadCurrentRegelwerk() {
-        try {
-            const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
-            if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
-        } catch(e) {}
+        const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
+        if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
     }
 
     window.saveRegelwerkHtml = async function() {
@@ -703,7 +708,6 @@
         initLeagueSelector();
         initNewsEditor();
         
-        // Entkoppelte parallele Timeouts verhindern jegliche gegenseitige Startblockaden
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
         setTimeout(() => { loadStrafenkatalogList(); }, 250);
