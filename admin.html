@@ -102,8 +102,6 @@
         .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 15px; }
         .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
         .txt-input { width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
-        
-        /* Sauberes Bemerkungsfeld ohne die Tabellenoptik zu zerstören */
         .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; box-sizing: border-box; }
         
         .assign-btn {
@@ -283,7 +281,7 @@
     let supabaseClient = null;
     try {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Supabase Init Fehler:", e); }
 
     const quillToolbarOptions = [
         [{ 'header': [1, 2, 3, false] }],
@@ -303,7 +301,7 @@
     let newsQuill = null;
     let ruleQuill = null;
     let editingNewsId = null;
-    let globalLeagueRules = null; // Als null starten für sicheren Typ-Abgleich
+    let globalLeagueRules = {}; // Als leeres Objekt initialisieren, damit es niemals null ist
 
     function htmlEscape(str) {
         if (!str) return "-";
@@ -315,6 +313,8 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         if(event && event.currentTarget) event.currentTarget.classList.add('active');
+        
+        // Defensives Nachladen je nach Tab-Klick
         if (tabId === 'tabRegelwerk' && !ruleQuill) initRuleEditor();
         if (tabId === 'tabStrafen') loadStrafenkatalogList();
         if (tabId === 'tabZuteilung') loadWaitingList();
@@ -337,32 +337,36 @@
     async function loadAllLeagueRules() {
         if(!supabaseClient) return;
         try {
-            const { data } = await supabaseClient.from('league_rules').select('*');
-            if(data) {
+            const { data, error } = await supabaseClient.from('league_rules').select('*');
+            if(!error && data) {
                 globalLeagueRules = {};
                 data.forEach(r => { globalLeagueRules[r.league_name] = r; });
                 renderRulesSummary();
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Regeln aus DB laden fehlgeschlagen:", e); }
     }
 
     function renderRulesSummary() {
-        const summary = document.getElementById("leagueRulesSummary");
-        if(!summary || !globalLeagueRules) return;
-        let html = "<strong>Aktive Vorgaben:</strong> ";
-        Object.values(globalLeagueRules).forEach(r => {
-            html += `[${r.league_name}: 🟢${r.aufsteiger} 🔴${r.absteiger} 🟡${r.relegation}] | `;
-        });
-        summary.innerHTML = html;
+        try {
+            const summary = document.getElementById("leagueRulesSummary");
+            if(!summary || !globalLeagueRules) return;
+            let html = "<strong>Aktive Vorgaben:</strong> ";
+            Object.values(globalLeagueRules).forEach(r => {
+                html += `[${r.league_name}: 🟢${r.aufsteiger} 🔴${r.absteiger} 🟡${r.relegation}] | `;
+            });
+            summary.innerHTML = html;
+        } catch(e) { console.error(e); }
     }
 
     window.loadLeagueRules = function() {
-        if(!globalLeagueRules) return;
-        const league = document.getElementById("configLeagueSelect").value;
-        const rule = globalLeagueRules[league] || { aufsteiger: 0, absteiger: 0, relegation: 0 };
-        document.getElementById("inputAuf").value = rule.aufsteiger;
-        document.getElementById("inputAb").value = rule.absteiger;
-        document.getElementById("inputRel").value = rule.relegation;
+        try {
+            if(!globalLeagueRules) return;
+            const league = document.getElementById("configLeagueSelect").value;
+            const rule = globalLeagueRules[league] || { aufsteiger: 0, absteiger: 0, relegation: 0 };
+            document.getElementById("inputAuf").value = rule.aufsteiger || 0;
+            document.getElementById("inputAb").value = rule.absteiger || 0;
+            document.getElementById("inputRel").value = rule.relegation || 0;
+        } catch(e) { console.error(e); }
     };
 
     window.saveLeagueRules = async function() {
@@ -383,8 +387,20 @@
     };
 
     // ===========================================================
-    // WARTELISTE (KOMPLETT ISOLIERT UND ABSURD CRASH-SICHER)
+    // WARTELISTE (ABSOLUT KRISENSICHER GEGEN NULL-POINTER)
     // ===========================================================
+    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
+        if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
+        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
+        html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
+        html += `<option value="REMOVE">❌ Entfernen</option>`;
+        optionsArr.forEach(l => {
+            html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
+        });
+        html += `</select>`;
+        return html;
+    }
+
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -394,21 +410,21 @@
             if (error) { tbody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`; return; }
 
             const activePlayers = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
-            if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Anmeldungen.</td></tr>'; return; }
+            if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Anmeldungen vorhanden.</td></tr>'; return; }
 
             tbody.innerHTML = activePlayers.map(p => {
                 const isEingeteilt = p.status_neue_saison === 'assigned';
                 let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
                 
-                // Ultimative Absicherung: Rules werden nur ausgewertet, wenn sie existieren
+                // Extrem defensive Abfrage der Auf-/Abstiegsregeln
                 if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
                     const rule = globalLeagueRules[p.voriga_liga];
                     let statusBadge = "";
-                    if(p.voriga_platzierung) {
+                    if(p.voriga_platzierung && rule) {
                         const pos = p.voriga_platzierung;
-                        if(pos <= rule.aufsteiger) statusBadge = `<span class="badge badge-up"> Aufsteiger (Platz ${pos})</span>`;
-                        else if(rule.absteiger > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down"> Absteiger (Platz ${pos})</span>`;
-                        else if(rule.relegation > 0 && pos > (10 - rule.absteiger - rule.relegation) && pos <= (10 - rule.absteiger)) statusBadge = `<span class="badge badge-rel"> Relegation (Platz ${pos})</span>`;
+                        if(pos <= (rule.aufsteiger || 0)) statusBadge = `<span class="badge badge-up"> Aufsteiger (Platz ${pos})</span>`;
+                        else if((rule.absteiger || 0) > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down"> Absteiger (Platz ${pos})</span>`;
+                        else if((rule.relegation || 0) > 0 && pos > (10 - (rule.absteiger||0) - rule.relegation) && pos <= (10 - (rule.absteiger||0))) statusBadge = `<span class="badge badge-rel"> Relegation (Platz ${pos})</span>`;
                         else statusBadge = `<span class="badge" style="background:rgba(255,255,255,0.05);">Klassenerhalt (Platz ${pos})</span>`;
                     }
                     herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong><br>${statusBadge}`;
@@ -440,7 +456,10 @@
                         </td>
                     </tr>`;
             }).join("");
-        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Zuteilungsdaten laden verzögert...</td></tr>`; }
+        } catch(e) { 
+            console.error(e);
+            tbody.innerHTML = `<tr><td colspan="6" style="color:#e74c3c;">Fehler beim Aufbau der Zuteilungstabelle. Bitte Seite neu laden.</td></tr>`; 
+        }
     }
 
     window.saveSingleAssignment = async function(playerId) {
@@ -463,7 +482,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (VÖLLIG UNABHÄNGIG)
+    // SPIELPLAN-LOGIK
     // ===========================================================
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
@@ -605,7 +624,7 @@
     };
 
     // ===========================================================
-    // STRAFENKATALOG LOGIC (VÖLLIG UNABHÄNGIG LIVE GELADEN)
+    // STRAFENKATALOG
     // ===========================================================
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
@@ -656,11 +675,13 @@
     };
 
     // ===========================================================
-    // NEWS & RULES REST
+    // NEWS EDITOR & ADMIN LISTE
     // ===========================================================
     function initNewsEditor() {
-        if(!newsQuill) newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
-        loadAdminNewsList();
+        try {
+            if(!newsQuill) newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
+            loadAdminNewsList();
+        } catch(e) { console.error(e); }
     }
 
     async function loadAdminNewsList() {
@@ -678,22 +699,29 @@
                         </div>
                     </div>`).join("");
             }
-        } catch(e) {}
+        } catch(e) { console.error(e); }
     }
 
     window.publishNews = async function() {
+        if(!supabaseClient) return;
         const title = document.getElementById("newsTitleInput").value.trim();
         const content = newsQuill.root.innerHTML;
-        if (editingNewsId) {
-            await supabaseClient.from('news').update({ title, content }).eq('id', editingNewsId);
-            editingNewsId = null;
-        } else { await supabaseClient.from('news').insert([{ title, content }]); }
-        document.getElementById("newsTitleInput").value = "";
-        newsQuill.root.innerHTML = "";
-        loadAdminNewsList();
+        
+        try {
+            if (editingNewsId) {
+                await supabaseClient.from('news').update({ title, content }).eq('id', editingNewsId);
+                editingNewsId = null;
+            } else { 
+                await supabaseClient.from('news').insert([{ title, content }]); 
+            }
+            document.getElementById("newsTitleInput").value = "";
+            newsQuill.root.innerHTML = "";
+            loadAdminNewsList();
+        } catch(e) { console.error(e); }
     };
 
     window.editNews = async function(id, title) {
+        if(!supabaseClient) return;
         editingNewsId = id;
         document.getElementById("newsTitleInput").value = unescape(title);
         const { data } = await supabaseClient.from('news').select('content').eq('id', id).single();
@@ -701,32 +729,58 @@
     };
 
     window.deleteNews = async function(id) {
-        if(confirm("Löschen?")) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); }
+        if(!supabaseClient) return;
+        if(confirm("Nachricht wirklich löschen?")) { 
+            await supabaseClient.from('news').delete().eq('id', id); 
+            loadAdminNewsList(); 
+        }
     };
 
+    // ===========================================================
+    // REGELWERK DYNAMIC EDITOR
+    // ===========================================================
     function initRuleEditor() {
-        if(!ruleQuill) {
-            ruleQuill = new Quill('#ruleEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
-            loadCurrentRegelwerk();
-        }
+        try {
+            if(!ruleQuill) {
+                ruleQuill = new Quill('#ruleEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
+                loadCurrentRegelwerk();
+            }
+        } catch(e) { console.error(e); }
     }
 
     async function loadCurrentRegelwerk() {
-        const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
-        if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
+        if(!supabaseClient) return;
+        try {
+            const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
+            if(data) ruleQuill.root.innerHTML = data.regelwerk_html;
+        } catch(e) { console.error(e); }
     }
 
     window.saveRegelwerkHtml = async function() {
-        await supabaseClient.from('system_settings').update({ regelwerk_html: ruleQuill.root.innerHTML }).eq('id', 1);
-        alert("Regelwerk live!");
+        if(!supabaseClient) return;
+        try {
+            await supabaseClient.from('system_settings').update({ regelwerk_html: ruleQuill.root.innerHTML }).eq('id', 1);
+            alert("Regelwerk erfolgreich live geschaltet!");
+        } catch(e) { console.error(e); }
     };
 
-    // Voneinander isolierter asynchroner Start
+    // Befüllt die Dropdowns sofort synchron bei Seitenstart
+    function initLeagueSelector() {
+        const sel = document.getElementById("leagueSelector");
+        const cfgSel = document.getElementById("configLeagueSelect");
+        if(sel && sel.options.length === 1) {
+            ALL_LEAGUES.forEach(l => {
+                sel.innerHTML += `<option value="${l}">${l}</option>`;
+                if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+        }
+    }
+
+    // Unabhängige Starterblöcke: Ein Fehler reißt niemals die anderen Komponenten mit!
     function initAdmin() {
         initLeagueSelector();
         initNewsEditor();
         
-        // Vollkommen entkoppelte Timeouts ohne gegenseitige Blockaden
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
         setTimeout(() => { loadStrafenkatalogList(); }, 250);
