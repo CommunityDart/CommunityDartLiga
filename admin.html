@@ -271,11 +271,11 @@
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
     
     // !!! SETZE HIER DEINEN AKTUELLEN KEY DIREKT ZWISCHEN DIE ANFÜHRUNGSZEICHEN !!!
-    const SUPABASE_ANON_KEY = "DEIN_API_KEY_HIER"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; 
     
     let supabaseClient = null;
     try {
-        if(SUPABASE_ANON_KEY !== "DEIN_API_KEY_HIER") {
+        if(SUPABASE_ANON_KEY !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q") {
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY.trim());
         }
     } catch(e) { console.error(e); }
