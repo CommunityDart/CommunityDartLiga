@@ -355,17 +355,16 @@
         `;
     }
 
+    // VOLLKOMMEN UNABHÄNGIGE LIGEN-PROJEKTION IM SPIELPLAN
     function formatSpielplanPlattformNames(prof, leagueName) {
         if(!prof) return "";
-        let adName = prof.autodarts_name ? `🎯 AD: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.autodarts_name)}</span>` : "";
-        let dcName = prof.dartcounter_name ? `🔥 DC: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.dartcounter_name)}</span>` : "";
-        let scName = prof.scolia_name ? `🛡️ SC: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.scolia_name)}</span>` : "";
-
-        if(leagueName.includes("Autodarts") && adName) return `<div style="margin-top:4px; font-size:12px; color:#90a9b7;">${adName}</div>`;
-        if(leagueName.includes("DartCounter") && dcName) return `<div style="margin-top:4px; font-size:12px; color:#90a9b7;">${dcName}</div>`;
-        if(leagueName.includes("Scolia") && scName) return `<div style="margin-top:4px; font-size:12px; color:#90a9b7;">${scName}</div>`;
-
-        return formatAllPlattformNames(prof);
+        return `
+            <div style="margin-top:6px; font-size:12px; line-height:1.35; color:#90a9b7; background:rgba(0,0,0,0.15); padding:6px; border-radius:6px; border:1px solid rgba(75, 135, 165, 0.1);">
+                <div>🎯 AD: <span style="color:${leagueName.includes("Autodarts")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span></div>
+                <div>🔥 DC: <span style="color:${leagueName.includes("DartCounter")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span></div>
+                <div>🛡️ SC: <span style="color:${leagueName.includes("Scolia")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span></div>
+            </div>
+        `;
     }
 
     function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
@@ -495,7 +494,6 @@
         } catch(e) { console.error(e); }
     }
 
-    // VOLLKOMMEN KORRIGIERT: Speichert jetzt ausschließlich die geänderten Felder, ohne leere Strings als "Keine/Liga 1" zurückzusetzen
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         const adEl = document.getElementById(`ad_${playerId}`);
@@ -504,7 +502,6 @@
         
         const updates = { status_neue_saison: 'assigned' };
         
-        // Verhindert Überschreibungen durch leere Strings! Es wird auf NULL gesetzt, falls "REMOVE" oder leer gewählt wurde
         if(adEl) updates.assigned_ad_league = (adEl.value === 'REMOVE' || adEl.value === '') ? null : adEl.value.trim();
         if(dcEl) updates.assigned_dc_league = (dcEl.value === 'REMOVE' || dcEl.value === '') ? null : dcEl.value.trim();
         if(scEl) updates.assigned_sc_league = (scEl.value === 'REMOVE' || scEl.value === '') ? null : scEl.value.trim();
@@ -540,6 +537,7 @@
             if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
             const localPlayersList = profilesData || [];
 
+            // Lädt absolut bündig die Begegnungen genau der Liga aus der Dropdown-Auswahl!
             let query = supabaseClient.from('matches').select('*').eq('league_name', league);
             const { data: matches, error: mErr } = await query;
 
@@ -675,7 +673,7 @@
             if (error) { tbody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`; return; }
 
             const active = players ? players.filter(p => p.status_neue_saison === 'waiting' || p.status_neue_saison === 'assigned') : [];
-            if (active.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine active Spieler gefunden.</td></tr>'; return; }
+            if (active.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine aktiven Spieler gefunden.</td></tr>'; return; }
 
             tbody.innerHTML = active.map(p => {
                 const pName = p.discord_name || p.username;
@@ -827,7 +825,6 @@
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
         setTimeout(() => { loadStrafenkatalogList(); }, 250);
-        setTimeout(() => { initNewsEditor(); }, 350);
     }
 
     initAdmin();
