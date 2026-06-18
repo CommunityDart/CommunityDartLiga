@@ -185,23 +185,12 @@
             margin-top: 15px;
             font-size: 15px;
         }
-        .error-alert {
-            background: rgba(231, 76, 60, 0.2);
-            border: 1px solid #e74c3c;
-            color: #ff9f9f;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            display: none;
-        }
     </style>
 </head>
 <body>
 
 <div class="admin-container">
     <h1>🎯 Community Dart Liga - Cockpit</h1>
-    
-    <div id="connectionErrorBanner" class="error-alert"></div>
     
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tabZuteilung')">1. Liga Zuteilung</button>
@@ -295,23 +284,13 @@
     // 1. CONFIGURATION & STATE
     // ===========================================================
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; // <-- HIER DEINEN SUPABASE KEY EINTRAGEN
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; 
     
     let supabaseClient = null;
 
+    // Keine blockierenden Textprüfungen mehr: Verbindung direkt initialisieren
     try {
-        if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q")) {
-            console.error("Supabase Anon Key fehlt!");
-            document.addEventListener("DOMContentLoaded", () => {
-                const errBox = document.getElementById("connectionErrorBanner");
-                if(errBox) {
-                    errBox.style.display = "block";
-                    errBox.innerHTML = "⚠️ <strong>Konfigurationsfehler:</strong> In Zeile 234 fehlt dein Supabase Anon Key.";
-                }
-            });
-        } else {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } catch(e) {
         console.error("Kritischer Fehler bei Client-Initialisierung:", e);
     }
@@ -320,7 +299,7 @@
     const quillToolbarOptions = [
         [{ 'header': [1, 2, 3, false] }],
         ['bold', 'italic', 'underline', 'strike'],        // Text-Styles
-        [{ 'color': [] }, { 'background': [] }],          // <--- FARBEN & TEXTMARKER HINZUGEFÜGT
+        [{ 'color': [] }, { 'background': [] }],          // Farben & Textmarker aktivieren
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'align': [] }],
         ['link', 'clean']                                 // Links setzen & Formatierung löschen
@@ -370,7 +349,7 @@
     // ===========================================================
     
     window.createDummyPlayer = async function() {
-        if(!supabaseClient) return alert("Datenbank nicht verbunden (Key prüfen).");
+        if(!supabaseClient) return alert("Datenbank nicht verbunden.");
         const name = document.getElementById("dummyNameInput").value.trim();
         if(!name) return alert("Bitte gib erst einen Namen für den Spieler ein!");
 
@@ -413,10 +392,7 @@
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody) return;
-        if (!supabaseClient) {
-            tbody.innerHTML = `<tr><td colspan="5" style="color:#e74c3c;">Keine Verbindung zur Datenbank (Key fehlt).</td></tr>`;
-            return;
-        }
+        if (!supabaseClient) return;
 
         try {
             const { data: players, error } = await supabaseClient.from('profiles').select('*');
@@ -579,10 +555,7 @@
     async function loadStrafenkatalogList() {
         const tbody = document.getElementById("strafenListBody");
         if(!tbody) return;
-        if(!supabaseClient) {
-            tbody.innerHTML = `<tr><td colspan="4">Keine Verbindung zur Datenbank.</td></tr>`;
-            return;
-        }
+        if(!supabaseClient) return;
 
         const { data: players, error } = await supabaseClient.from('profiles').select('*');
         if(error) {
@@ -630,7 +603,7 @@
         if(!newsQuill) {
             newsQuill = new Quill('#newsEditor', { 
                 theme: 'snow',
-                modules: { toolbar: quillToolbarOptions } // Volle Toolbar zuweisen
+                modules: { toolbar: quillToolbarOptions } 
             });
         }
         loadAdminNewsList();
@@ -639,10 +612,7 @@
     async function loadAdminNewsList() {
         const container = document.getElementById("adminNewsContainer");
         if(!container) return;
-        if(!supabaseClient) {
-            container.innerHTML = "Keine Verbindung zur Datenbank.";
-            return;
-        }
+        if(!supabaseClient) return;
 
         const { data: news, error } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
         if(error) {
@@ -719,7 +689,7 @@
         if(!ruleQuill) {
             ruleQuill = new Quill('#ruleEditor', { 
                 theme: 'snow',
-                modules: { toolbar: quillToolbarOptions } // Volle Toolbar zuweisen
+                modules: { toolbar: quillToolbarOptions } 
             });
             loadCurrentRegelwerk();
         }
