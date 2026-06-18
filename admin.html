@@ -300,7 +300,7 @@
     let supabaseClient = null;
 
     try {
-        if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("DEIN_ECHTER_SUPABASE_ANON_KEY")) {
+        if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q")) {
             console.error("Supabase Anon Key fehlt!");
             document.addEventListener("DOMContentLoaded", () => {
                 const errBox = document.getElementById("connectionErrorBanner");
