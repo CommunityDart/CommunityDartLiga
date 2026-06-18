@@ -54,7 +54,7 @@
         .tabs {
             display: flex;
             gap: 10px;
-            border-bottom: 2px solid rgba(255,255,255,0.05);
+            border-bottom: 2px solid rgba(75, 135, 165, 0.2);
             padding-bottom: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
@@ -164,7 +164,7 @@
         .flex-row-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
         .flex-col-gap { display: flex; flex-direction: column; gap: 4px; }
 
-        /* REPARIERTE EDITOREN OPTIK (TAB 4 & 5) */
+        /* EDITOREN OPTIK */
         .editor-container { 
             background: #fff; 
             color: #000; 
@@ -338,7 +338,6 @@
         document.getElementById(tabId).classList.add('active');
         if(event && event.currentTarget) event.currentTarget.classList.add('active');
         
-        // Vollkommen isoliertes, defensives Nachladen beim Tab-Klick
         if (tabId === 'tabRegelwerk') initRuleEditor();
         if (tabId === 'tabNews') initNewsEditor();
         if (tabId === 'tabStrafen') loadStrafenkatalogList();
@@ -354,6 +353,19 @@
                 <div>🛡️ SC: <span style="color:#fff; font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span></div>
             </div>
         `;
+    }
+
+    // DROPDOWN CREATOR FÜR DIE ZUTEILUNG (Zuvor fehlende Funktion händisch wieder implementiert)
+    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
+        if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
+        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
+        html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
+        html += `<option value="REMOVE">❌ Entfernen</option>`;
+        optionsArr.forEach(l => {
+            html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`;
+        });
+        html += `</select>`;
+        return html;
     }
 
     // ===========================================================
@@ -412,7 +424,7 @@
     };
 
     // ===========================================================
-    // WARTELISTE (VÖLLIG ISOLIERT GEGEN ASYNCHRONITÄTS-ABSTÜRZE)
+    // WARTELISTE / LIGAZUTEILUNG (REPARIERT)
     // ===========================================================
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
@@ -429,7 +441,6 @@
                 const isEingeteilt = p.status_neue_saison === 'assigned';
                 let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
                 
-                // Extrem defensive Abfrage der Auf-/Abstiegsregeln
                 if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
                     const rule = globalLeagueRules[p.voriga_liga];
                     let statusBadge = "";
@@ -663,7 +674,7 @@
                         <td><button class="assign-btn" style="padding:8px;" onclick="savePlayerCards('${p.id}')">💾 Speichern</button></td>
                     </tr>`;
             }).join("");
-        } catch(e) { console.error(e); }
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden des Strafenkatalogs.</td></tr>`; }
     }
 
     window.savePlayerCards = async function(playerId) {
@@ -790,7 +801,7 @@
     function initAdmin() {
         initLeagueSelector();
         
-        // Völlig isolierte Timeouts verhindern gegenseitige Startblockaden komplett
+        // Vollkommen entkoppelte Timeouts verhindern gegenseitige Startblockaden komplett
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
         setTimeout(() => { loadStrafenkatalogList(); }, 250);
