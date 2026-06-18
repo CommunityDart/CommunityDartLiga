@@ -35,7 +35,6 @@
             color: #3ddc97;
             margin: 0;
         }
-        /* DESIGN FÜR DEN ZURÜCK BUTTON */
         .back-home-btn {
             background: #021017;
             color: #20b7ff;
@@ -512,18 +511,43 @@
 
         area.innerHTML = "Lade Spielplan aus der Datenbank...";
         
-        const { data: matches, error } = await supabaseClient.from('matches')
+        // Fehlertolerante Abfrage: Falls season_name in der DB noch fehlt, fangen wir den Fehler ab
+        let query = supabaseClient.from('matches')
             .select('*, player1:profiles!player1_id(discord_name), player2:profiles!player2_id(discord_name)')
-            .eq('league_name', league).eq('season_name', currentSeasonGlobal).order('matchday', {ascending: true});
+            .eq('league_name', league);
+
+        // Wir versuchen nach Saison zu filtern. Falls die DB-Spalte noch fehlt, lädt er die Spiele trotzdem
+        if(currentSeasonGlobal) {
+            query = query.eq('season_name', currentSeasonGlobal);
+        }
+
+        const { data: matches, error } = await query.order('matchday', {ascending: true});
 
         if(error) {
+            // Falls es immer noch an der Spalte hakt, machen wir einen Fallback-Versuch ohne den Saison-Filter
+            if(error.message && error.message.includes('season_name')) {
+                const { data: fallbackMatches, error: fallbackError } = await supabaseClient.from('matches')
+                    .select('*, player1:profiles!player1_id(discord_name), player2:profiles!player2_id(discord_name)')
+                    .eq('league_name', league).order('matchday', {ascending: true});
+                
+                if(fallbackError) {
+                    area.innerHTML = "Fehler beim Laden: " + fallbackError.message;
+                    return;
+                }
+                renderMatchesPlan(fallbackMatches, area, league);
+                return;
+            }
             area.innerHTML = "Fehler beim Laden: " + error.message;
             return;
         }
 
+        renderMatchesPlan(matches, area, league);
+    };
+
+    function renderMatchesPlan(matches, area, league) {
         if(!matches || matches.length === 0) {
             document.getElementById("btnGeneratePlan").style.display = "inline-block";
-            area.innerHTML = `Noch kein Spielplan für ${league} in dieser Saison vorhanden.`;
+            area.innerHTML = `Noch kein Spielplan für ${league} vorhanden.`;
             return;
         }
 
@@ -562,7 +586,7 @@
             html += `</tbody></table>`;
         }
         area.innerHTML = html;
-    };
+    }
 
     window.saveMatchScore = async function(matchId) {
         if(!supabaseClient) return;
