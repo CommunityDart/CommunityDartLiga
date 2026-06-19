@@ -4,54 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kommandozentrale - Admin Dashboard</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* ==========================================================
-           CSS BEREICH: DESIGN & OPTIK DER GESAMTEN SEITE
-           ========================================================== */
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #010a0f; color: #fff; margin: 0; padding: 20px; }
+        /* =====================================================================
+           CSS BEREICH: CORE LAYOUT, DESIGN & DESIGN-VARIABLEN (DUNKEL)
+           ===================================================================== */
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #010a0f; color: #fff; margin: 0; padding: 20px; }
         .admin-container { max-width: 1500px; margin: 0 auto; background: #021622; border: 1px solid rgba(75, 135, 165, 0.2); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         h1, h2, h3 { color: #3ddc97; margin: 0; }
         
+        /* Buttons Allgemein */
         .back-home-btn { background: #021017; color: #20b7ff; border: 1px solid #20b7ff; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
         .back-home-btn:hover { background: #20b7ff; color: #000; }
+        .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; }
+        .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; margin-top: 4px; width: 100%; }
         
-        /* TABS (Reiter Navigation) */
+        .generate-btn { background: #20b7ff; color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .generate-btn:hover { opacity: 0.9; }
+        .remove-btn-large { background: #e74c3c; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .remove-btn-large:hover { opacity: 0.9; }
+        .card-btn { background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .card-btn.yellow:hover { background: #f7c948; color: #000; }
+        .card-btn.red:hover { background: #e74c3c; color: #fff; }
+        
+        /* Reiter (Tabs) Navigation */
         .tabs { display: flex; gap: 10px; border-bottom: 2px solid rgba(75, 135, 165, 0.2); padding-bottom: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .tab-btn { background: #021017; color: #90a9b7; border: 1px solid #4b87a5; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .tab-btn.active { background: #3ddc97; color: #000; border-color: #3ddc97; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        /* TABELLEN OPTIK */
+        /* Tabellen Styling */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; font-size: 14px; }
         th { background: rgba(0,0,0,0.3); color: #90a9b7; font-size: 12px; text-transform: uppercase; }
         
-        /* INPUT FÄLDER & BUTTONS */
-        .league-select, .leg-input, .num-input, .stat-input, .txt-input, .comment-input { padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; }
+        /* Eingabefelder */
+        .league-select, .leg-input, .num-input, .stat-input, .txt-input { padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; }
         .num-input { width: 50px; text-align: center; }
         .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 15px; }
         .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
         .txt-input { width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
-        .comment-input { width: 100%; min-width: 180px; box-sizing: border-box; }
+        .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; box-sizing: border-box; }
         
-        .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; }
-        .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; margin-top: 4px; width: 100%; }
-        .generate-btn { background: #20b7ff; color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin-top: 15px; display: inline-flex; align-items: center; gap: 8px; }
-        .generate-btn:hover { opacity: 0.9; }
-        .remove-btn-large { background: #e74c3c; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin-top: 15px; display: inline-flex; align-items: center; gap: 8px; }
-        .remove-btn-large:hover { opacity: 0.9; }
-
-        .card-btn { background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .card-btn.yellow:hover { background: #f7c948; color: #000; }
-        .card-btn.red:hover { background: #e74c3c; color: #fff; }
-        
-        /* LAYOUT HILFSKLASSEN */
+        /* Hilfsklassen Boxen & Badges */
         .config-box { background: rgba(61, 220, 151, 0.05); border: 1px solid rgba(61, 220, 151, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .config-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
         .meta-text { font-size: 12px; color: #90a9b7; margin-top: 2px; }
         .player-info-block { font-size: 13px; line-height: 1.4; }
         .badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
@@ -61,10 +62,11 @@
         .flex-row-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
         .flex-col-gap { display: flex; flex-direction: column; gap: 4px; }
 
-        /* EDITOREN OPTIK (Für News und Regelwerk) */
+        /* Rich Text Editoren */
         .editor-container { background: #fff; color: #000; border-radius: 0 0 8px 8px; min-height: 350px; margin-bottom: 15px; }
         .ql-editor { font-size: 15px; line-height: 1.6; color: #222; }
         .ql-toolbar.ql-snow { background: #eee; border-radius: 8px 8px 0 0; border-color: #4b87a5; }
+        .ql-snow .ql-picker-options { background-color: #fff !important; color: #000 !important; }
         .save-banner-btn { background: #3ddc97; color: #000; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.2s; }
         .save-banner-btn:hover { opacity: 0.9; }
     </style>
@@ -180,21 +182,15 @@
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 
 <script>
-    // ===========================================================
-    // DATENBANK VERBINDUNG & GLOBALE VARIABLEN
-    // ===========================================================
+    // =====================================================================
+    // 1. INITIALISIERUNG & SUPABASE-ZUGRIFF
+    // =====================================================================
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; 
     
     let supabaseClient = null;
     try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } 
-    catch(e) { console.error("Supabase Init Fehler:", e); }
-
-    const quillToolbarOptions = [
-        [{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'],        
-        [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'align': [] }], ['link', 'clean']                                 
-    ];
+    catch(e) { console.error("Supabase-Verbindungsfehler:", e); }
 
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
     const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
@@ -206,13 +202,13 @@
     let globalLeagueRules = {}; 
     let allLoadedProfilesMap = {}; 
 
-    // Hilfsfunktion: Sichert Text ab (Verhindert fehlerhaftes HTML)
+    // Maskiert Strings für sichere HTML-Ausgabe
     function htmlEscape(str) {
         if (!str) return "-";
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // Hilfsfunktion: Tab Navigation
+    // Tab-Umschaltfunktion mit automatischem Logik-Nachladeschutz
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -224,9 +220,11 @@
         if (tabId === 'tabZuteilung') loadWaitingList();
     }
 
-    // ===========================================================
-    // ZENTRALE FUNKTION: SPIELER-OPTIK (Wird überall gleich genutzt!)
-    // ===========================================================
+    // =====================================================================
+    // 2. CORE MODUL: OPTIK-BAUSTEIN & CASE-INSENSITIVE-FILTER
+    // =====================================================================
+    
+    // Baut die graue Box mit allen 3 Ingame-Plattformnamen auf (überall identisch!)
     function formatAllPlattformNames(prof) {
         if(!prof) return "";
         return `
@@ -238,36 +236,30 @@
         `;
     }
 
-    // ===========================================================
-    // ZENTRALE FUNKTION: FILTERT SPIELER FÜR EINE BESTIMMTE LIGA
-    // ===========================================================
+    // Filtert Spieler eiskalt nach zugewiesener Liga (ignoriert ungenaue Leerzeichen & Case)
     function getPlayersForLeague(players, leagueName) {
-        const lowerLeagueName = leagueName.toLowerCase();
-        if(lowerLeagueName.includes("autodarts")) {
-            return players.filter(p => p.assigned_ad_league && p.assigned_ad_league.toLowerCase() === lowerLeagueName);
-        }
-        if(lowerLeagueName.includes("dartcounter")) {
-            return players.filter(p => p.assigned_dc_league && p.assigned_dc_league.toLowerCase() === lowerLeagueName);
-        }
-        if(lowerLeagueName.includes("scolia")) {
-            return players.filter(p => p.assigned_sc_league && p.assigned_sc_league.toLowerCase() === lowerLeagueName);
-        }
-        return [];
+        if (!leagueName) return [];
+        const target = leagueName.toLowerCase().replace(/\s+/g, '');
+        return players.filter(p => {
+            const ad = (p.assigned_ad_league || "").toLowerCase().replace(/\s+/g, '');
+            const dc = (p.assigned_dc_league || "").toLowerCase().replace(/\s+/g, '');
+            const sc = (p.assigned_sc_league || "").toLowerCase().replace(/\s+/g, '');
+            return ad === target || dc === target || sc === target;
+        });
     }
 
-    // ===========================================================
-    // LIGA CONFIG LOGIC (Auf-/Abstieg)
-    // ===========================================================
+    // =====================================================================
+    // 3. LOGIK MODUL: REITER 1 - LIGA ZUTEILUNG & REGEL-VORGABEN
+    // =====================================================================
+    
     async function loadAllLeagueRules() {
         if(!supabaseClient) return;
-        try {
-            const { data, error } = await supabaseClient.from('league_rules').select('*');
-            if(!error && data) {
-                globalLeagueRules = {};
-                data.forEach(r => { globalLeagueRules[r.league_name] = r; });
-                renderRulesSummary();
-            }
-        } catch(e) { console.error(e); }
+        const { data, error } = await supabaseClient.from('league_rules').select('*');
+        if(!error && data) {
+            globalLeagueRules = {};
+            data.forEach(r => { globalLeagueRules[r.league_name] = r; });
+            renderRulesSummary();
+        }
     }
 
     function renderRulesSummary() {
@@ -290,25 +282,21 @@
     };
 
     window.saveLeagueRules = async function() {
-        if(!supabaseClient) return;
         const league = document.getElementById("configLeagueSelect").value;
         if(!league) return alert("Bitte wähle zuerst eine Liga aus!");
 
-        const { error } = await supabaseClient.from('league_rules').upsert({
+        await supabaseClient.from('league_rules').upsert({
             league_name: league,
             aufsteiger: parseInt(document.getElementById("inputAuf").value) || 0,
             absteiger: parseInt(document.getElementById("inputAb").value) || 0,
             relegation: parseInt(document.getElementById("inputRel").value) || 0
         });
-        if(error) alert(error.message);
-        else { alert("Liga-Einstellungen gespeichert!"); await loadAllLeagueRules(); loadWaitingList(); }
+        alert("Liga-Einstellungen gespeichert!"); 
+        await loadAllLeagueRules(); 
+        loadWaitingList();
     };
 
-    // ===========================================================
-    // TAB 1: WARTELISTE & LIGA-ZUTEILUNG
-    // ===========================================================
-    function buildSelectHtml(idPrefix, playerId, optionsArr, isWanted, currentVal) {
-        if (!isWanted) return `<span style="color:#666; font-size:12px;">Nicht angemeldet</span>`;
+    function buildSelectHtml(idPrefix, playerId, optionsArr, currentVal) {
         let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
         html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
         html += `<option value="REMOVE">❌ Entfernen</option>`;
@@ -317,6 +305,7 @@
         return html;
     }
 
+    // Lädt unfiltriert alle registrierten Profile zur freien Ligaeinteilung
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -324,8 +313,6 @@
         const { data: players, error } = await supabaseClient.from('profiles').select('*');
         if (error) { tbody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`; return; }
 
-        // DAS IST DIE LÖSUNG FÜR DEIN PROBLEM:
-        // Wir filtern nicht mehr nach 'waiting'. ALLE Spieler werden geladen!
         const activePlayers = players || [];
         if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Spieler in der Datenbank gefunden.</td></tr>'; return; }
 
@@ -333,7 +320,7 @@
         activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
 
         tbody.innerHTML = activePlayers.map(p => {
-            const isEingeteilt = p.status_neue_saison === 'assigned';
+            const isEingeteilt = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
             let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
             
             if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
@@ -361,9 +348,9 @@
                         </div>
                     </td>
                     <td>${formatAllPlattformNames(p)}</td>
-                    <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.want_autodarts, p.assigned_ad_league)}</td>
-                    <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.want_dartcounter, p.assigned_dc_league)}</td>
-                    <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.want_scolia, p.assigned_sc_league)}</td>
+                    <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.assigned_ad_league)}</td>
+                    <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.assigned_dc_league)}</td>
+                    <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league)}</td>
                     <td>
                         <button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button>
                         ${isEingeteilt ? '<br><span style="color:#3ddc97; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
@@ -372,6 +359,7 @@
         }).join("");
     }
 
+    // Speichert ausgewählte Ligen absolut parallel, ohne unberührte Ligen zu zerstören
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         
@@ -379,7 +367,6 @@
         const dcEl = document.getElementById(`dc_${playerId}`);
         const scEl = document.getElementById(`sc_${playerId}`);
         const playerProfile = allLoadedProfilesMap[playerId];
-        if(!playerProfile) return alert("Fehler beim Abruf des Spielerprofils.");
 
         const updates = { status_neue_saison: 'assigned' };
 
@@ -387,7 +374,7 @@
             const val = adEl.value;
             if (val === 'REMOVE' || val === '') updates.assigned_ad_league = null;
             else {
-                if(!playerProfile.autodarts_name || playerProfile.autodarts_name === "-") return alert(`❌ Abbruch: Kein Autodarts-Name!`);
+                if(!playerProfile.autodarts_name || playerProfile.autodarts_name === "-") return alert(`❌ Abbruch: Kein Autodarts-Name hinterlegt!`);
                 updates.assigned_ad_league = val.trim();
             }
         }
@@ -395,7 +382,7 @@
             const val = dcEl.value;
             if (val === 'REMOVE' || val === '') updates.assigned_dc_league = null;
             else {
-                if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name === "-") return alert(`❌ Abbruch: Kein DartCounter-Name!`);
+                if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name === "-") return alert(`❌ Abbruch: Kein DartCounter-Name hinterlegt!`);
                 updates.assigned_dc_league = val.trim();
             }
         }
@@ -403,25 +390,20 @@
             const val = scEl.value;
             if (val === 'REMOVE' || val === '') updates.assigned_sc_league = null;
             else {
-                if(!playerProfile.scolia_name || playerProfile.scolia_name === "-") return alert(`❌ Abbruch: Kein Scolia-Name!`);
+                if(!playerProfile.scolia_name || playerProfile.scolia_name === "-") return alert(`❌ Abbruch: Kein Scolia-Name hinterlegt!`);
                 updates.assigned_sc_league = val.trim();
             }
         }
 
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
         if(error) alert("Fehler beim Abspeichern: " + error.message);
-        else { alert("Zuteilung erfolgreich abgespeichert!"); loadWaitingList(); }
+        else { alert("Zuteilungen erfolgreich abgespeichert!"); loadWaitingList(); }
     };
 
-    window.removePlayerCompletely = async function(playerId) {
-        if(!supabaseClient || !confirm("Löschen?")) return;
-        await supabaseClient.from('profiles').update({ status_neue_saison: 'none', assigned_ad_league: null, assigned_dc_league: null, assigned_sc_league: null }).eq('id', playerId);
-        loadWaitingList();
-    };
-
-    // ===========================================================
-    // TAB 2: MATCHDAYS AND GRIDS 
-    // ===========================================================
+    // =====================================================================
+    // 4. LOGIK MODUL: REITER 2 - SPIELPLÄNE & LIVE VORSCHAU DER SPIELER
+    // =====================================================================
+    
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
         const league = document.getElementById("leagueSelector").value;
@@ -443,26 +425,33 @@
             
             const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season_name') || m.season_name === currentSeasonGlobal) : [];
             
+            // DYNAMISCHE LIVE VORSCHAU WENN NOCH KEIN PLAN GENERIERT WURDE
             if(filteredMatches.length === 0) {
                 genArea.style.display = "flex";
                 genArea.innerHTML = `<button class="generate-btn" onclick="generateScheduleForLeague('${league}')">📅 Spielplan für ${league} jetzt generieren</button>`;
                 
                 let assignedPlayers = getPlayersForLeague(localPlayersList, league);
+                
                 if(assignedPlayers.length === 0) {
-                    area.innerHTML = `Noch kein aktiver Spielplan für **${league}**. Aktuell sind dieser Liga auch **keine Spieler** zugewiesen.`;
+                    area.innerHTML = `<div style="padding:15px; background:rgba(231, 76, 60, 0.1); border:1px solid #e74c3c; border-radius:10px;">
+                        Es existiert noch kein aktiver Spielplan für <b>${league}</b>. <br>Aktuell hast du in "Tab 1" dieser Liga auch noch <b>keine Spieler</b> zugewiesen!
+                        </div>`;
                 } else {
                     let previewHtml = `
                         <div style="padding:15px; background:rgba(32, 183, 255, 0.05); border:1px solid rgba(32, 183, 255, 0.2); border-radius:10px;">
                             <h3 style="color:#20b7ff; margin-bottom:10px;">📋 Vorschau der zugewiesenen Spieler für ${league} (${assignedPlayers.length})</h3>
-                            <p style="font-size:13px; color:#90a9b7; margin-bottom:15px;">Für diese Liga wurde noch kein Spielplan erstellt. Hier siehst du die Liste der Spieler, die beim Klicken auf den oberen Button eingeteilt werden:</p>
+                            <p style="font-size:13px; color:#90a9b7; margin-bottom:15px;">Für diese Liga wurde noch kein Spielplan erstellt. Wenn du oben auf den blauen Button klickst, wird der Spielplan für folgende Spieler berechnet:</p>
                             <table>
                                 <thead>
-                                    <tr><th>Spielername</th><th>Hinterlegte Profile</th></tr>
+                                    <tr><th>Spielername & Herkunft</th><th>Hinterlegte Plattform-Namen</th></tr>
                                 </thead>
                                 <tbody>
                                     ${assignedPlayers.map(p => `
                                         <tr>
-                                            <td><strong style="color:#3ddc97;">${htmlEscape(p.discord_name || p.username)}</strong><br><small style="color:#90a9b7;">Echtname: ${htmlEscape(p.real_name)}</small></td>
+                                            <td>
+                                                <strong style="color:#3ddc97;">${htmlEscape(p.discord_name || p.username)}</strong><br>
+                                                <small style="color:#90a9b7;">Echtname: ${htmlEscape(p.real_name)}</small>
+                                            </td>
                                             <td>${formatAllPlattformNames(p)}</td>
                                         </tr>
                                     `).join("")}
@@ -483,7 +472,7 @@
 
     window.deleteScheduleForLeague = async function(leagueName) {
         if(!supabaseClient) return;
-        if(!confirm(`⚠️ ACHTUNG: Möchtest du den gesamten Spielplan für "${leagueName}" unwiderruflich löschen? Alle Ergebnisse dieser Liga gehen verloren!`)) return;
+        if(!confirm(`⚠️ ACHTUNG: Möchtest du den gesamten Spielplan für "${leagueName}" löschen? Alle Ergebnisse dieser Liga gehen verloren!`)) return;
 
         const { error } = await supabaseClient.from('matches').delete().eq('league_name', leagueName);
         if(error) alert("Fehler beim Löschen: " + error.message);
@@ -503,8 +492,8 @@
             if(leaguePlayers.length < 2) {
                 document.getElementById("scheduleArea").innerHTML = `
                     <div style="padding:15px; background:rgba(231, 76, 60, 0.2); border:1px solid #e74c3c; border-radius:6px; color:#fff;">
-                        <b>❌ Generierung abgebrochen:</b> Du hast aktuell nur <b>${leaguePlayers.length} Spieler</b> in der Liga <i>${leagueName}</i> eingeteilt.<br><br>
-                        Ein Spielplan erfordert mindestens 2 Spieler. Bitte weise in "Tab 1" noch jemanden zu!
+                        <b>❌ Generierung abgebrochen:</b> Du hast aktuell nur <b>${leaguePlayers.length} Spieler</b> in <i>${leagueName}</i> eingeteilt.<br><br>
+                        Ein Spielplan erfordert mindestens 2 Spieler.
                     </div>`;
                 return;
             }
@@ -574,7 +563,7 @@
                 const p1Name = p1 ? (p1.discord_name || p1.username) : "Freilos";
                 const p2Name = p2 ? (p2.discord_name || p2.username) : "Freilos";
                 const isFreilos = !m.player1_id || !m.player2_id;
-                
+
                 html += `
                     <tr>
                         <td>
@@ -641,9 +630,10 @@
         else alert("Spielbericht erfolgreich aktualisiert!");
     };
 
-    // ===========================================================
-    // TAB 3: STRAFENKATALOG 
-    // ===========================================================
+    // =====================================================================
+    // 5. LOGIK MODUL: REITER 3 - STRAFENKATALOG (PRO LIGA TRENNBAR)
+    // =====================================================================
+    
     async function loadStrafenkatalogList() {
         const league = document.getElementById("penaltyLeagueSelector").value;
         const tbody = document.getElementById("strafenListBody");
@@ -684,7 +674,7 @@
                     <tr>
                         <td>
                             <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(pName)}</strong><br>
-                            <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
+                            <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span
                         </td>
                         <td>${ingameBox}</td>
                         <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${pen.yellow_cards}"> 🟨</td>
@@ -697,7 +687,7 @@
             }).join("");
         } catch(e) { 
             console.error(e);
-            tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden des Strafenkatalogs. Hast du die SQL-Tabelle in Supabase angelegt?</td></tr>`; 
+            tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden. Hast du die Tabelle 'league_penalties' im SQL-Editor angelegt?</td></tr>`; 
         }
     }
 
@@ -723,9 +713,9 @@
         else alert(`Karten & Bemerkung für ${leagueName} erfolgreich aktualisiert!`);
     };
 
-    // ===========================================================
-    // TAB 4: NEWS EDITOR & ADMIN LISTE
-    // ===========================================================
+    // =====================================================================
+    // 6. LOGIK MODUL: REITER 4 - NEWS VERFASSEN
+    // =====================================================================
     function initNewsEditor() {
         try {
             if(!newsQuill) newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
@@ -784,9 +774,9 @@
         }
     };
 
-    // ===========================================================
-    // TAB 5: REGELWERK DYNAMIC EDITOR
-    // ===========================================================
+    // =====================================================================
+    // 7. LOGIK MODUL: REITER 5 - REGELWERK BEARBEITEN
+    // =====================================================================
     function initRuleEditor() {
         try {
             if(!ruleQuill) {
@@ -812,13 +802,11 @@
         } catch(e) { console.error(e); }
     };
 
-    // ===========================================================
-    // INITIAL SYSTEM LAUNCH
-    // ===========================================================
+    // Befüllt alle Dropdown-Ligen-Menüs synchron auf der Seite
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
         const cfgSel = document.getElementById("configLeagueSelect");
-        const penSel = document.getElementById("penaltyLeagueSelector"); 
+        const penSel = document.getElementById("penaltyLeagueSelector");
         
         if(sel && sel.options.length === 1) {
             ALL_LEAGUES.forEach(l => {
