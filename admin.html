@@ -514,6 +514,7 @@
         } catch(e) { console.error(e); }
     }
 
+    // ULTIMATIVE KORREKTUR: Jede Tabellenspalte wird nun absolut isoliert aktualisiert! Leerlassen überschreibt nichts mehr!
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         
@@ -524,37 +525,48 @@
         const playerProfile = allLoadedProfilesMap[playerId];
         if(!playerProfile) return alert("Fehler beim Abruf des Spielerprofils.");
 
-        let finalAdValue = null;
-        let finalDcValue = null;
-        let finalScValue = null;
-
-        if(adEl && adEl.value !== 'REMOVE' && adEl.value !== '') {
-            if(!playerProfile.autodarts_name || playerProfile.autodarts_name.trim() === "" || playerProfile.autodarts_name === "-") {
-                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen Autodarts-Namen hinterlegt!`);
+        // Wir bauen ein vollkommen dynamisches Update-Objekt auf
+        const updates = { status_neue_saison: 'assigned' };
+        
+        // Autodarts-Zweig
+        if (adEl) {
+            const val = adEl.value;
+            if (val === 'REMOVE') { updates.assigned_ad_league = null; }
+            else if (val !== '') {
+                if(!playerProfile.autodarts_name || playerProfile.autodarts_name.trim() === "" || playerProfile.autodarts_name === "-") {
+                    return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen Autodarts-Namen hinterlegt!`);
+                }
+                updates.assigned_ad_league = val.trim();
             }
-            finalAdValue = adEl.value.trim();
+            // Wenn val === '', lassen wir das Feld komplett aus dem Update-Paket raus, damit Supabase den alten Wert behält!
         }
 
-        if(dcEl && dcEl.value !== 'REMOVE' && dcEl.value !== '') {
-            if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name.trim() === "" || playerProfile.dartcounter_name === "-") {
-                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen DartCounter-Namen hinterlegt!`);
+        // DartCounter-Zweig
+        if (dcEl) {
+            const val = dcEl.value;
+            if (val === 'REMOVE') { updates.assigned_dc_league = null; }
+            else if (val !== '') {
+                if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name.trim() === "" || playerProfile.dartcounter_name === "-") {
+                    return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen DartCounter-Namen hinterlegt!`);
+                }
+                updates.assigned_dc_league = val.trim();
             }
-            finalDcValue = dcEl.value.trim();
         }
 
-        if(scEl && scEl.value !== 'REMOVE' && scEl.value !== '') {
-            if(!playerProfile.scolia_name || playerProfile.scolia_name.trim() === "" || playerProfile.scolia_name === "-") {
-                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen Scolia-Namen hinterlegt!`);
+        // Scolia-Zweig
+        if (scEl) {
+            const val = scEl.value;
+            if (val === 'REMOVE') { updates.assigned_sc_league = null; }
+            else if (val !== '') {
+                if(!playerProfile.scolia_name || playerProfile.scolia_name.trim() === "" || playerProfile.scolia_name === "-") {
+                    return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen Scolia-Namen hinterlegt!`);
+                }
+                updates.assigned_sc_league = val.trim();
             }
-            finalScValue = scEl.value.trim();
         }
 
-        const { error } = await supabaseClient.from('profiles').update({
-            status_neue_saison: 'assigned',
-            assigned_ad_league: finalAdValue,
-            assigned_dc_league: finalDcValue,
-            assigned_sc_league: finalScValue
-        }).eq('id', playerId);
+        // Abfahrt an Supabase: Es werden NUR die gezielt veränderten Felder überschrieben!
+        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
 
         if(error) {
             alert("Fehler beim Abspeichern: " + error.message);
@@ -571,7 +583,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (SCHREIBWEISEN-ABGLEICH PERFEKTIONIERT)
+    // SPIELPLAN-LOGIK
     // ===========================================================
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
@@ -609,7 +621,6 @@
         } catch(err) { area.innerHTML = "Kritischer Ladefehler im System."; }
     };
 
-    // KORREKTUR: Nutzt jetzt .toLowerCase() für fehlertolerantes Filtern unabhängig von Groß-/Kleinschreibung!
     window.generateScheduleForLeague = async function(leagueName) {
         if(!supabaseClient) return;
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen basierend auf den Zuteilungen generieren?`)) return;
@@ -621,7 +632,6 @@
             let leaguePlayers = [];
             const lowerLeagueName = leagueName.toLowerCase();
             
-            // Radikaler Case-Insensitive Check
             if(lowerLeagueName.includes("autodarts")) {
                 leaguePlayers = players.filter(p => p.assigned_ad_league && p.assigned_ad_league.toLowerCase() === lowerLeagueName);
             }
@@ -944,7 +954,7 @@
     function initAdmin() {
         initLeagueSelector();
         
-        // Unabhängige Starter
+        // Entkoppelte Timeouts starten das System fehlerfrei
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
     }
