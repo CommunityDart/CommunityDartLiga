@@ -52,10 +52,15 @@
     
     .registration-box { background: rgba(32, 183, 255, 0.03); border: 1px dashed var(--line); padding: 20px; border-radius: 14px; margin-bottom: 25px; }
     .registration-box h3 { margin-top: 0; font-size: 16px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; }
-    .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); }
+    .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 8px; border: 1px solid rgba(32, 183, 255, 0.03); }
     .checkbox-group label { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; color: #edf7fb; font-weight: bold; }
     .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
     .hint-text { font-size: 12px; color: var(--muted); margin-top: -10px; margin-bottom: 15px; font-style: italic; }
+
+    /* Spezifisches Design für den Sichtbarkeits-Schalter */
+    .visibility-box { display: flex; align-items: center; gap: 10px; background: rgba(52, 152, 219, 0.08); padding: 15px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 20px; }
+    .visibility-box label { margin-bottom: 0; font-size: 14px; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .visibility-box input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -88,6 +93,13 @@
     <div class="divider"></div>
 
     <form id="profilForm" style="display:none;">
+      <label>Wunschname / Anzeigename (wird in allen Tabellen ausgegeben)</label>
+      <input type="text" id="display_name" placeholder="Dein Wunschname, z.B. Phil Taylor" required>
+
+      <div class="visibility-box">
+        <label><input type="checkbox" id="show_in_members"> 🌐 Profil in der öffentlichen Mitgliederübersicht anzeigen</label>
+      </div>
+
       <div class="input-group">
         <div><label>Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
         <div style="flex:0 0 100px;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" inputmode="numeric" placeholder="12345"></div>
@@ -144,6 +156,11 @@
 
       const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
       if(data) {
+          // NEUE FELDER EINTRAGEN
+          document.getElementById("display_name").value = data.display_name || data.username || "";
+          document.getElementById("show_in_members").checked = data.show_in_members !== false; // standardmäßig true
+
+          // Bestehende Felder befüllen
           document.getElementById("real_name").value = data.real_name || "";
           document.getElementById("plz").value = data.plz || "";
           document.getElementById("ort").value = data.ort || "";
@@ -179,22 +196,39 @@
             want_scolia: document.getElementById("want_sc").checked,
             status_neue_saison: 'waiting'
         }).eq('id', currentUser.id);
-        alert("Anmeldung gespeichert!");
+        alert("Anmeldung für die neue Saison gespeichert!");
     };
 
     document.getElementById("profilForm").addEventListener("submit", async function(e) {
         e.preventDefault();
+        
         const updates = {
             id: currentUser.id,
-            real_name: document.getElementById("real_name").value.trim() || null, plz: document.getElementById("plz").value.trim() || null,
-            ort: document.getElementById("ort").value.trim() || null, dart_setup: document.getElementById("dart_setup").value.trim() || null,
-            autodarts_name: document.getElementById("autodarts_name").value.trim() || null, autodarts_avg: document.getElementById("autodarts_avg").value.trim().replace(',', '.') || null, autodarts_url: document.getElementById("autodarts_url").value.trim() || null,
-            dartcounter_name: document.getElementById("dartcounter_name").value.trim() || null, dartcounter_avg: document.getElementById("dartcounter_avg").value.trim().replace(',', '.') || null, dartcounter_url: document.getElementById("dartcounter_url").value.trim() || null,
-            scolia_name: document.getElementById("scolia_name").value.trim() || null, scolia_avg: document.getElementById("scolia_avg").value.trim().replace(',', '.') || null, scolia_url: document.getElementById("scolia_url").value.trim() || null,
+            display_name: document.getElementById("display_name").value.trim() || null,
+            show_in_members: document.getElementById("show_in_members").checked,
+            real_name: document.getElementById("real_name").value.trim() || null, 
+            plz: document.getElementById("plz").value.trim() || null,
+            ort: document.getElementById("ort").value.trim() || null, 
+            dart_setup: document.getElementById("dart_setup").value.trim() || null,
+            autodarts_name: document.getElementById("autodarts_name").value.trim() || null, 
+            autodarts_avg: document.getElementById("autodarts_avg").value.trim().replace(',', '.') || null, 
+            autodarts_url: document.getElementById("autodarts_url").value.trim() || null,
+            dartcounter_name: document.getElementById("dartcounter_name").value.trim() || null, 
+            dartcounter_avg: document.getElementById("dartcounter_avg").value.trim().replace(',', '.') || null, 
+            dartcounter_url: document.getElementById("dartcounter_url").value.trim() || null,
+            scolia_name: document.getElementById("scolia_name").value.trim() || null, 
+            scolia_avg: document.getElementById("scolia_avg").value.trim().replace(',', '.') || null, 
+            scolia_url: document.getElementById("scolia_url").value.trim() || null,
             updated_at: new Date()
         };
-        await supabaseClient.from('profiles').upsert(updates);
-        alert("Profil erfolgreich gespeichert!");
+
+        const { error } = await supabaseClient.from('profiles').upsert(updates);
+        if (error) {
+            alert("Fehler beim Speichern: " + error.message);
+        } else {
+            alert("Profil erfolgreich gespeichert!");
+            initProfile();
+        }
     });
 
     document.getElementById("logoutBtn").onclick = async () => { await supabaseClient.auth.signOut(); window.location.href = "index.html"; };
