@@ -374,11 +374,12 @@
 
     function formatSpielplanPlattformNames(prof, leagueName) {
         if(!prof) return "";
+        const lowerLeague = leagueName.toLowerCase();
         return `
             <div style="margin-top:6px; font-size:12px; line-height:1.35; color:#90a9b7; background:rgba(0,0,0,0.15); padding:6px; border-radius:6px; border:1px solid rgba(75, 135, 165, 0.1);">
-                <div>🎯 AD: <span style="color:${leagueName.includes("Autodarts")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span></div>
-                <div>🔥 DC: <span style="color:${leagueName.includes("DartCounter")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span></div>
-                <div>🛡️ SC: <span style="color:${leagueName.includes("Scolia")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span></div>
+                <div>🎯 AD: <span style="color:${lowerLeague.includes("autodarts")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span></div>
+                <div>🔥 DC: <span style="color:${lowerLeague.includes("dartcounter")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span></div>
+                <div>🛡️ SC: <span style="color:${lowerLeague.includes("scolia")?'#3ddc97':'#fff'}; font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span></div>
             </div>
         `;
     }
@@ -513,7 +514,6 @@
         } catch(e) { console.error(e); }
     }
 
-    // VOLLKOMMEN REPARIERT: Nutzt getrennte Variablen, um eine saubere, isolierte Übermittlung an Supabase zu garantieren!
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         
@@ -524,7 +524,6 @@
         const playerProfile = allLoadedProfilesMap[playerId];
         if(!playerProfile) return alert("Fehler beim Abruf des Spielerprofils.");
 
-        // Jedes Feld wird völlig autark vorbereitet
         let finalAdValue = null;
         let finalDcValue = null;
         let finalScValue = null;
@@ -550,7 +549,6 @@
             finalScValue = scEl.value.trim();
         }
 
-        // Wir senden die Felder explizit als getrennte Spaltenupdates, ohne dass leere Werte sich überschneiden
         const { error } = await supabaseClient.from('profiles').update({
             status_neue_saison: 'assigned',
             assigned_ad_league: finalAdValue,
@@ -573,7 +571,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK
+    // SPIELPLAN-LOGIK (SCHREIBWEISEN-ABGLEICH PERFEKTIONIERT)
     // ===========================================================
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
@@ -611,6 +609,7 @@
         } catch(err) { area.innerHTML = "Kritischer Ladefehler im System."; }
     };
 
+    // KORREKTUR: Nutzt jetzt .toLowerCase() für fehlertolerantes Filtern unabhängig von Groß-/Kleinschreibung!
     window.generateScheduleForLeague = async function(leagueName) {
         if(!supabaseClient) return;
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen basierend auf den Zuteilungen generieren?`)) return;
@@ -620,9 +619,18 @@
             if(error) return alert("Fehler beim Abruf der Spieler: " + error.message);
 
             let leaguePlayers = [];
-            if(leagueName.includes("Autodarts")) leaguePlayers = players.filter(p => p.assigned_ad_league === leagueName);
-            if(leagueName.includes("DartCounter")) leaguePlayers = players.filter(p => p.assigned_dc_league === leagueName);
-            if(leagueName.includes("Scolia")) leaguePlayers = players.filter(p => p.assigned_sc_league === leagueName);
+            const lowerLeagueName = leagueName.toLowerCase();
+            
+            // Radikaler Case-Insensitive Check
+            if(lowerLeagueName.includes("autodarts")) {
+                leaguePlayers = players.filter(p => p.assigned_ad_league && p.assigned_ad_league.toLowerCase() === lowerLeagueName);
+            }
+            if(lowerLeagueName.includes("dartcounter")) {
+                leaguePlayers = players.filter(p => p.assigned_dc_league && p.assigned_dc_league.toLowerCase() === lowerLeagueName);
+            }
+            if(lowerLeagueName.includes("scolia")) {
+                leaguePlayers = players.filter(p => p.assigned_sc_league && p.assigned_sc_league.toLowerCase() === lowerLeagueName);
+            }
 
             if(leaguePlayers.length < 2) {
                 return alert(`❌ Fehler: Es müssen mindestens 2 Spieler dieser Liga händisch zugewiesen sein. Aktuell zugewiesen: ${leaguePlayers.length} Spieler.`);
@@ -936,7 +944,7 @@
     function initAdmin() {
         initLeagueSelector();
         
-        // Entkoppelte Timeouts starten das System fehlerfrei
+        // Unabhängige Starter
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
     }
