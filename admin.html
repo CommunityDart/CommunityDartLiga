@@ -156,14 +156,12 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
-        .config-box h3 {
-            margin-bottom: 10px;
-        }
         .config-row {
             display: flex;
             gap: 15px;
             align-items: center;
             flex-wrap: wrap;
+            margin-top: 10px;
         }
         .meta-text { font-size: 12px; color: #90a9b7; margin-top: 2px; }
         .player-info-block { font-size: 13px; line-height: 1.4; }
@@ -516,7 +514,7 @@
         } catch(e) { console.error(e); }
     }
 
-    // VOLLKOMMEN ERNEUERT: Es wird ausschließlich das Feld geupdated, das einen echten Wert hat. Der Rest bleibt unberührt!
+    // VOLLKOMMEN GETRENNTE ABFRAGE: Speichert Ligen absolut unabhängig voneinander zeitgleich ab!
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         
@@ -528,46 +526,53 @@
         if(!playerProfile) return alert("Fehler beim Abruf des Spielerprofils.");
 
         const updates = { status_neue_saison: 'assigned' };
-        
+
+        // 1. Unabhängiger Autodarts Block
         if (adEl) {
             const val = adEl.value;
-            if (val === 'REMOVE') updates.assigned_ad_league = null;
-            else if (val !== '') {
+            if (val === 'REMOVE') {
+                updates.assigned_ad_league = null;
+            } else if (val !== '') {
                 if(!playerProfile.autodarts_name || playerProfile.autodarts_name.trim() === "" || playerProfile.autodarts_name === "-") {
-                    return alert(`❌ Abbruch: Kein Autodarts-Name hinterlegt!`);
+                    return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht zugewiesen werden, da kein Autodarts-Name hinterlegt ist!`);
                 }
                 updates.assigned_ad_league = val.trim();
             }
         }
 
+        // 2. Unabhängiger DartCounter Block
         if (dcEl) {
             const val = dcEl.value;
-            if (val === 'REMOVE') updates.assigned_dc_league = null;
-            else if (val !== '') {
+            if (val === 'REMOVE') {
+                updates.assigned_dc_league = null;
+            } else if (val !== '') {
                 if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name.trim() === "" || playerProfile.dartcounter_name === "-") {
-                    return alert(`❌ Abbruch: Kein DartCounter-Name hinterlegt!`);
+                    return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht zugewiesen werden, da kein DartCounter-Name hinterlegt ist!`);
                 }
                 updates.assigned_dc_league = val.trim();
             }
         }
 
+        // 3. Unabhängiger Scolia Block
         if (scEl) {
             const val = scEl.value;
-            if (val === 'REMOVE') updates.assigned_sc_league = null;
-            else if (val !== '') {
+            if (val === 'REMOVE') {
+                updates.assigned_sc_league = null;
+            } else if (val !== '') {
                 if(!playerProfile.scolia_name || playerProfile.scolia_name.trim() === "" || playerProfile.scolia_name === "-") {
-                    return alert(`❌ Abbruch: Kein Scolia-Name hinterlegt!`);
+                    return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht zugewiesen werden, da kein Scolia-Name hinterlegt ist!`);
                 }
                 updates.assigned_sc_league = val.trim();
             }
         }
 
+        // Führt das bereinigte, simultane Update aus
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
 
         if(error) {
             alert("Fehler beim Abspeichern: " + error.message);
         } else {
-            alert("Zuteilung erfolgreich abgespeichert!"); 
+            alert("Zuteilungen erfolgreich abgespeichert!"); 
             loadWaitingList();
         }
     };
@@ -579,7 +584,7 @@
     };
 
     // ===========================================================
-    // SPIELPLAN-LOGIK (KORREKT AUF CASE-INSENSITIVE ABSTIMMUNG GEFILTERT)
+    // SPIELPLAN-LOGIK (FEHLERTOLERANT AUF GROSS-/KLEINSCHREIBUNG)
     // ===========================================================
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
