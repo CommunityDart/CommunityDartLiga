@@ -51,6 +51,9 @@
         .txt-input { width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
         .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; box-sizing: border-box; }
         
+        /* News Überschrift Spezial-Klasse zur Vermeidung von ID-Kollisionen */
+        .news-headline-field { width: 100%; padding: 10px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 16px; box-sizing: border-box; }
+
         /* Hilfsklassen Boxen & Badges */
         .config-box { background: rgba(61, 220, 151, 0.05); border: 1px solid rgba(61, 220, 151, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
         .meta-text { font-size: 12px; color: #90a9b7; margin-top: 2px; }
@@ -167,7 +170,7 @@
     <div id="tabNews" class="tab-content">
         <h2>Neuigkeiten auf der Startseite veröffentlichen</h2>
         <div style="margin-bottom: 15px;">
-            <input type="text" id="newsTitleInput" class="txt-input" style="width:100%; padding:10px; font-size:16px;" placeholder="Überschrift der News...">
+            <input type="text" id="newsTitleInput" class="news-headline-field" placeholder="Überschrift der News...">
         </div>
         <div id="newsEditor" class="editor-container"></div>
         <button class="save-banner-btn" onclick="publishNews()">📢 News veröffentlichen</button>
@@ -205,11 +208,13 @@
     let globalLeagueRules = {}; 
     let allLoadedProfilesMap = {}; 
 
+    // Maskiert Strings für sichere HTML-Ausgabe
     function htmlEscape(str) {
         if (!str) return "-";
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
+    // Tab-Umschaltfunktion mit automatischem Logik-Nachladeschutz
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -721,7 +726,7 @@
     };
 
     // =====================================================================
-    // 6. LOGIK MODUL: REITER 4 - NEWS VERFASSEN (REPARIERT)
+    // 6. LOGIK MODUL: REITER 4 - NEWS VERFASSEN (KOMPLETT REPARIERT)
     // =====================================================================
     function initNewsEditor() {
         try {
@@ -782,7 +787,7 @@
     };
 
     // =====================================================================
-    // 7. LOGIK MODUL: REITER 5 - REGELWERK BEARBEITEN (REPARIERT)
+    // 7. LOGIK MODUL: REITER 5 - REGELWERK BEARBEITEN (KOMPLETT REPARIERT)
     // =====================================================================
     function initRuleEditor() {
         try {
