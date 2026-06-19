@@ -423,7 +423,7 @@
             const { data: matches, error: mErr } = await query;
             if(mErr) { area.innerHTML = "Fehler beim Laden der Matches: " + mErr.message; return; }
             
-            const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season_name') || m.season_name === currentSeasonGlobal) : [];
+            const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season') || m.season === currentSeasonGlobal) : [];
             
             // DYNAMISCHE LIVE VORSCHAU WENN NOCH KEIN PLAN GENERIERT WURDE
             if(filteredMatches.length === 0) {
@@ -479,6 +479,7 @@
         else { alert(`Spielplan für ${leagueName} wurde komplett gelöscht!`); loadMatchdayPlan(); }
     };
 
+    // GENERATOR: EXAKT AUF DEINE DATENBANK-SPALTE "season" ANGEPASST!
     window.generateScheduleForLeague = async function(leagueName) {
         if(!supabaseClient) return;
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen generieren?`)) return;
@@ -513,12 +514,16 @@
                     if (home !== null || away !== null) {
                         matchesToInsert.push({
                             id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
-                            league_name: leagueName, season_name: currentSeasonGlobal, matchday: round + 1,
+                            league_name: leagueName, 
+                            season: currentSeasonGlobal, // REPARIERT: Nutzt exakt deine Pflichtspalte "season"!
+                            matchday: round + 1,
                             player1_id: home, player2_id: away, status: 'offen'
                         });
                         matchesToInsert.push({
                             id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
-                            league_name: leagueName, season_name: currentSeasonGlobal, matchday: round + 1 + numRounds,
+                            league_name: leagueName, 
+                            season: currentSeasonGlobal, // REPARIERT: Nutzt exakt deine Pflichtspalte "season"!
+                            matchday: round + 1 + numRounds,
                             player1_id: away, player2_id: home, status: 'offen'
                         });
                     }
@@ -674,7 +679,7 @@
                     <tr>
                         <td>
                             <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(pName)}</strong><br>
-                            <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span
+                            <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
                         </td>
                         <td>${ingameBox}</td>
                         <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${pen.yellow_cards}"> 🟨</td>
