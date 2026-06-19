@@ -38,11 +38,9 @@
     
     .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
     
-    /* Großer Header für den späteren Werbebanner */
     .header-branding { text-align: center; margin-bottom: 25px; padding: 25px 15px; border-radius: 20px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
     .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
 
-    /* Kompaktes, zentriertes Grid */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
     .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); height: fit-content !important; align-self: start !important; }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 4px; }
@@ -175,13 +173,13 @@
           <div id="defaultRightContent" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
              <div class="nav-card-title">Community & Profile</div>
              <a href="https://discord.gg/DEINLINK" target="_blank" class="nav-btn btn-discord">
-               <span>💬 CDL Discord Server</span>
+                <span>💬 CDL Discord Server</span>
              </a>
              <button id="ligaLoginBtn" class="nav-btn" type="button">
-               <span id="loginBtnText">👤 Liga Login</span>
+                <span id="loginBtnText">👤 Liga Login</span>
              </button>
              <a href="https://www.paypal.com/pool/9nHfKrmgfD" target="_blank" class="nav-btn" style="border-color: rgba(46,204,113,0.4); min-height: 38px;">
-               <span>☕ Serverkasse unterstützen</span>
+                <span>☕ Serverkasse unterstützen</span>
              </a>
           </div>
           <div id="dynamicLeaguesContent" class="dropdown-submenu" style="display: none;"></div>
@@ -217,7 +215,7 @@
 
   <div id="playerProfileModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head"><h3>Spielerprofil</h3><button class="modal-close" type="button">✕</button></div>
+      <div class="modal-head"><h3 id="playerProfileTitle">Spielerprofil</h3><button class="modal-close" type="button">✕</button></div>
       <div id="playerProfileContent" class="modal-body"></div>
     </div>
   </div>
@@ -287,13 +285,16 @@
             if(m.player1_id && m.player2_id) {
                 if(!stats[m.player1_id]) {
                     const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                    stats[m.player1_id] = { name: p ? (p.discord_name || p.real_name) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
+                    // NEU: Nutzt primär den Wunschname (display_name)
+                    stats[m.player1_id] = { name: p ? (p.display_name || p.discord_name || p.username) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
                 }
                 if(!stats[m.player2_id]) {
                     const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                    stats[m.player2_id] = { name: p ? (p.discord_name || p.real_name) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
+                    // NEU: Nutzt primär den Wunschname (display_name)
+                    stats[m.player2_id] = { name: p ? (p.display_name || p.discord_name || p.username) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
                 }
-                const l1 = parseInt(m.legs1) || 0; const l2 = parseInt(m.legs2) || 0;
+                // REPARIERT: Verwendet korrekte Tabellenfelder legs_player1 und legs_player2
+                const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
                 stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                 if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
                 else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
@@ -373,7 +374,7 @@
       if(!tArea || !mArea) return;
 
       if(!state.activeLeague) {
-          tArea.innerHTML = `<div class="table-shell"><div class="section-head"><div class="section-title">Plattformübersicht</div></div><div style="padding:18px"><div class="empty">⚠️ In dieser Sektion ist derzeit keine Liga aktiv geschaltet.</div></div></div>`;
+          tArea.innerHTML = `<div class="table-shell"><div class="section-head"><div class="section-title">Plattformübersicht</div></div><div style="padding:18px"><div class="empty">⚠️ In dieser Sektion ist derzeit keine Liga active geschaltet.</div></div></div>`;
           mArea.innerHTML = "";
           return;
       }
@@ -383,8 +384,11 @@
     }
 
     function renderStandingsTable(rows) {
-      const tbody = rows.map((s, idx) => `<tr>
-          <td class="rank-col ${rankClass(idx+1, rows.length)}">${idx+1}</td>
+      // NEU: Blendet Spieler, die show_in_members = false haben, radikal aus!
+      const visibleRows = rows.filter(s => s.showInMembers !== false);
+
+      const tbody = visibleRows.map((s, idx) => `<tr>
+          <td class="rank-col ${rankClass(idx+1, visibleRows.length)}">${idx+1}</td>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
           <td>${s.discord ? `<span style="color:var(--muted); font-size:12px;">${htmlEscape(s.discord)}</span>` : "-"}</td>
           <td>${s.wins}</td><td>${s.losses}</td><td>${s.legDiff}</td><td style="font-weight:bold; color:var(--accent);">${s.points}</td>
@@ -422,18 +426,23 @@
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
         const modal = document.getElementById("playerProfileModal");
+        const titleEl = document.getElementById("playerProfileTitle");
         const content = document.getElementById("playerProfileContent");
+        
+        if(titleEl) titleEl.innerText = "Spielerprofil";
         content.innerHTML = "<p>Lade Profilkarte...</p>";
         openModal(modal);
 
-        const p = state.allProfilesCache.find(prof => prof.discord_name === playerName || prof.real_name === playerName);
+        // NEU: Sucht treffsicher nach display_name oder discord_name
+        const p = state.allProfilesCache.find(prof => prof.display_name === playerName || prof.discord_name === playerName || prof.real_name === playerName);
         if(!p) { content.innerHTML = "<div class='empty'>Keine Profildaten im Cache gefunden.</div>"; return; }
 
         content.innerHTML = `<div class="content-block">
-            <h4>🎯 ${htmlEscape(playerName)}</h4>
+            <h4>🎯 ${htmlEscape(p.display_name || p.discord_name || p.username)}</h4>
             <p><strong> Dartsetup:</strong> ${htmlEscape(p.dart_setup || 'Keine Angabe')}</p>
             <p><strong> Autodarts-AVG:</strong> ${htmlEscape(p.autodarts_avg || '-')}</p>
             <p><strong> DartCounter-AVG:</strong> ${htmlEscape(p.dartcounter_avg || '-')}</p>
+            <p><strong> Scolia-AVG:</strong> ${htmlEscape(p.scolia_avg || '-')}</p>
         </div>`;
     };
 
@@ -521,20 +530,24 @@
                 if(lPlayers.length === 0 && lMatches.length === 0) return;
 
                 const stats = {};
-                lPlayers.forEach(p => stats[p.id] = { id: p.id, name: p.discord_name || p.real_name, discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, yellow: p.yellow_cards, red: p.red_cards });
+                lPlayers.forEach(p => {
+                    // NEU: Nutzt treffsicher den display_name / Wunschname des Spielers
+                    stats[p.id] = { id: p.id, name: p.display_name || p.discord_name || p.username, discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, yellow: p.yellow_cards, red: p.red_cards, showInMembers: p.show_in_members };
+                });
 
                 lMatches.forEach(m => {
                     if(m.status === 'done' && m.player1_id && m.player2_id) {
                         if(!stats[m.player1_id]) {
                             const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                            stats[m.player1_id] = { id: m.player1_id, name: p ? (p.discord_name || p.real_name) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0 };
+                            stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                         }
                         if(!stats[m.player2_id]) {
                             const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                            stats[m.player2_id] = { id: m.player2_id, name: p ? (p.discord_name || p.real_name) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0 };
+                            stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                         }
                         
-                        const l1 = parseInt(m.legs1) || 0; const l2 = parseInt(m.legs2) || 0;
+                        // REPARIERT: Nutzt die echten Spalten legs_player1 und legs_player2
+                        const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
                         stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                         if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
                         else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
@@ -546,7 +559,7 @@
                 lMatches.forEach(m => {
                     const day = `Spieltag ${m.matchday}`;
                     if(!groupedMatches[day]) groupedMatches[day] = [];
-                    groupedMatches[day].push({ p1Name: stats[m.player1_id]?.name || 'Freilos', p2Name: stats[m.player2_id]?.name || 'Freilos', legs1: m.legs1, legs2: m.legs2, status: m.status });
+                    groupedMatches[day].push({ p1Name: stats[m.player1_id]?.name || 'Freilos', p2Name: stats[m.player2_id]?.name || 'Freilos', legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
                 });
 
                 const matchdays = Object.entries(groupedMatches).map(([title, rows]) => {
@@ -554,7 +567,6 @@
                     return { title, status: done===rows.length?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
                 });
 
-                // FIX: Hier stand vorher fälschlicherweise { standingsRows } statt { rows: standingsRows }
                 state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
             });
 
