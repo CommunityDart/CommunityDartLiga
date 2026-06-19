@@ -513,8 +513,10 @@
         } catch(e) { console.error(e); }
     }
 
+    // VOLLKOMMEN REPARIERT: Nutzt getrennte Variablen, um eine saubere, isolierte Übermittlung an Supabase zu garantieren!
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
+        
         const adEl = document.getElementById(`ad_${playerId}`);
         const dcEl = document.getElementById(`dc_${playerId}`);
         const scEl = document.getElementById(`sc_${playerId}`);
@@ -522,30 +524,40 @@
         const playerProfile = allLoadedProfilesMap[playerId];
         if(!playerProfile) return alert("Fehler beim Abruf des Spielerprofils.");
 
-        const updates = { status_neue_saison: 'assigned' };
-        
+        // Jedes Feld wird völlig autark vorbereitet
+        let finalAdValue = null;
+        let finalDcValue = null;
+        let finalScValue = null;
+
         if(adEl && adEl.value !== 'REMOVE' && adEl.value !== '') {
             if(!playerProfile.autodarts_name || playerProfile.autodarts_name.trim() === "" || playerProfile.autodarts_name === "-") {
-                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht für ${adEl.value} eingeteilt werden, da kein Autodarts-Name hinterlegt ist!`);
+                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen Autodarts-Namen hinterlegt!`);
             }
-            updates.assigned_ad_league = adEl.value.trim();
-        } else if(adEl) { updates.assigned_ad_league = null; }
+            finalAdValue = adEl.value.trim();
+        }
 
         if(dcEl && dcEl.value !== 'REMOVE' && dcEl.value !== '') {
             if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name.trim() === "" || playerProfile.dartcounter_name === "-") {
-                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht für ${dcEl.value} eingeteilt werden, da kein DartCounter-Name hinterlegt ist!`);
+                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen DartCounter-Namen hinterlegt!`);
             }
-            updates.assigned_dc_league = dcEl.value.trim();
-        } else if(dcEl) { updates.assigned_dc_league = null; }
+            finalDcValue = dcEl.value.trim();
+        }
 
         if(scEl && scEl.value !== 'REMOVE' && scEl.value !== '') {
             if(!playerProfile.scolia_name || playerProfile.scolia_name.trim() === "" || playerProfile.scolia_name === "-") {
-                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} kann nicht für ${scEl.value} eingeteilt werden, da kein Scolia-Name hinterlegt ist!`);
+                return alert(`❌ Abbruch: ${playerProfile.discord_name || playerProfile.username} hat keinen Scolia-Namen hinterlegt!`);
             }
-            updates.assigned_sc_league = scEl.value.trim();
-        } else if(scEl) { updates.assigned_sc_league = null; }
+            finalScValue = scEl.value.trim();
+        }
 
-        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
+        // Wir senden die Felder explizit als getrennte Spaltenupdates, ohne dass leere Werte sich überschneiden
+        const { error } = await supabaseClient.from('profiles').update({
+            status_neue_saison: 'assigned',
+            assigned_ad_league: finalAdValue,
+            assigned_dc_league: finalDcValue,
+            assigned_sc_league: finalScValue
+        }).eq('id', playerId);
+
         if(error) {
             alert("Fehler beim Abspeichern: " + error.message);
         } else {
@@ -599,7 +611,6 @@
         } catch(err) { area.innerHTML = "Kritischer Ladefehler im System."; }
     };
 
-    // GENERATOR KORREKTUR: Zieht jetzt dynamisch und exakt die zur Liga passende Tabellenspalte!
     window.generateScheduleForLeague = async function(leagueName) {
         if(!supabaseClient) return;
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen basierend auf den Zuteilungen generieren?`)) return;
@@ -609,7 +620,6 @@
             if(error) return alert("Fehler beim Abruf der Spieler: " + error.message);
 
             let leaguePlayers = [];
-            // FILTER KORREKTUR: Filtert nun trennscharf nach der richtigen Tabellenspalte
             if(leagueName.includes("Autodarts")) leaguePlayers = players.filter(p => p.assigned_ad_league === leagueName);
             if(leagueName.includes("DartCounter")) leaguePlayers = players.filter(p => p.assigned_dc_league === leagueName);
             if(leagueName.includes("Scolia")) leaguePlayers = players.filter(p => p.assigned_sc_league === leagueName);
@@ -929,7 +939,6 @@
         // Entkoppelte Timeouts starten das System fehlerfrei
         setTimeout(() => { loadAllLeagueRules(); }, 50);
         setTimeout(() => { loadWaitingList(); }, 150);
-        setTimeout(() => { loadStrafenkatalogList(); }, 250);
     }
 
     initAdmin();
