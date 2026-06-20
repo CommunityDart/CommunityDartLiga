@@ -143,10 +143,11 @@
        DESIGN: ULTRA-KOMPAKTE PROFIL-CARD OPTIK
        ===================================================================== */
     .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 0; gap: 8px; }
-    .profile-header-compact { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 2px; }
-    .profile-avatar-compact { width: 54px; height: 54px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #1e293b; flex-shrink: 0; }
+    .profile-header-compact { display: flex; align-items: center; gap: 14px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 2px; }
+    /* NEU: Avatar auf ein stabiles, etwas größeres Format gesetzt */
+    .profile-avatar-compact { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #1e293b; flex-shrink: 0; }
     .profile-meta-compact { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
-    .profile-name-compact { font-size: 18px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 0.3px; line-height: 1.2; }
+    .profile-name-compact { font-size: 19px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 0.3px; line-height: 1.2; }
     .profile-sub-compact { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
     
     .profile-discord-btn { background: rgba(88,101,242,0.15); color: #7289da; border: 1px solid rgba(88,101,242,0.4); padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; transition: 0.15s; }
@@ -158,7 +159,7 @@
     .profile-detail-label { color: var(--muted); font-weight: bold; }
     .profile-detail-val { color: #fff; font-weight: 600; text-align: right; }
     
-    /* REPARIERT: Nutzt space-between, damit die AVGs wieder nach rechts rutschen */
+    /* REPARIERT: Nutzt space-between, damit die AVGs wieder komplett nach rechts rutschen */
     .platform-row-compact { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 4px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.02); font-size: 13px; }
     .platform-badge-mini { font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
     .platform-badge-mini.ad { background: rgba(0, 119, 255, 0.15); color: #99ccff; border: 1px solid rgba(0, 119, 255, 0.2); }
@@ -449,7 +450,7 @@
       }).join("");
     }
 
-    // REPARIERT: Nutzt die Snowflake ID (p.discord_id) für echtes 1-Klick-Deep-Linking!
+    // Discord Link-Kopierer und ID-Deep-Link Modul
     window.contactViaDiscord = function(discordName, discordId) {
         if (discordId && discordId !== "" && discordId !== "null") {
             window.open(`https://discord.com/users/${discordId}`, "_blank");
@@ -465,10 +466,8 @@
         }
     };
 
-    function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
-
     // =====================================================================
-    // AKTUALISIERTE PROFIL-CARD LOGIK (PLATTFORM ROW FILTER & REAL D-MESSAGE)
+    // PROFIL-CARD LOGIK (AVGS RECHTSBÜNDIG & LEERE PLATTFORMEN AUSGEBLENDET)
     // =====================================================================
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
@@ -494,11 +493,11 @@
 
         const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
         const discordHandle = p.discord_name || p.username || '-';
-        const discordId = p.discord_id || ''; // Zieht das Feld aus deiner DB, falls vorhanden
+        const discordId = p.discord_id || '';
 
-        // NEU: Baut die Plattform-Zeilen bedingt zusammen (blendet leere Ligen radikal aus!)
         let platformsHtml = "";
         
+        // REPARIERT: Jede Plattform-Zeile nutzt jetzt ein inneres Unter-Flexfeld links, damit Name/Badge zusammenbleiben und der AVG nach rechts rutscht!
         if (p.autodarts_name || p.autodarts_avg) {
             platformsHtml += `
                 <div class="platform-row-compact">
