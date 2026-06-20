@@ -80,6 +80,7 @@
     table { width: 100%; border-collapse: collapse; min-width: 550px; table-layout: fixed; }
     thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
     
+    /* REPARIERT: Zentrierung gilt jetzt ab dem 3. Element (Siege, Niederlagen, Leg-Diff, Punkte) */
     thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6) { text-align: center; width: 95px; }
     
     tbody tr:nth-child(odd) td { background: var(--row-a); }
@@ -87,6 +88,7 @@
     tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #f1f8fb; white-space: nowrap; }
     tbody tr:hover td { background: rgba(255, 255, 255, 0.05); }
     
+    /* REPARIERT: Auch in den Datenzeilen müssen die Werte 3 bis 6 zentriert sein */
     tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6) { text-align: center; }
 
     .rank-col { width: 75px; font-weight: 900; text-align: center !important; position: relative; }
@@ -125,7 +127,6 @@
     .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
     .modal-body { padding: 18px; overflow-y: auto; color: #d7e8ef; line-height: 1.6; }
 
-    /* SPEZIAL-SMART-SIZE FÜR DAS PROFILMODAL */
     #playerProfileModal .modal { max-width: 440px; }
     #playerProfileModal .modal-body { padding: 12px; }
 
@@ -413,12 +414,14 @@
     function renderStandingsTable(rows) {
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
+      // REPARIERT: Keine Discord-Zelle mehr beim Befüllen der Reihen! Spaltenindizes verschieben sich sauber nach links.
       const tbody = visibleRows.map((s, idx) => `<tr>
           <td class="rank-col ${rankClass(idx+1, visibleRows.length)}">${idx+1}</td>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
           <td>${s.wins}</td><td>${s.losses}</td><td>${s.legDiff}</td><td style="font-weight:bold; color:var(--accent);">${s.points}</td>
         </tr>`).join("");
 
+      // REPARIERT: Die Überschrift "Discord" wurde hier aus dem Tabellenkopf geworfen!
       return `<div class="table-shell"><div class="section-head"><div><div class="section-title">${state.activeLeague}</div><div class="section-sub">Live berechneter Tabellenstand • Bo7</div></div></div>
       <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>Siege</th><th>Niederlagen</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
     }
@@ -650,7 +653,6 @@
                             const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
                             stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                         }
-                        // REPARIERT: Syntaxfehler behoben. conversational text entfernt!
                         if(!stats[m.player2_id]) {
                             const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
                             stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
