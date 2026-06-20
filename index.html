@@ -136,7 +136,7 @@
     .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
 
     /* =====================================================================
-       KOMPAKTE PROFIL-CARD OPTIK (ZUSAMMENRÜCKUNGS UPDATE)
+       DESIGN: KOMPAKTE PROFIL-CARD OPTIK (ZUSAMMENRÜCKUNGS UPDATE)
        ===================================================================== */
     .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 5px 0; gap: 12px; }
     .profile-header-compact { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 10px; }
@@ -154,7 +154,7 @@
     .profile-detail-label { color: var(--muted); font-weight: bold; }
     .profile-detail-val { color: #fff; font-weight: 600; text-align: right; }
     
-    /* ENGER ZUSAMMEN: Geändert von space-between auf flex-start mit kleinem Gap */
+    /* KOMPAKT: Flex-start sorgt dafür, dass Name, Trennpunkt und AVG extrem nah beieinander stehen */
     .platform-row-compact { display: flex; justify-content: flex-start; align-items: center; gap: 6px; background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 4px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.02); }
     .platform-badge-mini { font-size: 11px; font-weight: bold; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
     .platform-badge-mini.ad { background: rgba(0, 119, 255, 0.15); color: #99ccff; border: 1px solid rgba(0, 119, 255, 0.2); }
@@ -262,330 +262,6 @@
 
   <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
-    let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
-    const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
-    const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
-    const ALL_LEAGUES = [...AD_LEAGUES, ...DC_LEAGUES, ...SC_LEAGUES];
-
-    const state = { 
-        leagueData: {}, activeLeague: null, activeMode: "Home", 
-        currentSeason: "Saison 1", newsHtml: "", rulewerkHtml: "", currentUser: null,
-        matchdayOpenState: {}, isAdminUser: false, allProfilesCache: []
-    };
-
-    function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-    
-    function decodeHtml(html) {
-        if (!html) return "";
-        var txt = document.createElement("textarea");
-        txt.innerHTML = html;
-        return txt.value;
-    }
-
-    window.copyDiscord = function(name) { navigator.clipboard.writeText(name).then(() => alert("Kopiert!")); };
-    window.directEditNews = function(id) { window.location.href = "profil.html"; };
-    window.directDeleteNews = async function(id) {
-        if(!confirm("News löschen?")) return;
-        await supabaseClient.from('news').delete().eq('id', id); loadAll();
-    };
-
-    window.loadArchiveData = async function() {
-        const season = document.getElementById("archiveSeasonSelect").value;
-        const league = document.getElementById("archiveLeagueSelect").value;
-        const resultContainer = document.getElementById("archiveTableResult");
-        if(!season || !league) return;
-        
-        resultContainer.innerHTML = "<div class='empty'>Lade Daten...</div>";
-        const { data: matches, error = null } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
-        
-        if (error || !matches || matches.length === 0) {
-            resultContainer.innerHTML = "<div class='empty'>Keine Spieldaten vorhanden.</div>";
-            return;
-        }
-
-        const stats = {};
-        matches.forEach(m => {
-            if(m.player1_id && m.player2_id) {
-                if(!stats[m.player1_id]) {
-                    const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                    stats[m.player1_id] = { name: p ? (p.display_name || p.discord_name || p.username) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
-                }
-                if(!stats[m.player2_id]) {
-                    const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                    stats[m.player2_id] = { name: pVielen Dank für das Feedback! Du hast absolut recht, im hochgeladenen Screenshot (`image_a2cd43.png`) war tatsächlich noch viel ungenutzter Leerraum. Das habe ich korrigiert.
-
-Ich habe das CSS massiv überarbeitet, um alles **vertikal enger zusammenzurücken**. Die Abstände (`Gap`, `Padding`, `Margin`) zwischen den einzelnen Elementen (Header, Dart-Setup, Plattform-Zeilen) und auch **innerhalb** der Plattform-Reihen (zwischen Icon, Name, Trennpunkt und AVG) wurden stark reduziert. Auch der Avatar ist jetzt etwas kleiner, was den gesamten Kopfbereich flacher macht.
-
-Hier ist deine vollständige, angepasste `index.html`. Ersetze deinen bisherigen Code komplett, speichere ab und drücke **Strg + F5**:
-
-```html
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga</title>
-  <script src="[https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2](https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2)"></script>
-  
-  <link href="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css)" rel="stylesheet">
-
-  <style>
-    :root{
-      --bg: #1e293b;
-      --panel: #2c3e50;
-      --panel-glass: rgba(44, 62, 80, 0.85);
-      --line: rgba(52, 152, 219, 0.35);
-      --text: #f8fafc;
-      --muted: #cbd5e1;
-      --green: #2ecc71;
-      --red: #e74c3c;
-      --yellow: #f1c40f;
-      --accent: #3498db;
-      --accent-border: rgba(52, 152, 219, 0.6);
-      --row-a: #334155;
-      --row-b: #273746;
-      
-      --ad-color: #0077ff;
-      --dc-color: #ff6a00;
-      --sc-color: #00ff66;
-    }
-
-    body[data-mode="DartCounter"]{ --accent: var(--dc-color); --accent-border: rgba(255,106,0,.6); }
-    body[data-mode="Scolia"]{ --accent: var(--sc-color); --accent-border: rgba(0,255,102,.6); }
-    body[data-mode="Home"]{ --accent: #3498db; --accent-border: rgba(52,152,219,.6); }
-    
-    *{box-sizing:border-box} html,body{margin:0;padding:0}
-    body{ font-family:Arial,Helvetica,sans-serif; background: radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 20%, transparent), transparent 45%), linear-gradient(180deg, var(--bg) 0%, #1e293b 100%); color:var(--text); min-height:100vh; transition:background .3s ease; }
-    
-    .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
-    
-    .header-branding { text-align: center; margin-bottom: 25px; padding: 25px 15px; border-radius: 20px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
-    .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
-
-    .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
-    .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); height: fit-content !important; align-self: start !important; }
-    .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 4px; }
-
-    .nav-btn { position: relative; width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #edf7fb; border-radius: 12px; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 12px; transition: .25s ease; text-decoration: none; }
-    .nav-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.12); }
-    
-    .btn-autodarts { border-color: rgba(0,119,255,0.4); background: rgba(0,119,255,0.05); color: #99ccff; }
-    .btn-autodarts:hover, .btn-autodarts.active { background: linear-gradient(90deg, #0055d4, #0077ff); border-color: #00a2ff; box-shadow: 0 0 25px rgba(0,119,255,0.6); color: #fff; }
-    
-    .btn-dartcounter { border-color: rgba(255,106,0,0.4); background: rgba(255,106,0,0.04); color: #ffcc99; }
-    .btn-dartcounter:hover, .btn-dartcounter.active { background: linear-gradient(90deg, #cc4400, #ff6a00); border-color: #ff943d; box-shadow: 0 0 25px rgba(255,106,0,0.6); color: #fff; }
-    
-    .btn-scolia { border-color: rgba(0,255,102,0.4); background: rgba(0,255,102,0.05); color: #99ffbb; }
-    .btn-scolia:hover, .btn-scolia.active { background: linear-gradient(90deg, #00b344, #00ff66); border-color: #33ff88; box-shadow: 0 0 25px rgba(0,255,102,0.6); color: #fff; }
-    
-    .btn-home.active, .btn-info.active { border-color: var(--accent); background: rgba(52,152,219,0.25); color: #fff; box-shadow: 0 0 15px rgba(52,152,219,0.3); }
-    .btn-discord { background: rgba(88,101,242,0.2); border-color: rgba(88,101,242,0.5); }
-    .btn-discord:hover { background: rgba(88,101,242,0.3); border-color: #5865f2; box-shadow: 0 0 15px rgba(88,101,242,0.3); }
-
-    .dropdown-submenu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; align-content: start; }
-    .dropdown-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #dff3ff; text-align: center; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.15s; }
-    .dropdown-btn:hover { background: rgba(255,255,255,0.12); border-color: var(--accent-border); }
-    .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; border-color: var(--accent); box-shadow: 0 0 15px rgba(32,183,255,0.4); }
-
-    .main { display: grid; grid-template-columns: minmax(0,1.7fr) minmax(340px,.8fr); gap: 20px; align-items: start; }
-    body[data-mode="Home"] .main { grid-template-columns: 1fr; }
-    body[data-mode="Home"] .sidebar { display: none; }
-
-    .table-shell, .matchday { border: 1px solid var(--line); background: linear-gradient(180deg, rgba(44,62,80,.95), rgba(30,43,56,.98)); box-shadow: 0 18px 50px rgba(0,0,0,0.12); border-radius: 18px; overflow: hidden; }
-    
-    .section-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .section-title { margin: 0; font-size: 18px; font-weight: 900; }
-    .section-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
-
-    .table-wrap { overflow-x: auto; padding-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; min-width: 700px; table-layout: fixed; }
-    thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { text-align: center; }
-    
-    tbody tr:nth-child(odd) td { background: var(--row-a); }
-    tbody tr:nth-child(even) td { background: var(--row-b); }
-    tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #f1f8fb; white-space: nowrap; }
-    tbody tr:hover td { background: rgba(255, 255, 255, 0.05); }
-
-    .rank-col { width: 75px; font-weight: 900; text-align: center !important; position: relative; }
-    .rank-col.first::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); }
-    .rank-col.last::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--red); }
-
-    .player-link { cursor: pointer; font-weight: 700; color: #fff; text-decoration: none; }
-    .player-link:hover { color: var(--accent); text-decoration: underline; }
-    
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { width: 95px; text-align: center; }
-
-    .sidebar { display: flex; flex-direction: column; gap: 14px; }
-    .matchday-list { display: flex; flex-direction: column; gap: 12px; }
-    .matchday-head { width: 100%; border: none; background: transparent; color: var(--text); padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-    .matchday-title { font-size: 15px; font-weight: 800; }
-    .matchday-body { display: none; padding: 0 14px 14px; }
-    .matchday.open .matchday-body { display: block; }
-    
-    .match-table { width: 100%; border-collapse: collapse; }
-    .match-table td { padding: 10px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.03); }
-    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: rgba(231,76,60,0.2); color: #fff; border: 1px solid rgba(231,76,60,0.3); }
-    .status-badge.done { background: rgba(46,204,113,0.2); color: #fff; border: 1px solid rgba(46,204,113,0.3); }
-
-    .content-block { margin-bottom: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; background: rgba(255,255,255,0.03); position: relative; }
-    .news-header-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 8px; margin-bottom: 12px; gap: 15px; padding-right: 90px; }
-    .news-title-text { margin: 0; font-size: 16px; color: #fff; font-weight: bold; }
-    .news-date-text { font-size: 11px; color: var(--muted); white-space: nowrap; }
-
-    .news-admin-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 5; }
-    .news-action-link { font-size: 11px; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-weight: bold; color: var(--text); border: 1px solid rgba(255,255,255,0.05); }
-    .news-action-link:hover { background: var(--accent); color: #000; border-color: var(--accent); }
-
-    .footer { margin-top: 25px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; backdrop-filter: blur(4px); }
-    .modal-backdrop.open { display: flex; }
-    .modal { width: min(840px, 100%); max-height: 85vh; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
-    .modal-body { padding: 18px; overflow-y: auto; color: #d7e8ef; line-height: 1.6; }
-
-    .archive-control-box { display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); position: relative; z-index: 10; }
-    .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
-
-    .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-    
-    .ql-editor p { margin-bottom: 12px !important; line-height: 1.6 !important; color: #f1f8fb !important; }
-    .ql-editor ol { list-style-type: decimal !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
-    .ql-editor ul { list-style-type: disc !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
-    .ql-editor li { display: list-item !important; list-style-position: outside !important; margin-bottom: 8px !important; line-height: 1.5 !important; color: #edf7fb !important; }
-    .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
-
-    /* =====================================================================
-       DESIGN: KOMPAKTE PROFIL-CARD OPTIK MIT REPARIERTEM FLEX-FLOW & ENGEM LAYOUT
-       ===================================================================== */
-    .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 5px 0; gap: 12px; }
-    .profile-header-compact { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 10px; }
-    .profile-avatar-compact { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent); background: #1e293b; flex-shrink: 0; }
-    .profile-meta-compact { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-    .profile-name-compact { font-size: 22px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 0.5px; }
-    .profile-sub-compact { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
-    
-    .profile-discord-btn { background: rgba(88,101,242,0.15); color: #7289da; border: 1px solid rgba(88,101,242,0.4); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; transition: 0.2s; }
-    .profile-discord-btn:hover { background: #5865f2; color: #fff; transform: translateY(-1px); }
-
-    .profile-details-list { display: flex; flex-direction: column; gap: 6px; width: 100%; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
-    .profile-detail-item { display: flex; justify(space-between; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px; align-items: center; gap: 15px; }
-    .profile-detail-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .profile-detail-label { color: var(--muted); font-weight: bold; }
-    .profile-detail-val { color: #fff; font-weight: 600; text-align: right; }
-    
-    /* ENGER ZUSAMMEN: Geändert von space-between auf flex-start mit kleinem Gap */
-    .platform-row-compact { display: flex; justify-content: flex-start; align-items: center; gap: 6px; background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 4px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.02); }
-    .platform-badge-mini { font-size: 11px; font-weight: bold; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
-    .platform-badge-mini.ad { background: rgba(0, 119, 255, 0.15); color: #99ccff; border: 1px solid rgba(0, 119, 255, 0.2); }
-    .platform-badge-mini.dc { background: rgba(255, 106, 0, 0.15); color: #ffcc99; border: 1px solid rgba(255, 106, 0, 0.2); }
-    .platform-badge-mini.sc { background: rgba(0, 255, 102, 0.15); color: #99ffbb; border: 1px solid rgba(0, 255, 102, 0.2); }
-  </style>
-</head>
-<body data-mode="Home">
-
-  <div class="wrap">
-    
-    <div class="header-branding">
-       <h2>CDL DART LIGA</h2>
-    </div>
-
-    <section class="dashboard-nav">
-       
-       <div class="nav-card">
-          <div class="nav-card-title">Allgemeine Übersicht</div>
-          <button id="modeHome" class="nav-btn btn-home active" type="button">📰 Neuigkeiten</button>
-          <button id="regelwerkBtn" class="nav-btn btn-info" type="button">📑 Regelwerk</button>
-          <button id="archiveBtn" class="nav-btn btn-info" type="button">🏛️ Liga Archiv</button>
-       </div>
-
-       <div class="nav-card">
-          <div class="nav-card-title">Wähle deine Plattform</div>
-          <button id="modeAutodarts" class="nav-btn btn-autodarts" type="button">
-             <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-             <span>Autodarts</span>
-          </button>
-          <button id="modeDartCounter" class="nav-btn btn-dartcounter" type="button">
-             <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-             <span>DartCounter</span>
-          </button>
-          <button id="modeScolia" class="nav-btn btn-scolia" type="button">
-             <svg class="icon-svg" viewBox="0 0 24 24"><path d="M23 7a2 2 0 0 0-2-2h-4l-2-3H9L7 5H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2z"/><circle cx="12" cy="13" r="4"/></svg>
-             <span>Scolia</span>
-          </button>
-       </div>
-
-       <div class="nav-card" id="rightNavBlock">
-          <div id="defaultRightContent" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-             <div class="nav-card-title">Community & Profile</div>
-             <a href="[https://discord.gg/DEINLINK](https://discord.gg/DEINLINK)" target="_blank" class="nav-btn btn-discord">
-                <span>💬 CDL Discord Server</span>
-             </a>
-             <button id="ligaLoginBtn" class="nav-btn" type="button">
-                <span id="loginBtnText">👤 Liga Login</span>
-             </button>
-             <a href="[https://www.paypal.com/pool/9nHfKrmgfD](https://www.paypal.com/pool/9nHfKrmgfD)" target="_blank" class="nav-btn" style="border-color: rgba(46,204,113,0.4); min-height: 38px;">
-                <span>☕ Serverkasse unterstützen</span>
-             </a>
-          </div>
-          <div id="dynamicLeaguesContent" class="dropdown-submenu" style="display: none;"></div>
-       </div>
-
-    </section>
-
-    <section class="main">
-      <div id="tableArea"></div>
-      <aside class="sidebar">
-        <div id="matchdayArea" class="matchday-list"></div>
-      </aside>
-    </section>
-
-    <div class="footer">
-      <button id="openImpressumBtn" class="nav-btn" style="min-height:32px; padding:0 12px; font-size:11px; width:auto;" type="button">Impressum</button>
-      <button id="openLinksBtn" class="nav-btn" style="min-height:36px; padding:0 12px; font-size:11px; width:auto;" type="button">Links</button>
-    </div>
-  </div>
-
-  <div id="archiveModal" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-head"><h3>🏛️ Historisches Liga-Archiv</h3><button class="modal-close" type="button">✕</button></div>
-      <div class="modal-body">
-         <div class="archive-control-box">
-             <select id="archiveSeasonSelect" class="archive-select" onchange="loadArchiveData()"><option value="">-- Saison --</option></select>
-             <select id="archiveLeagueSelect" class="archive-select" onchange="loadArchiveData()"><option value="">-- Liga --</option></select>
-         </div>
-         <div id="archiveTableResult"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="playerProfileModal" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-head"><h3 id="playerProfileTitle">Spielerprofil</h3><button class="modal-close" type="button">✕</button></div>
-      <div id="playerProfileContent" class="modal-body"></div>
-    </div>
-  </div>
-
-  <div id="impressumModal" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-head"><h3>Impressum</h3><button class="modal-close" type="button">✕</button></div>
-      <div class="modal-body"><p>Oliver Eger<br>Bahnhofstraße 9<br>37520 Osterode am Harz</p></div>
-    </div>
-  </div>
-
-  <div id="linksModal" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-head"><h3>Links</h3><button class="modal-close" type="button">✕</button></div>
-      <div id="linksContent" class="modal-body"><p>Lade Links...</p></div>
-    </div>
-  </div>
-
-  <script>
-    const SUPABASE_URL = "[https://ppxwnqbovrnvzkcpyrcj.supabase.co](https://ppxwnqbovrnvzkcpyrcj.supabase.co)";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -777,9 +453,9 @@ Hier ist deine vollständige, angepasste `index.html`. Ersetze deinen bisherigen
         }
         navigator.clipboard.writeText(discordName).then(() => {
             alert(`Discord-Name '${discordName}' wurde kopiert!\n\nDiscord wird geöffnet. Nutze dort einfach die Suche und füge den Namen ein, um direkt zu chatten.`);
-            window.open("[https://discord.com/channels/@me](https://discord.com/channels/@me)", "_blank");
+            window.open("https://discord.com/channels/@me", "_blank");
         }).catch(err => {
-            window.open("[https://discord.com/channels/@me](https://discord.com/channels/@me)", "_blank");
+            window.open("https://discord.com/channels/@me", "_blank");
         });
     };
 
@@ -808,7 +484,7 @@ Hier ist deine vollständige, angepasste `index.html`. Ersetze deinen bisherigen
             return;
         }
 
-        const avatarSrc = p.avatar_url || "[https://ui-avatars.com/api/?name=](https://ui-avatars.com/api/?name=)" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
+        const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
         const discordHandle = p.discord_name || p.username || '-';
 
         content.innerHTML = `
