@@ -38,9 +38,11 @@
     
     .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
     
+    /* Großer Header für den späteren Werbebanner */
     .header-branding { text-align: center; margin-bottom: 25px; padding: 25px 15px; border-radius: 20px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
     .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
 
+    /* Kompaktes, zentriertes Grid */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
     .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); height: fit-content !important; align-self: start !important; }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 4px; }
@@ -134,6 +136,17 @@
     .ql-editor ul { list-style-type: disc !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
     .ql-editor li { display: list-item !important; list-style-position: outside !important; margin-bottom: 8px !important; line-height: 1.5 !important; color: #edf7fb !important; }
     .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
+
+    /* =====================================================================
+       NEU: OPTISCHES HIGH-END STYLING FÜR DIE PROFIL-CARD
+       ===================================================================== */
+    .profile-card-content { display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; padding: 10px 0; }
+    .profile-avatar { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); background: #1e293b; }
+    .profile-name { font-size: 24px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 1px; }
+    .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; text-align: left; margin-top: 10px; }
+    .info-box { background: rgba(255,255,255,0.04); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); }
+    .info-label { font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold; letter-spacing: 0.5px; }
+    .info-val { font-size: 15px; font-weight: 600; color: #fff; margin-top: 5px; }
   </style>
 </head>
 <body data-mode="Home">
@@ -285,15 +298,12 @@
             if(m.player1_id && m.player2_id) {
                 if(!stats[m.player1_id]) {
                     const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                    // NEU: Nutzt primär den Wunschname (display_name)
                     stats[m.player1_id] = { name: p ? (p.display_name || p.discord_name || p.username) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
                 }
                 if(!stats[m.player2_id]) {
                     const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                    // NEU: Nutzt primär den Wunschname (display_name)
                     stats[m.player2_id] = { name: p ? (p.display_name || p.discord_name || p.username) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
                 }
-                // REPARIERT: Verwendet korrekte Tabellenfelder legs_player1 und legs_player2
                 const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
                 stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                 if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
@@ -384,7 +394,6 @@
     }
 
     function renderStandingsTable(rows) {
-      // NEU: Blendet Spieler, die show_in_members = false haben, radikal aus!
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
       const tbody = visibleRows.map((s, idx) => `<tr>
@@ -423,6 +432,9 @@
       }).join("");
     }
 
+    // =====================================================================
+    // NEU: REPARIERTE OPTIK-FUNKTION FÜR DAS SPIELERPROFIL IM MODAL
+    // =====================================================================
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
         const modal = document.getElementById("playerProfileModal");
@@ -433,17 +445,38 @@
         content.innerHTML = "<p>Lade Profilkarte...</p>";
         openModal(modal);
 
-        // NEU: Sucht treffsicher nach display_name oder discord_name
-        const p = state.allProfilesCache.find(prof => prof.display_name === playerName || prof.discord_name === playerName || prof.real_name === playerName);
-        if(!p) { content.innerHTML = "<div class='empty'>Keine Profildaten im Cache gefunden.</div>"; return; }
+        const p = state.allProfilesCache.find(prof => 
+            prof.display_name === playerName || 
+            prof.discord_name === playerName || 
+            prof.real_name === playerName ||
+            prof.username === playerName
+        );
 
-        content.innerHTML = `<div class="content-block">
-            <h4>🎯 ${htmlEscape(p.display_name || p.discord_name || p.username)}</h4>
-            <p><strong> Dartsetup:</strong> ${htmlEscape(p.dart_setup || 'Keine Angabe')}</p>
-            <p><strong> Autodarts-AVG:</strong> ${htmlEscape(p.autodarts_avg || '-')}</p>
-            <p><strong> DartCounter-AVG:</strong> ${htmlEscape(p.dartcounter_avg || '-')}</p>
-            <p><strong> Scolia-AVG:</strong> ${htmlEscape(p.scolia_avg || '-')}</p>
-        </div>`;
+        if(!p) {
+            content.innerHTML = "<div class='empty'>Keine Profildaten im Cache gefunden.</div>";
+            return;
+        }
+
+        // Zieht das Discord Avatarbild, andernfalls greift das Kürzel-Fallback-Modul
+        const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
+
+        content.innerHTML = `
+            <div class="profile-card-content">
+                <img src="${avatarSrc}" class="profile-avatar" alt="Avatar">
+                <h2 class="profile-name">${htmlEscape(p.display_name || p.discord_name || p.username)}</h2>
+                
+                <div class="profile-grid">
+                    <div class="info-box"><div class="info-label">🎯 Dart-Setup</div><div class="info-val">${htmlEscape(p.dart_setup || 'Keine Angabe')}</div></div>
+                    <div class="info-box"><div class="info-label">📍 Wohnort</div><div class="info-val">${htmlEscape(p.ort || '-')}</div></div>
+                    <div class="info-box"><div class="info-label">🎯 Autodarts AVG</div><div class="info-val">${htmlEscape(p.autodarts_avg || '-')}</div></div>
+                    <div class="info-box"><div class="info-label">🔥 DartCounter AVG</div><div class="info-val">${htmlEscape(p.dartcounter_avg || '-')}</div></div>
+                    <div class="info-box" style="grid-column: span 2;">
+                        <div class="info-label">🛡️ Scolia Profil</div>
+                        <div class="info-val">${p.scolia_name ? htmlEscape(p.scolia_name) : '-'} ${p.scolia_avg ? `(AVG: ${htmlEscape(p.scolia_avg)})` : ''}</div>
+                    </div>
+                </div>
+            </div>
+        `;
     };
 
     function renderHome() { 
@@ -531,7 +564,6 @@
 
                 const stats = {};
                 lPlayers.forEach(p => {
-                    // NEU: Nutzt treffsicher den display_name / Wunschname des Spielers
                     stats[p.id] = { id: p.id, name: p.display_name || p.discord_name || p.username, discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, yellow: p.yellow_cards, red: p.red_cards, showInMembers: p.show_in_members };
                 });
 
@@ -546,7 +578,6 @@
                             stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                         }
                         
-                        // REPARIERT: Nutzt die echten Spalten legs_player1 und legs_player2
                         const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
                         stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                         if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
@@ -623,6 +654,6 @@
     function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
 
     loadAll();
-  </script>
+</script>
 </body>
 </html>
