@@ -125,7 +125,6 @@
     .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
     .modal-body { padding: 18px; overflow-y: auto; color: #d7e8ef; line-height: 1.6; }
 
-    /* SPEZIAL-SMART-SIZE FÜR DAS PROFILMODAL */
     #playerProfileModal .modal { max-width: 440px; }
     #playerProfileModal .modal-body { padding: 12px; }
 
@@ -303,7 +302,7 @@
         if(!season || !league) return;
         
         resultContainer.innerHTML = "<div class='empty'>Lade Daten...</div>";
-        const { data: matches, error } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
+        const { data: matches, error = null } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
         
         if (error || !matches || matches.length === 0) {
             resultContainer.innerHTML = "<div class='empty'>Keine Spieldaten vorhanden.</div>";
@@ -353,8 +352,7 @@
 
             const filtered = ALL_LEAGUES.filter(l => l.startsWith(state.activeMode));
             dynamicBlock.innerHTML = filtered.map(l => {
-                // FIX: Liga ist aktiv geschaltet, wenn standings existieren ODER Spieltage generiert wurden
-                const hasData = state.leagueData[l] && (state.leagueData[l].standings.rows.length > 0 || state.leagueData[l].matchdays.length > 0);
+                const hasData = state.leagueData[l];
                 if(!hasData) return `<button class="dropdown-btn" style="opacity:0.25; cursor:not-allowed;" disabled>${getShortLeagueNumber(l)}</button>`;
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
             }).join("");
@@ -381,8 +379,7 @@
         state.activeLeague = null;
         renderHome();
       } else {
-        // FIX: Auch hier wird beim Klick die Liga erfasst, wenn matchdays oder standings vorhanden sind
-        const visible = ALL_LEAGUES.filter(l => l.startsWith(mode) && state.leagueData[l] && (state.leagueData[l].standings.rows.length > 0 || state.leagueData[l].matchdays.length > 0));
+        const visible = ALL_LEAGUES.filter(l => l.startsWith(mode) && state.leagueData[l]);
         state.activeLeague = visible.includes(state.activeLeague) ? state.activeLeague : (visible[0] || null);
         renderLeague();
       }
@@ -407,11 +404,11 @@
           return;
       }
       const data = state.leagueData[state.activeLeague];
-      tArea.innerHTML = renderStandingsTable(data.standings.rows);
+      tArea.innerHTML = standingsTableHtml(data.standings.rows);
       mArea.innerHTML = renderMatchdays(data.matchdays);
     }
 
-    function renderStandingsTable(rows) {
+    function standingsTableHtml(rows) {
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
       const tbody = visibleRows.map((s, idx) => `<tr>
@@ -435,7 +432,7 @@
         const tbody = day.rows.map(m => `<tr>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name)}</span></td>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name)}</span></td>
-          <td style="text-align:center; font-weight:bold;">${m.legs1 !== null ? m.legs1 : '-'} : ${m.legs2 !== null ? m.legs2 : '-'}</td>
+          <td style="text-align:center; font-weight:bold;">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</td>
           <td style="text-align:right;"><span class="status-badge ${m.status === 'done' || m.status === 'fertig' ? 'done' : ''}">${m.status === 'done' || m.status === 'fertig' ? 'Gespeichert' : 'Offen'}</span></td>
         </tr>`).join("");
 
@@ -646,7 +643,6 @@
                 });
 
                 lMatches.forEach(m => {
-                    // FIX: Trägt Spieler aus generierten Matches vorab mit 0 Punkten in die Tabelle ein, falls noch kein lPlayer existiert
                     if (m.player1_id && !stats[m.player1_id]) {
                         const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
                         stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
@@ -656,12 +652,12 @@
                         stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                     }
 
-                    // FIX: Erkennt done und fertig gleichermaßen fehlerfrei an
+                    // KORREKTUR: Berechne Siege/Niederlagen/Leg-Differenzen NUR für tatsächlich abgeschlossene Matches (behebt den Freilos-Crash)
                     if((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
                         const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
                         stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                         if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
-                        else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+                        else if(l2 > l1) { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
                     }
                 });
 
