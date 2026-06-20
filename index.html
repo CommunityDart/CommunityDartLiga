@@ -420,7 +420,7 @@
         </tr>`).join("");
 
       return `<div class="table-shell"><div class="section-head"><div><div class="section-title">${state.activeLeague}</div><div class="section-sub">Live berechneter Tabellenstand • Bo7</div></div></div>
-      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>Siege</th><th>Niederlagen</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
+      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>S</th><th>N</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
     }
 
     function renderMatchdays(matchdays) {
@@ -650,7 +650,6 @@
                             const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
                             stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                         }
-                        // REPARIERT: Syntaxfehler behoben. conversational text entfernt!
                         if(!stats[m.player2_id]) {
                             const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
                             stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
