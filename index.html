@@ -38,11 +38,9 @@
     
     .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
     
-    /* Großer Header für den späteren Werbebanner */
     .header-branding { text-align: center; margin-bottom: 25px; padding: 25px 15px; border-radius: 20px; background: var(--panel-glass); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(8px); }
     .header-branding h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 2px; color: #fff; }
 
-    /* Kompaktes, zentriertes Grid */
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
     .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); backdrop-filter: blur(10px); height: fit-content !important; align-self: start !important; }
     .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 4px; }
@@ -138,15 +136,28 @@
     .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
 
     /* =====================================================================
-       NEU: OPTISCHES HIGH-END STYLING FÜR DIE PROFIL-CARD
+       KOMPAKTES HIGH-END STYLING FÜR DIE NEUE PROFIL-CARD
        ===================================================================== */
-    .profile-card-content { display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; padding: 10px 0; }
-    .profile-avatar { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent); background: #1e293b; }
-    .profile-name { font-size: 24px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 1px; }
-    .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; text-align: left; margin-top: 10px; }
-    .info-box { background: rgba(255,255,255,0.04); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); }
-    .info-label { font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold; letter-spacing: 0.5px; }
-    .info-val { font-size: 15px; font-weight: 600; color: #fff; margin-top: 5px; }
+    .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 5px 0; }
+    .profile-header-compact { display: flex; align-items: center; gap: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 15px; }
+    .profile-avatar-compact { width: 75px; height: 70px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent); background: #1e293b; flex-shrink: 0; }
+    .profile-meta-compact { display: flex; flex-direction: column; gap: 4px; }
+    .profile-name-compact { font-size: 22px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 0.5px; }
+    .profile-sub-compact { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    
+    .profile-details-list { display: flex; flex-direction: column; gap: 10px; width: 100%; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+    .profile-detail-item { display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px; align-items: center; }
+    .profile-detail-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .profile-detail-label { color: var(--muted); font-weight: bold; }
+    .profile-detail-val { color: #fff; font-weight: 600; text-align: right; }
+    
+    .profile-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+    .profile-stat-card { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.03); }
+    .profile-stat-card.ad { border-color: rgba(0, 119, 255, 0.3); }
+    .profile-stat-card.dc { border-color: rgba(255, 106, 0, 0.3); }
+    .profile-stat-card.sc { border-color: rgba(0, 255, 102, 0.3); }
+    .stat-card-title { font-size: 11px; text-transform: uppercase; font-weight: bold; }
+    .stat-card-val { font-size: 16px; font-weight: 800; color: #fff; }
   </style>
 </head>
 <body data-mode="Home">
@@ -286,7 +297,7 @@
         if(!season || !league) return;
         
         resultContainer.innerHTML = "<div class='empty'>Lade Daten...</div>";
-        const { data: matches, error } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
+        const { data: matches, error = null } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
         
         if (error || !matches || matches.length === 0) {
             resultContainer.innerHTML = "<div class='empty'>Keine Spieldaten vorhanden.</div>";
@@ -433,7 +444,7 @@
     }
 
     // =====================================================================
-    // NEU: REPARIERTE OPTIK-FUNKTION FÜR DAS SPIELERPROFIL IM MODAL
+    // ULTIMATIV KOMPAKTE UND ÜBERSICHTLICHE PROFIL-CARD LOGIK
     // =====================================================================
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
@@ -457,22 +468,41 @@
             return;
         }
 
-        // Zieht das Discord Avatarbild, andernfalls greift das Kürzel-Fallback-Modul
         const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
 
         content.innerHTML = `
             <div class="profile-card-content">
-                <img src="${avatarSrc}" class="profile-avatar" alt="Avatar">
-                <h2 class="profile-name">${htmlEscape(p.display_name || p.discord_name || p.username)}</h2>
+                <div class="profile-header-compact">
+                    <img src="${avatarSrc}" class="profile-avatar-compact" alt="Avatar">
+                    <div class="profile-meta-compact">
+                        <h2 class="profile-name-compact">${htmlEscape(p.display_name || p.discord_name || p.username)}</h2>
+                        <div class="profile-sub-compact">📍 ${htmlEscape(p.ort || 'Kein Wohnort hinterlegt')}</div>
+                    </div>
+                </div>
                 
-                <div class="profile-grid">
-                    <div class="info-box"><div class="info-label">🎯 Dart-Setup</div><div class="info-val">${htmlEscape(p.dart_setup || 'Keine Angabe')}</div></div>
-                    <div class="info-box"><div class="info-label">📍 Wohnort</div><div class="info-val">${htmlEscape(p.ort || '-')}</div></div>
-                    <div class="info-box"><div class="info-label">🎯 Autodarts AVG</div><div class="info-val">${htmlEscape(p.autodarts_avg || '-')}</div></div>
-                    <div class="info-box"><div class="info-label">🔥 DartCounter AVG</div><div class="info-val">${htmlEscape(p.dartcounter_avg || '-')}</div></div>
-                    <div class="info-box" style="grid-column: span 2;">
-                        <div class="info-label">🛡️ Scolia Profil</div>
-                        <div class="info-val">${p.scolia_name ? htmlEscape(p.scolia_name) : '-'} ${p.scolia_avg ? `(AVG: ${htmlEscape(p.scolia_avg)})` : ''}</div>
+                <div class="profile-details-list">
+                    <div class="profile-detail-item">
+                        <span class="profile-detail-label">🎯 Dart-Setup:</span>
+                        <span class="profile-detail-val">${htmlEscape(p.dart_setup || 'Keine Angabe')}</span>
+                    </div>
+                    <div class="profile-detail-item">
+                        <span class="profile-detail-label">🛡️ Scolia Profilname:</span>
+                        <span class="profile-detail-val">${p.scolia_name ? htmlEscape(p.scolia_name) : '-'}</span>
+                    </div>
+                </div>
+                
+                <div class="profile-stats-row">
+                    <div class="profile-stat-card ad">
+                        <span class="stat-card-title" style="color: #99ccff;">Autodarts</span>
+                        <span class="stat-card-val">${htmlEscape(p.autodarts_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+                    </div>
+                    <div class="profile-stat-card dc">
+                        <span class="stat-card-title" style="color: #ffcc99;">DartCounter</span>
+                        <span class="stat-card-val">${htmlEscape(p.dartcounter_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+                    </div>
+                    <div class="profile-stat-card sc">
+                        <span class="stat-card-title" style="color: #99ffbb;">Scolia</span>
+                        <span class="stat-card-val">${htmlEscape(p.scolia_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
                     </div>
                 </div>
             </div>
