@@ -136,28 +136,31 @@
     .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
 
     /* =====================================================================
-       KOMPAKTES HIGH-END STYLING FÜR DIE NEUE PROFIL-CARD
+       DESIGN: KOMPAKTE PROFIL-CARD OPTIK MIT NEBENEINANDER-HEADER
        ===================================================================== */
     .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 5px 0; }
     .profile-header-compact { display: flex; align-items: center; gap: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 15px; }
-    .profile-avatar-compact { width: 75px; height: 70px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent); background: #1e293b; flex-shrink: 0; }
-    .profile-meta-compact { display: flex; flex-direction: column; gap: 4px; }
+    .profile-avatar-compact { width: 75px; height: 75px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent); background: #1e293b; flex-shrink: 0; }
+    .profile-meta-compact { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
     .profile-name-compact { font-size: 22px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 0.5px; }
     .profile-sub-compact { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
     
-    .profile-details-list { display: flex; flex-direction: column; gap: 10px; width: 100%; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
-    .profile-detail-item { display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px; align-items: center; }
+    /* Discord Action-Button */
+    .profile-discord-btn { background: rgba(88,101,242,0.15); color: #7289da; border: 1px solid rgba(88,101,242,0.4); padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; transition: 0.2s; }
+    .profile-discord-btn:hover { background: #5865f2; color: #fff; transform: translateY(-1px); }
+
+    .profile-details-list { display: flex; flex-direction: column; gap: 10px; width: 100%; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
+    .profile-detail-item { display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px; align-items: center; gap: 15px; }
     .profile-detail-item:last-child { border-bottom: none; padding-bottom: 0; }
     .profile-detail-label { color: var(--muted); font-weight: bold; }
     .profile-detail-val { color: #fff; font-weight: 600; text-align: right; }
     
-    .profile-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
-    .profile-stat-card { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.03); }
-    .profile-stat-card.ad { border-color: rgba(0, 119, 255, 0.3); }
-    .profile-stat-card.dc { border-color: rgba(255, 106, 0, 0.3); }
-    .profile-stat-card.sc { border-color: rgba(0, 255, 102, 0.3); }
-    .stat-card-title { font-size: 11px; text-transform: uppercase; font-weight: bold; }
-    .stat-card-val { font-size: 16px; font-weight: 800; color: #fff; }
+    /* Kompakte Plattform-Zeilen */
+    .platform-row-compact { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.15); padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 6px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.02); }
+    .platform-badge-mini { font-size: 11px; font-weight: bold; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .platform-badge-mini.ad { background: rgba(0, 119, 255, 0.15); color: #99ccff; border: 1px solid rgba(0, 119, 255, 0.2); }
+    .platform-badge-mini.dc { background: rgba(255, 106, 0, 0.15); color: #ffcc99; border: 1px solid rgba(255, 106, 0, 0.2); }
+    .platform-badge-mini.sc { background: rgba(0, 255, 102, 0.15); color: #99ffbb; border: 1px solid rgba(0, 255, 102, 0.2); }
   </style>
 </head>
 <body data-mode="Home">
@@ -444,8 +447,35 @@
     }
 
     // =====================================================================
-    // ULTIMATIV KOMPAKTE UND ÜBERSICHTLICHE PROFIL-CARD LOGIK
+    // NEU: DISCORD LINKING HILFS-LOGIK
     // =====================================================================
+    window.contactViaDiscord = function(discordName) {
+        if (!discordName || discordName === '-') {
+            alert("Dieser Spieler hat keinen Discord-Namen hinterlegt.");
+            return;
+        }
+        navigator.clipboard.writeText(discordName).then(() => {
+            alert(`Discord-Name '${discordName}' wurde kopiert!\n\nDiscord wird geöffnet. Nutze dort die Suche und füge den Namen ein, um eine Nachricht zu senden.`);
+            window.open("https://discord.com/channels/@me", "_blank");
+        }).catch(err => {
+            window.open("https://discord.com/channels/@me", "_blank");
+        });
+    };
+
+    // =====================================================================
+    // CASE-INSENSITIVE-FILTER & NEUE KOMPAKTE PROFIL-CARD GENERIERUNG
+    // =====================================================================
+    function getPlayersForLeague(players, leagueName) {
+        if (!leagueName) return [];
+        const target = leagueName.toLowerCase().replace(/\s+/g, '');
+        return players.filter(p => {
+            const ad = (p.assigned_ad_league || "").toLowerCase().replace(/\s+/g, '');
+            const dc = (p.assigned_dc_league || "").toLowerCase().replace(/\s+/g, '');
+            const sc = (p.assigned_sc_league || "").toLowerCase().replace(/\s+/g, '');
+            return ad === target || dc === target || sc === target;
+        });
+    }
+
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
         const modal = document.getElementById("playerProfileModal");
@@ -469,6 +499,7 @@
         }
 
         const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
+        const discordHandle = p.discord_name || p.username || '-';
 
         content.innerHTML = `
             <div class="profile-card-content">
@@ -477,6 +508,10 @@
                     <div class="profile-meta-compact">
                         <h2 class="profile-name-compact">${htmlEscape(p.display_name || p.discord_name || p.username)}</h2>
                         <div class="profile-sub-compact">📍 ${htmlEscape(p.ort || 'Kein Wohnort hinterlegt')}</div>
+                        
+                        <button class="profile-discord-btn" onclick="contactViaDiscord('${htmlEscape(discordHandle)}')">
+                            <span>💬 Discord Anschreiben</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -485,24 +520,33 @@
                         <span class="profile-detail-label">🎯 Dart-Setup:</span>
                         <span class="profile-detail-val">${htmlEscape(p.dart_setup || 'Keine Angabe')}</span>
                     </div>
-                    <div class="profile-detail-item">
-                        <span class="profile-detail-label">🛡️ Scolia Profilname:</span>
-                        <span class="profile-detail-val">${p.scolia_name ? htmlEscape(p.scolia_name) : '-'}</span>
-                    </div>
                 </div>
                 
-                <div class="profile-stats-row">
-                    <div class="profile-stat-card ad">
-                        <span class="stat-card-title" style="color: #99ccff;">Autodarts</span>
-                        <span class="stat-card-val">${htmlEscape(p.autodarts_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+                <h3 style="font-size: 11px; text-transform: uppercase; color: var(--muted); margin: 8px 0 6px 2px; font-weight: bold; text-align: left; width: 100%; letter-spacing: 0.5px;">Plattformen & Averages</h3>
+                
+                <div style="width: 100%;">
+                    <div class="platform-row-compact">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="platform-badge-mini ad">AD</span>
+                            <span style="font-weight:700; color:#fff;">${htmlEscape(p.autodarts_name || '-')}</span>
+                        </div>
+                        <span style="font-weight:800; color: #99ccff;">${htmlEscape(p.autodarts_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
                     </div>
-                    <div class="profile-stat-card dc">
-                        <span class="stat-card-title" style="color: #ffcc99;">DartCounter</span>
-                        <span class="stat-card-val">${htmlEscape(p.dartcounter_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+
+                    <div class="platform-row-compact">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="platform-badge-mini dc">DC</span>
+                            <span style="font-weight:700; color:#fff;">${htmlEscape(p.dartcounter_name || '-')}</span>
+                        </div>
+                        <span style="font-weight:800; color: #ffcc99;">${htmlEscape(p.dartcounter_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
                     </div>
-                    <div class="profile-stat-card sc">
-                        <span class="stat-card-title" style="color: #99ffbb;">Scolia</span>
-                        <span class="stat-card-val">${htmlEscape(p.scolia_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+
+                    <div class="platform-row-compact">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="platform-badge-mini sc">SC</span>
+                            <span style="font-weight:700; color:#fff;">${htmlEscape(p.scolia_name || '-')}</span>
+                        </div>
+                        <span style="font-weight:800; color: #99ffbb;">${htmlEscape(p.scolia_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
                     </div>
                 </div>
             </div>
@@ -681,6 +725,7 @@
         state.matchdayOpenState[card.dataset.key] = isOpen;
     }
 
+    // Fügt die Berger-System-Klassen für Erst- und Letztplatzierte hinzu
     function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
 
     loadAll();
