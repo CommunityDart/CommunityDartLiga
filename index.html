@@ -140,13 +140,18 @@
     .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
 
     /* =====================================================================
-       DESIGN: ULTRA-KOMPAKTE PROFIL-CARD OPTIK
+       DESIGN: ULTRA-KOMPAKTE PROFIL-CARD OPTIK (ZUSAMMENRÜCKUNGS UPDATE)
        ===================================================================== */
     .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 0; gap: 8px; }
-    .profile-header-compact { display: flex; align-items: center; gap: 14px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 2px; }
-    /* NEU: Avatar auf ein stabiles, etwas größeres Format gesetzt */
-    .profile-avatar-compact { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #1e293b; flex-shrink: 0; }
-    .profile-meta-compact { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+    
+    /* REPARIERT: Nutzt space-between, damit Avatar links bleibt und die Text-Meta nach rechts rutscht */
+    .profile-header-compact { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 2px; }
+    
+    /* REPARIERT: Avatar auf ein stabiles, größeres Format (85px) gesetzt */
+    .profile-avatar-compact { width: 85px; height: 85px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #1e293b; flex-shrink: 0; }
+    
+    /* REPARIERT: Aligns text-items to the right & text-align right */
+    .profile-meta-compact { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; text-align: right; }
     .profile-name-compact { font-size: 19px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 0.3px; line-height: 1.2; }
     .profile-sub-compact { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
     
@@ -159,7 +164,6 @@
     .profile-detail-label { color: var(--muted); font-weight: bold; }
     .profile-detail-val { color: #fff; font-weight: 600; text-align: right; }
     
-    /* REPARIERT: Nutzt space-between, damit die AVGs wieder komplett nach rechts rutschen */
     .platform-row-compact { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 4px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.02); font-size: 13px; }
     .platform-badge-mini { font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
     .platform-badge-mini.ad { background: rgba(0, 119, 255, 0.15); color: #99ccff; border: 1px solid rgba(0, 119, 255, 0.2); }
@@ -466,6 +470,8 @@
         }
     };
 
+    function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
+
     // =====================================================================
     // PROFIL-CARD LOGIK (AVGS RECHTSBÜNDIG & LEERE PLATTFORMEN AUSGEBLENDET)
     // =====================================================================
@@ -497,7 +503,6 @@
 
         let platformsHtml = "";
         
-        // REPARIERT: Jede Plattform-Zeile nutzt jetzt ein inneres Unter-Flexfeld links, damit Name/Badge zusammenbleiben und der AVG nach rechts rutscht!
         if (p.autodarts_name || p.autodarts_avg) {
             platformsHtml += `
                 <div class="platform-row-compact">
