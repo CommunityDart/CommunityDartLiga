@@ -77,14 +77,19 @@
     .section-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
     .table-wrap { overflow-x: auto; padding-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; min-width: 700px; table-layout: fixed; }
+    table { width: 100%; border-collapse: collapse; min-width: 550px; table-layout: fixed; }
     thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { text-align: center; }
+    
+    /* REPARIERT: Ausrichtung der Köpfe nach dem Entfernen der Discord-Spalte */
+    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6) { text-align: center; width: 95px; }
     
     tbody tr:nth-child(odd) td { background: var(--row-a); }
     tbody tr:nth-child(even) td { background: var(--row-b); }
     tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #f1f8fb; white-space: nowrap; }
     tbody tr:hover td { background: rgba(255, 255, 255, 0.05); }
+    
+    /* REPARIERT: Ausrichtung der Datenzellen nach dem Entfernen der Discord-Spalte */
+    tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6) { text-align: center; }
 
     .rank-col { width: 75px; font-weight: 900; text-align: center !important; position: relative; }
     .rank-col.first::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); }
@@ -92,8 +97,6 @@
 
     .player-link { cursor: pointer; font-weight: 700; color: #fff; text-decoration: none; }
     .player-link:hover { color: var(--accent); text-decoration: underline; }
-    
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7) { width: 95px; text-align: center; }
 
     .sidebar { display: flex; flex-direction: column; gap: 14px; }
     .matchday-list { display: flex; flex-direction: column; gap: 12px; }
@@ -103,7 +106,7 @@
     .matchday.open .matchday-body { display: block; }
     
     .match-table { width: 100%; border-collapse: collapse; }
-    .match-table td { padding: 10px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.03); }
+    .match-table td { padding: 10px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.03); text-align: left; }
     .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: rgba(231,76,60,0.2); color: #fff; border: 1px solid rgba(231,76,60,0.3); }
     .status-badge.done { background: rgba(46,204,113,0.2); color: #fff; border: 1px solid rgba(46,204,113,0.3); }
 
@@ -140,17 +143,11 @@
     .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
 
     /* =====================================================================
-       DESIGN: ULTRA-KOMPAKTE PROFIL-CARD OPTIK (ZUSAMMENRÜCKUNGS UPDATE)
+       DESIGN: ULTRA-KOMPAKTE PROFIL-CARD OPTIK
        ===================================================================== */
     .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 0; gap: 8px; }
-    
-    /* REPARIERT: Nutzt space-between, damit Avatar links bleibt und die Text-Meta nach rechts rutscht */
     .profile-header-compact { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 2px; }
-    
-    /* REPARIERT: Avatar auf ein stabiles, größeres Format (85px) gesetzt */
     .profile-avatar-compact { width: 85px; height: 85px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #1e293b; flex-shrink: 0; }
-    
-    /* REPARIERT: Aligns text-items to the right & text-align right */
     .profile-meta-compact { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; text-align: right; }
     .profile-name-compact { font-size: 19px; font-weight: 900; margin: 0; color: #fff; letter-spacing: 0.3px; line-height: 1.2; }
     .profile-sub-compact { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
@@ -205,8 +202,8 @@
        </div>
 
        <div class="nav-card" id="rightNavBlock">
+          <div class="nav-card-title" id="rightCardTitle">Community & Profile</div>
           <div id="defaultRightContent" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-             <div class="nav-card-title">Community & Profile</div>
              <a href="https://discord.gg/DEINLINK" target="_blank" class="nav-btn btn-discord">
                 <span>💬 CDL Discord Server</span>
              </a>
@@ -345,21 +342,21 @@
     function updateRightNavBlock() {
         const defaultBlock = document.getElementById("defaultRightContent");
         const dynamicBlock = document.getElementById("dynamicLeaguesContent");
-        const rightCard = document.getElementById("rightNavBlock");
-        const cardTitle = rightCard.querySelector(".nav-card-title");
+        const cardTitle = document.getElementById("rightCardTitle");
 
         if (state.activeMode === "Home") {
             defaultBlock.style.display = "flex";
             dynamicBlock.style.display = "none";
-            cardTitle.innerText = "Community & Profile";
+            if (cardTitle) cardTitle.innerText = "Community & Profile";
         } else {
             defaultBlock.style.display = "none";
             dynamicBlock.style.display = "grid";
-            cardTitle.innerText = `Aktive ${state.activeMode} Ligen`;
+            if (cardTitle) cardTitle.innerText = `Aktive ${state.activeMode} Ligen`;
 
             const filtered = ALL_LEAGUES.filter(l => l.startsWith(state.activeMode));
             dynamicBlock.innerHTML = filtered.map(l => {
-                const hasData = state.leagueData[l] && state.leagueData[l].standings.rows.length > 0;
+                // REPARIERT: Liga schaltet sich frei, wenn ein Datensatz initialisiert ist (Egal ob Matchplan ODER Spieler vorhanden)
+                const hasData = state.leagueData[l];
                 if(!hasData) return `<button class="dropdown-btn" style="opacity:0.25; cursor:not-allowed;" disabled>${getShortLeagueNumber(l)}</button>`;
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
             }).join("");
@@ -386,7 +383,8 @@
         state.activeLeague = null;
         renderHome();
       } else {
-        const visible = ALL_LEAGUES.filter(l => l.startsWith(mode) && state.leagueData[l] && state.leagueData[l].standings.rows.length > 0);
+        // REPARIERT: Erfasst alle Ligen, die Datenstrukturen halten
+        const visible = ALL_LEAGUES.filter(l => l.startsWith(mode) && state.leagueData[l]);
         state.activeLeague = visible.includes(state.activeLeague) ? state.activeLeague : (visible[0] || null);
         renderLeague();
       }
@@ -421,17 +419,16 @@
       const tbody = visibleRows.map((s, idx) => `<tr>
           <td class="rank-col ${rankClass(idx+1, visibleRows.length)}">${idx+1}</td>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
-          <td>${s.discord ? `<span style="color:var(--muted); font-size:12px;">${htmlEscape(s.discord)}</span>` : "-"}</td>
           <td>${s.wins}</td><td>${s.losses}</td><td>${s.legDiff}</td><td style="font-weight:bold; color:var(--accent);">${s.points}</td>
         </tr>`).join("");
 
       return `<div class="table-shell"><div class="section-head"><div><div class="section-title">${state.activeLeague}</div><div class="section-sub">Live berechneter Tabellenstand • Bo7</div></div></div>
-      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>Discord</th><th>Siege</th><th>Niederlagen</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
+      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>S</th><th>N</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
     }
 
     function renderMatchdays(matchdays) {
       if (!matchdays || matchdays.length === 0) return `<div class="empty">Keine aufgezeichneten Spieltage für diese Liga hinterlegt.</div>`;
-      const defaultOpenIndex = matchdays.findIndex(day => day.status !== 'fertig') === -1 ? 0 : matchdays.findIndex(day => day.status !== 'fertig');
+      const defaultOpenIndex = matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done') === -1 ? 0 : matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done');
 
       return matchdays.map((day, idx) => {
         const key = `${state.activeLeague}__${day.title}`;
@@ -440,8 +437,8 @@
         const tbody = day.rows.map(m => `<tr>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name)}</span></td>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name)}</span></td>
-          <td style="text-align:center; font-weight:bold;">${m.legs1 !== null ? m.legs1 : '-'} : ${m.legs2 !== null ? m.legs2 : '-'}</td>
-          <td style="text-align:right;"><span class="status-badge ${m.status === 'done' ? 'done' : ''}">${m.status === 'done' ? 'Gespeichert' : 'Offen'}</span></td>
+          <td style="text-align:center; font-weight:bold;">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</td>
+          <td style="text-align:right;"><span class="status-badge ${m.status === 'done' || m.status === 'fertig' ? 'done' : ''}">${m.status === 'done' || m.status === 'fertig' ? 'Gespeichert' : 'Offen'}</span></td>
         </tr>`).join("");
 
         return `<div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
@@ -454,7 +451,6 @@
       }).join("");
     }
 
-    // Discord Link-Kopierer und ID-Deep-Link Modul
     window.contactViaDiscord = function(discordName, discordId) {
         if (discordId && discordId !== "" && discordId !== "null") {
             window.open(`https://discord.com/users/${discordId}`, "_blank");
@@ -470,11 +466,6 @@
         }
     };
 
-    function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
-
-    // =====================================================================
-    // PROFIL-CARD LOGIK (AVGS RECHTSBÜNDIG & LEERE PLATTFORMEN AUSGEBLENDET)
-    // =====================================================================
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
         const modal = document.getElementById("playerProfileModal");
@@ -657,16 +648,17 @@
                 });
 
                 lMatches.forEach(m => {
-                    if(m.status === 'done' && m.player1_id && m.player2_id) {
-                        if(!stats[m.player1_id]) {
-                            const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                            stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
-                        }
-                        if(!stats[m.player2_id]) {
-                            const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                            stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
-                        }
-                        
+                    if (m.player1_id && !stats[m.player1_id]) {
+                        const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
+                        stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                    }
+                    if (m.player2_id && !stats[m.player2_id]) {
+                        const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
+                        stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                    }
+
+                    // REPARIERT: Fängt offen/fertig/done gleichermaßen ab und schützt vor Freilos-Abstürzen
+                    if((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
                         const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
                         stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                         if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
@@ -683,7 +675,7 @@
                 });
 
                 const matchdays = Object.entries(groupedMatches).map(([title, rows]) => {
-                    const done = rows.filter(r => r.status === 'done').length;
+                    const done = rows.filter(r => r.status === 'done' || r.status === 'fertig').length;
                     return { title, status: done===rows.length?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
                 });
 
