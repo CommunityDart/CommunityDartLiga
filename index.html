@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL DART ESPORTS</title>
+  <title>CDL DART LIGA</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -874,7 +874,7 @@
           <button id="archiveBtn" class="nav-btn" type="button">
             <span>🏆 ARCHIVE</span>
           </button>
-        </div>
+       </div>
 
        <div class="nav-card">
           <div class="nav-card-title">🎮 PLATFORMS</div>
@@ -1032,9 +1032,9 @@
         if(!season || !league) return;
         
         resultContainer.innerHTML = "<div class='empty'>LOADING...</div>";
-        const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
+        const { data: matches, error = null } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
         
-        if (!matches || matches.length === 0) {
+        if (error || !matches || matches.length === 0) {
             resultContainer.innerHTML = "<div class='empty'>NO DATA</div>";
             return;
         }
@@ -1080,7 +1080,8 @@
             dynamicBlock.style.display = "grid";
             if (cardTitle) cardTitle.innerText = `📊 ${state.activeMode.toUpperCase()}`;
 
-            const filtered = ALL_LEAGUES.filter(l => l.startsWith(state.activeMode));
+            // FIXED: Case-insensitive Filterung für Plattform-Auswahl
+            const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().startsWith(state.activeMode.toLowerCase()));
             
             dynamicBlock.innerHTML = filtered.map(l => {
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
@@ -1113,7 +1114,7 @@
         state.activeLeague = null;
         renderHome();
       } else {
-        const filtered = ALL_LEAGUES.filter(l => l.startsWith(mode));
+        const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().startsWith(mode.toLowerCase()));
         state.activeLeague = filtered.includes(state.activeLeague) ? state.activeLeague : (filtered[0] || null);
         renderLeague();
       }
@@ -1136,6 +1137,7 @@
       mArea.innerHTML = renderMatchdays(data.matchdays);
     }
 
+    // FIXED: Funktionsnamen fest synchronisiert (Vorher renderStandingsTable aufgerufen, aber standingsTableHtml deklariert)
     function renderStandingsTable(rows) {
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
@@ -1162,7 +1164,7 @@
     }
 
     function renderMatchdays(matchdays) {
-      if (!matchdays || matchdays.length === 0) return `<div class="empty">⚪ NO MATCHDAYS</div>`;
+      if (!matchdays || matchdays.length === 0) return `<div class="empty">Mspieltage geladen...</div>`;
       
       const defaultOpenIndex = Math.max(0, matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done'));
 
@@ -1304,9 +1306,6 @@
             const { data: profiles } = await supabaseClient.from('profiles').select('*');
             state.allProfilesCache = profiles || [];
             log(`Profiles: ${state.allProfilesCache.length}`);
-            state.allProfilesCache.forEach(p => {
-              log(`  ${p.display_name || p.discord_name}: AD=${p.assigned_ad_league}, DC=${p.assigned_dc_league}, SC=${p.assigned_sc_league}`);
-            });
             
             const { data: matchesData } = await supabaseClient.from('matches').select('*');
             const matches = matchesData ? matchesData.filter(m => m.season && String(m.season).toLowerCase().trim() === state.currentSeason.toLowerCase().trim()) : [];
@@ -1327,13 +1326,18 @@
             ALL_LEAGUES.forEach(league => {
                 log(`\nProcessing ${league}...`);
                 
+                // FIXED: Absolut fehlertoleranter und case-insensitive Filterabgleich für Spieler-Zuweisung
+                const leagueClean = league.toLowerCase().trim();
+
                 const lPlayers = profiles ? profiles.filter(p => {
-                    const match = p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league;
-                    if(match) log(`  ${p.display_name}: assigned`);
-                    return match;
+                    const adL = p.assigned_ad_league ? String(p.assigned_ad_league).toLowerCase().trim() : "";
+                    const dcL = p.assigned_dc_league ? String(p.assigned_dc_league).toLowerCase().trim() : "";
+                    const scL = p.assigned_sc_league ? String(p.assigned_sc_league).toLowerCase().trim() : "";
+                    return adL === leagueClean || dcL === leagueClean || scL === leagueClean;
                 }) : [];
 
-                const lMatches = matches ? matches.filter(m => m.league_name === league) : [];
+                // FIXED: Absolut fehlertoleranter Filterabgleich für Ligen-Matches
+                const lMatches = matches ? matches.filter(m => m.league_name && m.league_name.toLowerCase().trim() === leagueClean) : [];
                 
                 log(`  Found ${lPlayers.length} players, ${lMatches.length} matches`);
 
@@ -1495,6 +1499,6 @@
     }
 
     loadAll();
-  </script>
+</script>
 </body>
 </html>
