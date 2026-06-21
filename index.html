@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL DART LIGA</title>
+  <title>CDL DART ESPORTS</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -1080,8 +1080,7 @@
             dynamicBlock.style.display = "grid";
             if (cardTitle) cardTitle.innerText = `📊 ${state.activeMode.toUpperCase()}`;
 
-            // FIXED: Case-insensitive Filterung für Plattform-Auswahl
-            const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().startsWith(state.activeMode.toLowerCase()));
+            const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().replace(/\s+/g,'').startsWith(state.activeMode.toLowerCase().replace(/\s+/g,'')));
             
             dynamicBlock.innerHTML = filtered.map(l => {
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
@@ -1114,7 +1113,7 @@
         state.activeLeague = null;
         renderHome();
       } else {
-        const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().startsWith(mode.toLowerCase()));
+        const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().replace(/\s+/g,'').startsWith(mode.toLowerCase().replace(/\s+/g,'')));
         state.activeLeague = filtered.includes(state.activeLeague) ? state.activeLeague : (filtered[0] || null);
         renderLeague();
       }
@@ -1137,7 +1136,6 @@
       mArea.innerHTML = renderMatchdays(data.matchdays);
     }
 
-    // FIXED: Funktionsnamen fest synchronisiert (Vorher renderStandingsTable aufgerufen, aber standingsTableHtml deklariert)
     function renderStandingsTable(rows) {
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
@@ -1164,7 +1162,7 @@
     }
 
     function renderMatchdays(matchdays) {
-      if (!matchdays || matchdays.length === 0) return `<div class="empty">Mspieltage geladen...</div>`;
+      if (!matchdays || matchdays.length === 0) return `<div class="empty">⚪ NO MATCHDAYS</div>`;
       
       const defaultOpenIndex = Math.max(0, matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done'));
 
@@ -1262,8 +1260,6 @@
         const tableAreaEl = document.getElementById("tableArea");
 
         try {
-            log("=== STARTING LOAD ===");
-
             try {
                 const { data: authData } = await supabaseClient.auth.getSession();
                 state.currentUser = authData && authData.session ? authData.session.user : null;
@@ -1301,15 +1297,21 @@
                 state.rulewerkHtml = '<h2>RULES</h2><p>NO RULES</p>';
             }
 
-            log(`Season: ${state.currentSeason}`);
-
             const { data: profiles } = await supabaseClient.from('profiles').select('*');
             state.allProfilesCache = profiles || [];
-            log(`Profiles: ${state.allProfilesCache.length}`);
             
             const { data: matchesData } = await supabaseClient.from('matches').select('*');
-            const matches = matchesData ? matchesData.filter(m => m.season && String(m.season).toLowerCase().trim() === state.currentSeason.toLowerCase().trim()) : [];
-            log(`Matches: ${matches.length}`);
+            
+            // FIXED: Absolut fehlertolerante Saison-Filterung (unterstützt Zahlen wie 2, Texte wie 'Saison 2' oder 'Saison 2 ')
+            const matches = matchesData ? matchesData.filter(m => {
+                if (!m.season) return false;
+                const mS = String(m.season).toLowerCase().trim();
+                const cS = state.currentSeason.toLowerCase().trim();
+                if (mS === cS) return true;
+                const mNum = mS.match(/\d+/)?.[0];
+                const cNum = cS.match(/\d+/)?.[0];
+                return mNum && cNum && mNum === cNum;
+            }) : [];
 
             const { data: seasons } = await supabaseClient.from('matches').select('season');
             const uniqueSeasons = [...new Set((seasons || []).map(m => m.season))];
@@ -1324,22 +1326,17 @@
             });
 
             ALL_LEAGUES.forEach(league => {
-                log(`\nProcessing ${league}...`);
+                // FIXED: Absolut fehlertolerante und case-insensitive Filterung der Ligenbezeichnungen
+                const leagueClean = league.toLowerCase().replace(/\s+/g,'');
                 
-                // FIXED: Absolut fehlertoleranter und case-insensitive Filterabgleich für Spieler-Zuweisung
-                const leagueClean = league.toLowerCase().trim();
-
+                const lMatches = matches ? matches.filter(m => m.league_name && m.league_name.toLowerCase().replace(/\s+/g,'') === leagueClean) : [];
+                
                 const lPlayers = profiles ? profiles.filter(p => {
-                    const adL = p.assigned_ad_league ? String(p.assigned_ad_league).toLowerCase().trim() : "";
-                    const dcL = p.assigned_dc_league ? String(p.assigned_dc_league).toLowerCase().trim() : "";
-                    const scL = p.assigned_sc_league ? String(p.assigned_sc_league).toLowerCase().trim() : "";
+                    const adL = p.assigned_ad_league ? String(p.assigned_ad_league).toLowerCase().replace(/\s+/g,'') : "";
+                    const dcL = p.assigned_dc_league ? String(p.assigned_dc_league).toLowerCase().replace(/\s+/g,'') : "";
+                    const scL = p.assigned_sc_league ? String(p.assigned_sc_league).toLowerCase().replace(/\s+/g,'') : "";
                     return adL === leagueClean || dcL === leagueClean || scL === leagueClean;
                 }) : [];
-
-                // FIXED: Absolut fehlertoleranter Filterabgleich für Ligen-Matches
-                const lMatches = matches ? matches.filter(m => m.league_name && m.league_name.toLowerCase().trim() === leagueClean) : [];
-                
-                log(`  Found ${lPlayers.length} players, ${lMatches.length} matches`);
 
                 const stats = {};
                 
@@ -1353,25 +1350,13 @@
                 });
 
                 lMatches.forEach(m => {
-                    if (!m.player1_id || !m.player2_id) return;
-
-                    if (!stats[m.player1_id]) {
+                    if (m.player1_id && !stats[m.player1_id]) {
                         const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                        stats[m.player1_id] = { 
-                            id: m.player1_id, 
-                            name: p ? (p.display_name || p.discord_name || p.username) : "FORMER PLAYER", 
-                            wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, 
-                            yellow: 0, red: 0, showInMembers: true 
-                        };
+                        stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "FORMER PLAYER", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: true };
                     }
-                    if (!stats[m.player2_id]) {
+                    if (m.player2_id && !stats[m.player2_id]) {
                         const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                        stats[m.player2_id] = { 
-                            id: m.player2_id, 
-                            name: p ? (p.display_name || p.discord_name || p.username) : "FORMER PLAYER", 
-                            wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, 
-                            yellow: 0, red: 0, showInMembers: true 
-                        };
+                        stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "FORMER PLAYER", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: true };
                     }
 
                     if((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
@@ -1439,12 +1424,10 @@
                 state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
             });
 
-            log("\n=== LOAD COMPLETE ===");
             setMode("Home");
 
         } catch (error) { 
             console.error(error);
-            log(`ERROR: ${error.message}`);
             if(tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="color: var(--dc-orange);">❌ ${error.message}</div>`; 
         }
     }
@@ -1491,6 +1474,7 @@
         state.matchdayOpenState[card.dataset.key] = isOpen;
     }
 
+    // FIXED: Funktionsnamen fest synchronisiert (Vorher renderStandingsTable aufgerufen, aber standingsTableHtml deklariert)
     function rankClass(rank, total) { 
         if (rank === 1) return "first"; 
         if (rank === 2) return "second"; 
