@@ -128,10 +128,11 @@
     .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
     .modal-body { padding: 18px; overflow-y: auto; color: #d7e8ef; line-height: 1.6; }
 
+    /* SPEZIAL-SMART-SIZE FÜR DAS PROFILMODAL */
     #playerProfileModal .modal { max-width: 440px; }
     #playerProfileModal .modal-body { padding: 12px; }
 
-    .archive-control-box { display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
+    .archive-control-box { display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); position: relative; z-index: 10; }
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
@@ -339,7 +340,6 @@
         resultContainer.innerHTML = `<div class="table-wrap" style="background:rgba(0,0,0,0.1); border-radius:10px; margin-top:10px;">${html}</div>`;
     };
 
-    // REPARIERT: Alle Ligen werden ab jetzt fehlerfrei und unblockiert gerendert
     function updateRightNavBlock() {
         const defaultBlock = document.getElementById("defaultRightContent");
         const dynamicBlock = document.getElementById("dynamicLeaguesContent");
@@ -407,7 +407,7 @@
       }
       const data = state.leagueData[state.activeLeague];
       tArea.innerHTML = renderStandingsTable(data.standings.rows);
-      mArea.innerHTML = mArea.innerHTML = renderMatchdays(data.matchdays);
+      mArea.innerHTML = renderMatchdays(data.matchdays);
     }
 
     function renderStandingsTable(rows) {
@@ -633,9 +633,8 @@
             const { data: profiles } = await supabaseClient.from('profiles').select('*');
             state.allProfilesCache = profiles || [];
             
-            // REPARIERT: Lädt alle Matches und filtert im JS, um Abweichungen bei Saisonbezeichnungen abzufangen
             const { data: matchesData } = await supabaseClient.from('matches').select('*');
-            const matches = matchesData ? matchesData.filter(m => !m.season || m.season.toLowerCase().trim() === state.currentSeason.toLowerCase().trim()) : [];
+            const matches = matchesData ? matchesData.filter(m => !m.season || String(m.season).toLowerCase().trim() === state.currentSeason.toLowerCase().trim()) : [];
 
             const { data: seasons } = await supabaseClient.from('matches').select('season');
             const uniqueSeasons = [...new Set((seasons || []).map(m => m.season))];
@@ -645,13 +644,11 @@
             const aL = document.getElementById("archiveLeagueSelect");
             if(aL) aL.innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
 
-            // Bereitet leere Datenstrukturen für alle Ligen vor
             ALL_LEAGUES.forEach(l => {
                 state.leagueData[l] = { standings: { rows: [] }, matchdays: [] };
             });
 
             ALL_LEAGUES.forEach(league => {
-                // REPARIERT: Fehlertoleranter Abgleich für Ligen-Paarungen
                 const lMatches = matches ? matches.filter(m => m.league_name && m.league_name.toLowerCase().trim() === league.toLowerCase().trim()) : [];
                 
                 const lPlayers = profiles ? profiles.filter(p => 
