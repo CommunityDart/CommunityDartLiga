@@ -66,7 +66,8 @@
     .dropdown-btn:hover { background: rgba(255,255,255,0.12); border-color: var(--accent-border); }
     .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; border-color: var(--accent); box-shadow: 0 0 15px rgba(32,183,255,0.4); }
 
-    .main { display: grid; grid-template-columns: minmax(0,1.7fr) minmax(340px,.8fr); gap: 20px; align-items: start; }
+    /* VERGRÖSSERT: Dem linken Tabellenbereich via 2.2fr deutlich mehr Platz gegeben */
+    .main { display: grid; grid-template-columns: minmax(0,2.2fr) minmax(340px,.8fr); gap: 20px; align-items: start; }
     body[data-mode="Home"] .main { grid-template-columns: 1fr; }
     body[data-mode="Home"] .sidebar { display: none; }
 
@@ -77,18 +78,18 @@
     .section-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
     .table-wrap { overflow-x: auto; padding-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; min-width: 600px; table-layout: fixed; }
+    /* VERGRÖSSERT: Tabellen-Mindestbreite auf 720px hochgeschraubt für perfekte Spaltenaufteilung */
+    table { width: 100%; border-collapse: collapse; min-width: 720px; table-layout: fixed; }
     thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
     
-    /* REPARIERT: Zentrierung gilt nun ab dem 3. Element bis zum 8. Element (Sp, S, N, Leg-Diff, AVG, Punkte) */
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7), thead th:nth-child(8) { text-align: center; width: 68px; }
+    /* VERGRÖSSERT: Breitere Ausrichtung für alle numerischen Spaltenwerte */
+    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7), thead th:nth-child(8) { text-align: center; width: 75px; }
     
     tbody tr:nth-child(odd) td { background: var(--row-a); }
     tbody tr:nth-child(even) td { background: var(--row-b); }
     tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #f1f8fb; white-space: nowrap; }
     tbody tr:hover td { background: rgba(255, 255, 255, 0.05); }
     
-    /* REPARIERT: Auch in den Datenzeilen müssen diese Werte zentriert sein */
     tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6), tbody td:nth-child(7), tbody td:nth-child(8) { text-align: center; }
 
     .rank-col { width: 75px; font-weight: 900; text-align: center !important; position: relative; }
@@ -127,7 +128,6 @@
     .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
     .modal-body { padding: 18px; overflow-y: auto; color: #d7e8ef; line-height: 1.6; }
 
-    /* SPEZIAL-SMART-SIZE FÜR DAS PROFILMODAL */
     #playerProfileModal .modal { max-width: 440px; }
     #playerProfileModal .modal-body { padding: 12px; }
 
@@ -339,6 +339,7 @@
         resultContainer.innerHTML = `<div class="table-wrap" style="background:rgba(0,0,0,0.1); border-radius:10px; margin-top:10px;">${html}</div>`;
     };
 
+    // REPARIERT: Alle Ligen des gewählten Modus werden ab jetzt IMMER vollständig angezeigt und bleiben klickbar
     function updateRightNavBlock() {
         const defaultBlock = document.getElementById("defaultRightContent");
         const dynamicBlock = document.getElementById("dynamicLeaguesContent");
@@ -355,8 +356,6 @@
 
             const filtered = ALL_LEAGUES.filter(l => l.startsWith(state.activeMode));
             dynamicBlock.innerHTML = filtered.map(l => {
-                const hasData = state.leagueData[l];
-                if(!hasData) return `<button class="dropdown-btn" style="opacity:0.25; cursor:not-allowed;" disabled>${getShortLeagueNumber(l)}</button>`;
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
             }).join("");
         }
@@ -382,7 +381,7 @@
         state.activeLeague = null;
         renderHome();
       } else {
-        const visible = ALL_LEAGUES.filter(l => l.startsWith(mode) && state.leagueData[l]);
+        const visible = ALL_LEAGUES.filter(l => l.startsWith(mode));
         state.activeLeague = visible.includes(state.activeLeague) ? state.activeLeague : (visible[0] || null);
         renderLeague();
       }
@@ -643,9 +642,21 @@
             const aL = document.getElementById("archiveLeagueSelect");
             if(aL) aL.innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
 
+            // REPARIERT: Alle Ligen werden vorab initialisiert, damit das Navigationsmenü niemals leer bleibt
+            ALL_LEAGUES.forEach(l => {
+                state.leagueData[l] = { standings: { rows: [] }, matchdays: [] };
+            });
+
             ALL_LEAGUES.forEach(league => {
                 const lMatches = matches ? matches.filter(m => m.league_name === league) : [];
-                const lPlayers = profiles ? profiles.filter(p => p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league) : [];
+                
+                // REPARIERT: Groß-/Kleinschreibungs-toleranter Datenabgleich der Profile für die aktive Liga
+                const lPlayers = profiles ? profiles.filter(p => 
+                    (p.assigned_ad_league && p.assigned_ad_league.toLowerCase().trim() === league.toLowerCase().trim()) ||
+                    (p.assigned_dc_league && p.assigned_dc_league.toLowerCase().trim() === league.toLowerCase().trim()) ||
+                    (p.assigned_sc_league && p.assigned_sc_league.toLowerCase().trim() === league.toLowerCase().trim())
+                ) : [];
+
                 if(lPlayers.length === 0 && lMatches.length === 0) return;
 
                 const stats = {};
@@ -671,7 +682,7 @@
                         
                         stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                         if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
-                        else if(l2 > l1) { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+                        else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
 
                         if (m.avg_player1 && !isNaN(parseFloat(m.avg_player1))) {
                             stats[m.player1_id].avgSum += parseFloat(m.avg_player1);
@@ -689,7 +700,17 @@
                 lMatches.forEach(m => {
                     const day = `Spieltag ${m.matchday}`;
                     if(!groupedMatches[day]) groupedMatches[day] = [];
-                    groupedMatches[day].push({ p1Name: stats[m.player1_id]?.name || 'Freilos', p2Name: stats[m.player2_id]?.name || 'Freilos', legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
+                    
+                    let p1Title = "Freilos";
+                    let p2Title = "Freilos";
+                    if (m.player1_id) {
+                        p1Title = stats[m.player1_id]?.name || (state.allProfilesCache.find(x => x.id === m.player1_id)?.display_name) || "Spieler 1";
+                    }
+                    if (m.player2_id) {
+                        p2Title = stats[m.player2_id]?.name || (state.allProfilesCache.find(x => x.id === m.player2_id)?.display_name) || "Spieler 2";
+                    }
+
+                    groupedMatches[day].push({ p1Name: p1Title, p2Name: p2Title, legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
                 });
 
                 const matchdays = Object.entries(groupedMatches).map(([title, rows]) => {
