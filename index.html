@@ -3,162 +3,854 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga</title>
+  <title>CDL DART ESPORTS</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
-    :root{
-      --bg: #f1f5f9;
-      --panel: #ffffff;
-      --panel-glass: rgba(255, 255, 255, 0.9);
-      --line: #cbd5e1;
-      --text: #0f172a;
-      --muted: #64748b;
-      --green: #10b981;
-      --red: #ef4444;
-      --yellow: #f59e0b;
-      --accent: #2563eb;
-      --accent-border: rgba(37, 99, 235, 0.3);
-      --row-a: #ffffff;
-      --row-b: #f8fafc;
-      
-      --ad-color: #2563eb;
-      --dc-color: #ea580c;
-      --sc-color: #16a34a;
+    :root {
+      --ad-blue: #00f0ff;
+      --ad-blue-dark: #0088ff;
+      --dc-orange: #ff4500;
+      --dc-orange-bright: #ff7700;
+      --sc-green: #00ff88;
+      --sc-green-bright: #00ffaa;
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #151829;
+      --bg-tertiary: #1a1f35;
+      --surface: #0f1428;
+      --border-active: var(--ad-blue);
+      --text-primary: #ffffff;
+      --text-secondary: #a0c8ff;
+      --text-muted: #667a99;
+      --neon-purple: #ff00ff;
+      --neon-cyan: #00ffff;
+      --neon-lime: #00ff00;
     }
 
-    body[data-mode="DartCounter"]{ --accent: var(--dc-color); --accent-border: rgba(234, 88, 12, 0.3); }
-    body[data-mode="Scolia"]{ --accent: var(--sc-color); --accent-border: rgba(22, 163, 74, 0.3); }
-    body[data-mode="Home"]{ --accent: #2563eb; --accent-border: rgba(37, 99, 235, 0.3); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
     
-    *{box-sizing:border-box} html,body{margin:0;padding:0}
-    body{ font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 8%, transparent), transparent 40%), var(--bg); color:var(--text); min-height:100vh; transition:background .3s ease; }
+    body {
+      font-family: 'Orbitron', 'Space Mono', monospace;
+      background: linear-gradient(135deg, #0a0e1a 0%, #1a0a2e 50%, #0f1a3c 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      letter-spacing: 0.5px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(0, 240, 255, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(255, 69, 0, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 40% 20%, rgba(0, 255, 136, 0.08) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+      animation: glitch 8s infinite;
+    }
+
+    @keyframes glitch {
+      0%, 100% { filter: hue-rotate(0deg); }
+      50% { filter: hue-rotate(1deg); }
+    }
+
+    .wrap {
+      width: min(1320px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ============ HEADER ============ */
+    .header-branding {
+      text-align: center;
+      margin-bottom: 50px;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, 
+        rgba(0, 240, 255, 0.05) 0%, 
+        rgba(255, 69, 0, 0.03) 50%, 
+        rgba(0, 255, 136, 0.03) 100%);
+      border: 2px solid;
+      border-image: linear-gradient(135deg, var(--ad-blue), var(--dc-orange), var(--sc-green)) 1;
+      border-radius: 0;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 
+        0 0 60px rgba(0, 240, 255, 0.3),
+        inset 0 0 60px rgba(0, 240, 255, 0.05),
+        0 0 120px rgba(255, 69, 0, 0.2);
+    }
+
+    .header-branding::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 200%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--ad-blue), var(--sc-green), transparent);
+      animation: scanline 6s linear infinite;
+    }
+
+    @keyframes scanline {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .header-branding::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        repeating-linear-gradient(0deg, rgba(0, 240, 255, 0.02) 0px, rgba(0, 240, 255, 0.02) 1px, transparent 1px, transparent 2px),
+        repeating-linear-gradient(90deg, rgba(255, 69, 0, 0.02) 0px, rgba(255, 69, 0, 0.02) 1px, transparent 1px, transparent 2px);
+      pointer-events: none;
+      animation: flicker 0.15s infinite;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.97; }
+      50% { opacity: 1; }
+      100% { opacity: 0.97; }
+    }
+
+    .header-branding h2 {
+      margin: 0 0 0 0;
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 2;
+      background: linear-gradient(90deg, 
+        var(--ad-blue) 0%, 
+        var(--neon-cyan) 25%,
+        var(--dc-orange) 50%,
+        var(--sc-green) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 40px rgba(0, 240, 255, 0.5);
+      filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.4)) drop-shadow(0 0 60px rgba(255, 69, 0, 0.2));
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.4)); }
+      50% { filter: drop-shadow(0 0 50px rgba(0, 240, 255, 0.7)) drop-shadow(0 0 80px rgba(255, 69, 0, 0.3)); }
+    }
+
+    .header-branding p {
+      margin: 10px 0 0 0;
+      font-size: 14px;
+      color: var(--ad-blue);
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+    }
+
+    /* ============ NAVIGATION ============ */
+    .dashboard-nav {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 50px;
+    }
+
+    .nav-card {
+      background: linear-gradient(135deg, 
+        rgba(15, 20, 40, 0.8) 0%, 
+        rgba(21, 24, 41, 0.5) 100%);
+      border: 2px solid rgba(0, 240, 255, 0.2);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 
+        0 0 20px rgba(0, 240, 255, 0.1),
+        inset 0 0 20px rgba(0, 240, 255, 0.05);
+    }
+
+    .nav-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--ad-blue), var(--dc-orange), var(--sc-green), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .nav-card:hover {
+      border-color: var(--ad-blue);
+      box-shadow: 
+        0 0 40px rgba(0, 240, 255, 0.4),
+        inset 0 0 40px rgba(0, 240, 255, 0.1),
+        0 0 80px rgba(0, 240, 255, 0.2);
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .nav-card-title {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--ad-blue);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(0, 240, 255, 0.3);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+    }
+
+    .nav-btn {
+      width: 100%;
+      padding: 16px 18px;
+      margin-bottom: 10px;
+      border: 2px solid rgba(0, 240, 255, 0.3);
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.05), rgba(0, 240, 255, 0.02));
+      color: var(--text-primary);
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .nav-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.3), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .nav-btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .nav-btn:last-child { margin-bottom: 0; }
     
-    .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
-    
-    /* HELLES LIGA BANNER */
-    .header-branding { text-align: center; margin-bottom: 25px; padding: 35px 20px; border-radius: 16px; background: linear-gradient(135deg, #ffffff, #f8fafc); border: 1px solid var(--line); box-shadow: 0 4px 20px rgba(0,0,0,0.05), 0 0 15px color-mix(in srgb, var(--accent) 10%, transparent); backdrop-filter: blur(10px); }
-    .header-branding h2 { margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px; color: var(--text); }
-    .header-branding p { margin: 8px 0 0 0; font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .nav-btn:hover {
+      border-color: var(--ad-blue);
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(0, 240, 255, 0.08));
+      box-shadow: 
+        0 0 20px rgba(0, 240, 255, 0.5),
+        inset 0 0 20px rgba(0, 240, 255, 0.1);
+      transform: translateY(-3px);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+    }
 
-    .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
-    .nav-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); height: fit-content !important; align-self: start !important; }
-    .nav-card-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 2px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; }
+    .nav-btn.active {
+      background: linear-gradient(135deg, var(--ad-blue), var(--neon-cyan));
+      border-color: var(--ad-blue);
+      color: #000;
+      box-shadow: 
+        0 0 40px rgba(0, 240, 255, 0.8),
+        inset 0 0 20px rgba(0, 240, 255, 0.4);
+      text-shadow: none;
+      font-weight: 900;
+    }
 
-    .nav-btn { position: relative; width: 100%; border: 1px solid #e2e8f0; background: #f8fafc; color: var(--text); border-radius: 12px; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-start; gap: 12px; transition: .2s ease; text-decoration: none; }
-    .nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    
-    .btn-autodarts { border-color: rgba(37, 99, 235, 0.2); color: #1d4ed8; }
-    .btn-autodarts:hover, .btn-autodarts.active { background: #2563eb; border-color: #2563eb; color: #fff; box-shadow: 0 0 15px rgba(37, 99, 235, 0.3); }
-    
-    .btn-dartcounter { border-color: rgba(234, 88, 12, 0.2); color: #c2410c; }
-    .btn-dartcounter:hover, .btn-dartcounter.active { background: #ea580c; border-color: #ea580c; color: #fff; box-shadow: 0 0 15px rgba(234, 88, 12, 0.3); }
-    
-    .btn-scolia { border-color: rgba(22, 163, 74, 0.2); color: #15803d; }
-    .btn-scolia:hover, .btn-scolia.active { background: #16a34a; border-color: #16a34a; color: #fff; box-shadow: 0 0 15px rgba(22, 163, 74, 0.3); }
-    
-    .btn-home.active, .btn-info.active { border-color: var(--accent); background: var(--accent); color: #fff; }
-    .btn-discord { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
-    .btn-discord:hover { background: #4338ca; border-color: #4338ca; color: #fff; }
+    #modeDartCounter.active { 
+      background: linear-gradient(135deg, var(--dc-orange), var(--dc-orange-bright));
+      border-color: var(--dc-orange);
+      box-shadow: 0 0 40px rgba(255, 69, 0, 0.8);
+    }
 
-    .dropdown-submenu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; align-content: start; }
-    .dropdown-btn { background: #f8fafc; border: 1px solid #e2e8f0; color: var(--text); text-align: center; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.15s; }
-    .dropdown-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
-    .dropdown-btn.active { background: var(--accent); color: #fff; font-weight: 800; border-color: var(--accent); box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent); }
+    #modeScolia.active { 
+      background: linear-gradient(135deg, var(--sc-green), var(--sc-green-bright));
+      border-color: var(--sc-green);
+      box-shadow: 0 0 40px rgba(0, 255, 136, 0.8);
+    }
 
-    .main { display: grid; grid-template-columns: minmax(0,2.2fr) minmax(340px,0.85fr); gap: 20px; align-items: start; }
-    body[data-mode="Home"] .main { grid-template-columns: 1fr; }
-    body[data-mode="Home"] .sidebar { display: none; }
+    .icon-svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 3;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 10px currentColor);
+    }
 
-    .table-shell, .matchday { border: 1px solid #e2e8f0; background: var(--panel); box-shadow: 0 4px 20px rgba(0,0,0,0.03); border-radius: 18px; overflow: hidden; }
-    
-    .section-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px; border-bottom: 1px solid #f1f5f9; }
-    .section-title { margin: 0; font-size: 18px; font-weight: 800; color: var(--text); }
-    .section-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    /* ============ MAIN LAYOUT ============ */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 28px;
+      align-items: start;
+    }
 
-    .table-wrap { overflow-x: auto; padding-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; min-width: 720px; table-layout: fixed; }
-    thead th { padding: 14px 16px; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #e2e8f0; text-align: left; }
-    
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7), thead th:nth-child(8) { text-align: center; width: 75px; }
-    
-    tbody tr:nth-child(odd) td { background: var(--row-a); }
-    tbody tr:nth-child(even) td { background: var(--row-b); }
-    tbody td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: var(--text); white-space: nowrap; }
-    tbody tr:hover td { background: #f1f5f9; }
-    
-    tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6), tbody td:nth-child(7), tbody td:nth-child(8) { text-align: center; }
+    body[data-mode="Home"] .main {
+      grid-template-columns: 1fr;
+    }
 
-    .rank-col { width: 75px; font-weight: 900; text-align: center !important; position: relative; color: var(--muted); }
-    .rank-col.first { color: var(--green); }
-    .rank-col.first::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); }
-    .rank-col.last::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--red); }
+    body[data-mode="Home"] .sidebar {
+      display: none;
+    }
 
-    .player-link { cursor: pointer; font-weight: 700; color: var(--text); text-decoration: none; }
-    .player-link:hover { color: var(--accent); text-decoration: underline; }
+    /* ============ TABLES ============ */
+    .table-shell {
+      background: linear-gradient(135deg, 
+        rgba(15, 20, 40, 0.7) 0%, 
+        rgba(21, 24, 41, 0.4) 100%);
+      border: 2px solid rgba(0, 240, 255, 0.25);
+      overflow: hidden;
+      box-shadow: 
+        0 0 40px rgba(0, 240, 255, 0.2),
+        inset 0 0 30px rgba(0, 240, 255, 0.05);
+      position: relative;
+      transition: all 0.3s ease;
+    }
 
-    .sidebar { display: flex; flex-direction: column; gap: 14px; }
-    .matchday-list { display: flex; flex-direction: column; gap: 12px; }
-    .matchday-head { width: 100%; border: none; background: transparent; color: var(--text); padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-    .matchday-title { font-size: 15px; font-weight: 700; }
-    .matchday-body { display: none; padding: 0 14px 14px; border-top: 1px solid #f1f5f9; background: #f8fafc; }
-    .matchday.open .matchday-body { display: block; }
-    
-    .match-table { width: 100%; border-collapse: collapse; }
-    .match-table td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #e2e8f0; text-align: left; color: var(--text); }
-    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; }
-    .status-badge.done { background: #ecfdf5; color: #10b981; border: 1px solid #6ee7b7; }
+    .table-shell::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--ad-blue), var(--dc-orange), var(--sc-green), transparent);
+    }
 
-    .content-block { margin-bottom: 16px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 14px; background: #ffffff; position: relative; box-shadow: 0 2px 6px rgba(0,0,0,0.01); }
-    .news-header-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; gap: 15px; padding-right: 90px; }
-    .news-title-text { margin: 0; font-size: 16px; color: var(--text); font-weight: bold; }
-    .news-date-text { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .table-shell:hover {
+      border-color: var(--ad-blue);
+      box-shadow: 
+        0 0 60px rgba(0, 240, 255, 0.4),
+        inset 0 0 30px rgba(0, 240, 255, 0.08);
+    }
 
-    .news-admin-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 5; }
-    .news-action-link { font-size: 11px; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-weight: bold; color: var(--text); border: 1px solid #e2e8f0; }
-    .news-action-link:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 28px;
+      border-bottom: 2px solid rgba(0, 240, 255, 0.2);
+      background: linear-gradient(90deg, 
+        rgba(0, 240, 255, 0.1) 0%, 
+        transparent 100%);
+      position: relative;
+    }
 
-    .footer { margin-top: 25px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; backdrop-filter: blur(4px); }
-    .modal-backdrop.open { display: flex; }
-    .modal { width: min(840px, 100%); max-height: 85vh; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
-    .modal-close { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; color: var(--text); cursor: pointer; font-weight: bold; }
-    .modal-body { padding: 18px; overflow-y: auto; color: var(--text); line-height: 1.6; }
+    .section-head::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--ad-blue), transparent);
+    }
 
-    #playerProfileModal .modal { max-width: 440px; }
-    #playerProfileModal .modal-body { padding: 12px; background: #ffffff; }
+    .section-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin: 0;
+      color: var(--ad-blue);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+    }
 
-    .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-    
-    .ql-editor p { margin-bottom: 12px !important; line-height: 1.6 !important; color: var(--text) !important; }
-    .ql-editor li { margin-bottom: 8px !important; line-height: 1.5 !important; color: var(--text) !important; }
-    .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { color: var(--text) !important; font-weight: bold !important; }
+    .section-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
 
-    /* PROFIL-CARD OPTIK */
-    .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 0; gap: 8px; }
-    .profile-header-compact { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 14px; width: 100%; margin-bottom: 2px; }
-    .profile-avatar-compact { width: 85px; height: 85px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #f1f5f9; flex-shrink: 0; }
-    .profile-meta-compact { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; text-align: right; }
-    .profile-name-compact { font-size: 19px; font-weight: 900; margin: 0; color: var(--text); letter-spacing: 0.3px; line-height: 1.2; }
-    .profile-sub-compact { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
-    
-    .profile-discord-btn { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; transition: 0.15s; }
-    .profile-discord-btn:hover { background: #4338ca; color: #fff; }
+    /* TABLE */
+    .table-wrap {
+      overflow-x: auto;
+    }
 
-    .profile-details-list { display: flex; flex-direction: column; gap: 4px; width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; margin-bottom: 2px; }
-    .profile-detail-item { display: flex; justify-content: space-between; font-size: 13px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; align-items: center; gap: 10px; }
-    .profile-detail-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .profile-detail-label { color: var(--muted); font-weight: bold; }
-    .profile-detail-val { color: var(--text); font-weight: 600; text-align: right; }
-    
-    .platform-row-compact { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 6px 10px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 4px; font-size: 13px; }
-    .platform-badge-mini { font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
-    .platform-badge-mini.ad { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-    .platform-badge-mini.dc { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
-    .platform-badge-mini.sc { background: #f0fdf4; color: #16a34a; border: 1px solid #d1fae5; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    thead th {
+      padding: 16px 20px;
+      background: rgba(0, 240, 255, 0.08);
+      border-bottom: 2px solid rgba(0, 240, 255, 0.3);
+      color: var(--ad-blue);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    }
+
+    tbody td {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    tbody tr:nth-child(odd) td { 
+      background: rgba(0, 240, 255, 0.03);
+    }
+    tbody tr:nth-child(even) td { 
+      background: rgba(0, 240, 255, 0.01);
+    }
+    tbody tr:hover td { 
+      background: linear-gradient(90deg, 
+        rgba(0, 240, 255, 0.2) 0%, 
+        transparent 100%);
+      box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+
+    .rank-col {
+      font-weight: 900;
+      text-align: center;
+      width: 80px;
+      font-size: 24px;
+    }
+
+    .rank-col.first { 
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+    .rank-col.second { 
+      color: #c0c0c0;
+      text-shadow: 0 0 15px rgba(192, 192, 192, 0.4);
+    }
+    .rank-col.third { 
+      color: #cd7f32;
+      text-shadow: 0 0 15px rgba(205, 127, 50, 0.4);
+    }
+
+    .player-link {
+      color: var(--ad-blue);
+      cursor: pointer;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+      position: relative;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+    }
+
+    .player-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--ad-blue), transparent);
+      transition: width 0.3s;
+    }
+
+    .player-link:hover {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+    }
+
+    .player-link:hover::after {
+      width: 100%;
+    }
+
+    /* ============ SIDEBAR ============ */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .matchday {
+      background: linear-gradient(135deg, 
+        rgba(15, 20, 40, 0.7) 0%, 
+        rgba(21, 24, 41, 0.4) 100%);
+      border: 2px solid rgba(0, 240, 255, 0.2);
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .matchday::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--ad-blue), transparent);
+    }
+
+    .matchday:hover {
+      border-color: var(--ad-blue);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+      transform: translateY(-3px);
+    }
+
+    .matchday-head {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 800;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .matchday-head:hover {
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--ad-blue);
+      text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+    }
+
+    .matchday-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .matchday-body {
+      display: none;
+      padding: 0;
+      border-top: 2px solid rgba(0, 240, 255, 0.2);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .matchday.open .matchday-body {
+      display: block;
+    }
+
+    .match-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .match-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 0;
+      font-size: 10px;
+      font-weight: 900;
+      background: rgba(255, 69, 0, 0.25);
+      color: var(--dc-orange-bright);
+      border: 2px solid rgba(255, 69, 0, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+    }
+
+    .status-badge.done {
+      background: rgba(0, 255, 136, 0.25);
+      color: var(--sc-green-bright);
+      border-color: rgba(0, 255, 136, 0.5);
+      text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    }
+
+    /* ============ CONTENT ============ */
+    .content-block {
+      margin-bottom: 20px;
+      padding: 24px;
+      border: 2px solid rgba(0, 240, 255, 0.2);
+      background: linear-gradient(135deg, 
+        rgba(0, 240, 255, 0.08) 0%, 
+        rgba(0, 255, 136, 0.03) 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .content-block::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--ad-blue), transparent);
+    }
+
+    .content-block:hover {
+      border-color: var(--ad-blue);
+      background: linear-gradient(135deg, 
+        rgba(0, 240, 255, 0.12) 0%, 
+        rgba(0, 255, 136, 0.06) 100%);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+    }
+
+    .news-header-wrapper {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid rgba(0, 240, 255, 0.15);
+    }
+
+    .news-title-text {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--ad-blue);
+      margin: 0 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+
+    .news-date-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ============ MODALS ============ */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(680px, 100%);
+      max-height: 85vh;
+      background: linear-gradient(135deg, 
+        rgba(15, 20, 40, 0.95) 0%, 
+        rgba(21, 24, 41, 0.95) 100%);
+      border: 2px solid rgba(0, 240, 255, 0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 
+        0 0 80px rgba(0, 240, 255, 0.4),
+        inset 0 0 40px rgba(0, 240, 255, 0.08);
+      animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--ad-blue), var(--dc-orange), var(--sc-green));
+      z-index: 2;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 2px solid rgba(0, 240, 255, 0.2);
+      background: linear-gradient(90deg, 
+        rgba(0, 240, 255, 0.12) 0%, 
+        transparent 100%);
+      position: relative;
+      z-index: 1;
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--ad-blue);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+
+    .modal-close {
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(0, 240, 255, 0.3);
+      background: rgba(0, 240, 255, 0.08);
+      color: var(--ad-blue);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-weight: 900;
+    }
+
+    .modal-close:hover {
+      background: rgba(0, 240, 255, 0.2);
+      border-color: var(--ad-blue);
+      transform: scale(1.15) rotate(90deg);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* ============ DROPDOWNS ============ */
+    .dropdown-submenu {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+    }
+
+    .dropdown-btn {
+      padding: 14px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 2px solid rgba(0, 240, 255, 0.2);
+      color: var(--text-primary);
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dropdown-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .dropdown-btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .dropdown-btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--ad-blue);
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+    }
+
+    .dropdown-btn.active {
+      background: linear-gradient(135deg, var(--ad-blue), var(--neon-cyan));
+      border-color: var(--ad-blue);
+      color: #000;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.7);
+      font-weight: 900;
+    }
+
+    /* ============ FOOTER ============ */
+    .footer {
+      margin-top: 50px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-top: 24px;
+      border-top: 2px solid rgba(0, 240, 255, 0.2);
+    }
+
+    .empty {
+      padding: 80px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .ql-editor {
+      color: var(--text-primary) !important;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+
+    .ql-editor p {
+      margin-bottom: 12px !important;
+      line-height: 1.8 !important;
+    }
+
+    @media (max-width: 768px) {
+      .wrap {
+        padding: 20px 12px;
+      }
+
+      .header-branding {
+        padding: 40px 20px;
+        margin-bottom: 30px;
+      }
+
+      .header-branding h2 {
+        font-size: 42px;
+        letter-spacing: 6px;
+      }
+
+      .dashboard-nav {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body data-mode="Home">
@@ -166,51 +858,55 @@
   <div class="wrap">
     
     <div class="header-branding">
-       <h2>CDL DART LIGA</h2>
-       <p id="headerSubtitle">Community Dart Liga</p>
+       <h2>CDL</h2>
+       <p id="headerSubtitle">⚡ DART ESPORTS ⚡</p>
     </div>
 
     <section class="dashboard-nav">
-       
        <div class="nav-card">
-          <div class="nav-card-title">Allgemeine Übersicht</div>
-          <button id="modeHome" class="nav-btn btn-home active" type="button">📰 Neuigkeiten</button>
-          <button id="regelwerkBtn" class="nav-btn btn-info" type="button">📑 Regelwerk</button>
-          <button id="archiveBtn" class="nav-btn btn-info" type="button">🏛️ Liga Archiv</button>
-       </div>
+          <div class="nav-card-title">⚔️ MENU</div>
+          <button id="modeHome" class="nav-btn active" type="button">
+            <span>📰 NEWS</span>
+          </button>
+          <button id="regelwerkBtn" class="nav-btn" type="button">
+            <span>📑 RULES</span>
+          </button>
+          <button id="archiveBtn" class="nav-btn" type="button">
+            <span>🏆 ARCHIVE</span>
+          </button>
+        </div>
 
        <div class="nav-card">
-          <div class="nav-card-title">Wähle deine Plattform</div>
-          <button id="modeAutodarts" class="nav-btn btn-autodarts" type="button">
-             <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-             <span>Autodarts</span>
+          <div class="nav-card-title">🎮 PLATFORMS</div>
+          <button id="modeAutodarts" class="nav-btn" type="button">
+             <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="2"/></svg>
+             <span>AUTODARTS</span>
           </button>
-          <button id="modeDartCounter" class="nav-btn btn-dartcounter" type="button">
-             <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-             <span>DartCounter</span>
+          <button id="modeDartCounter" class="nav-btn" type="button">
+             <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="7" height="16" rx="2"/><rect x="13" y="4" width="7" height="16" rx="2"/></svg>
+             <span>DARTCOUNTER</span>
           </button>
-          <button id="modeScolia" class="nav-btn btn-scolia" type="button">
-             <svg class="icon-svg" viewBox="0 0 24 24"><path d="M23 7a2 2 0 0 0-2-2h-4l-2-3H9L7 5H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2z"/><circle cx="12" cy="13" r="4"/></svg>
-             <span>Scolia</span>
+          <button id="modeScolia" class="nav-btn" type="button">
+             <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+             <span>SCOLIA</span>
           </button>
        </div>
 
        <div class="nav-card" id="rightNavBlock">
-          <div class="nav-card-title" id="rightCardTitle">Community & Profile</div>
-          <div id="defaultRightContent" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-             <a href="https://discord.gg/DEINLINK" target="_blank" class="nav-btn btn-discord">
-                <span>💬 CDL Discord Server</span>
+          <div class="nav-card-title" id="rightCardTitle">🌐 COMMUNITY</div>
+          <div id="defaultRightContent" style="display: flex; flex-direction: column; gap: 10px;">
+             <a href="https://discord.gg/DEINLINK" target="_blank" class="nav-btn">
+                <span>💬 DISCORD</span>
              </a>
              <button id="ligaLoginBtn" class="nav-btn" type="button">
-                <span id="loginBtnText">👤 Liga Login</span>
+                <span id="loginBtnText">👤 LOGIN</span>
              </button>
-             <a href="https://www.paypal.com/pool/9nHfKrmgfD" target="_blank" class="nav-btn" style="border-color: #bbf7d0; background: #f0fdf4; color: #15803d;">
-                <span>☕ Serverkasse unterstützen</span>
+             <a href="https://www.paypal.com/pool/9nHfKrmgfD" target="_blank" class="nav-btn">
+                <span>☕ SUPPORT</span>
              </a>
           </div>
           <div id="dynamicLeaguesContent" class="dropdown-submenu" style="display: none;"></div>
        </div>
-
     </section>
 
     <section class="main">
@@ -221,18 +917,19 @@
     </section>
 
     <div class="footer">
-      <button id="openImpressumBtn" class="nav-btn" style="min-height:32px; padding:0 12px; font-size:11px; width:auto;" type="button">Impressum</button>
-      <button id="openLinksBtn" class="nav-btn" style="min-height:36px; padding:0 12px; font-size:11px; width:auto;" type="button">Links</button>
+      <button id="openImpressumBtn" class="nav-btn" style="width: auto; padding: 8px 16px; font-size: 11px;" type="button">IMPRESSUM</button>
+      <button id="openLinksBtn" class="nav-btn" style="width: auto; padding: 8px 16px; font-size: 11px;" type="button">LINKS</button>
+      <button id="openDebugBtn" class="nav-btn" style="width: auto; padding: 8px 16px; font-size: 11px; background: linear-gradient(135deg, rgba(255, 69, 0, 0.3), rgba(255, 69, 0, 0.1)); border-color: var(--dc-orange);" type="button">🐛 DEBUG</button>
     </div>
   </div>
 
   <div id="archiveModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head"><h3>🏛️ Historisches Liga-Archiv</h3><button class="modal-close" type="button">✕</button></div>
+      <div class="modal-head"><h3>🏆 ARCHIVE</h3><button class="modal-close" type="button">✕</button></div>
       <div class="modal-body">
-         <div class="archive-control-box">
-             <select id="archiveSeasonSelect" class="archive-select" onchange="loadArchiveData()"><option value="">-- Saison --</option></select>
-             <select id="archiveLeagueSelect" class="archive-select" onchange="loadArchiveData()"><option value="">-- Liga --</option></select>
+         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+             <select id="archiveSeasonSelect" style="padding: 12px; border: 2px solid rgba(0, 240, 255, 0.2); background: rgba(0, 240, 255, 0.05); color: var(--text-primary); font-family: 'Orbitron', monospace; font-weight: 700;" onchange="loadArchiveData()"><option value="">SEASON</option></select>
+             <select id="archiveLeagueSelect" style="padding: 12px; border: 2px solid rgba(0, 240, 255, 0.2); background: rgba(0, 240, 255, 0.05); color: var(--text-primary); font-family: 'Orbitron', monospace; font-weight: 700;" onchange="loadArchiveData()"><option value="">LEAGUE</option></select>
          </div>
          <div id="archiveTableResult"></div>
       </div>
@@ -240,23 +937,32 @@
   </div>
 
   <div id="playerProfileModal" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-head"><h3 id="playerProfileTitle">Spielerprofil</h3><button class="modal-close" type="button">✕</button></div>
+    <div class="modal" style="max-width: 580px;">
+      <div class="modal-head"><h3 id="playerProfileTitle">PLAYER</h3><button class="modal-close" type="button">✕</button></div>
       <div id="playerProfileContent" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="debugModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head"><h3>🐛 DEBUG</h3><button class="modal-close" type="button">✕</button></div>
+      <div id="debugContent" class="modal-body" style="font-family: 'Space Mono', monospace; font-size: 12px; color: var(--ad-blue); white-space: pre-wrap; word-break: break-all; line-height: 1.5;"></div>
     </div>
   </div>
 
   <div id="impressumModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head"><h3>Impressum</h3><button class="modal-close" type="button">✕</button></div>
-      <div class="modal-body"><p>Oliver Eger<br>Bahnhofstraße 9<br>37520 Osterode am Harz</p></div>
+      <div class="modal-head"><h3>IMPRESSUM</h3><button class="modal-close" type="button">✕</button></div>
+      <div class="modal-body">
+        <p>Oliver Eger<br>Bahnhofstraße 9<br>37520 Osterode am Harz</p>
+      </div>
     </div>
   </div>
 
   <div id="linksModal" class="modal-backdrop">
     <div class="modal">
-      <div class="modal-head"><h3>Links</h3><button class="modal-close" type="button">✕</button></div>
-      <div id="linksContent" class="modal-body"><p>Lade Links...</p></div>
+      <div class="modal-head"><h3>LINKS</h3><button class="modal-close" type="button">✕</button></div>
+      <div id="linksContent" class="modal-body"><p>LOADING...</p></div>
     </div>
   </div>
 
@@ -273,8 +979,14 @@
     const state = { 
         leagueData: {}, activeLeague: null, activeMode: "Home", 
         currentSeason: "Saison 1", newsHtml: "", rulewerkHtml: "", currentUser: null,
-        matchdayOpenState: {}, isAdminUser: false, allProfilesCache: []
+        matchdayOpenState: {}, isAdminUser: false, allProfilesCache: [],
+        debugLog: []
     };
+
+    function log(msg) {
+      console.log(msg);
+      state.debugLog.push(msg);
+    }
 
     function htmlEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
     
@@ -285,11 +997,32 @@
         return txt.value;
     }
 
-    window.copyDiscord = function(name) { navigator.clipboard.writeText(name).then(() => alert("Kopiert!")); };
-    window.directEditNews = function(id) { window.location.href = "profil.html"; };
+    window.showDebugInfo = function() {
+      const debugEl = document.getElementById("debugContent");
+      let debugText = "=== CDL DEBUG INFO ===\n\n";
+      debugText += `Current Season: ${state.currentSeason}\n`;
+      debugText += `Active Mode: ${state.activeMode}\n`;
+      debugText += `Active League: ${state.activeLeague}\n\n`;
+      debugText += `Total Profiles: ${state.allProfilesCache.length}\n`;
+      debugText += `Profiles:\n`;
+      state.allProfilesCache.forEach(p => {
+        debugText += `  ${p.display_name || p.discord_name} (${p.id})\n`;
+        debugText += `    AD: ${p.assigned_ad_league || 'none'}\n`;
+        debugText += `    DC: ${p.assigned_dc_league || 'none'}\n`;
+        debugText += `    SC: ${p.assigned_sc_league || 'none'}\n`;
+      });
+      debugText += `\nLeague Data:\n`;
+      Object.entries(state.leagueData).forEach(([league, data]) => {
+        debugText += `  ${league}: ${data.standings.rows.length} players, ${data.matchdays.length} days\n`;
+      });
+      debugEl.innerText = debugText;
+      openModal(document.getElementById("debugModal"));
+    };
+
     window.directDeleteNews = async function(id) {
-        if(!confirm("News löschen?")) return;
-        await supabaseClient.from('news').delete().eq('id', id); loadAll();
+        if(!confirm("Delete?")) return;
+        await supabaseClient.from('news').delete().eq('id', id); 
+        loadAll();
     };
 
     window.loadArchiveData = async function() {
@@ -298,11 +1031,11 @@
         const resultContainer = document.getElementById("archiveTableResult");
         if(!season || !league) return;
         
-        resultContainer.innerHTML = "<div class='empty'>Lade Daten...</div>";
-        const { data: matches, error = null } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
+        resultContainer.innerHTML = "<div class='empty'>LOADING...</div>";
+        const { data: matches } = await supabaseClient.from('matches').select('*').eq('season', season).eq('league_name', league).eq('status', 'done');
         
-        if (error || !matches || matches.length === 0) {
-            resultContainer.innerHTML = "<div class='empty'>Keine Spieldaten vorhanden.</div>";
+        if (!matches || matches.length === 0) {
+            resultContainer.innerHTML = "<div class='empty'>NO DATA</div>";
             return;
         }
 
@@ -311,26 +1044,26 @@
             if(m.player1_id && m.player2_id) {
                 if(!stats[m.player1_id]) {
                     const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                    stats[m.player1_id] = { name: p ? (p.display_name || p.discord_name || p.username) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
+                    stats[m.player1_id] = { name: p ? (p.display_name || p.discord_name) : 'PLAYER', wins: 0, losses: 0 };
                 }
                 if(!stats[m.player2_id]) {
                     const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                    stats[m.player2_id] = { name: p ? (p.display_name || p.discord_name || p.username) : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0 };
+                    stats[m.player2_id] = { name: p ? (p.display_name || p.discord_name) : 'PLAYER', wins: 0, losses: 0 };
                 }
-                const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
-                stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
-                if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
-                else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+                const l1 = parseInt(m.legs_player1) || 0; 
+                const l2 = parseInt(m.legs_player2) || 0;
+                if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player2_id].losses++; } 
+                else if(l2 > l1) { stats[m.player2_id].wins++; stats[m.player1_id].losses++; }
             }
         });
 
-        const rows = Object.values(stats).sort((a,b) => b.points !== a.points ? b.points - a.points : b.legDiff - a.legDiff);
-        let html = `<table><thead><tr><th width="80px">Platz</th><th>Spieler</th><th>Siege</th><th>Niederlagen</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>`;
+        const rows = Object.values(stats).sort((a,b) => b.wins - a.wins);
+        let html = `<div class="table-wrap"><table><thead><tr><th style="width:50px;">P</th><th>PLAYER</th><th style="text-align:center;">W</th><th style="text-align:center;">L</th></tr></thead><tbody>`;
         rows.forEach((r, idx) => {
-            html += `<tr><td>${idx+1}</td><td><b>${htmlEscape(r.name)}</b></td><td>${r.wins}</td><td>${r.losses}</td><td>${r.legDiff}</td><td style="color:#2ecc71; font-weight:bold;">${r.points}</td></tr>`;
+            html += `<tr><td style="font-weight: 900; font-size: 18px;">${idx+1}</td><td><strong>${htmlEscape(r.name)}</strong></td><td style="text-align:center;">${r.wins}</td><td style="text-align:center;">${r.losses}</td></tr>`;
         });
-        html += `</tbody></table>`;
-        resultContainer.innerHTML = `<div class="table-wrap" style="background:rgba(0,0,0,0.1); border-radius:10px; margin-top:10px;">${html}</div>`;
+        html += `</tbody></table></div>`;
+        resultContainer.innerHTML = html;
     };
 
     function updateRightNavBlock() {
@@ -341,13 +1074,14 @@
         if (state.activeMode === "Home") {
             defaultBlock.style.display = "flex";
             dynamicBlock.style.display = "none";
-            if (cardTitle) cardTitle.innerText = "Community & Profile";
+            if (cardTitle) cardTitle.innerText = "🌐 COMMUNITY";
         } else {
             defaultBlock.style.display = "none";
             dynamicBlock.style.display = "grid";
-            if (cardTitle) cardTitle.innerText = `Aktive ${state.activeMode} Ligen`;
+            if (cardTitle) cardTitle.innerText = `📊 ${state.activeMode.toUpperCase()}`;
 
-            const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().replace(/\s+/g,'').startsWith(state.activeMode.toLowerCase().replace(/\s+/g,'')));
+            const filtered = ALL_LEAGUES.filter(l => l.startsWith(state.activeMode));
+            
             dynamicBlock.innerHTML = filtered.map(l => {
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
             }).join("");
@@ -366,7 +1100,7 @@
       
       const subTitleEl = document.getElementById("headerSubtitle");
       if (subTitleEl) {
-          subTitleEl.innerText = mode === "Home" ? "Community Dart Liga" : `${mode} Ligen Übersicht`;
+          subTitleEl.innerText = mode === "Home" ? "⚡ DART ESPORTS ⚡" : `⚡ ${mode.toUpperCase()} ⚡`;
       }
       
       const setBtn = (id, isActive) => { const e = document.getElementById(id); if(e) e.classList.toggle("active", isActive); };
@@ -379,8 +1113,8 @@
         state.activeLeague = null;
         renderHome();
       } else {
-        const visible = ALL_LEAGUES.filter(l => l.toLowerCase().replace(/\s+/g,'').startsWith(mode.toLowerCase().replace(/\s+/g,'')));
-        state.activeLeague = visible.includes(state.activeLeague) ? state.activeLeague : (visible[0] || null);
+        const filtered = ALL_LEAGUES.filter(l => l.startsWith(mode));
+        state.activeLeague = filtered.includes(state.activeLeague) ? state.activeLeague : (filtered[0] || null);
         renderLeague();
       }
       updateRightNavBlock();
@@ -392,10 +1126,11 @@
       if(!tArea || !mArea) return;
 
       if(!state.activeLeague) {
-          tArea.innerHTML = `<div class="table-shell"><div class="section-head"><div class="section-title">Plattformübersicht</div></div><div style="padding:18px"><div class="empty">⚠️ In dieser Sektion ist derzeit keine Liga active geschaltet.</div></div></div>`;
+          tArea.innerHTML = `<div class="table-shell"><div class="section-head"><div class="section-title">STANDINGS</div></div><div class="empty">NO LEAGUE SELECTED</div></div>`;
           mArea.innerHTML = "";
           return;
       }
+      
       const data = state.leagueData[state.activeLeague] || { standings: { rows: [] }, matchdays: [] };
       tArea.innerHTML = renderStandingsTable(data.standings.rows);
       mArea.innerHTML = renderMatchdays(data.matchdays);
@@ -404,27 +1139,32 @@
     function renderStandingsTable(rows) {
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
+      if (visibleRows.length === 0) {
+          return `<div class="table-shell"><div class="section-head"><div class="section-title">${state.activeLeague}</div></div><div class="empty">🟡 NO PLAYERS</div></div>`;
+      }
+
       const tbody = visibleRows.map((s, idx) => {
           const playerAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount).toFixed(2) : "-";
           return `<tr>
               <td class="rank-col ${rankClass(idx+1, visibleRows.length)}">${idx+1}</td>
-              <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
-              <td>${s.gamesPlayed}</td>
-              <td>${s.wins}</td>
-              <td>${s.losses}</td>
-              <td>${s.legDiff}</td>
-              <td style="font-weight:bold; color:var(--muted);">${playerAvg}</td>
-              <td style="font-weight:bold; color:var(--accent);">${s.points}</td>
+              <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span></td>
+              <td style="text-align: center; font-weight: 700;">${s.gamesPlayed}</td>
+              <td style="text-align: center; font-weight: 700; color: var(--sc-green);">${s.wins}</td>
+              <td style="text-align: center; font-weight: 700; color: var(--dc-orange);">${s.losses}</td>
+              <td style="text-align: center; font-weight: 700;">${s.legDiff}</td>
+              <td style="text-align: center; font-weight: 800; color: var(--sc-green-bright);">${playerAvg}</td>
+              <td style="text-align: right; font-weight: 900; color: var(--ad-blue-light); font-size: 18px; text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);">${s.points}</td>
             </tr>`;
       }).join("");
 
-      return `<div class="table-shell"><div class="section-head"><div><div class="section-title">${state.activeLeague}</div><div class="section-sub">Live berechneter Tabellenstand • Bo7</div></div></div>
-      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>Sp</th><th>S</th><th>N</th><th>Leg-Diff</th><th>AVG</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
+      return `<div class="table-shell"><div class="section-head"><div><div class="section-title">${state.activeLeague}</div><div class="section-sub">⚡ LIVE STANDINGS • BO7 ⚡</div></div></div>
+      <div class="table-wrap"><table><thead><tr><th style="width: 70px;">P</th><th>PLAYER</th><th style="width: 60px;">SP</th><th style="width: 60px;">W</th><th style="width: 60px;">L</th><th style="width: 80px;">DIFF</th><th style="width: 60px;">AVG</th><th style="width: 70px;">PTS</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
     }
 
     function renderMatchdays(matchdays) {
-      if (!matchdays || matchdays.length === 0) return `<div class="empty">Keine aufgezeichneten Spieltage für diese Liga hinterlegt.</div>`;
-      const defaultOpenIndex = matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done') === -1 ? 0 : matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done');
+      if (!matchdays || matchdays.length === 0) return `<div class="empty">⚪ NO MATCHDAYS</div>`;
+      
+      const defaultOpenIndex = Math.max(0, matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done'));
 
       return matchdays.map((day, idx) => {
         const key = `${state.activeLeague}__${day.title}`;
@@ -433,8 +1173,8 @@
         const tbody = day.rows.map(m => `<tr>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name)}</span></td>
           <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name)}</span></td>
-          <td style="text-align:center; font-weight:bold;">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</td>
-          <td style="text-align:right;"><span class="status-badge ${m.status === 'done' || m.status === 'fertig' ? 'done' : ''}">${m.status === 'done' || m.status === 'fertig' ? 'Gespeichert' : 'Offen'}</span></td>
+          <td style="text-align:center; font-weight:800;">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</td>
+          <td style="text-align:right;"><span class="status-badge ${m.status === 'done' || m.status === 'fertig' ? 'done' : ''}">${m.status === 'done' || m.status === 'fertig' ? '✓' : '●'}</span></td>
         </tr>`).join("");
 
         return `<div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
@@ -447,29 +1187,15 @@
       }).join("");
     }
 
-    window.contactViaDiscord = function(discordName, discordId) {
-        if (discordId && discordId !== "" && discordId !== "null") {
-            window.open(`https://discord.com/users/${discordId}`, "_blank");
-        } else if (discordName && discordName !== '-') {
-            navigator.clipboard.writeText(discordName).then(() => {
-                alert(`Discord-Name '${discordName}' wurde kopiert!\n\nDiscord wird geöffnet. Nutze dort einfach die Suche, um direkt zu chatten.`);
-                window.open("https://discord.com/channels/@me", "_blank");
-            }).catch(err => {
-                window.open("https://discord.com/channels/@me", "_blank");
-            });
-        } else {
-            alert("Dieser Spieler hat keinen Discord-Namen hinterlegt.");
-        }
-    };
-
     window.openPlayerProfile = async function(playerName) {
         if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
+        
         const modal = document.getElementById("playerProfileModal");
         const titleEl = document.getElementById("playerProfileTitle");
         const content = document.getElementById("playerProfileContent");
         
-        if(titleEl) titleEl.innerText = "Spielerprofil";
-        content.innerHTML = "<p>Lade Profilkarte...</p>";
+        if(titleEl) titleEl.innerText = "PLAYER";
+        content.innerHTML = "<p>LOADING...</p>";
         openModal(modal);
 
         const p = state.allProfilesCache.find(prof => 
@@ -480,77 +1206,39 @@
         );
 
         if(!p) {
-            content.innerHTML = "<div class='empty'>Keine Profildaten im Cache gefunden.</div>";
+            content.innerHTML = "<div class='empty'>NOT FOUND</div>";
             return;
         }
 
-        const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
-        const discordHandle = p.discord_name || p.username || '-';
-        const discordId = p.discord_id || '';
-
-        let platformsHtml = "";
+        const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=0066ff&color=fff&bold=true&size=200";
         
+        let platformsHtml = "";
         if (p.autodarts_name || p.autodarts_avg) {
-            platformsHtml += `
-                <div class="platform-row-compact">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span class="platform-badge-mini ad">AD</span>
-                        <span style="font-weight:700; color:var(--text);">${htmlEscape(p.autodarts_name || '-')}</span>
-                    </div>
-                    <span style="font-weight:800; color: #2563eb;">${htmlEscape(p.autodarts_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
-                </div>`;
+            platformsHtml += `<div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 240, 255, 0.08)); border-left: 4px solid var(--ad-blue); border: 2px solid rgba(0, 240, 255, 0.3);"><div style="color: var(--ad-blue); font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);">⚫ AUTODARTS</div><div style="color: var(--text-primary); font-weight: 800; font-size: 14px;">${htmlEscape(p.autodarts_name || '-')}</div><div style="color: var(--sc-green-bright); margin-top: 6px; font-weight: 900; font-size: 18px;">AVG: ${htmlEscape(p.autodarts_avg || '-')}</div></div>`;
         }
-
         if (p.dartcounter_name || p.dartcounter_avg) {
-            platformsHtml += `
-                <div class="platform-row-compact">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span class="platform-badge-mini dc">DC</span>
-                        <span style="font-weight:700; color:var(--text);">${htmlEscape(p.dartcounter_name || '-')}</span>
-                    </div>
-                    <span style="font-weight:800; color: #ea580c;">${htmlEscape(p.dartcounter_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
-                </div>`;
+            platformsHtml += `<div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(255, 69, 0, 0.2), rgba(255, 69, 0, 0.08)); border-left: 4px solid var(--dc-orange); border: 2px solid rgba(255, 69, 0, 0.3);"><div style="color: var(--dc-orange); font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; text-shadow: 0 0 15px rgba(255, 69, 0, 0.6);">🟠 DARTCOUNTER</div><div style="color: var(--text-primary); font-weight: 800; font-size: 14px;">${htmlEscape(p.dartcounter_name || '-')}</div><div style="color: var(--dc-orange-bright); margin-top: 6px; font-weight: 900; font-size: 18px;">AVG: ${htmlEscape(p.dartcounter_avg || '-')}</div></div>`;
         }
-
         if (p.scolia_name || p.scolia_avg) {
-            platformsHtml += `
-                <div class="platform-row-compact">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span class="platform-badge-mini sc">SC</span>
-                        <span style="font-weight:700; color:var(--text);">${htmlEscape(p.scolia_name || '-')}</span>
-                    </div>
-                    <span style="font-weight:800; color: #16a34a;">${htmlEscape(p.scolia_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
-                </div>`;
-        }
-
-        if (!platformsHtml) {
-            platformsHtml = "<div class='empty' style='font-size:12px; padding:4px;'>Keine Plattformprofile hinterlegt.</div>";
+            platformsHtml += `<div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.08)); border-left: 4px solid var(--sc-green); border: 2px solid rgba(0, 255, 136, 0.3);"><div style="color: var(--sc-green); font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; text-shadow: 0 0 15px rgba(0, 255, 136, 0.6);">🟢 SCOLIA</div><div style="color: var(--text-primary); font-weight: 800; font-size: 14px;">${htmlEscape(p.scolia_name || '-')}</div><div style="color: var(--sc-green-bright); margin-top: 6px; font-weight: 900; font-size: 18px;">AVG: ${htmlEscape(p.scolia_avg || '-')}</div></div>`;
         }
 
         content.innerHTML = `
-            <div class="profile-card-content">
-                <div class="profile-header-compact">
-                    <img src="${avatarSrc}" class="profile-avatar-compact" alt="Avatar">
-                    <div class="profile-meta-compact">
-                        <h2 class="profile-name-compact">${htmlEscape(p.display_name || p.discord_name || p.username)}</h2>
-                        <div class="profile-sub-compact">📍 ${htmlEscape(p.ort || 'Kein Wohnort')}</div>
-                        <button class="profile-discord-btn" onclick="contactViaDiscord('${htmlEscape(discordHandle)}', '${htmlEscape(discordId)}')">
-                            <span>💬 Discord Nachricht</span>
-                        </button>
+            <div>
+                <div style="display: flex; gap: 18px; margin-bottom: 28px; align-items: flex-start;">
+                    <img src="${avatarSrc}" style="width: 100px; height: 100px; border: 3px solid var(--ad-blue); box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);" alt="Avatar">
+                    <div style="flex: 1;">
+                        <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 900; color: var(--ad-blue); text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);">${htmlEscape(p.display_name || p.discord_name || p.username)}</h2>
+                        <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">📍 ${htmlEscape(p.ort || 'NO LOCATION')}</p>
+                        <button onclick="alert('DISCORD: ${htmlEscape(p.discord_name || '-')}')" style="padding: 10px 16px; background: linear-gradient(135deg, rgba(88,101,242,0.3), rgba(88,101,242,0.1)); border: 2px solid rgba(88,101,242,0.5); color: #7289da; cursor: pointer; font-weight: 800; font-size: 12px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; font-family: 'Orbitron', monospace;">💬 DISCORD</button>
                     </div>
                 </div>
                 
-                <div class="profile-details-list">
-                    <div class="profile-detail-item">
-                        <span class="profile-detail-label">🎯 Dart-Setup:</span>
-                        <span class="profile-detail-val">${htmlEscape(p.dart_setup || 'Keine Angabe')}</span>
-                    </div>
-                </div>
+                ${platformsHtml}
                 
-                <h3 style="font-size: 11px; text-transform: uppercase; color: var(--muted); margin: 2px 0 2px 2px; font-weight: bold; text-align: left; width: 100%; letter-spacing: 0.5px;">Plattformen & Averages</h3>
-                
-                <div style="width: 100%;">
-                    ${platformsHtml}
+                <div style="padding: 16px; background: rgba(0, 240, 255, 0.1); border: 2px solid rgba(0, 240, 255, 0.2);">
+                    <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px;">🎯 DART SETUP</div>
+                    <p style="margin: 0; font-size: 14px; color: var(--text-primary); font-weight: 700;">${htmlEscape(p.dart_setup || 'NO INFO')}</p>
                 </div>
             </div>
         `;
@@ -562,119 +1250,145 @@
         if(tArea) tArea.innerHTML = state.newsHtml; 
         if(mArea) mArea.innerHTML = ""; 
     }
-    function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
+    
+    function getShortLeagueNumber(fullName) { 
+        const match = fullName.match(/(\d+)$/); 
+        return match ? `LG ${match[1]}` : fullName; 
+    }
 
     async function loadAll() {
         const tableAreaEl = document.getElementById("tableArea");
 
         try {
+            log("=== STARTING LOAD ===");
+
             try {
                 const { data: authData } = await supabaseClient.auth.getSession();
                 state.currentUser = authData && authData.session ? authData.session.user : null;
             } catch(e) { state.currentUser = null; }
             
-            const loginBtnEl = document.getElementById("loginBtnText");
-            if(loginBtnEl) loginBtnEl.innerText = state.currentUser ? "👤 Mein Profil" : "👤 Liga Login";
-
-            state.isAdminUser = false;
-            if (state.currentUser) {
-                try {
-                    const { data: pData } = await supabaseClient.from('profiles').select('is_admin').eq('id', state.currentUser.id).maybeSingle();
-                    if (pData && pData.is_admin === true) state.isAdminUser = true;
-                } catch(e){}
-            }
+            const loginBtnEl = document.getElementById("ligaLoginBtn");
+            if(loginBtnEl) loginBtnEl.innerText = state.currentUser ? "👤 PROFILE" : "👤 LOGIN";
 
             try {
                 const { data: newsData } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
                 let nHtml = "";
                 if(newsData && newsData.length > 0) {
                     newsData.forEach(n => {
-                        const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
-                        const adminActionsHtml = state.isAdminUser ? `<div class="news-admin-actions"><span class="news-action-link" onclick="directEditNews('${n.id}')">✏️ Edit</span><span class="news-action-link" onclick="directDeleteNews('${n.id}')">🗑️</span></div>` : '';
-                        
+                        const date = new Date(n.created_at).toLocaleDateString('de-DE');
                         nHtml += `<div class="content-block">
-                                    ${adminActionsHtml}
                                     <div class="news-header-wrapper">
-                                        <h4 class="news-title-text">${htmlEscape(n.title)}</h4>
+                                        <h3 class="news-title-text">${htmlEscape(n.title)}</h3>
                                         <span class="news-date-text">${date}</span>
                                     </div>
                                     <div class="ql-snow"><div class="ql-editor">${decodeHtml(n.content)}</div></div>
                                   </div>`;
                     });
-                } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
-                state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
+                } else { nHtml = "<div class='empty'>⚪ NO NEWS</div>"; }
+                state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">NEWS</div></div><div style="padding:28px;">${nHtml}</div></div>`;
             } catch(e) {
-                state.newsHtml = `<div class='empty'>Fehler beim Laden der News.</div>`;
+                state.newsHtml = `<div class='empty'>ERROR</div>`;
             }
 
             try {
                 const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
                 state.currentSeason = sys && sys.current_season ? sys.current_season : 'Saison 1';
-                state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${decodeHtml(sys.regelwerk_html)}</div></div>` : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+                state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${decodeHtml(sys.regelwerk_html)}</div></div>` : '<h2>RULES</h2><p>NO RULES</p>';
             } catch(e) {
                 state.currentSeason = 'Saison 1';
-                state.rulewerkHtml = '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+                state.rulewerkHtml = '<h2>RULES</h2><p>NO RULES</p>';
             }
 
-            const linksContentEl = document.getElementById('linksContent');
-            if (linksContentEl) {
-                try { const r = await fetch('links.html'); if(r.ok) linksContentEl.innerHTML = await r.text(); } catch(e){}
-            }
+            log(`Season: ${state.currentSeason}`);
 
             const { data: profiles } = await supabaseClient.from('profiles').select('*');
             state.allProfilesCache = profiles || [];
+            log(`Profiles: ${state.allProfilesCache.length}`);
+            state.allProfilesCache.forEach(p => {
+              log(`  ${p.display_name || p.discord_name}: AD=${p.assigned_ad_league}, DC=${p.assigned_dc_league}, SC=${p.assigned_sc_league}`);
+            });
             
             const { data: matchesData } = await supabaseClient.from('matches').select('*');
-            // FIXED: Ausfallsichere Filterung nach der im Admin eingestellten Saison
             const matches = matchesData ? matchesData.filter(m => m.season && String(m.season).toLowerCase().trim() === state.currentSeason.toLowerCase().trim()) : [];
+            log(`Matches: ${matches.length}`);
 
             const { data: seasons } = await supabaseClient.from('matches').select('season');
             const uniqueSeasons = [...new Set((seasons || []).map(m => m.season))];
             
             const aS = document.getElementById("archiveSeasonSelect");
-            if(aS) aS.innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
+            if(aS) aS.innerHTML = '<option value="">SEASON</option>' + uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
             const aL = document.getElementById("archiveLeagueSelect");
-            if(aL) aL.innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
+            if(aL) aL.innerHTML = '<option value="">LEAGUE</option>' + ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
 
-            // Bereitet leere Datenstrukturen für alle Ligen vor, damit das Menü nie abstürzt
             ALL_LEAGUES.forEach(l => {
                 state.leagueData[l] = { standings: { rows: [] }, matchdays: [] };
             });
 
             ALL_LEAGUES.forEach(league => {
-                const leagueClean = league.toLowerCase().replace(/\s+/g,'');
-                const lMatches = matches ? matches.filter(m => m.league_name && m.league_name.toLowerCase().replace(/\s+/g,'') === leagueClean) : [];
+                log(`\nProcessing ${league}...`);
                 
-                const lPlayers = profiles ? profiles.filter(p => 
-                    (p.assigned_ad_league && p.assigned_ad_league.toLowerCase().replace(/\s+/g,'') === leagueClean) ||
-                    (p.assigned_dc_league && p.assigned_dc_league.toLowerCase().replace(/\s+/g,'') === leagueClean) ||
-                    (p.assigned_sc_league && p.assigned_sc_league.toLowerCase().replace(/\s+/g,'') === leagueClean)
-                ) : [];
+                const lPlayers = profiles ? profiles.filter(p => {
+                    const match = p.assigned_ad_league === league || p.assigned_dc_league === league || p.assigned_sc_league === league;
+                    if(match) log(`  ${p.display_name}: assigned`);
+                    return match;
+                }) : [];
+
+                const lMatches = matches ? matches.filter(m => m.league_name === league) : [];
+                
+                log(`  Found ${lPlayers.length} players, ${lMatches.length} matches`);
 
                 const stats = {};
+                
                 lPlayers.forEach(p => {
-                    stats[p.id] = { id: p.id, name: p.display_name || p.discord_name || p.username, discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, yellow: p.yellow_cards, red: p.red_cards, showInMembers: p.show_in_members };
+                    stats[p.id] = { 
+                        id: p.id, 
+                        name: p.display_name || p.discord_name || p.username, 
+                        wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, 
+                        yellow: p.yellow_cards || 0, red: p.red_cards || 0, showInMembers: p.show_in_members !== false 
+                    };
                 });
 
                 lMatches.forEach(m => {
-                    if (m.player1_id && !stats[m.player1_id]) {
+                    if (!m.player1_id || !m.player2_id) return;
+
+                    if (!stats[m.player1_id]) {
                         const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                        stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                        stats[m.player1_id] = { 
+                            id: m.player1_id, 
+                            name: p ? (p.display_name || p.discord_name || p.username) : "FORMER PLAYER", 
+                            wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, 
+                            yellow: 0, red: 0, showInMembers: true 
+                        };
                     }
-                    if (m.player2_id && !stats[m.player2_id]) {
+                    if (!stats[m.player2_id]) {
                         const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                        stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                        stats[m.player2_id] = { 
+                            id: m.player2_id, 
+                            name: p ? (p.display_name || p.discord_name || p.username) : "FORMER PLAYER", 
+                            wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, 
+                            yellow: 0, red: 0, showInMembers: true 
+                        };
                     }
 
                     if((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
-                        const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
+                        const l1 = parseInt(m.legs_player1) || 0;
+                        const l2 = parseInt(m.legs_player2) || 0;
                         
                         stats[m.player1_id].gamesPlayed++;
                         stats[m.player2_id].gamesPlayed++;
-                        
-                        stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
-                        if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
-                        else if(l2 > l1) { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+                        stats[m.player1_id].legDiff += (l1 - l2);
+                        stats[m.player2_id].legDiff += (l2 - l1);
+
+                        if(l1 > l2) { 
+                            stats[m.player1_id].wins++; 
+                            stats[m.player1_id].points += 2; 
+                            stats[m.player2_id].losses++; 
+                        } 
+                        else if(l2 > l1) { 
+                            stats[m.player2_id].wins++; 
+                            stats[m.player2_id].points += 2; 
+                            stats[m.player1_id].losses++; 
+                        }
 
                         if (m.avg_player1 && !isNaN(parseFloat(m.avg_player1))) {
                             stats[m.player1_id].avgSum += parseFloat(m.avg_player1);
@@ -688,36 +1402,46 @@
                 });
 
                 const standingsRows = Object.values(stats).sort((a,b) => b.points !== a.points ? b.points - a.points : b.legDiff - a.legDiff);
+                
                 const groupedMatches = {};
                 lMatches.forEach(m => {
-                    const day = m.matchday ? `Spieltag ${m.matchday}` : 'Unbekannter Spieltag';
+                    const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag';
                     if(!groupedMatches[day]) groupedMatches[day] = [];
                     
                     let p1Title = "Freilos";
                     let p2Title = "Freilos";
-                    if (m.player1_id) {
-                        p1Title = stats[m.player1_id]?.name || (state.allProfilesCache.find(x => x.id === m.player1_id)?.display_name) || "Spieler 1";
-                    }
-                    if (m.player2_id) {
-                        p2Title = stats[m.player2_id]?.name || (state.allProfilesCache.find(x => x.id === m.player2_id)?.display_name) || "Spieler 2";
-                    }
+                    if (m.player1_id && stats[m.player1_id]) p1Title = stats[m.player1_id].name;
+                    if (m.player2_id && stats[m.player2_id]) p2Title = stats[m.player2_id].name;
 
-                    groupedMatches[day].push({ p1Name: p1Title, p2Name: p2Title, legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
+                    groupedMatches[day].push({ 
+                        p1Name: p1Title, p2Name: p2Title, 
+                        legs1: m.legs_player1, legs2: m.legs_player2, 
+                        status: m.status 
+                    });
                 });
 
                 const matchdays = Object.entries(groupedMatches).map(([title, rows]) => {
                     const done = rows.filter(r => r.status === 'done' || r.status === 'fertig').length;
-                    return { title, status: done===rows.length?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
+                    return { 
+                        title, status: done === rows.length ? 'fertig' : 'offen', 
+                        doneMatches: done, totalMatches: rows.length, rows 
+                    };
+                }).sort((a, b) => {
+                    const aNum = parseInt(a.title.match(/\d+/)?.[0] || 0);
+                    const bNum = parseInt(b.title.match(/\d+/)?.[0] || 0);
+                    return aNum - bNum;
                 });
 
                 state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
             });
 
+            log("\n=== LOAD COMPLETE ===");
             setMode("Home");
 
         } catch (error) { 
-            console.error("Gesamter Ladefehler:", error);
-            if(tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="color: red; border-color: red;">Kritischer Fehler: ${error.message}</div>`; 
+            console.error(error);
+            log(`ERROR: ${error.message}`);
+            if(tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="color: var(--dc-orange);">❌ ${error.message}</div>`; 
         }
     }
 
@@ -730,16 +1454,16 @@
     safeBind("modeAutodarts", () => setMode("Autodarts"));
     safeBind("modeDartCounter", () => setMode("DartCounter"));
     safeBind("modeScolia", () => setMode("Scolia"));
-    
     safeBind("archiveBtn", () => openModal(document.getElementById("archiveModal")));
     safeBind("openImpressumBtn", () => openModal(document.getElementById("impressumModal")));
     safeBind("openLinksBtn", () => openModal(document.getElementById("linksModal")));
+    safeBind("openDebugBtn", () => showDebugInfo());
     
     safeBind("regelwerkBtn", () => {
         const modal = document.getElementById('playerProfileModal');
         const titleEl = document.getElementById('playerProfileTitle');
         const contentEl = document.getElementById('playerProfileContent');
-        if(titleEl) titleEl.innerText = "Regelwerk";
+        if(titleEl) titleEl.innerText = "RULES";
         if(contentEl) contentEl.innerHTML = state.rulewerkHtml;
         openModal(modal);
     });
@@ -763,9 +1487,14 @@
         state.matchdayOpenState[card.dataset.key] = isOpen;
     }
 
-    function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
+    function rankClass(rank, total) { 
+        if (rank === 1) return "first"; 
+        if (rank === 2) return "second"; 
+        if (rank === 3) return "third"; 
+        return ""; 
+    }
 
     loadAll();
-</script>
+  </script>
 </body>
 </html>
