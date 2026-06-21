@@ -38,10 +38,10 @@
     
     .wrap { width: min(1200px, calc(100% - 28px)); margin: 0 auto; padding: 15px 0 42px; }
     
-    /* NEUER FRISCHER BANNER-HEADER */
+    /* MODERNER BANNER-HEADER */
     .header-branding { text-align: center; margin-bottom: 25px; padding: 35px 20px; border-radius: 16px; background: linear-gradient(135deg, rgba(28, 37, 65, 0.95), rgba(11, 19, 41, 0.95)); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 20px color-mix(in srgb, var(--accent) 25%, transparent); backdrop-filter: blur(10px); transition: box-shadow 0.3s ease; }
     .header-branding h2 { margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 3px; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-    .header-branding p { margin: 8px 0 0 0; font-size: 14px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .header-branding p { margin: 8px 0 0 0; font-size: 14px; color: var(--muted); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
 
     .dashboard-nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px; margin: 0 auto 25px auto; max-width: 1024px; align-items: start !important; }
     .nav-card { background: var(--panel-glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); backdrop-filter: blur(10px); height: fit-content !important; align-self: start !important; }
@@ -68,8 +68,8 @@
     .dropdown-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--accent-border); }
     .dropdown-btn.active { background: var(--accent); color: #000; font-weight: 900; border-color: var(--accent); box-shadow: 0 0 15px rgba(59,130,246,0.4); }
 
-    /* VERGRÖSSERT: Hauptansicht vergrößert für maximalen Platz */
-    .main { display: grid; grid-template-columns: minmax(0,2.3fr) minmax(340px,0.85fr); gap: 20px; align-items: start; }
+    /* LIGALAYOUT VERGRÖSSERT */
+    .main { display: grid; grid-template-columns: minmax(0,2.2fr) minmax(340px,0.85fr); gap: 20px; align-items: start; }
     body[data-mode="Home"] .main { grid-template-columns: 1fr; }
     body[data-mode="Home"] .sidebar { display: none; }
 
@@ -135,14 +135,8 @@
     .archive-select { padding: 10px; border-radius: 8px; background: #1e293b; color: #fff; border: 1px solid #4b87a5; outline: none; font-weight: bold; min-width: 160px; }
 
     .icon-svg { width: 18px !important; height: 18px !important; min-width: 18px; min-height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-    
-    .ql-editor p { margin-bottom: 12px !important; line-height: 1.6 !important; color: #f1f8fb !important; }
-    .ql-editor ol { list-style-type: decimal !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
-    .ql-editor ul { list-style-type: disc !important; margin: 0 0 16px 25px !important; padding: 0 !important; display: block !important; }
-    .ql-editor li { display: list-item !important; list-style-position: outside !important; margin-bottom: 8px !important; line-height: 1.5 !important; color: #edf7fb !important; }
-    .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 { margin-top: 20px !important; margin-bottom: 12px !important; color: #fff !important; font-weight: bold !important; }
 
-    /* DESIGN: ULTRA-KOMPAKTE PROFIL-CARD OPTIK */
+    /* PROFIL-CARD DESIGN */
     .profile-card-content { display: flex; flex-direction: column; width: 100%; padding: 0; gap: 8px; }
     .profile-header-compact { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); width: 100%; margin-bottom: 2px; }
     .profile-avatar-compact { width: 85px; height: 85px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #1e293b; flex-shrink: 0; }
@@ -297,6 +291,13 @@
         await supabaseClient.from('news').delete().eq('id', id); loadAll();
     };
 
+    window.copyDiscord = function(name) { navigator.clipboard.writeText(name).then(() => alert("Kopiert!")); };
+    window.directEditNews = function(id) { window.location.href = "profil.html"; };
+    window.directDeleteNews = async function(id) {
+        if(!confirm("News löschen?")) return;
+        await supabaseClient.from('news').delete().eq('id', id); loadAll();
+    };
+
     window.loadArchiveData = async function() {
         const season = document.getElementById("archiveSeasonSelect").value;
         const league = document.getElementById("archiveLeagueSelect").value;
@@ -352,7 +353,6 @@
             dynamicBlock.style.display = "grid";
             if (cardTitle) cardTitle.innerText = `Aktive ${state.activeMode} Ligen`;
 
-            // FIXED: Verwendet korrekten Filter für die Plattform-Erkennung (case-insensitive & whitespace clean)
             const filtered = ALL_LEAGUES.filter(l => l.toLowerCase().replace(/\s+/g,'').startsWith(state.activeMode.toLowerCase().replace(/\s+/g,'')));
             dynamicBlock.innerHTML = filtered.map(l => {
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
@@ -392,6 +392,13 @@
       updateRightNavBlock();
     }
 
+    function renderPlayerCards(yellow, red) {
+        let html = "";
+        for (let i = 0; i < (yellow || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--yellow); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(241,196,15,0.4);"></span>`;
+        for (let i = 0; i < (red || 0); i++) html += `<span style="display:inline-block; width:10px; height:14px; background:var(--red); margin-left:4px; border-radius:2px; vertical-align:middle; box-shadow: 0 0 5px rgba(231,76,60,0.4);"></span>`;
+        return html;
+    }
+
     function renderLeague() {
       const tArea = document.getElementById("tableArea");
       const mArea = document.getElementById("matchdayArea");
@@ -407,7 +414,6 @@
       mArea.innerHTML = renderMatchdays(data.matchdays);
     }
 
-    // FIXED: Einheitliche Funktionsbenennung repariert!
     function renderStandingsTable(rows) {
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
@@ -569,7 +575,6 @@
         if(tArea) tArea.innerHTML = state.newsHtml; 
         if(mArea) mArea.innerHTML = ""; 
     }
-    function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
 
     async function loadAll() {
         const tableAreaEl = document.getElementById("tableArea");
@@ -632,7 +637,7 @@
             state.allProfilesCache = profiles || [];
             
             const { data: matchesData } = await supabaseClient.from('matches').select('*');
-            // FIXED: Verhindert String-Fehler bei leeren oder abweichenden Saison-Einträgen
+            // Fehlertolerante Filterung nach der aktuellen Saison im JavaScript
             const matches = matchesData ? matchesData.filter(m => m.season && String(m.season).toLowerCase().trim() === state.currentSeason.toLowerCase().trim()) : [];
 
             const { data: seasons } = await supabaseClient.from('matches').select('season');
@@ -643,12 +648,12 @@
             const aL = document.getElementById("archiveLeagueSelect");
             if(aL) aL.innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
 
+            // Bereitet leere Datenstrukturen für alle Ligen vor, damit das Menü nie abstürzt
             ALL_LEAGUES.forEach(l => {
                 state.leagueData[l] = { standings: { rows: [] }, matchdays: [] };
             });
 
             ALL_LEAGUES.forEach(league => {
-                // FIXED: Nutzt jetzt eine absolut fehlertolerante Filter-Berechnung für den Abgleich
                 const leagueClean = league.toLowerCase().replace(/\s+/g,'');
                 const lMatches = matches ? matches.filter(m => m.league_name && m.league_name.toLowerCase().replace(/\s+/g,'') === leagueClean) : [];
                 
@@ -728,7 +733,6 @@
         }
     }
 
-    // Bindet Events sicher an die Elemente
     function safeBind(id, handler) {
         const el = document.getElementById(id);
         if (el) el.addEventListener("click", handler);
