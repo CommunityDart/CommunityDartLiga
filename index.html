@@ -77,19 +77,19 @@
     .section-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
     .table-wrap { overflow-x: auto; padding-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; min-width: 550px; table-layout: fixed; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; table-layout: fixed; }
     thead th { padding: 14px 16px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-transform: uppercase; background: rgba(255,255,255,0.08); border-bottom: 1px solid var(--line); text-align: left; }
     
-    /* REPARIERT: Ausrichtung der Köpfe nach dem Entfernen der Discord-Spalte */
-    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6) { text-align: center; width: 95px; }
+    /* REPARIERT: Zentrierung gilt nun ab dem 3. Element bis zum 8. Element (Sp, S, N, Leg-Diff, AVG, Punkte) */
+    thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6), thead th:nth-child(7), thead th:nth-child(8) { text-align: center; width: 68px; }
     
     tbody tr:nth-child(odd) td { background: var(--row-a); }
     tbody tr:nth-child(even) td { background: var(--row-b); }
     tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; color: #f1f8fb; white-space: nowrap; }
     tbody tr:hover td { background: rgba(255, 255, 255, 0.05); }
     
-    /* REPARIERT: Ausrichtung der Datenzellen nach dem Entfernen der Discord-Spalte */
-    tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6) { text-align: center; }
+    /* REPARIERT: Auch in den Datenzeilen müssen diese Werte zentriert sein */
+    tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6), tbody td:nth-child(7), tbody td:nth-child(8) { text-align: center; }
 
     .rank-col { width: 75px; font-weight: 900; text-align: center !important; position: relative; }
     .rank-col.first::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); }
@@ -355,7 +355,6 @@
 
             const filtered = ALL_LEAGUES.filter(l => l.startsWith(state.activeMode));
             dynamicBlock.innerHTML = filtered.map(l => {
-                // REPARIERT: Liga schaltet sich frei, wenn ein Datensatz initialisiert ist (Egal ob Matchplan ODER Spieler vorhanden)
                 const hasData = state.leagueData[l];
                 if(!hasData) return `<button class="dropdown-btn" style="opacity:0.25; cursor:not-allowed;" disabled>${getShortLeagueNumber(l)}</button>`;
                 return `<button class="dropdown-btn ${l === state.activeLeague ? "active" : ""}" onclick="selectLeagueDirectly('${l}')">${getShortLeagueNumber(l)}</button>`;
@@ -383,7 +382,6 @@
         state.activeLeague = null;
         renderHome();
       } else {
-        // REPARIERT: Erfasst alle Ligen, die Datenstrukturen halten
         const visible = ALL_LEAGUES.filter(l => l.startsWith(mode) && state.leagueData[l]);
         state.activeLeague = visible.includes(state.activeLeague) ? state.activeLeague : (visible[0] || null);
         renderLeague();
@@ -416,14 +414,22 @@
     function renderStandingsTable(rows) {
       const visibleRows = rows.filter(s => s.showInMembers !== false);
 
-      const tbody = visibleRows.map((s, idx) => `<tr>
-          <td class="rank-col ${rankClass(idx+1, visibleRows.length)}">${idx+1}</td>
-          <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
-          <td>${s.wins}</td><td>${s.losses}</td><td>${s.legDiff}</td><td style="font-weight:bold; color:var(--accent);">${s.points}</td>
-        </tr>`).join("");
+      const tbody = visibleRows.map((s, idx) => {
+          const playerAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount).toFixed(2) : "-";
+          return `<tr>
+              <td class="rank-col ${rankClass(idx+1, visibleRows.length)}">${idx+1}</td>
+              <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(s.name)}')">${htmlEscape(s.name)}</span> ${renderPlayerCards(s.yellow, s.red)}</td>
+              <td>${s.gamesPlayed}</td>
+              <td>${s.wins}</td>
+              <td>${s.losses}</td>
+              <td>${s.legDiff}</td>
+              <td style="font-weight:bold; color:#cbd5e1;">${playerAvg}</td>
+              <td style="font-weight:bold; color:var(--accent);">${s.points}</td>
+            </tr>`;
+      }).join("");
 
       return `<div class="table-shell"><div class="section-head"><div><div class="section-title">${state.activeLeague}</div><div class="section-sub">Live berechneter Tabellenstand • Bo7</div></div></div>
-      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>S</th><th>N</th><th>Leg-Diff</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
+      <div class="table-wrap"><table><thead><tr><th class="rank-col">Platz</th><th>Spieler</th><th>Sp</th><th>S</th><th>N</th><th>Leg-Diff</th><th>AVG</th><th>Punkte</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
     }
 
     function renderMatchdays(matchdays) {
@@ -444,7 +450,7 @@
         return `<div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
           <button class="matchday-head" onclick="toggleMatchday(this)">
             <span class="matchday-title">${htmlEscape(day.title)}</span>
-            <span class="status-badge ${day.status === 'fertig' ? 'done' : ''}" style="margin:0;">${day.doneMatches}/${day.totalMatches}</span>
+            <span class="status-badge ${day.status === 'fertig' || day.status === 'done' ? 'done' : ''}" style="margin:0;">${day.doneMatches}/${day.totalMatches}</span>
           </button>
           <div class="matchday-body"><table class="match-table"><tbody>${tbody}</tbody></table></div>
         </div>`;
@@ -644,25 +650,37 @@
 
                 const stats = {};
                 lPlayers.forEach(p => {
-                    stats[p.id] = { id: p.id, name: p.display_name || p.discord_name || p.username, discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, yellow: p.yellow_cards, red: p.red_cards, showInMembers: p.show_in_members };
+                    stats[p.id] = { id: p.id, name: p.display_name || p.discord_name || p.username, discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, yellow: p.yellow_cards, red: p.red_cards, showInMembers: p.show_in_members };
                 });
 
                 lMatches.forEach(m => {
                     if (m.player1_id && !stats[m.player1_id]) {
                         const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-                        stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                        stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                     }
                     if (m.player2_id && !stats[m.player2_id]) {
                         const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-                        stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                        stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
                     }
 
-                    // REPARIERT: Fängt offen/fertig/done gleichermaßen ab und schützt vor Freilos-Abstürzen
                     if((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
                         const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
+                        
+                        stats[m.player1_id].gamesPlayed++;
+                        stats[m.player2_id].gamesPlayed++;
+                        
                         stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
                         if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
-                        else { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+                        else if(l2 > l1) { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+
+                        if (m.avg_player1 && !isNaN(parseFloat(m.avg_player1))) {
+                            stats[m.player1_id].avgSum += parseFloat(m.avg_player1);
+                            stats[m.player1_id].avgCount++;
+                        }
+                        if (m.avg_player2 && !isNaN(parseFloat(m.avg_player2))) {
+                            stats[m.player2_id].avgSum += parseFloat(m.avg_player2);
+                            stats[m.player2_id].avgCount++;
+                        }
                     }
                 });
 
