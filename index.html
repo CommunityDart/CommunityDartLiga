@@ -434,4 +434,347 @@
 
     function renderMatchdays(matchdays) {
       if (!matchdays || matchdays.length === 0) return `<div class="empty">Keine aufgezeichneten Spieltage für diese Liga hinterlegt.</div>`;
-      const defaultOpenIndex = matchdays.findIndex(day => day.status !== 'fertig'
+      const defaultOpenIndex = matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done') === -1 ? 0 : matchdays.findIndex(day => day.status !== 'fertig' && day.status !== 'done');
+
+      return matchdays.map((day, idx) => {
+        const key = `${state.activeLeague}__${day.title}`;
+        const isOpen = key in state.matchdayOpenState ? state.matchdayOpenState[key] : idx === defaultOpenIndex;
+        
+        const tbody = day.rows.map(m => `<tr>
+          <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name)}</span></td>
+          <td><span class="player-link" onclick="openPlayerProfile('${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name)}</span></td>
+          <td style="text-align:center; font-weight:bold;">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</td>
+          <td style="text-align:right;"><span class="status-badge ${m.status === 'done' || m.status === 'fertig' ? 'done' : ''}">${m.status === 'done' || m.status === 'fertig' ? 'Gespeichert' : 'Offen'}</span></td>
+        </tr>`).join("");
+
+        return `<div class="matchday ${isOpen ? "open" : ""}" data-key="${htmlEscape(key)}">
+          <button class="matchday-head" onclick="toggleMatchday(this)">
+            <span class="matchday-title">${htmlEscape(day.title)}</span>
+            <span class="status-badge ${day.status === 'fertig' || day.status === 'done' ? 'done' : ''}" style="margin:0;">${day.doneMatches}/${day.totalMatches}</span>
+          </button>
+          <div class="matchday-body"><table class="match-table"><tbody>${tbody}</tbody></table></div>
+        </div>`;
+      }).join("");
+    }
+
+    window.contactViaDiscord = function(discordName, discordId) {
+        if (discordId && discordId !== "" && discordId !== "null") {
+            window.open(`https://discord.com/users/${discordId}`, "_blank");
+        } else if (discordName && discordName !== '-') {
+            navigator.clipboard.writeText(discordName).then(() => {
+                alert(`Discord-Name '${discordName}' wurde kopiert!\n\nDiscord wird geöffnet. Nutze dort einfach die Suche, um direkt zu chatten.`);
+                window.open("https://discord.com/channels/@me", "_blank");
+            }).catch(err => {
+                window.open("https://discord.com/channels/@me", "_blank");
+            });
+        } else {
+            alert("Dieser Spieler hat keinen Discord-Namen hinterlegt.");
+        }
+    };
+
+    window.openPlayerProfile = async function(playerName) {
+        if(playerName === 'Freilos' || playerName === 'Ehem. Spieler') return;
+        const modal = document.getElementById("playerProfileModal");
+        const titleEl = document.getElementById("playerProfileTitle");
+        const content = document.getElementById("playerProfileContent");
+        
+        if(titleEl) titleEl.innerText = "Spielerprofil";
+        content.innerHTML = "<p>Lade Profilkarte...</p>";
+        openModal(modal);
+
+        const p = state.allProfilesCache.find(prof => 
+            prof.display_name === playerName || 
+            prof.discord_name === playerName || 
+            prof.real_name === playerName ||
+            prof.username === playerName
+        );
+
+        if(!p) {
+            content.innerHTML = "<div class='empty'>Keine Profildaten im Cache gefunden.</div>";
+            return;
+        }
+
+        const avatarSrc = p.avatar_url || "https://ui-avatars.com/api/?name=" + encodeURIComponent(p.display_name || p.discord_name || p.username || 'P') + "&background=random&color=fff";
+        const discordHandle = p.discord_name || p.username || '-';
+        const discordId = p.discord_id || '';
+
+        let platformsHtml = "";
+        
+        if (p.autodarts_name || p.autodarts_avg) {
+            platformsHtml += `
+                <div class="platform-row-compact">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="platform-badge-mini ad">AD</span>
+                        <span style="font-weight:700; color:#fff;">${htmlEscape(p.autodarts_name || '-')}</span>
+                    </div>
+                    <span style="font-weight:800; color: #0077ff;">${htmlEscape(p.autodarts_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+                </div>`;
+        }
+
+        if (p.dartcounter_name || p.dartcounter_avg) {
+            platformsHtml += `
+                <div class="platform-row-compact">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="platform-badge-mini dc">DC</span>
+                        <span style="font-weight:700; color:#fff;">${htmlEscape(p.dartcounter_name || '-')}</span>
+                    </div>
+                    <span style="font-weight:800; color: #ff6a00;">${htmlEscape(p.dartcounter_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+                </div>`;
+        }
+
+        if (p.scolia_name || p.scolia_avg) {
+            platformsHtml += `
+                <div class="platform-row-compact">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="platform-badge-mini sc">SC</span>
+                        <span style="font-weight:700; color:#fff;">${htmlEscape(p.scolia_name || '-')}</span>
+                    </div>
+                    <span style="font-weight:800; color: #00ff66;">${htmlEscape(p.scolia_avg || '-')} <small style="font-size:10px; font-weight:normal; color:var(--muted)">AVG</small></span>
+                </div>`;
+        }
+
+        if (!platformsHtml) {
+            platformsHtml = "<div class='empty' style='font-size:12px; padding:4px;'>Keine Plattformprofile hinterlegt.</div>";
+        }
+
+        content.innerHTML = `
+            <div class="profile-card-content">
+                <div class="profile-header-compact">
+                    <img src="${avatarSrc}" class="profile-avatar-compact" alt="Avatar">
+                    <div class="profile-meta-compact">
+                        <h2 class="profile-name-compact">${htmlEscape(p.display_name || p.discord_name || p.username)}</h2>
+                        <div class="profile-sub-compact">📍 ${htmlEscape(p.ort || 'Kein Wohnort')}</div>
+                        <button class="profile-discord-btn" onclick="contactViaDiscord('${htmlEscape(discordHandle)}', '${htmlEscape(discordId)}')">
+                            <span>💬 Discord Nachricht</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="profile-details-list">
+                    <div class="profile-detail-item">
+                        <span class="profile-detail-label">🎯 Dart-Setup:</span>
+                        <span class="profile-detail-val">${htmlEscape(p.dart_setup || 'Keine Angabe')}</span>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 11px; text-transform: uppercase; color: var(--muted); margin: 2px 0 2px 2px; font-weight: bold; text-align: left; width: 100%; letter-spacing: 0.5px;">Plattformen & Averages</h3>
+                
+                <div style="width: 100%;">
+                    ${platformsHtml}
+                </div>
+            </div>
+        `;
+    };
+
+    function renderHome() { 
+        const tArea = document.getElementById("tableArea");
+        const mArea = document.getElementById("matchdayArea");
+        if(tArea) tArea.innerHTML = state.newsHtml; 
+        if(mArea) mArea.innerHTML = ""; 
+    }
+    function getShortLeagueNumber(fullName) { const match = fullName.match(/\d+$/); return match ? `#${match[0]}` : fullName; }
+
+    async function loadAll() {
+        const tableAreaEl = document.getElementById("tableArea");
+
+        try {
+            try {
+                const { data: authData } = await supabaseClient.auth.getSession();
+                state.currentUser = authData && authData.session ? authData.session.user : null;
+            } catch(e) { state.currentUser = null; }
+            
+            const loginBtnEl = document.getElementById("loginBtnText");
+            if(loginBtnEl) loginBtnEl.innerText = state.currentUser ? "👤 Mein Profil" : "👤 Liga Login";
+
+            state.isAdminUser = false;
+            if (state.currentUser) {
+                try {
+                    const { data: pData } = await supabaseClient.from('profiles').select('is_admin').eq('id', state.currentUser.id).maybeSingle();
+                    if (pData && pData.is_admin === true) state.isAdminUser = true;
+                } catch(e){}
+            }
+
+            try {
+                const { data: newsData } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
+                let nHtml = "";
+                if(newsData && newsData.length > 0) {
+                    newsData.forEach(n => {
+                        const date = new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+                        const adminActionsHtml = state.isAdminUser ? `<div class="news-admin-actions"><span class="news-action-link" onclick="directEditNews('${n.id}')">✏️ Edit</span><span class="news-action-link" onclick="directDeleteNews('${n.id}')">🗑️</span></div>` : '';
+                        
+                        nHtml += `<div class="content-block">
+                                    ${adminActionsHtml}
+                                    <div class="news-header-wrapper">
+                                        <h4 class="news-title-text">${htmlEscape(n.title)}</h4>
+                                        <span class="news-date-text">${date}</span>
+                                    </div>
+                                    <div class="ql-snow"><div class="ql-editor">${decodeHtml(n.content)}</div></div>
+                                  </div>`;
+                    });
+                } else { nHtml = "<div class='empty'>Aktuell keine Neuigkeiten verfasst.</div>"; }
+                state.newsHtml = `<div class="table-shell"><div class="section-head"><div class="section-title">Neuigkeiten & Ankündigungen</div></div><div style="padding:18px;">${nHtml}</div></div>`;
+            } catch(e) {
+                state.newsHtml = `<div class='empty'>Fehler beim Laden der News.</div>`;
+            }
+
+            try {
+                const { data: sys } = await supabaseClient.from('system_settings').select('current_season, regelwerk_html').eq('id', 1).single();
+                state.currentSeason = sys && sys.current_season ? sys.current_season : 'Saison 1';
+                state.rulewerkHtml = sys && sys.regelwerk_html ? `<div class="ql-snow"><div class="ql-editor">${decodeHtml(sys.regelwerk_html)}</div></div>` : '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+            } catch(e) {
+                state.currentSeason = 'Saison 1';
+                state.rulewerkHtml = '<h1>Regelwerk</h1><p>Aktuell kein Regelwerk hinterlegt.</p>';
+            }
+
+            const linksContentEl = document.getElementById('linksContent');
+            if (linksContentEl) {
+                try { const r = await fetch('links.html'); if(r.ok) linksContentEl.innerHTML = await r.text(); } catch(e){}
+            }
+
+            const { data: profiles } = await supabaseClient.from('profiles').select('*');
+            state.allProfilesCache = profiles || [];
+            
+            const { data: matchesData } = await supabaseClient.from('matches').select('*');
+            const matches = matchesData ? matchesData.filter(m => !m.season || String(m.season).toLowerCase().trim() === state.currentSeason.toLowerCase().trim()) : [];
+
+            const { data: seasons } = await supabaseClient.from('matches').select('season');
+            const uniqueSeasons = [...new Set((seasons || []).map(m => m.season))];
+            
+            const aS = document.getElementById("archiveSeasonSelect");
+            if(aS) aS.innerHTML = uniqueSeasons.map(s => `<option value="${s}">${s}</option>`).join("");
+            const aL = document.getElementById("archiveLeagueSelect");
+            if(aL) aL.innerHTML = ALL_LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
+
+            ALL_LEAGUES.forEach(l => {
+                state.leagueData[l] = { standings: { rows: [] }, matchdays: [] };
+            });
+
+            ALL_LEAGUES.forEach(league => {
+                const lMatches = matches ? matches.filter(m => m.league_name && m.league_name.toLowerCase().trim() === league.toLowerCase().trim()) : [];
+                
+                const lPlayers = profiles ? profiles.filter(p => 
+                    (p.assigned_ad_league && p.assigned_ad_league.toLowerCase().trim() === league.toLowerCase().trim()) ||
+                    (p.assigned_dc_league && p.assigned_dc_league.toLowerCase().trim() === league.toLowerCase().trim()) ||
+                    (p.assigned_sc_league && p.assigned_sc_league.toLowerCase().trim() === league.toLowerCase().trim())
+                ) : [];
+
+                if(lPlayers.length === 0 && lMatches.length === 0) return;
+
+                const stats = {};
+                lPlayers.forEach(p => {
+                    stats[p.id] = { id: p.id, name: p.display_name || p.discord_name || p.username, discord: p.discord_name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, yellow: p.yellow_cards, red: p.red_cards, showInMembers: p.show_in_members };
+                });
+
+                lMatches.forEach(m => {
+                    if (m.player1_id && !stats[m.player1_id]) {
+                        const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
+                        stats[m.player1_id] = { id: m.player1_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                    }
+                    if (m.player2_id && !stats[m.player2_id]) {
+                        const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
+                        stats[m.player2_id] = { id: m.player2_id, name: p ? (p.display_name || p.discord_name || p.username) : "Ehem. Spieler", wins:0, losses:0, legDiff:0, points:0, gamesPlayed:0, avgSum:0, avgCount:0, yellow:0, red:0, showInMembers: p ? p.show_in_members : true };
+                    }
+
+                    if((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
+                        const l1 = parseInt(m.legs_player1) || 0; const l2 = parseInt(m.legs_player2) || 0;
+                        
+                        stats[m.player1_id].gamesPlayed++;
+                        stats[m.player2_id].gamesPlayed++;
+                        
+                        stats[m.player1_id].legDiff += (l1 - l2); stats[m.player2_id].legDiff += (l2 - l1);
+                        if(l1 > l2) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; stats[m.player2_id].losses++; } 
+                        else if(l2 > l1) { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; stats[m.player1_id].losses++; }
+
+                        if (m.avg_player1 && !isNaN(parseFloat(m.avg_player1))) {
+                            stats[m.player1_id].avgSum += parseFloat(m.avg_player1);
+                            stats[m.player1_id].avgCount++;
+                        }
+                        if (m.avg_player2 && !isNaN(parseFloat(m.avg_player2))) {
+                            stats[m.player2_id].avgSum += parseFloat(m.avg_player2);
+                            stats[m.player2_id].avgCount++;
+                        }
+                    }
+                });
+
+                const standingsRows = Object.values(stats).sort((a,b) => b.points !== a.points ? b.points - a.points : b.legDiff - a.legDiff);
+                const groupedMatches = {};
+                lMatches.forEach(m => {
+                    const day = m.matchday ? `Spieltag ${m.matchday}` : 'Unbekannter Spieltag';
+                    if(!groupedMatches[day]) groupedMatches[day] = [];
+                    
+                    let p1Title = "Freilos";
+                    let p2Title = "Freilos";
+                    if (m.player1_id) {
+                        p1Title = stats[m.player1_id]?.name || (state.allProfilesCache.find(x => x.id === m.player1_id)?.display_name) || "Spieler 1";
+                    }
+                    if (m.player2_id) {
+                        p2Title = stats[m.player2_id]?.name || (state.allProfilesCache.find(x => x.id === m.player2_id)?.display_name) || "Spieler 2";
+                    }
+
+                    groupedMatches[day].push({ p1Name: p1Title, p2Name: p2Title, legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
+                });
+
+                const matchdays = Object.entries(groupedMatches).map(([title, rows]) => {
+                    const done = rows.filter(r => r.status === 'done' || r.status === 'fertig').length;
+                    return { title, status: done===rows.length?'fertig':'offen', doneMatches: done, totalMatches: rows.length, rows };
+                });
+
+                state.leagueData[league] = { standings: { rows: standingsRows }, matchdays };
+            });
+
+            setMode("Home");
+
+        } catch (error) { 
+            console.error("Gesamter Ladefehler:", error);
+            if(tableAreaEl) tableAreaEl.innerHTML = `<div class="empty" style="color: red; border-color: red;">Kritischer Fehler: ${error.message}</div>`; 
+        }
+    }
+
+    function safeBind(id, handler) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("click", handler);
+    }
+
+    safeBind("modeHome", () => setMode("Home"));
+    safeBind("modeAutodarts", () => setMode("Autodarts"));
+    safeBind("modeDartCounter", () => setMode("DartCounter"));
+    safeBind("modeScolia", () => setMode("Scolia"));
+    
+    safeBind("archiveBtn", () => openModal(document.getElementById("archiveModal")));
+    safeBind("openImpressumBtn", () => openModal(document.getElementById("impressumModal")));
+    safeBind("openLinksBtn", () => openModal(document.getElementById("linksModal")));
+    
+    safeBind("regelwerkBtn", () => {
+        const modal = document.getElementById('playerProfileModal');
+        const titleEl = document.getElementById('playerProfileTitle');
+        const contentEl = document.getElementById('playerProfileContent');
+        if(titleEl) titleEl.innerText = "Regelwerk";
+        if(contentEl) contentEl.innerHTML = state.rulewerkHtml;
+        openModal(modal);
+    });
+
+    safeBind("ligaLoginBtn", () => {
+        if (!state.currentUser) supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: window.location.href }});
+        else window.location.assign("profil.html");
+    });
+
+    document.querySelectorAll(".modal-close").forEach(btn => {
+        btn.addEventListener("click", () => closeModal(btn.closest(".modal-backdrop")));
+    });
+
+    function openModal(m) { if(m) m.classList.add("open"); }
+    function closeModal(m) { if(m) m.classList.remove("open"); }
+
+    window.toggleMatchday = function(btn) {
+        const card = btn.parentElement;
+        const isOpen = !card.classList.contains("open");
+        card.classList.toggle("open", isOpen);
+        state.matchdayOpenState[card.dataset.key] = isOpen;
+    }
+
+    function rankClass(rank, total) { if (rank === 1) return "first"; if (rank >= total && total > 1) return "last"; return ""; }
+
+    loadAll();
+</script>
+</body>
+</html>
