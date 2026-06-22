@@ -132,7 +132,6 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
-    /* PLATTFORM BANNER CENTRED & COMPACT */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
@@ -194,7 +193,7 @@
       font-size: 12px;
       font-weight: 600;
       color: var(--text-primary);
-      transition: all 0.3s;
+      transition: all 0.3;
     }
     .league-btn:hover, .league-btn.active {
       border-color: var(--platform-color);
@@ -202,7 +201,6 @@
       background: var(--hover);
     }
 
-    /* MAX WIDTH 1200PX FOR CLEAN LOOK */
     .container {
       max-width: 1200px;
       margin: 0 auto;
@@ -264,7 +262,6 @@
       padding: 20px;
     }
 
-    /* COMPACT TABLE STYLING */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -344,7 +341,7 @@
       color: #ff6b35;
     }
 
-    /* 3 SPIELTAGE NEBENEINANDER (GRID) */
+    /* 3 SPIELTAGE NEBENEINANDER GRID STRUCTURE */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -555,7 +552,7 @@
       font-size: 14px;
     }
 
-    /* MODAL OVERLAY STYLE */
+    /* MODAL STYLE (SPIELERKARTE OVERLAY) */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -784,13 +781,17 @@
     currentUser: null
   };
 
-  // Fehlertolerante Scan-Hilfsfunktion für Wohnort-Spaltenvariationen
+  // Erkennt Wohnort-Spaltenvariationen fehlertolerant
   function getWohnort(p) {
     if (!p) return "Nicht angegeben";
+    if (p.wohnort) return p.wohnort;
+    if (p.location) return p.location;
+    if (p.city) return p.city;
+    if (p.wohn_ort) return p.wohn_ort;
     for (const key in p) {
       if (p.hasOwnProperty(key) && typeof p[key] === 'string') {
         const kl = key.toLowerCase();
-        if (kl === 'wohnort' || kl === 'location' || kl === 'city' || kl === 'wohn_ort' || kl === 'stadt' || kl === 'ort') {
+        if (['wohnort', 'location', 'city', 'wohn_ort', 'stadt', 'ort'].includes(kl)) {
           if (p[key].trim().length > 0) return p[key].trim();
         }
       }
@@ -798,13 +799,15 @@
     return "Nicht angegeben";
   }
 
-  // Fehlertolerante Scan-Hilfsfunktion für Dart-Setup-Spaltenvariationen
+  // Erkennt Setup-Spaltenvariationen fehlertolerant
   function getSetup(p) {
     if (!p) return "Nicht angegeben";
+    if (p.dart_setup) return p.dart_setup;
+    if (p.setup) return p.setup;
     for (const key in p) {
       if (p.hasOwnProperty(key) && typeof p[key] === 'string') {
         const kl = key.toLowerCase();
-        if (kl === 'dart_setup' || kl === 'setup' || kl === 'spielsetup' || kl === 'darts') {
+        if (['dart_setup', 'setup', 'spielsetup', 'darts'].includes(kl)) {
           if (p[key].trim().length > 0) return p[key].trim();
         }
       }
@@ -818,30 +821,38 @@
     return clean(dbValue) === clean(targetLeague);
   }
 
+  // GLOBALER PROFILE-RESOLVER: Löst IDs, UUIDs und Accountnamen präzise auf
+  function findProfile(identifier) {
+    if (!identifier) return null;
+    const cleanId = String(identifier).trim().toLowerCase();
+    return state.allProfilesCache.find(p => 
+      String(p.id).toLowerCase().trim() === cleanId ||
+      (p.display_name && p.display_name.toLowerCase().trim() === cleanId) ||
+      (p.username && p.username.toLowerCase().trim() === cleanId) ||
+      (p.autodarts_name && p.autodarts_name.toLowerCase().trim() === cleanId) ||
+      (p.dartcounter_name && p.dartcounter_name.toLowerCase().trim() === cleanId)
+    );
+  }
+
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
     updateAuthUI();
   });
 
-  function openPlayerCard(name) {
-    if (!name || name === "Freilos") return;
+  function openPlayerCard(idOrName) {
+    if (!idOrName || idOrName === "Freilos") return;
     
-    const p = state.allProfilesCache.find(prof => 
-      String(prof.display_name).toLowerCase().trim() === String(name).toLowerCase().trim() || 
-      String(prof.username).toLowerCase().trim() === String(name).toLowerCase().trim() ||
-      String(prof.id).trim() === String(name).trim()
-    );
+    const p = findProfile(idOrName);
 
     const modal = document.getElementById('playerModal');
     const container = document.getElementById('modalContent');
     
-    const dName = p?.display_name || name;
+    const dName = p?.display_name || idOrName;
     const discordHandle = p?.discord_name || p?.username || "-";
     const adName = p?.autodarts_name || "-";
     const dcName = p?.dartcounter_name || "-";
     const scName = p?.scolia_name || "-";
     
-    // Holt Wohnort & Setup über die dynamischen Scan-Funktionen
     const wohnort = getWohnort(p);
     const setup = getSetup(p);
     
@@ -1041,7 +1052,7 @@
       
       html += `<tr>
         <td style="text-align:center;"><span class="rank ${rankClass}">${idx + 1}</span></td>
-        <td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.name)}')">${htmlEscape(r.name || 'Spieler')}</span></td>
+        <td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.id)}')">${htmlEscape(r.name || 'Spieler')}</span></td>
         <td class="stat">${r.gamesPlayed || 0}</td>
         <td class="stat" style="color: #00d084;">${r.wins || 0}</td>
         <td class="stat" style="color: #ff6b35;">${r.losses || 0}</td>
@@ -1080,9 +1091,9 @@
         html += `
           <div class="match-row">
             <div class="match-players">
-              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name || 'Spieler 1')}</span>
+              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p1Id || m.p1Name)}')">${htmlEscape(m.p1Name || 'Spieler 1')}</span>
               <span style="color: var(--text-secondary); font-size: 11px; font-weight:bold;">vs</span>
-              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name || 'Spieler 2')}</span>
+              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p2Id || m.p2Name)}')">${htmlEscape(m.p2Name || 'Spieler 2')}</span>
             </div>
             <span class="match-score">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</span>
             <span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span>
@@ -1131,26 +1142,22 @@
 
         const stats = {};
 
-        // 1. Zuweisung über Profile (Admin-Zuteilungen aus admin.html stabil erfassen)
+        // 1. Seed stats mit Profil-Zuweisungen
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
-            let fallbackAvg = 0;
-            if (league.includes("Autodarts")) fallbackAvg = parseFloat(p.autodarts_avg || 0);
-            else if (league.includes("DartCounter")) fallbackAvg = parseFloat(p.dartcounter_avg || 0);
-
             stats[p.id] = { 
+              id: p.id,
               name: p.display_name || p.username || 'Spieler', 
               wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0,
-              avgSum: 0, avgCount: 0, profileFallbackAvg: fallbackAvg
+              avgSum: 0, avgCount: 0
             };
           }
         });
 
-        // 2. MATCH-PAIRING AUFLÖSUNG: IDs perfekt mit realen Namen verknüpfen
+        // 2. Matches einberechnen & Namen sauber via Cache matchen
         lMatches.forEach(m => {
-          // Profile tiefgründig über den globalen Cache auflösen
-          const prof1 = state.allProfilesCache.find(prof => String(prof.id).trim() === String(m.player1_id).trim() || String(prof.display_name).trim().toLowerCase() === String(m.player1_id).trim().toLowerCase());
-          const prof2 = state.allProfilesCache.find(prof => String(prof.id).trim() === String(m.player2_id).trim() || String(prof.display_name).trim().toLowerCase() === String(m.player2_id).trim().toLowerCase());
+          const prof1 = findProfile(m.player1_id) || findProfile(m.player1_name);
+          const prof2 = findProfile(m.player2_id) || findProfile(m.player2_name);
 
           const p1Id = prof1 ? prof1.id : (m.player1_id || 'p1');
           const p2Id = prof2 ? prof2.id : (m.player2_id || 'p2');
@@ -1159,27 +1166,24 @@
           const p2Name = prof2 ? (prof2.display_name || prof2.username) : (m.player2_name || m.player2_id || 'Spieler 2');
 
           if (!stats[p1Id]) {
-            let pAvg = prof1 ? (league.includes("Autodarts") ? (prof1.autodarts_avg || 0) : (prof1.dartcounter_avg || 0)) : 0;
-            stats[p1Id] = { name: p1Name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, profileFallbackAvg: parseFloat(pAvg || 0) };
+            stats[p1Id] = { id: p1Id, name: p1Name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
           }
           if (!stats[p2Id]) {
-            let pAvg = prof2 ? (league.includes("Autodarts") ? (prof2.autodarts_avg || 0) : (prof2.dartcounter_avg || 0)) : 0;
-            stats[p2Id] = { name: p2Name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, profileFallbackAvg: parseFloat(pAvg || 0) };
+            stats[p2Id] = { id: p2Id, name: p2Name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
           }
 
-          // Averages fehlertolerant aggregieren
+          // REIN SAISONALER MATCH-AVG RECHNER (Ignoriert Profil-Basiswerte)
           const p1AvgVal = m.player1_avg || m.avg_player1 || m.player1_match_avg;
-          if (p1AvgVal) {
+          if (p1AvgVal && parseFloat(p1AvgVal) > 0) {
             stats[p1Id].avgSum += parseFloat(p1AvgVal);
             stats[p1Id].avgCount++;
           }
           const p2AvgVal = m.player2_avg || m.avg_player2 || m.player2_match_avg;
-          if (p2AvgVal) {
+          if (p2AvgVal && parseFloat(p2AvgVal) > 0) {
             stats[p2Id].avgSum += parseFloat(p2AvgVal);
             stats[p2Id].avgCount++;
           }
 
-          // Satzergebnisse verrechnen
           if (m.status === 'done' || m.status === 'fertig') {
             const l1 = parseInt(m.legs_player1) || 0;
             const l2 = parseInt(m.legs_player2) || 0;
@@ -1199,25 +1203,33 @@
           }
         });
 
-        // Finalen Liga-AVG berechnen
+        // Berechnet den endgültigen Durchschnitts-AVG
         const standings = Object.values(stats).map(s => {
-          const finalAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount) : s.profileFallbackAvg;
+          const finalAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount) : 0.00;
           return { ...s, finalAvg };
         }).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff || b.finalAvg - a.finalAvg);
 
-        // Spielpaarungen für das 3 Spalten Layout aufbereiten
+        // Spielpaarungen bündeln
         const groupedMatches = {};
         lMatches.forEach(m => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
           if (!groupedMatches[day]) groupedMatches[day] = [];
           
-          const prof1 = state.allProfilesCache.find(prof => String(prof.id).trim() === String(m.player1_id).trim() || String(prof.display_name).trim().toLowerCase() === String(m.player1_id).trim().toLowerCase());
-          const prof2 = state.allProfilesCache.find(prof => String(prof.id).trim() === String(m.player2_id).trim() || String(prof.display_name).trim().toLowerCase() === String(m.player2_id).trim().toLowerCase());
+          const prof1 = findProfile(m.player1_id) || findProfile(m.player1_name);
+          const prof2 = findProfile(m.player2_id) || findProfile(m.player2_name);
           
           const finalP1Name = prof1 ? (prof1.display_name || prof1.username) : (m.player1_name || m.player1_id || 'Spieler 1');
           const finalP2Name = prof2 ? (prof2.display_name || prof2.username) : (m.player2_name || m.player2_id || 'Spieler 2');
           
-          groupedMatches[day].push({ p1Name: finalP1Name, p2Name: finalP2Name, legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
+          groupedMatches[day].push({ 
+            p1Name: finalP1Name, 
+            p2Name: finalP2Name, 
+            legs1: m.legs_player1, 
+            legs2: m.legs_player2, 
+            status: m.status,
+            p1Id: prof1 ? prof1.id : null,
+            p2Id: prof2 ? prof2.id : null
+          });
         });
 
         const matchdays = Object.entries(groupedMatches).map(([title, rows]) => ({ title, rows }));
