@@ -132,6 +132,7 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
+    /* PLATTFORM-BANNER DESIGN */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
@@ -215,12 +216,7 @@
       display: block;
     }
 
-    .content {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 30px;
-    }
-
+    /* EINHEITLICHES SCHLANKES VERTIKALES LAYOUT */
     .full-width-layout {
       display: flex;
       flex-direction: column;
@@ -397,30 +393,6 @@
       color: #0066ff;
       min-width: 45px;
       text-align: center;
-    }
-
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .sidebar-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-
-    .sidebar-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
     .btn-group {
@@ -620,24 +592,23 @@
 
 <div class="container">
   <div id="newsView" class="view active">
-    <div class="content">
-      <div>
-        <div class="card">
-          <div class="card-header">📰 Neuigkeiten</div>
-          <div class="card-body">
-            <div id="newsArea">
-              <div class="news-item">
-                <div class="news-date">22. Juni 2026</div>
-                <div class="news-title">Willkommen zur CDL!</div>
-                <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
-              </div>
+    <div class="full-width-layout">
+      <div class="card">
+        <div class="card-header">📰 Neuigkeiten</div>
+        <div class="card-body">
+          <div id="newsArea">
+            <div class="news-item">
+              <div class="news-date">22. Juni 2026</div>
+              <div class="news-title">Willkommen zur CDL!</div>
+              <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
             </div>
           </div>
         </div>
       </div>
-      <div class="sidebar">
-        <div class="sidebar-card">
-          <div class="sidebar-title">ℹ️ Infos</div>
+      
+      <div class="card">
+        <div class="card-header">ℹ️ Infos</div>
+        <div class="card-body">
           <div class="btn-group"><button class="btn">📧 Kontakt</button></div>
         </div>
       </div>
@@ -672,14 +643,8 @@
         <div id="regelwerkTab" style="display: none;">
           <div class="card">
             <div class="card-header">📑 Regelwerk</div>
-            <div class="card-body">
-              <h3 style="margin-bottom: 16px;">Liga Regelwerk</h3>
-              <p style="margin-bottom: 12px; line-height: 1.6;">Willkommen zum Regelwerk der Community Dart Liga (CDL). Hier findest du alle wichtigen Regeln und Bestimmungen für den fairen Spielbetrieb.</p>
-              <h4 style="margin-top: 20px; margin-bottom: 10px;">Best-of-7 Format</h4>
-              <p style="margin-bottom: 12px; line-height: 1.6;">Alle Spiele werden im Best-of-7-Format (erste zu 4 Siege) ausgetragen. Der Gewinner erhält 2 Punkte, der Verlierer 0 Punkte.</p>
-              <h4 style="margin-top: 20px; margin-bottom: 10px;">Spieltage</h4>
-              <p style="margin-bottom: 12px; line-height: 1.6;">Die Liga ist in mehrere Spieltage unterteilt. Alle Matches eines Spieltags müssen innerhalb der vorgegebenen Zeit gespielt werden.</p>
-            </div>
+            <div class="card-body" id="regelwerkContent">
+              </div>
           </div>
         </div>
 
@@ -721,29 +686,28 @@
   </div>
 
   <div id="discordView" class="view">
-    <div class="content">
-      <div>
-        <div class="card" style="margin-bottom: 24px;">
-          <div class="card-header">🌐 Discord Server</div>
-          <div class="card-body">
-            <h3 style="margin-bottom: 12px;">Beitreten!</h3>
-            <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten!</p>
-            <button class="btn discord" onclick="window.open('https://discord.gg/DEINLINK', '_blank')" style="width: 100%;">💬 Discord Server beitreten</button>
-          </div>
-        </div>
-        
-        <div class="card">
-          <div class="card-header">👤 Discord Login / Profil</div>
-          <div class="card-body">
-            <h3 style="margin-bottom: 12px;" id="loginTitle">Mit Discord anmelden</h3>
-            <p style="margin-bottom: 20px; line-height: 1.6;" id="loginDesc">Melde dich mit deinem Discord-Konto an um auf dein Spieler-Profil zuzugreifen und deine Statistiken zu verwalten.</p>
-            <button class="btn primary" id="loginBtn" onclick="handleAuthAction()" style="width: 100%;">👤 Discord Login</button>
-          </div>
+    <div class="full-width-layout">
+      <div class="card">
+        <div class="card-header">🌐 Discord Server</div>
+        <div class="card-body">
+          <h3 style="margin-bottom: 12px;">Beitreten!</h3>
+          <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten!</p>
+          <button class="btn discord" onclick="window.open('https://discord.gg/DEINLINK', '_blank')" style="width: 100%;">💬 Discord Server beitreten</button>
         </div>
       </div>
-      <div class="sidebar">
-        <div class="sidebar-card">
-          <div class="sidebar-title">⚙️ Optionen</div>
+      
+      <div class="card">
+        <div class="card-header">👤 Discord Login / Profil</div>
+        <div class="card-body">
+          <h3 style="margin-bottom: 12px;" id="loginTitle">Mit Discord anmelden</h3>
+          <p style="margin-bottom: 20px; line-height: 1.6;" id="loginDesc">Melde dich mit deinem Discord-Konto an um auf dein Spieler-Profil zuzugreifen und deine Statistiken zu verwalten.</p>
+          <button class="btn primary" id="loginBtn" onclick="handleAuthAction()" style="width: 100%;">👤 Discord Login</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">⚙️ Optionen</div>
+        <div class="card-body">
           <div class="btn-group"><button class="btn">☕ Serverkasse unterstützen</button></div>
         </div>
       </div>
@@ -868,7 +832,11 @@
     return { id: fallbackId, name: finalName };
   }
 
-  // SPIELERKARTE: BEHOBENE ID-FILTERUNG & EXKLUSIVE PLATTFORMANZEIGE
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    state.currentUser = session?.user || null;
+    updateAuthUI();
+  });
+
   function openPlayerCard(idOrName, altName) {
     if (!idOrName || idOrName === "Freilos" || String(idOrName).startsWith('empty_')) return;
     
@@ -876,7 +844,6 @@
     const modal = document.getElementById('playerModal');
     const container = document.getElementById('modalContent');
     
-    // Failsafe Name-Resolution
     let dName = p?.display_name || altName || idOrName;
     if (isIdString(dName) && altName && !isIdString(altName)) {
       dName = altName;
@@ -888,7 +855,6 @@
     const wohnort = p ? (p.wohnort || p.location || p.city || "Nicht angegeben") : "Nicht angegeben";
     const setup = p ? (p.dart_setup || p.setup || "Nicht angegeben") : "Nicht angegeben";
 
-    // EXKLUSIVE DYNAMISCHE PLATTFORMANZEIGE (NUR WENN IM PROFIL EINGETRAGEN)
     let adHtml = "";
     if (p && p.autodarts_name && p.autodarts_name.trim() !== "" && p.autodarts_name !== "-") {
       const adAvg = p.autodarts_avg || p.ad_avg || "0.00";
@@ -907,7 +873,6 @@
       scHtml = `<div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(p.scolia_name)} [AVG: ${parseFloat(scAvg).toFixed(2)}]</span></div>`;
     }
 
-    // Discord Deep Link per Snowflake-ID
     let numericDiscordId = "";
     if (p) {
       if (/^\d{17,21}$/.test(p.id)) numericDiscordId = p.id;
@@ -1176,9 +1141,31 @@
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
 
-      const { data: sys = null } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+      const { data: sys = null } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
+
+      // DYNAMISCHE REGELWERK ANZEIGE AUS DER SYSTEM_SETTINGS TABELLE
+      const rulesText = sys?.rules || sys?.regelwerk || "";
+      const regelwerkContainer = document.getElementById('regelwerkContent');
+      if (regelwerkContainer) {
+        if (rulesText.trim() !== "") {
+          if (rulesText.includes('<p>') || rulesText.includes('<br>') || rulesText.includes('<div>')) {
+            regelwerkContainer.innerHTML = rulesText;
+          } else {
+            regelwerkContainer.innerHTML = rulesText.replace(/\n/g, '<br>');
+          }
+        } else {
+          regelwerkContainer.innerHTML = `
+            <h3 style="margin-bottom: 16px;">Liga Regelwerk</h3>
+            <p style="margin-bottom: 12px; line-height: 1.6;">Willkommen zum Regelwerk der Community Dart Liga (CDL). Hier findest du alle wichtigen Regeln und Bestimmungen für den fairen Spielbetrieb.</p>
+            <h4 style="margin-top: 20px; margin-bottom: 10px;">Best-of-7 Format</h4>
+            <p style="margin-bottom: 12px; line-height: 1.6;">Alle Spiele werden im Best-of-7-Format (erste zu 4 Siege) ausgetragen. Der Gewinner erhält 2 Punkte, der Verlierer 0 Punkte.</p>
+            <h4 style="margin-top: 20px; margin-bottom: 10px;">Spieltage</h4>
+            <p style="margin-bottom: 12px; line-height: 1.6;">Die Liga ist in mehrere Spieltage unterteilt. Alle Matches eines Spieltags müssen innerhalb der vorgegebenen Zeit gespielt werden.</p>
+          `;
+        }
+      }
 
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
       
