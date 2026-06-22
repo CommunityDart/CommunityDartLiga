@@ -341,7 +341,7 @@
       color: #ff6b35;
     }
 
-    /* 3 SPIELTAGE GRID STRUCTURE */
+    /* 3 SPIELTAGE NEBENEINANDER GRID */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -781,7 +781,6 @@
     currentUser: null
   };
 
-  // Erkennt Wohnort-Spaltenvariationen fehlertolerant
   function getWohnort(p) {
     if (!p) return "Nicht angegeben";
     if (p.wohnort) return p.wohnort;
@@ -799,7 +798,6 @@
     return "Nicht angegeben";
   }
 
-  // Erkennt Setup-Spaltenvariationen fehlertolerant
   function getSetup(p) {
     if (!p) return "Nicht angegeben";
     if (p.dart_setup) return p.dart_setup;
@@ -821,7 +819,6 @@
     return clean(dbValue) === clean(targetLeague);
   }
 
-  // BI-DIREKTIONALER PROFILE-RESOLVER: Sucht nach ID, Anzeigename, Username und Ingame-Namen
   function findProfile(identifier) {
     if (!identifier) return null;
     const cleanId = String(identifier).trim().toLowerCase();
@@ -834,32 +831,45 @@
     );
   }
 
-  // ULTRA-ROBUSTER RESOLVER FÜR ADMIN-EINGABEN (Verhindert fehlerhaftes Überblenden in "Spieler")
+  // REPARIERTER RESOLVER: Erkennt Klarnamen aus Matches, falls Profil-Cache fehlschlägt!
   function resolvePlayer(m, playerNum, index) {
     const idKeys = playerNum === 1 
-      ? ['player1_id', 'player1', 'p1', 'player_1', 'player1_name', 'p1_name'] 
-      : ['player2_id', 'player2', 'p2', 'player_2', 'player2_name', 'p2_name'];
+      ? ['player1_id', 'player1', 'p1', 'player_1'] 
+      : ['player2_id', 'player2', 'p2', 'player_2'];
     
-    let rawValue = null;
+    const nameKeys = playerNum === 1
+      ? ['player1_name', 'p1_name', 'player_1_name']
+      : ['player2_name', 'p2_name', 'player_2_name'];
+    
+    let rawId = null;
     for (const key of idKeys) {
       if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
-        rawValue = String(m[key]).trim();
+        rawId = String(m[key]).trim();
         break;
       }
     }
     
-    // Falls keine ID oder Name existiert, weise einen kollisionsfreien temporären Key zu
-    if (!rawValue) {
+    let rawName = null;
+    for (const key of nameKeys) {
+      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
+        rawName = String(m[key]).trim();
+        break;
+      }
+    }
+    
+    if (!rawId && rawName) rawId = rawName;
+    if (!rawId && !rawName) {
       return { id: `empty_${playerNum}_${index}`, name: `Spieler ${playerNum}` };
     }
     
-    const profile = findProfile(rawValue);
+    // Profil suchen
+    const profile = findProfile(rawId) || (rawName ? findProfile(rawName) : null);
     if (profile) {
-      return { id: profile.id, name: profile.display_name || profile.username || rawValue };
+      return { id: profile.id, name: profile.display_name || profile.username || rawName || rawId };
     }
     
-    // Fallback: Wenn kein Profil im System existiert, nimm den reinen Text-Wert statt das Wort "Spieler"!
-    return { id: rawValue, name: rawValue };
+    // Ultimativer Fallback: Nutze den Klarnamen aus admin.html statt die rohe UUID/ID!
+    return { id: rawId, name: rawName || rawId };
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -871,7 +881,6 @@
     if (!idOrName || idOrName === "Freilos" || idOrName.startsWith('empty_')) return;
     
     const p = findProfile(idOrName);
-
     const modal = document.getElementById('playerModal');
     const container = document.getElementById('modalContent');
     
@@ -883,7 +892,6 @@
     
     const wohnort = getWohnort(p);
     const setup = getSetup(p);
-    
     const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
 
     let discordButtonHtml = "";
@@ -1142,7 +1150,7 @@
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
 
-      const { data: sys } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+      const { data: sys = null } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
@@ -1174,7 +1182,7 @@
 
         const stats = {};
 
-        // 1. Zuweisung über Profile (Einteilungen aus der Adminseite sichtbar machen)
+        // 1. Profile laden für leere Tabellenanzeige vorab
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
             stats[p.id] = { 
@@ -1186,7 +1194,7 @@
           }
         });
 
-        // 2. Matches einberechnen & Namen kollisionsfrei verlinken
+        // 2. Matches aggregieren und IDs sauber matchen
         lMatches.forEach((m, idx) => {
           const p1 = resolvePlayer(m, 1, idx);
           const p2 = resolvePlayer(m, 2, idx);
@@ -1203,7 +1211,7 @@
             stats[p2.id].name = p2.name;
           }
 
-          // REIN SAISONALER MATCH-AVG RECHNER (Errechnet sich über eingetragene Match-Daten)
+          // Live-Saison-Match-AVG sammeln
           const p1AvgKeys = ['player1_avg', 'avg_player1', 'player1_match_avg', 'p1_avg', 'avg1'];
           let p1AvgVal = null;
           for (const k of p1AvgKeys) {
@@ -1230,7 +1238,7 @@
             stats[p2.id].avgCount++;
           }
 
-          // Legs & Tabellenergebnisse verbuchen
+          // Ergebnisse und Punkte buchen
           if (m.status === 'done' || m.status === 'fertig') {
             const legKeys1 = ['legs_player1', 'player1_legs', 'legs1', 'legs_p1'];
             const legKeys2 = ['legs_player2', 'player2_legs', 'legs2', 'legs_p2'];
@@ -1255,7 +1263,7 @@
           }
         });
 
-        // Berechnet finalen Durchschnitts-AVG
+        // AVG-Durchschnitt errechnen
         const standings = Object.values(stats).map(s => {
           const finalAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount) : 0.00;
           return { ...s, finalAvg };
