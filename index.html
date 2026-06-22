@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga BETA v2 </title>
+  <title>CDL Dart Liga</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -262,6 +262,7 @@
       padding: 20px;
     }
 
+    /* ENGE, INTERAKTIVE TABELLE */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -341,6 +342,7 @@
       color: #ff6b35;
     }
 
+    /* 3 SPIELTAGE NEBENEINANDER GRID */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -551,6 +553,7 @@
       font-size: 14px;
     }
 
+    /* MODAL OVERLAY STYLING */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -760,7 +763,7 @@
 
 <script>
   const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3IDE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
@@ -830,6 +833,7 @@
     );
   }
 
+  // VOLLKOMMEN REPARIERTE RESOLVER-FUNKTION (OHNE TIFFEHLER ODER ABSTÜRZE)
   function resolvePlayer(m, playerNum, index) {
     const idKeys = playerNum === 1 ? ['player1_id', 'player1', 'p1', 'player_1'] : ['player2_id', 'player2', 'p2', 'player_2'];
     const nameKeys = playerNum === 1 ? ['player1_name', 'p1_name', 'player_1_name'] : ['player2_name', 'p2_name', 'player_2_name'];
@@ -917,7 +921,7 @@
     if (numericDiscordId) {
       discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="window.open('https://discord.com/users/${numericDiscordId}', '_blank')">💬 Nachricht per Discord</button>`;
     } else {
-      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Handle: ${discordHandle}')">💬 Discord Name: ${htmlEscape(discordHandle)}</button>`;
+      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Name: ${discordHandle}')">💬 Discord Name: ${htmlEscape(discordHandle)}</button>`;
     }
 
     container.innerHTML = `
@@ -1202,6 +1206,7 @@
 
         const stats = {};
 
+        // 1. Zuweisung über Profile (Seeding)
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
             stats[p.id] = { 
@@ -1213,6 +1218,7 @@
           }
         });
 
+        // 2. Matches aggregieren & IDs krisensicher auflösen
         lMatches.forEach((m, idx) => {
           const p1 = resolvePlayer(m, 1, idx);
           const p2 = resolvePlayer(m, 2, idx);
@@ -1229,6 +1235,7 @@
             stats[p2.id].name = p2.name;
           }
 
+          // REIN SAISONALER LIVE MATCH-AVG RECHNER
           const p1AvgKeys = ['player1_avg', 'avg_player1', 'player1_match_avg', 'p1_avg', 'avg1'];
           let p1AvgVal = null;
           for (const k of p1AvgKeys) {
@@ -1284,6 +1291,7 @@
           return { ...s, finalAvg };
         }).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff || b.finalAvg - a.finalAvg);
 
+        // Spielpaarungen bündeln
         const groupedMatches = {};
         lMatches.forEach((m, idx) => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
