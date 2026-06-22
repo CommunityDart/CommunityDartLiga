@@ -262,6 +262,7 @@
       padding: 20px;
     }
 
+    /* ENGER ZUSAMMENGERÜCKTE TABELLE */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -341,7 +342,7 @@
       color: #ff6b35;
     }
 
-    /* 3 SPIELTAGE NEBENEINANDER GRID */
+    /* 3 SPIELTAGE NEBENEINANDER GRID Layout */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -552,7 +553,7 @@
       font-size: 14px;
     }
 
-    /* MODAL OVERLAY STYLE */
+    /* MODAL OVERLAY STYLING */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -631,7 +632,7 @@
               <div class="news-item">
                 <div class="news-date">22. Juni 2026</div>
                 <div class="news-title">Willkommen zur CDL!</div>
-                <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
+                <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen ein auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
               </div>
             </div>
           </div>
@@ -680,7 +681,7 @@
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Best-of-7 Format</h4>
               <p style="margin-bottom: 12px; line-height: 1.6;">Alle Spiele werden im Best-of-7-Format (erste zu 4 Siege) ausgetragen. Der Gewinner erhält 2 Punkte, der Verlierer 0 Punkte.</p>
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Spieltage</h4>
-              <p style="margin-bottom: 12px; line-height: 1.6;">Die Liga ist in mehrere Spieltage unterteilt. Alle Matches eines Spieltags müssen innerhalb der vorgegebenen Zeit gespielt werden.</p>
+              <p style="margin-bottom: 12px; line-height: 1.6;">Die Liga ist in mehrere Spieltage untergeteilt. Alle Matches eines Spieltags müssen innerhalb der vorgegebenen Zeit gespielt werden.</p>
             </div>
           </div>
         </div>
@@ -819,11 +820,13 @@
     return clean(dbValue) === clean(targetLeague);
   }
 
+  // BI-DIREKTIONALE PRÄZISIONS-PROFILSUCHE
   function findProfile(identifier) {
     if (!identifier) return null;
     const cleanId = String(identifier).trim().toLowerCase();
     return state.allProfilesCache.find(p => 
       String(p.id).toLowerCase().trim() === cleanId ||
+      String(p.discord_id || "").toLowerCase().trim() === cleanId ||
       (p.display_name && p.display_name.toLowerCase().trim() === cleanId) ||
       (p.username && p.username.toLowerCase().trim() === cleanId) ||
       (p.autodarts_name && p.autodarts_name.toLowerCase().trim() === cleanId) ||
@@ -831,45 +834,41 @@
     );
   }
 
-  // REPARIERTER RESOLVER: Erkennt Klarnamen aus Matches, falls Profil-Cache fehlschlägt!
+  // REPARIERTER RESOLVER: Verhindert kryptische ID-Anzeigen
   function resolvePlayer(m, playerNum, index) {
-    const idKeys = playerNum === 1 
-      ? ['player1_id', 'player1', 'p1', 'player_1'] 
-      : ['player2_id', 'player2', 'p2', 'player_2'];
+    const idKeys = playerNum === 1 ? ['player1_id', 'player1', 'p1', 'player_1'] : ['player2_id', 'player2', 'p2', 'player_2'];
+    const nameKeys = playerNum === 1 ? ['player1_name', 'p1_name', 'player_1_name'] : ['player2_name', 'p2_name', 'player_2_name'];
     
-    const nameKeys = playerNum === 1
-      ? ['player1_name', 'p1_name', 'player_1_name']
-      : ['player2_name', 'p2_name', 'player_2_name'];
+    let potentialIds = [];
+    let potentialNames = [];
     
-    let rawId = null;
-    for (const key of idKeys) {
-      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
-        rawId = String(m[key]).trim();
-        break;
-      }
+    idKeys.forEach(k => { if(m[k] !== undefined && m[k] !== null && String(m[k]).trim() !== "") potentialIds.push(String(m[k]).trim()); });
+    nameKeys.forEach(k => { if(m[k] !== undefined && m[k] !== null && String(m[k]).trim() !== "") potentialNames.push(String(m[k]).trim()); });
+    
+    let searchValues = [...potentialIds, ...potentialNames];
+    let profile = null;
+    
+    for (const val of searchValues) {
+      profile = findProfile(val);
+      if (profile) break;
     }
     
-    let rawName = null;
-    for (const key of nameKeys) {
-      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
-        rawName = String(m[key]).trim();
-        break;
-      }
-    }
-    
-    if (!rawId && rawName) rawId = rawName;
-    if (!rawId && !rawName) {
-      return { id: `empty_${playerNum}_${index}`, name: `Spieler ${playerNum}` };
-    }
-    
-    // Profil suchen
-    const profile = findProfile(rawId) || (rawName ? findProfile(rawName) : null);
     if (profile) {
-      return { id: profile.id, name: profile.display_name || profile.username || rawName || rawId };
+      return { id: profile.id, name: profile.display_name || profile.username || potentialNames[0] || rawId };
     }
     
-    // Ultimativer Fallback: Nutze den Klarnamen aus admin.html statt die rohe UUID/ID!
-    return { id: rawId, name: rawName || rawId };
+    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    let finalName = "Spieler " + playerNum;
+    let fallbackId = potentialIds[0] || potentialNames[0] || `empty_${playerNum}_${index}`;
+    
+    for (const name of [...potentialNames, ...potentialIds]) {
+      if (!isUuid(name)) {
+        finalName = name;
+        break;
+      }
+    }
+    
+    return { id: fallbackId, name: finalName };
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -885,20 +884,39 @@
     const container = document.getElementById('modalContent');
     
     const dName = p?.display_name || idOrName;
+    const realName = p?.real_name || p?.full_name || p?.echter_name || p?.name || "Nicht angegeben";
     const discordHandle = p?.discord_name || p?.username || "-";
+    
     const adName = p?.autodarts_name || "-";
+    const adAvg = p?.autodarts_avg || p?.ad_avg || "0.00";
+    
     const dcName = p?.dartcounter_name || "-";
+    const dcAvg = p?.dartcounter_avg || p?.dc_avg || "0.00";
+    
     const scName = p?.scolia_name || "-";
+    const scAvg = p?.scolia_avg || p?.sc_avg || "0.00";
     
     const wohnort = getWohnort(p);
     const setup = getSetup(p);
     const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
 
+    // Discord Snowflake ID Extraktion für echten Profil-Redirect
+    let numericDiscordId = "";
+    if (p) {
+      if (/^\d{17,19}$/.test(p.id)) numericDiscordId = p.id;
+      else if (p.discord_id && /^\d{17,19}$/.test(p.discord_id)) numericDiscordId = p.discord_id;
+      else {
+        for (const k in p) {
+          if (/^\d{17,19}$/.test(p[k])) { numericDiscordId = p[k]; break; }
+        }
+      }
+    }
+
     let discordButtonHtml = "";
-    if (p && p.id && /^\d+$/.test(p.id)) {
-      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="window.open('https://discord.com/users/${p.id}', '_blank')">💬 Discord Nachricht senden</button>`;
+    if (numericDiscordId) {
+      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="window.open('https://discord.com/users/${numericDiscordId}', '_blank')">💬 Nachricht per Discord</button>`;
     } else {
-      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Name: ${discordHandle}\\nNutze die Suchleiste in Discord.')">💬 Name kopieren / anzeigen</button>`;
+      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Handle: ${discordHandle}')">💬 Discord Name: ${htmlEscape(discordHandle)}</button>`;
     }
 
     container.innerHTML = `
@@ -906,12 +924,13 @@
         <img src="${avatarImgUrl}" class="profile-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
         <div class="player-card-title">${htmlEscape(dName)}</div>
       </div>
-      <div class="player-info-row"><span class="player-info-label">Discord Name:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">Echter Name:</span><span class="player-info-value" style="color: var(--platform-color); font-weight:bold;">${htmlEscape(realName)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">Discord Handle:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
       <div class="player-info-row"><span class="player-info-label">📍 Wohnort:</span><span class="player-info-value">${htmlEscape(wohnort)}</span></div>
       <div class="player-info-row"><span class="player-info-label">🎯 Spielsetup:</span><span class="player-info-value">${htmlEscape(setup)}</span></div>
-      <div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(adName)}</span></div>
-      <div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(dcName)}</span></div>
-      <div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(scName)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(adName)} ${adName !== "-" ? `[AVG: ${adAvg}]` : ""}</span></div>
+      <div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(dcName)} ${dcName !== "-" ? `[AVG: ${dcAvg}]` : ""}</span></div>
+      <div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(scName)} ${scName !== "-" ? `[AVG: ${scAvg}]` : ""}</span></div>
       ${discordButtonHtml}
     `;
     
@@ -1182,7 +1201,7 @@
 
         const stats = {};
 
-        // 1. Profile laden für leere Tabellenanzeige vorab
+        // 1. Zuweisung über Profile (Seed-Werte)
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
             stats[p.id] = { 
@@ -1211,7 +1230,7 @@
             stats[p2.id].name = p2.name;
           }
 
-          // Live-Saison-Match-AVG sammeln
+          // REIN SAISONALER LIVE MATCH-AVG BERECHNER (Keine Profil-Basiswerte)
           const p1AvgKeys = ['player1_avg', 'avg_player1', 'player1_match_avg', 'p1_avg', 'avg1'];
           let p1AvgVal = null;
           for (const k of p1AvgKeys) {
@@ -1238,7 +1257,6 @@
             stats[p2.id].avgCount++;
           }
 
-          // Ergebnisse und Punkte buchen
           if (m.status === 'done' || m.status === 'fertig') {
             const legKeys1 = ['legs_player1', 'player1_legs', 'legs1', 'legs_p1'];
             const legKeys2 = ['legs_player2', 'player2_legs', 'legs2', 'legs_p2'];
@@ -1263,7 +1281,6 @@
           }
         });
 
-        // AVG-Durchschnitt errechnen
         const standings = Object.values(stats).map(s => {
           const finalAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount) : 0.00;
           return { ...s, finalAvg };
