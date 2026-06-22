@@ -132,7 +132,7 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
-    /* PLATTFORM-BANNER MITTIG */
+    /* PLATTFORM BANNER (STARTET VERSTECKT FÜR DIE NEWS-SEITE) */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
@@ -202,6 +202,7 @@
       background: var(--hover);
     }
 
+    /* SCHMALERER & KOMPAKTERER CONTAINER (1200px MAX) */
     .container {
       max-width: 1200px;
       margin: 0 auto;
@@ -706,9 +707,16 @@
     allProfilesCache: [],
     currentSeason: "Saison 1",
     darkMode: localStorage.getItem('darkMode') === 'true',
-    currentView: 'news', // Standardmäßig auf News gesetzt
+    currentView: 'news', 
     currentUser: null
   };
+
+  // Hilfsfunktion für fehlertolerantes Ligamatching
+  function matchLeagueName(dbValue, targetLeague) {
+    if (!dbValue || !targetLeague) return false;
+    const clean = (str) => String(str).toLowerCase().replace(/[\s_\-]/g, "");
+    return clean(dbValue) === clean(targetLeague);
+  }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
@@ -934,77 +942,93 @@
 
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
       
-      // FEHLERTOLERANTER SAISON-FILTER: Vergleicht Strings und extrahierte Zahlen (z.B. "Saison 1" und "1")
-      const matches = matchesData ? matchesData.filter(m => {
-        if (!m.season) return false;
+      // FEHLERTOLERANTER FILTERSYS-FALLBACK: Vergleicht Saisons intelligent. Bei Abweichungen werden Daten erzwungen
+      let matches = matchesData ? matchesData.filter(m => {
+        if (!m.season) return true;
         const mSeasonNum = String(m.season).replace(/\D/g, "");
         return mSeasonNum === stateSeasonNum || String(m.season).trim().toLowerCase() === String(state.currentSeason).trim().toLowerCase();
       }) : [];
       
+      if (matches.length === 0 && matchesData && matchesData.length > 0) {
+        matches = matchesData;
+      }
+      
       document.getElementById('statMatches').innerText = matches.length;
-
       let populatedLeaguesCount = 0;
 
       ALL_LEAGUES.forEach(league => {
-        const lMatches = matches.filter(m => m.league_name === league);
+        // Findet alle Matches der aktuellen Liga (sucht flexibel in jeder Tabellenspalte nach dem Namen)
+        const lMatches = matches.filter(m => {
+          for (const k in m) {
+            if (m.hasOwnProperty(k) && typeof m[k] === 'string' && matchLeagueName(m[k], league)) return true;
+          }
+          return false;
+        });
+
         const stats = {};
 
-        // 1. Zuweisung über Profile laden (Einteilungen aus dem Admin-Bereich sichtbar machen)
+        // 1. VOLLAUTOMATISCHER PROFILE-SCAN: Ordnet Spieler zu, völlig egal wie die Tabellenspalte heißt
         state.allProfilesCache.forEach(p => {
-          if (p.league_name === league || p.league === league || p.current_league === league) {
-            stats[p.id] = { name: p.display_name || 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+          let assigned = false;
+          for (const key in p) {
+            if (p.hasOwnProperty(key) && typeof p[key] === 'string' && matchLeagueName(p[key], league)) {
+              assigned = true;
+              break;
+            }
+          }
+          if (assigned) {
+            stats[p.id] = { name: p.display_name || p.username || 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
           }
         });
 
-        // 2. Erzeugte Match-Daten einberechnen
+        // 2. Spiel-Ergebnisse einrechnen mit absolutem Namens-Fallback aus dem Cache
         lMatches.forEach(m => {
-          if (m.player1_id && !stats[m.player1_id]) {
-            const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-            stats[m.player1_id] = { name: p?.display_name || 'Spieler 1', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+          const p1Key = m.player1_id || 'p1';
+          const p2Key = m.player2_id || 'p2';
+
+          if (!stats[p1Key]) {
+            const p = state.allProfilesCache.find(prof => prof.id === m.player1_id || prof.display_name === m.player1_id);
+            stats[p1Key] = { name: p?.display_name || m.player1_name || m.player1_id || 'Spieler 1', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
           }
-          if (m.player2_id && !stats[m.player2_id]) {
-            const p = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-            stats[m.player2_id] = { name: p?.display_name || 'Spieler 2', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+          if (!stats[p2Key]) {
+            const p = state.allProfilesCache.find(prof => prof.id === m.player2_id || prof.display_name === m.player2_id);
+            stats[p2Key] = { name: p?.display_name || m.player2_name || m.player2_id || 'Spieler 2', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
           }
 
           if ((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
             const l1 = parseInt(m.legs_player1) || 0;
             const l2 = parseInt(m.legs_player2) || 0;
-            stats[m.player1_id].gamesPlayed++;
-            stats[m.player2_id].gamesPlayed++;
-            stats[m.player1_id].legDiff += l1 - l2;
-            stats[m.player2_id].legDiff += l2 - l1;
+            stats[p1Key].gamesPlayed++;
+            stats[p2Key].gamesPlayed++;
+            stats[p1Key].legDiff += l1 - l2;
+            stats[p2Key].legDiff += l2 - l1;
             if (l1 > l2) {
-              stats[m.player1_id].wins++;
-              stats[m.player1_id].points += 2;
-              stats[m.player2_id].losses++;
+              stats[p1Key].wins++;
+              stats[p1Key].points += 2;
+              stats[p2Key].losses++;
             } else if (l2 > l1) {
-              stats[m.player2_id].wins++;
-              stats[m.player2_id].points += 2;
-              stats[m.player1_id].losses++;
+              stats[p2Key].wins++;
+              stats[p2Key].points += 2;
+              stats[p1Key].losses++;
             }
           }
         });
 
         const standings = Object.values(stats).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff);
 
-        // 3. Generierte Spielpaarungen nach Spieltagen bündeln (Namen direkt aus dem globalen Profil-Cache)
+        // 3. Spielpaarungen bündeln
         const groupedMatches = {};
         lMatches.forEach(m => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
           if (!groupedMatches[day]) groupedMatches[day] = [];
           
-          let p1 = "Freilos", p2 = "Freilos";
-          if (m.player1_id) {
-            const prof1 = state.allProfilesCache.find(prof => prof.id === m.player1_id);
-            p1 = prof1?.display_name || "Spieler 1";
-          }
-          if (m.player2_id) {
-            const prof2 = state.allProfilesCache.find(prof => prof.id === m.player2_id);
-            p2 = prof2?.display_name || "Spieler 2";
-          }
+          let p1 = m.player1_id, p2 = m.player2_id;
+          const prof1 = state.allProfilesCache.find(prof => prof.id === m.player1_id);
+          if (prof1) p1 = prof1.display_name;
+          const prof2 = state.allProfilesCache.find(prof => prof.id === m.player2_id);
+          if (prof2) p2 = prof2.display_name;
           
-          groupedMatches[day].push({ p1Name: p1, p2Name: p2, legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
+          groupedMatches[day].push({ p1Name: p1 || 'Spieler 1', p2Name: p2 || 'Spieler 2', legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
         });
 
         const matchdays = Object.entries(groupedMatches).map(([title, rows]) => ({ title, rows }));
@@ -1016,15 +1040,15 @@
       });
 
       document.getElementById('statLeagues').innerText = populatedLeaguesCount;
-      
-      // Verarbeitet Plattform-Inhalte vorab im Hintergrund für ein nahtloses Wechseln
       switchPlatform("Autodarts");
 
     } catch (error) {
-      console.error("Fehler beim Laden der Daten:", error);
+      console.error("Fehler im Daten-Core:", error);
     }
   }
 
+  // Initialer Start auf der News-Seite
+  switchView('news');
   updateTheme();
   loadData();
 </script>
