@@ -132,7 +132,6 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
-    /* PLATTFORM-BANNER DESIGN */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
@@ -216,7 +215,6 @@
       display: block;
     }
 
-    /* EINHEITLICHES SCHLANKES VERTIKALES LAYOUT */
     .full-width-layout {
       display: flex;
       flex-direction: column;
@@ -231,6 +229,21 @@
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       transition: all 0.3s ease;
+    }
+
+    /* KOMPAKTERE KARTEN FÜR OPTIONEN & INFOS */
+    .card.compact-footer-card {
+      max-width: 450px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .card.compact-footer-card .card-header {
+      padding: 12px 16px;
+      font-size: 15px;
+    }
+    .card.compact-footer-card .card-body {
+      padding: 14px 16px;
+      text-align: center;
     }
 
     html.dark .card {
@@ -388,17 +401,11 @@
       align-items: center;
     }
 
-    .match-score {
-      font-weight: 700;
-      color: #0066ff;
-      min-width: 45px;
-      text-align: center;
-    }
-
     .btn-group {
       display: flex;
       flex-direction: column;
       gap: 8px;
+      align-items: center;
     }
 
     .btn {
@@ -412,6 +419,14 @@
       color: var(--text-primary);
       transition: all 0.3s ease;
       text-align: center;
+    }
+
+    /* KLEINERE BUTTONS FÜR INFOS UND SPENDEN */
+    .btn.small-action-btn {
+      padding: 8px 16px;
+      font-size: 12px;
+      max-width: max-content;
+      width: auto;
     }
 
     .btn:hover {
@@ -606,10 +621,10 @@
         </div>
       </div>
       
-      <div class="card">
+      <div class="card compact-footer-card">
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
-          <div class="btn-group"><button class="btn">📧 Kontakt</button></div>
+          <div class="btn-group"><button class="btn small-action-btn">📧 Kontakt</button></div>
         </div>
       </div>
     </div>
@@ -705,10 +720,10 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card compact-footer-card">
         <div class="card-header">⚙️ Optionen</div>
         <div class="card-body">
-          <div class="btn-group"><button class="btn">☕ Serverkasse unterstützen</button></div>
+          <div class="btn-group"><button class="btn small-action-btn">☕ Serverkasse unterstützen</button></div>
         </div>
       </div>
     </div>
@@ -832,11 +847,6 @@
     return { id: fallbackId, name: finalName };
   }
 
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    state.currentUser = session?.user || null;
-    updateAuthUI();
-  });
-
   function openPlayerCard(idOrName, altName) {
     if (!idOrName || idOrName === "Freilos" || String(idOrName).startsWith('empty_')) return;
     
@@ -911,37 +921,6 @@
 
   function closePlayerModal(e) {
     document.getElementById('playerModal').classList.remove('active');
-  }
-
-  function updateAuthUI() {
-    const loginTitle = document.getElementById('loginTitle');
-    const loginDesc = document.getElementById('loginDesc');
-    const loginBtn = document.getElementById('loginBtn');
-
-    if (state.currentUser) {
-      const name = state.currentUser.user_metadata?.full_name || state.currentUser.email || "Spieler";
-      if (loginTitle) loginTitle.innerText = `Willkommen zurück, ${name}!`;
-      if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten, um deine Profildaten und Statistiken anzupassen.";
-      if (loginBtn) {
-        loginBtn.innerText = "⚙️ Zum Profil wechseln (profil.html)";
-        loginBtn.style.background = "#00d084";
-      }
-    } else {
-      if (loginTitle) loginTitle.innerText = "Mit Discord anmelden";
-      if (loginDesc) loginDesc.innerText = "Melde dich mit deinem Discord-Konto an um auf dein Spieler-Profil zuzugreifen und deine Statistiken zu verwalten.";
-      if (loginBtn) {
-        loginBtn.innerText = "👤 Discord Login";
-        loginBtn.style.background = "#0066ff";
-      }
-    }
-  }
-
-  function handleAuthAction() {
-    if (state.currentUser) {
-      window.location.assign("profil.html");
-    } else {
-      supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: window.location.href } });
-    }
   }
 
   function switchView(view) {
@@ -1145,7 +1124,7 @@
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
-      // DYNAMISCHE REGELWERK ANZEIGE AUS DER SYSTEM_SETTINGS TABELLE
+      // AUSLESEN DES REGELWERKS AUS ADMIN (system_settings -> rules/regelwerk)
       const rulesText = sys?.rules || sys?.regelwerk || "";
       const regelwerkContainer = document.getElementById('regelwerkContent');
       if (regelwerkContainer) {
@@ -1319,6 +1298,7 @@
     }
   }
 
+  // Setzt beim Start den korrekten Modus (News)
   switchView('news');
   updateTheme();
   loadData();
