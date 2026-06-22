@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga</title>
+  <title>CDL Dart Liga BETA v2 </title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -262,7 +262,6 @@
       padding: 20px;
     }
 
-    /* ENGER ZUSAMMENGERÜCKTE TABELLE */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -342,7 +341,6 @@
       color: #ff6b35;
     }
 
-    /* 3 SPIELTAGE NEBENEINANDER GRID Layout */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -553,7 +551,6 @@
       font-size: 14px;
     }
 
-    /* MODAL OVERLAY STYLING */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -632,7 +629,7 @@
               <div class="news-item">
                 <div class="news-date">22. Juni 2026</div>
                 <div class="news-title">Willkommen zur CDL!</div>
-                <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen ein auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
+                <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
               </div>
             </div>
           </div>
@@ -681,7 +678,7 @@
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Best-of-7 Format</h4>
               <p style="margin-bottom: 12px; line-height: 1.6;">Alle Spiele werden im Best-of-7-Format (erste zu 4 Siege) ausgetragen. Der Gewinner erhält 2 Punkte, der Verlierer 0 Punkte.</p>
               <h4 style="margin-top: 20px; margin-bottom: 10px;">Spieltage</h4>
-              <p style="margin-bottom: 12px; line-height: 1.6;">Die Liga ist in mehrere Spieltage untergeteilt. Alle Matches eines Spieltags müssen innerhalb der vorgegebenen Zeit gespielt werden.</p>
+              <p style="margin-bottom: 12px; line-height: 1.6;">Die Liga ist in mehrere Spieltage unterteilt. Alle Matches eines Spieltags müssen innerhalb der vorgegebenen Zeit gespielt werden.</p>
             </div>
           </div>
         </div>
@@ -763,7 +760,7 @@
 
 <script>
   const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3IDE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
@@ -820,12 +817,11 @@
     return clean(dbValue) === clean(targetLeague);
   }
 
-  // BI-DIREKTIONALE PRÄZISIONS-PROFILSUCHE
   function findProfile(identifier) {
     if (!identifier) return null;
     const cleanId = String(identifier).trim().toLowerCase();
     return state.allProfilesCache.find(p => 
-      String(p.id).toLowerCase().trim() === cleanId ||
+      String(p.id || "").toLowerCase().trim() === cleanId ||
       String(p.discord_id || "").toLowerCase().trim() === cleanId ||
       (p.display_name && p.display_name.toLowerCase().trim() === cleanId) ||
       (p.username && p.username.toLowerCase().trim() === cleanId) ||
@@ -834,35 +830,46 @@
     );
   }
 
-  // REPARIERTER RESOLVER: Verhindert kryptische ID-Anzeigen
   function resolvePlayer(m, playerNum, index) {
     const idKeys = playerNum === 1 ? ['player1_id', 'player1', 'p1', 'player_1'] : ['player2_id', 'player2', 'p2', 'player_2'];
     const nameKeys = playerNum === 1 ? ['player1_name', 'p1_name', 'player_1_name'] : ['player2_name', 'p2_name', 'player_2_name'];
     
-    let potentialIds = [];
-    let potentialNames = [];
+    let foundId = "";
+    let foundName = "";
     
-    idKeys.forEach(k => { if(m[k] !== undefined && m[k] !== null && String(m[k]).trim() !== "") potentialIds.push(String(m[k]).trim()); });
-    nameKeys.forEach(k => { if(m[k] !== undefined && m[k] !== null && String(m[k]).trim() !== "") potentialNames.push(String(m[k]).trim()); });
+    for (const key of idKeys) {
+      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
+        foundId = String(m[key]).trim();
+        break;
+      }
+    }
+    for (const key of nameKeys) {
+      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
+        foundName = String(m[key]).trim();
+        break;
+      }
+    }
     
-    let searchValues = [...potentialIds, ...potentialNames];
+    let searchValues = [];
+    if (foundId) searchValues.push(foundId);
+    if (foundName) searchValues.push(foundName);
+    
     let profile = null;
-    
     for (const val of searchValues) {
       profile = findProfile(val);
       if (profile) break;
     }
     
     if (profile) {
-      return { id: profile.id, name: profile.display_name || profile.username || potentialNames[0] || rawId };
+      return { id: profile.id, name: profile.display_name || profile.username || foundName || foundId };
     }
     
     const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     let finalName = "Spieler " + playerNum;
-    let fallbackId = potentialIds[0] || potentialNames[0] || `empty_${playerNum}_${index}`;
+    let fallbackId = foundId || foundName || `empty_${playerNum}_${index}`;
     
-    for (const name of [...potentialNames, ...potentialIds]) {
-      if (!isUuid(name)) {
+    for (const name of [foundName, foundId]) {
+      if (name && !isUuid(name)) {
         finalName = name;
         break;
       }
@@ -870,11 +877,6 @@
     
     return { id: fallbackId, name: finalName };
   }
-
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    state.currentUser = session?.user || null;
-    updateAuthUI();
-  });
 
   function openPlayerCard(idOrName) {
     if (!idOrName || idOrName === "Freilos" || idOrName.startsWith('empty_')) return;
@@ -900,7 +902,6 @@
     const setup = getSetup(p);
     const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
 
-    // Discord Snowflake ID Extraktion für echten Profil-Redirect
     let numericDiscordId = "";
     if (p) {
       if (/^\d{17,19}$/.test(p.id)) numericDiscordId = p.id;
@@ -1201,7 +1202,6 @@
 
         const stats = {};
 
-        // 1. Zuweisung über Profile (Seed-Werte)
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
             stats[p.id] = { 
@@ -1213,7 +1213,6 @@
           }
         });
 
-        // 2. Matches aggregieren und IDs sauber matchen
         lMatches.forEach((m, idx) => {
           const p1 = resolvePlayer(m, 1, idx);
           const p2 = resolvePlayer(m, 2, idx);
@@ -1230,7 +1229,6 @@
             stats[p2.id].name = p2.name;
           }
 
-          // REIN SAISONALER LIVE MATCH-AVG BERECHNER (Keine Profil-Basiswerte)
           const p1AvgKeys = ['player1_avg', 'avg_player1', 'player1_match_avg', 'p1_avg', 'avg1'];
           let p1AvgVal = null;
           for (const k of p1AvgKeys) {
@@ -1286,7 +1284,6 @@
           return { ...s, finalAvg };
         }).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff || b.finalAvg - a.finalAvg);
 
-        // Spielpaarungen bündeln
         const groupedMatches = {};
         lMatches.forEach((m, idx) => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
