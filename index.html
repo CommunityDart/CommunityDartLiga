@@ -779,13 +779,12 @@
     currentUser: null
   };
 
-  // SMARTE ERKENNUNG: Filtert UUIDs, numerische IDs und Hashes heraus
   function isIdString(str) {
     if (!str) return true;
     const s = String(str).trim();
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true; // UUID
-    if (/^\d{17,21}$/.test(s)) return true; // Discord Snowflake ID
-    if (!/[a-zA-ZäöüÄÖÜß]/.test(s) && s.length > 7) return true; // Kein Buchstabe & lang -> Rohe ID
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true;
+    if (/^\d{17,21}$/.test(s)) return true;
+    if (!/[a-zA-ZäöüÄÖÜß]/.test(s) && s.length > 7) return true;
     return false;
   }
 
@@ -811,7 +810,6 @@
     );
   }
 
-  // REPARIERTER RESOLVER: Nutzt isIdString um ID-Überblendung im Frontend unmöglich zu machen
   function resolvePlayer(m, playerNum, index) {
     const idKeys = playerNum === 1 ? ['player1_id', 'player1', 'p1', 'player_1'] : ['player2_id', 'player2', 'p2', 'player_2'];
     const nameKeys = playerNum === 1 ? ['player1_name', 'p1_name', 'player_1_name', 'player1_display_name', 'p1_display_name'] : ['player2_name', 'p2_name', 'player_2_name', 'player2_display_name', 'p2_display_name'];
@@ -860,9 +858,9 @@
     let finalName = "Spieler " + playerNum;
     let fallbackId = foundId || foundName || `empty_${playerNum}_${index}`;
     
-    for (const val of [foundName, foundId]) {
-      if (val && !isIdString(val)) {
-        finalName = val;
+    for (const name of [foundName, foundId]) {
+      if (name && !isIdString(name)) {
+        finalName = name;
         break;
       }
     }
@@ -870,35 +868,46 @@
     return { id: fallbackId, name: finalName };
   }
 
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    state.currentUser = session?.user || null;
-    updateAuthUI();
-  });
-
-  function openPlayerCard(idOrName) {
-    if (!idOrName || idOrName === "Freilos" || idOrName.startsWith('empty_')) return;
+  // SPIELERKARTE: BEHOBENE ID-FILTERUNG & EXKLUSIVE PLATTFORMANZEIGE
+  function openPlayerCard(idOrName, altName) {
+    if (!idOrName || idOrName === "Freilos" || String(idOrName).startsWith('empty_')) return;
     
-    const p = findProfile(idOrName);
+    const p = findProfile(idOrName) || (altName ? findProfile(altName) : null);
     const modal = document.getElementById('playerModal');
     const container = document.getElementById('modalContent');
     
-    const dName = p?.display_name || idOrName;
+    // Failsafe Name-Resolution
+    let dName = p?.display_name || altName || idOrName;
+    if (isIdString(dName) && altName && !isIdString(altName)) {
+      dName = altName;
+    }
+    
     const realName = p?.real_name || p?.full_name || p?.echter_name || p?.name || "Nicht angegeben";
     const discordHandle = p?.discord_name || p?.username || "-";
-    
-    const adName = p?.autodarts_name || "-";
-    const adAvg = p?.autodarts_avg || p?.ad_avg || "0.00";
-    
-    const dcName = p?.dartcounter_name || "-";
-    const dcAvg = p?.dartcounter_avg || p?.dc_avg || "0.00";
-    
-    const scName = p?.scolia_name || "-";
-    const scAvg = p?.scolia_avg || p?.sc_avg || "0.00";
-    
+    const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
     const wohnort = p ? (p.wohnort || p.location || p.city || "Nicht angegeben") : "Nicht angegeben";
     const setup = p ? (p.dart_setup || p.setup || "Nicht angegeben") : "Nicht angegeben";
-    const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
 
+    // EXKLUSIVE DYNAMISCHE PLATTFORMANZEIGE (NUR WENN IM PROFIL EINGETRAGEN)
+    let adHtml = "";
+    if (p && p.autodarts_name && p.autodarts_name.trim() !== "" && p.autodarts_name !== "-") {
+      const adAvg = p.autodarts_avg || p.ad_avg || "0.00";
+      adHtml = `<div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(p.autodarts_name)} [AVG: ${parseFloat(adAvg).toFixed(2)}]</span></div>`;
+    }
+    
+    let dcHtml = "";
+    if (p && p.dartcounter_name && p.dartcounter_name.trim() !== "" && p.dartcounter_name !== "-") {
+      const dcAvg = p.dartcounter_avg || p.dc_avg || "0.00";
+      dcHtml = `<div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(p.dartcounter_name)} [AVG: ${parseFloat(dcAvg).toFixed(2)}]</span></div>`;
+    }
+    
+    let scHtml = "";
+    if (p && p.scolia_name && p.scolia_name.trim() !== "" && p.scolia_name !== "-") {
+      const scAvg = p.scolia_avg || p.sc_avg || "0.00";
+      scHtml = `<div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(p.scolia_name)} [AVG: ${parseFloat(scAvg).toFixed(2)}]</span></div>`;
+    }
+
+    // Discord Deep Link per Snowflake-ID
     let numericDiscordId = "";
     if (p) {
       if (/^\d{17,21}$/.test(p.id)) numericDiscordId = p.id;
@@ -906,6 +915,8 @@
       else {
         for (const k in p) { if (/^\d{17,21}$/.test(p[k])) { numericDiscordId = p[k]; break; } }
       }
+    } else if (/^\d{17,21}$/.test(idOrName)) {
+      numericDiscordId = idOrName;
     }
 
     let discordButtonHtml = "";
@@ -924,9 +935,9 @@
       <div class="player-info-row"><span class="player-info-label">Discord Handle:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
       <div class="player-info-row"><span class="player-info-label">📍 Wohnort:</span><span class="player-info-value">${htmlEscape(wohnort)}</span></div>
       <div class="player-info-row"><span class="player-info-label">🎯 Spielsetup:</span><span class="player-info-value">${htmlEscape(setup)}</span></div>
-      <div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(adName)} ${adName !== "-" ? `[AVG: ${adAvg}]` : ""}</span></div>
-      <div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(dcName)} ${dcName !== "-" ? `[AVG: ${dcAvg}]` : ""}</span></div>
-      <div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(scName)} ${scName !== "-" ? `[AVG: ${scAvg}]` : ""}</span></div>
+      ${adHtml}
+      ${dcHtml}
+      ${scHtml}
       ${discordButtonHtml}
     `;
     
@@ -1103,7 +1114,7 @@
       
       html += `<tr>
         <td style="text-align:center;"><span class="rank ${rankClass}">${idx + 1}</span></td>
-        <td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.id)}')">${htmlEscape(r.name || 'Spieler')}</span></td>
+        <td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.id)}', '${htmlEscape(r.name)}')">${htmlEscape(r.name || 'Spieler')}</span></td>
         <td class="stat">${r.gamesPlayed || 0}</td>
         <td class="stat" style="color: #00d084;">${r.wins || 0}</td>
         <td class="stat" style="color: #ff6b35;">${r.losses || 0}</td>
@@ -1142,9 +1153,9 @@
         html += `
           <div class="match-row">
             <div class="match-players">
-              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p1Id || m.p1Name)}')">${htmlEscape(m.p1Name || 'Spieler 1')}</span>
+              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p1Id || m.p1Name)}', '${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name || 'Spieler 1')}</span>
               <span style="color: var(--text-secondary); font-size: 11px; font-weight:bold;">vs</span>
-              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p2Id || m.p2Name)}')">${htmlEscape(m.p2Name || 'Spieler 2')}</span>
+              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p2Id || m.p2Name)}', '${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name || 'Spieler 2')}</span>
             </div>
             <span class="match-score">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</span>
             <span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span>
@@ -1197,7 +1208,6 @@
 
         const stats = {};
 
-        // 1. Profile laden
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
             const pName = p.display_name || p.username || p.discord_name || p.full_name || p.real_name || p.name || 'Spieler';
@@ -1210,7 +1220,6 @@
           }
         });
 
-        // 2. Matches einberechnen und IDs kollisionsfrei verlinken
         lMatches.forEach((m, idx) => {
           const p1 = resolvePlayer(m, 1, idx);
           const p2 = resolvePlayer(m, 2, idx);
@@ -1227,7 +1236,6 @@
             stats[p2.id].name = p2.name;
           }
 
-          // REIN SAISONALER LIVE MATCH-AVG RECHNER
           const p1AvgKeys = ['player1_avg', 'avg_player1', 'player1_match_avg', 'p1_avg', 'avg1'];
           let p1AvgVal = null;
           for (const k of p1AvgKeys) {
