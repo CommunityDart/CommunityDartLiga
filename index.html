@@ -132,7 +132,7 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
-    /* PLATTFORM & LIGEN BANNER - JETZT PERFEKT MITTIG */
+    /* PLATTFORM & LIGEN BANNER - OPTIMIERT & ENGER */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
@@ -148,7 +148,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
     .banner-row {
-      max-width: 1600px;
+      max-width: 1200px; /* Kompakt gehalten */
       margin: 0 auto;
       display: flex;
       flex-direction: column;
@@ -202,8 +202,9 @@
       background: var(--hover);
     }
 
+    /* CONTAINER ENGER FORMATIERT */
     .container {
-      max-width: 1600px;
+      max-width: 1200px; /* Auf 1200px verringert */
       margin: 0 auto;
       padding: 40px 20px;
     }
@@ -222,7 +223,6 @@
       gap: 30px;
     }
 
-    /* Full-width Layout Option für Ligen-Ansicht */
     .full-width-layout {
       display: flex;
       flex-direction: column;
@@ -774,14 +774,15 @@
     if (state.activePlatform === 'DartCounter') platformLeagues = DC_LEAGUES;
     if (state.activePlatform === 'Scolia') platformLeagues = SC_LEAGUES;
 
+    // INTELLIGENTER FILTER: Erkennt zugewiesene Spieler, auch wenn Matches noch leer sind!
     const activeLeaguesWithData = platformLeagues.filter(l => {
       const data = state.leagueData[l];
       return (data && data.standings?.rows?.length > 0) || (data && data.matchdays?.length > 0);
     });
 
     if (activeLeaguesWithData.length === 0) {
-      container.innerHTML = '<span style="font-size:12px; color:var(--text-secondary); italic">Keine aktiven Ligen mit Daten gefunden.</span>';
-      document.getElementById('tableArea').innerHTML = '<div class="empty">Keine Daten auf dieser Plattform</div>';
+      container.innerHTML = '<span style="font-size:12px; color:var(--text-secondary); italic">Keine aktiven Ligen mit zugewiesenen Spielern gefunden.</span>';
+      document.getElementById('tableArea').innerHTML = '<div class="empty">Keine aktiven Spieler auf dieser Plattform</div>';
       document.getElementById('matchesArea').innerHTML = '<div class="empty">Keine Matches verfügbar</div>';
       return;
     }
@@ -844,7 +845,7 @@
     const rows = data.standings.rows || [];
 
     if (rows.length === 0) {
-      document.getElementById('tableArea').innerHTML = '<div class="empty">Keine Einträge vorhanden</div>';
+      document.getElementById('tableArea').innerHTML = '<div class="empty">Keine Spieler für diese Liga eingetragen</div>';
       return;
     }
 
@@ -885,7 +886,7 @@
     
     if (matchdays.length === 0) {
       document.getElementById('matchesHeaderTitle').innerText = `🎯 Spielpaarungen`;
-      document.getElementById('matchesArea').innerHTML = '<div class="empty">Keine Paarungen angesetzt</div>';
+      document.getElementById('matchesArea').innerHTML = '<div class="empty">Noch keine Spielpaarungen für diese Liga generiert</div>';
       return;
     }
 
@@ -929,6 +930,14 @@
         const lMatches = matches.filter(m => m.league_name === league);
         const stats = {};
 
+        // BEHEBUNG: Lädt zuerst alle Spieler, die laut Admin-Zuweisung in dieser Liga stecken
+        state.allProfilesCache.forEach(p => {
+          if (p.league_name === league || p.league === league || p.current_league === league) {
+            stats[p.id] = { name: p.display_name || 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+          }
+        });
+
+        // Berechnet anschließend Matchdaten obendrauf, falls vorhanden
         lMatches.forEach(m => {
           if (m.player1_id && !stats[m.player1_id]) {
             const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
