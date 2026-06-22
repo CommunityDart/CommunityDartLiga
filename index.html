@@ -262,7 +262,6 @@
       padding: 20px;
     }
 
-    /* ENGE, INTERAKTIVE TABELLE */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -342,7 +341,6 @@
       color: #ff6b35;
     }
 
-    /* 3 SPIELTAGE NEBENEINANDER GRID */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -553,7 +551,6 @@
       font-size: 14px;
     }
 
-    /* MODAL OVERLAY STYLING */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -782,36 +779,14 @@
     currentUser: null
   };
 
-  function getWohnort(p) {
-    if (!p) return "Nicht angegeben";
-    if (p.wohnort) return p.wohnort;
-    if (p.location) return p.location;
-    if (p.city) return p.city;
-    if (p.wohn_ort) return p.wohn_ort;
-    for (const key in p) {
-      if (p.hasOwnProperty(key) && typeof p[key] === 'string') {
-        const kl = key.toLowerCase();
-        if (['wohnort', 'location', 'city', 'wohn_ort', 'stadt', 'ort'].includes(kl)) {
-          if (p[key].trim().length > 0) return p[key].trim();
-        }
-      }
-    }
-    return "Nicht angegeben";
-  }
-
-  function getSetup(p) {
-    if (!p) return "Nicht angegeben";
-    if (p.dart_setup) return p.dart_setup;
-    if (p.setup) return p.setup;
-    for (const key in p) {
-      if (p.hasOwnProperty(key) && typeof p[key] === 'string') {
-        const kl = key.toLowerCase();
-        if (['dart_setup', 'setup', 'spielsetup', 'darts'].includes(kl)) {
-          if (p[key].trim().length > 0) return p[key].trim();
-        }
-      }
-    }
-    return "Nicht angegeben";
+  // SMARTE ERKENNUNG: Filtert UUIDs, numerische IDs und Hashes heraus
+  function isIdString(str) {
+    if (!str) return true;
+    const s = String(str).trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true; // UUID
+    if (/^\d{17,21}$/.test(s)) return true; // Discord Snowflake ID
+    if (!/[a-zA-ZäöüÄÖÜß]/.test(s) && s.length > 7) return true; // Kein Buchstabe & lang -> Rohe ID
+    return false;
   }
 
   function matchLeagueName(dbValue, targetLeague) {
@@ -828,15 +803,18 @@
       String(p.discord_id || "").toLowerCase().trim() === cleanId ||
       (p.display_name && p.display_name.toLowerCase().trim() === cleanId) ||
       (p.username && p.username.toLowerCase().trim() === cleanId) ||
+      (p.discord_name && p.discord_name.toLowerCase().trim() === cleanId) ||
+      (p.full_name && p.full_name.toLowerCase().trim() === cleanId) ||
+      (p.real_name && p.real_name.toLowerCase().trim() === cleanId) ||
       (p.autodarts_name && p.autodarts_name.toLowerCase().trim() === cleanId) ||
       (p.dartcounter_name && p.dartcounter_name.toLowerCase().trim() === cleanId)
     );
   }
 
-  // VOLLKOMMEN REPARIERTE RESOLVER-FUNKTION (OHNE TIFFEHLER ODER ABSTÜRZE)
+  // REPARIERTER RESOLVER: Nutzt isIdString um ID-Überblendung im Frontend unmöglich zu machen
   function resolvePlayer(m, playerNum, index) {
     const idKeys = playerNum === 1 ? ['player1_id', 'player1', 'p1', 'player_1'] : ['player2_id', 'player2', 'p2', 'player_2'];
-    const nameKeys = playerNum === 1 ? ['player1_name', 'p1_name', 'player_1_name'] : ['player2_name', 'p2_name', 'player_2_name'];
+    const nameKeys = playerNum === 1 ? ['player1_name', 'p1_name', 'player_1_name', 'player1_display_name', 'p1_display_name'] : ['player2_name', 'p2_name', 'player_2_name', 'player2_display_name', 'p2_display_name'];
     
     let foundId = "";
     let foundName = "";
@@ -854,6 +832,10 @@
       }
     }
     
+    if (foundId && !foundName && !isIdString(foundId)) {
+      foundName = foundId;
+    }
+    
     let searchValues = [];
     if (foundId) searchValues.push(foundId);
     if (foundName) searchValues.push(foundName);
@@ -865,22 +847,33 @@
     }
     
     if (profile) {
-      return { id: profile.id, name: profile.display_name || profile.username || foundName || foundId };
+      const profileName = profile.display_name || profile.username || profile.discord_name || profile.full_name || profile.real_name || profile.name;
+      if (profileName && !isIdString(profileName)) {
+        return { id: profile.id, name: profileName };
+      }
+      if (foundName && !isIdString(foundName)) {
+        return { id: profile.id, name: foundName };
+      }
+      return { id: profile.id, name: "Spieler " + playerNum };
     }
     
-    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     let finalName = "Spieler " + playerNum;
     let fallbackId = foundId || foundName || `empty_${playerNum}_${index}`;
     
-    for (const name of [foundName, foundId]) {
-      if (name && !isUuid(name)) {
-        finalName = name;
+    for (const val of [foundName, foundId]) {
+      if (val && !isIdString(val)) {
+        finalName = val;
         break;
       }
     }
     
     return { id: fallbackId, name: finalName };
   }
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    state.currentUser = session?.user || null;
+    updateAuthUI();
+  });
 
   function openPlayerCard(idOrName) {
     if (!idOrName || idOrName === "Freilos" || idOrName.startsWith('empty_')) return;
@@ -902,18 +895,16 @@
     const scName = p?.scolia_name || "-";
     const scAvg = p?.scolia_avg || p?.sc_avg || "0.00";
     
-    const wohnort = getWohnort(p);
-    const setup = getSetup(p);
+    const wohnort = p ? (p.wohnort || p.location || p.city || "Nicht angegeben") : "Nicht angegeben";
+    const setup = p ? (p.dart_setup || p.setup || "Nicht angegeben") : "Nicht angegeben";
     const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
 
     let numericDiscordId = "";
     if (p) {
-      if (/^\d{17,19}$/.test(p.id)) numericDiscordId = p.id;
-      else if (p.discord_id && /^\d{17,19}$/.test(p.discord_id)) numericDiscordId = p.discord_id;
+      if (/^\d{17,21}$/.test(p.id)) numericDiscordId = p.id;
+      else if (p.discord_id && /^\d{17,21}$/.test(p.discord_id)) numericDiscordId = p.discord_id;
       else {
-        for (const k in p) {
-          if (/^\d{17,19}$/.test(p[k])) { numericDiscordId = p[k]; break; }
-        }
+        for (const k in p) { if (/^\d{17,21}$/.test(p[k])) { numericDiscordId = p[k]; break; } }
       }
     }
 
@@ -1206,19 +1197,20 @@
 
         const stats = {};
 
-        // 1. Zuweisung über Profile (Seeding)
+        // 1. Profile laden
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
+            const pName = p.display_name || p.username || p.discord_name || p.full_name || p.real_name || p.name || 'Spieler';
             stats[p.id] = { 
               id: p.id,
-              name: p.display_name || p.username || p.discord_name || 'Spieler', 
+              name: isIdString(pName) ? 'Spieler' : pName, 
               wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0,
               avgSum: 0, avgCount: 0
             };
           }
         });
 
-        // 2. Matches aggregieren & IDs krisensicher auflösen
+        // 2. Matches einberechnen und IDs kollisionsfrei verlinken
         lMatches.forEach((m, idx) => {
           const p1 = resolvePlayer(m, 1, idx);
           const p2 = resolvePlayer(m, 2, idx);
@@ -1291,7 +1283,6 @@
           return { ...s, finalAvg };
         }).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff || b.finalAvg - a.finalAvg);
 
-        // Spielpaarungen bündeln
         const groupedMatches = {};
         lMatches.forEach((m, idx) => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
