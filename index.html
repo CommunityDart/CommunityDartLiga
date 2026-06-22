@@ -193,7 +193,7 @@
       font-size: 12px;
       font-weight: 600;
       color: var(--text-primary);
-      transition: all 0.3;
+      transition: all 0.3s;
     }
     .league-btn:hover, .league-btn.active {
       border-color: var(--platform-color);
@@ -341,7 +341,7 @@
       color: #ff6b35;
     }
 
-    /* 3 SPIELTAGE NEBENEINANDER GRID STRUCTURE */
+    /* 3 SPIELTAGE GRID STRUCTURE */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -552,7 +552,7 @@
       font-size: 14px;
     }
 
-    /* MODAL STYLE (SPIELERKARTE OVERLAY) */
+    /* MODAL OVERLAY STYLE */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -821,7 +821,7 @@
     return clean(dbValue) === clean(targetLeague);
   }
 
-  // GLOBALER PROFILE-RESOLVER: Löst IDs, UUIDs und Accountnamen präzise auf
+  // BI-DIREKTIONALER PROFILE-RESOLVER: Sucht nach ID, Anzeigename, Username und Ingame-Namen
   function findProfile(identifier) {
     if (!identifier) return null;
     const cleanId = String(identifier).trim().toLowerCase();
@@ -834,13 +834,41 @@
     );
   }
 
+  // ULTRA-ROBUSTER RESOLVER FÜR ADMIN-EINGABEN (Verhindert fehlerhaftes Überblenden in "Spieler")
+  function resolvePlayer(m, playerNum, index) {
+    const idKeys = playerNum === 1 
+      ? ['player1_id', 'player1', 'p1', 'player_1', 'player1_name', 'p1_name'] 
+      : ['player2_id', 'player2', 'p2', 'player_2', 'player2_name', 'p2_name'];
+    
+    let rawValue = null;
+    for (const key of idKeys) {
+      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
+        rawValue = String(m[key]).trim();
+        break;
+      }
+    }
+    
+    // Falls keine ID oder Name existiert, weise einen kollisionsfreien temporären Key zu
+    if (!rawValue) {
+      return { id: `empty_${playerNum}_${index}`, name: `Spieler ${playerNum}` };
+    }
+    
+    const profile = findProfile(rawValue);
+    if (profile) {
+      return { id: profile.id, name: profile.display_name || profile.username || rawValue };
+    }
+    
+    // Fallback: Wenn kein Profil im System existiert, nimm den reinen Text-Wert statt das Wort "Spieler"!
+    return { id: rawValue, name: rawValue };
+  }
+
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
     updateAuthUI();
   });
 
   function openPlayerCard(idOrName) {
-    if (!idOrName || idOrName === "Freilos") return;
+    if (!idOrName || idOrName === "Freilos" || idOrName.startsWith('empty_')) return;
     
     const p = findProfile(idOrName);
 
@@ -1137,73 +1165,97 @@
         const lMatches = matches.filter(m => {
           if (m.league_name && matchLeagueName(m.league_name, league)) return true;
           if (m.league && matchLeagueName(m.league, league)) return true;
+          if (m.liga && matchLeagueName(m.liga, league)) return true;
+          for (const k in m) {
+            if (m.hasOwnProperty(k) && typeof m[k] === 'string' && matchLeagueName(m[k], league)) return true;
+          }
           return false;
         });
 
         const stats = {};
 
-        // 1. Seed stats mit Profil-Zuweisungen
+        // 1. Zuweisung über Profile (Einteilungen aus der Adminseite sichtbar machen)
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
             stats[p.id] = { 
               id: p.id,
-              name: p.display_name || p.username || 'Spieler', 
+              name: p.display_name || p.username || p.discord_name || 'Spieler', 
               wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0,
               avgSum: 0, avgCount: 0
             };
           }
         });
 
-        // 2. Matches einberechnen & Namen sauber via Cache matchen
-        lMatches.forEach(m => {
-          const prof1 = findProfile(m.player1_id) || findProfile(m.player1_name);
-          const prof2 = findProfile(m.player2_id) || findProfile(m.player2_name);
+        // 2. Matches einberechnen & Namen kollisionsfrei verlinken
+        lMatches.forEach((m, idx) => {
+          const p1 = resolvePlayer(m, 1, idx);
+          const p2 = resolvePlayer(m, 2, idx);
 
-          const p1Id = prof1 ? prof1.id : (m.player1_id || 'p1');
-          const p2Id = prof2 ? prof2.id : (m.player2_id || 'p2');
+          if (!stats[p1.id]) {
+            stats[p1.id] = { id: p1.id, name: p1.name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
+          } else if (stats[p1.id].name === 'Spieler' || stats[p1.id].name.startsWith('Spieler ')) {
+            stats[p1.id].name = p1.name;
+          }
           
-          const p1Name = prof1 ? (prof1.display_name || prof1.username) : (m.player1_name || m.player1_id || 'Spieler 1');
-          const p2Name = prof2 ? (prof2.display_name || prof2.username) : (m.player2_name || m.player2_id || 'Spieler 2');
-
-          if (!stats[p1Id]) {
-            stats[p1Id] = { id: p1Id, name: p1Name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
-          }
-          if (!stats[p2Id]) {
-            stats[p2Id] = { id: p2Id, name: p2Name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
+          if (!stats[p2.id]) {
+            stats[p2.id] = { id: p2.id, name: p2.name, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
+          } else if (stats[p2.id].name === 'Spieler' || stats[p2.id].name.startsWith('Spieler ')) {
+            stats[p2.id].name = p2.name;
           }
 
-          // REIN SAISONALER MATCH-AVG RECHNER (Ignoriert Profil-Basiswerte)
-          const p1AvgVal = m.player1_avg || m.avg_player1 || m.player1_match_avg;
-          if (p1AvgVal && parseFloat(p1AvgVal) > 0) {
-            stats[p1Id].avgSum += parseFloat(p1AvgVal);
-            stats[p1Id].avgCount++;
+          // REIN SAISONALER MATCH-AVG RECHNER (Errechnet sich über eingetragene Match-Daten)
+          const p1AvgKeys = ['player1_avg', 'avg_player1', 'player1_match_avg', 'p1_avg', 'avg1'];
+          let p1AvgVal = null;
+          for (const k of p1AvgKeys) {
+            if (m[k] !== undefined && m[k] !== null && parseFloat(m[k]) > 0) {
+              p1AvgVal = parseFloat(m[k]);
+              break;
+            }
           }
-          const p2AvgVal = m.player2_avg || m.avg_player2 || m.player2_match_avg;
-          if (p2AvgVal && parseFloat(p2AvgVal) > 0) {
-            stats[p2Id].avgSum += parseFloat(p2AvgVal);
-            stats[p2Id].avgCount++;
+          if (p1AvgVal) {
+            stats[p1.id].avgSum += p1AvgVal;
+            stats[p1.id].avgCount++;
           }
 
+          const p2AvgKeys = ['player2_avg', 'avg_player2', 'player2_match_avg', 'p2_avg', 'avg2'];
+          let p2AvgVal = null;
+          for (const k of p2AvgKeys) {
+            if (m[k] !== undefined && m[k] !== null && parseFloat(m[k]) > 0) {
+              p2AvgVal = parseFloat(m[k]);
+              break;
+            }
+          }
+          if (p2AvgVal) {
+            stats[p2.id].avgSum += p2AvgVal;
+            stats[p2.id].avgCount++;
+          }
+
+          // Legs & Tabellenergebnisse verbuchen
           if (m.status === 'done' || m.status === 'fertig') {
-            const l1 = parseInt(m.legs_player1) || 0;
-            const l2 = parseInt(m.legs_player2) || 0;
-            stats[p1Id].gamesPlayed++;
-            stats[p2Id].gamesPlayed++;
-            stats[p1Id].legDiff += l1 - l2;
-            stats[p2Id].legDiff += l2 - l1;
+            const legKeys1 = ['legs_player1', 'player1_legs', 'legs1', 'legs_p1'];
+            const legKeys2 = ['legs_player2', 'player2_legs', 'legs2', 'legs_p2'];
+            
+            let l1 = 0, l2 = 0;
+            for (const k of legKeys1) { if (m[k] !== undefined && m[k] !== null) { l1 = parseInt(m[k]) || 0; break; } }
+            for (const k of legKeys2) { if (m[k] !== undefined && m[k] !== null) { l2 = parseInt(m[k]) || 0; break; } }
+
+            stats[p1.id].gamesPlayed++;
+            stats[p2.id].gamesPlayed++;
+            stats[p1.id].legDiff += l1 - l2;
+            stats[p2.id].legDiff += l2 - l1;
             if (l1 > l2) {
-              stats[p1Id].wins++;
-              stats[p1Id].points += 2;
-              stats[p2Id].losses++;
+              stats[p1.id].wins++;
+              stats[p1.id].points += 2;
+              stats[p2.id].losses++;
             } else if (l2 > l1) {
-              stats[p2Id].wins++;
-              stats[p2Id].points += 2;
-              stats[p1Id].losses++;
+              stats[p2.id].wins++;
+              stats[p2.id].points += 2;
+              stats[p1.id].losses++;
             }
           }
         });
 
-        // Berechnet den endgültigen Durchschnitts-AVG
+        // Berechnet finalen Durchschnitts-AVG
         const standings = Object.values(stats).map(s => {
           const finalAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount) : 0.00;
           return { ...s, finalAvg };
@@ -1211,24 +1263,27 @@
 
         // Spielpaarungen bündeln
         const groupedMatches = {};
-        lMatches.forEach(m => {
+        lMatches.forEach((m, idx) => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
           if (!groupedMatches[day]) groupedMatches[day] = [];
           
-          const prof1 = findProfile(m.player1_id) || findProfile(m.player1_name);
-          const prof2 = findProfile(m.player2_id) || findProfile(m.player2_name);
+          const p1 = resolvePlayer(m, 1, idx);
+          const p2 = resolvePlayer(m, 2, idx);
           
-          const finalP1Name = prof1 ? (prof1.display_name || prof1.username) : (m.player1_name || m.player1_id || 'Spieler 1');
-          const finalP2Name = prof2 ? (prof2.display_name || prof2.username) : (m.player2_name || m.player2_id || 'Spieler 2');
-          
+          const legKeys1 = ['legs_player1', 'player1_legs', 'legs1', 'legs_p1'];
+          const legKeys2 = ['legs_player2', 'player2_legs', 'legs2', 'legs_p2'];
+          let l1 = null, l2 = null;
+          for (const k of legKeys1) { if (m[k] !== undefined && m[k] !== null) { l1 = m[k]; break; } }
+          for (const k of legKeys2) { if (m[k] !== undefined && m[k] !== null) { l2 = m[k]; break; } }
+
           groupedMatches[day].push({ 
-            p1Name: finalP1Name, 
-            p2Name: finalP2Name, 
-            legs1: m.legs_player1, 
-            legs2: m.legs_player2, 
+            p1Name: p1.name, 
+            p2Name: p2.name, 
+            legs1: l1, 
+            legs2: l2, 
             status: m.status,
-            p1Id: prof1 ? prof1.id : null,
-            p2Id: prof2 ? prof2.id : null
+            p1Id: p1.id,
+            p2Id: p2.id
           });
         });
 
