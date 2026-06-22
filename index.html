@@ -132,11 +132,11 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
-    /* PLATTFORM & LIGEN BANNER */
+    /* PLATTFORM & LIGEN BANNER - JETZT PERFEKT MITTIG */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
-      padding: 18px 20px;
+      padding: 20px;
       display: none;
       animation: slideDown 0.25s ease forwards;
     }
@@ -152,20 +152,23 @@
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
     }
     .platform-selection, .league-selection {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 12px;
       flex-wrap: wrap;
+      width: 100%;
     }
     .banner-label {
       font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-secondary);
-      min-width: 90px;
     }
     .p-btn {
       padding: 8px 16px;
@@ -217,6 +220,14 @@
       display: grid;
       grid-template-columns: 1fr 340px;
       gap: 30px;
+    }
+
+    /* Full-width Layout Option für Ligen-Ansicht */
+    .full-width-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      width: 100%;
     }
 
     .card {
@@ -423,28 +434,29 @@
 
     .stat-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 4px;
     }
 
     .stat-box {
       background: var(--bg-tertiary);
-      padding: 12px;
+      padding: 16px;
       border-radius: 8px;
       text-align: center;
+      border: 1px solid var(--border);
     }
 
     .stat-box-label {
       font-size: 11px;
       color: var(--text-secondary);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       font-weight: 600;
       text-transform: uppercase;
     }
 
     .stat-box-value {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
       color: #0066ff;
     }
@@ -525,7 +537,7 @@
       </div>
       <div class="league-selection">
         <span class="banner-label">Liga:</span>
-        <div id="leagueBannerContainer" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <div id="leagueBannerContainer" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
           </div>
       </div>
     </div>
@@ -534,7 +546,7 @@
 
 <div class="container">
   <div id="ligenView" class="view active">
-    <div class="content">
+    <div class="full-width-layout">
       <div class="main-cards">
         <div class="tab-buttons">
           <button class="tab-btn active" onclick="switchTab('ligen')">⚡ Ligen</button>
@@ -587,13 +599,22 @@
         </div>
       </div>
 
-      <div class="sidebar">
-        <div class="sidebar-card">
-          <div class="sidebar-title">📈 Überblick</div>
+      <div class="card" style="margin-top: 10px;">
+        <div class="card-header">📈 Globaler Überblick & Live-Statistiken</div>
+        <div class="card-body">
           <div class="stat-grid">
-            <div class="stat-box"><div class="stat-box-label">Spieler</div><div class="stat-box-value" id="statPlayers">0</div></div>
-            <div class="stat-box" style="background:rgba(255,107,53,0.1);"><div class="stat-box-label" style="color:#ff6b35;">Aktive Ligen</div><div class="stat-box-value" style="color:#ff6b35;" id="statLeagues">0</div></div>
-            <div class="stat-box" style="grid-column: 1 / -1; background:rgba(0,208,132,0.1);"><div class="stat-box-label" style="color:#00d084;">Gesamt Matches</div><div class="stat-box-value" style="color:#00d084;" id="statMatches">0</div></div>
+            <div class="stat-box">
+              <div class="stat-box-label">Registrierte Spieler</div>
+              <div class="stat-box-value" id="statPlayers" style="color: var(--platform-color);">0</div>
+            </div>
+            <div class="stat-box" style="background: rgba(255,107,53,0.06);">
+              <div class="stat-box-label" style="color: #ff6b35;">Aktive Ligen (mit Inhalt)</div>
+              <div class="stat-box-value" style="color: #ff6b35;" id="statLeagues">0</div>
+            </div>
+            <div class="stat-box" style="background: rgba(0,208,132,0.06);">
+              <div class="stat-box-label" style="color: #00d084;">Generierte Matches (Saison)</div>
+              <div class="stat-box-value" style="color: #00d084;" id="statMatches">0</div>
+            </div>
           </div>
         </div>
       </div>
@@ -677,7 +698,6 @@
     currentUser: null
   };
 
-  // Auth State Listener für automatische Profil-Verlinkung
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
     updateAuthUI();
@@ -708,10 +728,8 @@
 
   function handleAuthAction() {
     if (state.currentUser) {
-      // Wenn eingeloggt, leite an profil.html weiter
       window.location.assign("profil.html");
     } else {
-      // Wenn nicht eingeloggt, starte OAuth
       supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: window.location.href } });
     }
   }
@@ -719,7 +737,6 @@
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
-    
     document.querySelectorAll('.navbar .nav-btn').forEach(btn => btn.classList.remove('active'));
     
     if (view === 'ligen') {
@@ -757,7 +774,6 @@
     if (state.activePlatform === 'DartCounter') platformLeagues = DC_LEAGUES;
     if (state.activePlatform === 'Scolia') platformLeagues = SC_LEAGUES;
 
-    // Filter: Zeige ausschließlich Ligen, die Daten beinhalten
     const activeLeaguesWithData = platformLeagues.filter(l => {
       const data = state.leagueData[l];
       return (data && data.standings?.rows?.length > 0) || (data && data.matchdays?.length > 0);
