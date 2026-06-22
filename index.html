@@ -132,7 +132,7 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
-    /* PLATTFORM & LIGEN BANNER - OPTIMIERT & ENGER */
+    /* PLATTFORM-BANNER MITTIG */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
@@ -148,7 +148,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
     .banner-row {
-      max-width: 1200px; /* Kompakt gehalten */
+      max-width: 1200px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
@@ -202,9 +202,8 @@
       background: var(--hover);
     }
 
-    /* CONTAINER ENGER FORMATIERT */
     .container {
-      max-width: 1200px; /* Auf 1200px verringert */
+      max-width: 1200px;
       margin: 0 auto;
       padding: 40px 20px;
     }
@@ -486,27 +485,40 @@
       border-bottom-color: #0066ff;
     }
 
+    .news-item {
+      margin-bottom: 20px;
+      padding: 20px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .news-date {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .news-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .news-content {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
     .empty {
       padding: 40px 20px;
       text-align: center;
       color: var(--text-secondary);
       font-size: 14px;
-    }
-
-    .main-cards {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    @media (max-width: 1200px) {
-      .content { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 600px) {
-      .header-top { flex-direction: column; gap: 15px; }
-      .header-title h1 { font-size: 32px; }
-      .navbar { overflow-x: auto; padding-bottom: 8px; }
     }
   </style>
 </head>
@@ -522,12 +534,12 @@
   </div>
   
   <div class="navbar">
-    <button class="nav-btn active" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
-    <button class="nav-btn" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
+    <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
+    <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
   </div>
 
-  <div class="platform-banner active" id="platformBanner">
+  <div class="platform-banner" id="platformBanner">
     <div class="banner-row">
       <div class="platform-selection">
         <span class="banner-label">Plattform:</span>
@@ -545,7 +557,32 @@
 </div>
 
 <div class="container">
-  <div id="ligenView" class="view active">
+  <div id="newsView" class="view active">
+    <div class="content">
+      <div>
+        <div class="card">
+          <div class="card-header">📰 Neuigkeiten</div>
+          <div class="card-body">
+            <div id="newsArea">
+              <div class="news-item">
+                <div class="news-date">22. Juni 2026</div>
+                <div class="news-title">Willkommen zur CDL!</div>
+                <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-title">ℹ️ Infos</div>
+          <div class="btn-group"><button class="btn">📧 Kontakt</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ligenView" class="view">
     <div class="full-width-layout">
       <div class="main-cards">
         <div class="tab-buttons">
@@ -621,31 +658,6 @@
     </div>
   </div>
 
-  <div id="newsView" class="view">
-    <div class="content">
-      <div>
-        <div class="card">
-          <div class="card-header">📰 Neuigkeiten</div>
-          <div class="card-body">
-            <div id="newsArea">
-              <div class="news-item">
-                <div class="news-date">22. Juni 2026</div>
-                <div class="news-title">Willkommen zur CDL!</div>
-                <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="sidebar">
-        <div class="sidebar-card">
-          <div class="sidebar-title">ℹ️ Infos</div>
-          <div class="btn-group"><button class="btn">📧 Kontakt</button></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div id="discordView" class="view">
     <div class="content">
       <div>
@@ -694,7 +706,7 @@
     allProfilesCache: [],
     currentSeason: "Saison 1",
     darkMode: localStorage.getItem('darkMode') === 'true',
-    currentView: 'ligen',
+    currentView: 'news', // Standardmäßig auf News gesetzt
     currentUser: null
   };
 
@@ -774,15 +786,14 @@
     if (state.activePlatform === 'DartCounter') platformLeagues = DC_LEAGUES;
     if (state.activePlatform === 'Scolia') platformLeagues = SC_LEAGUES;
 
-    // INTELLIGENTER FILTER: Erkennt zugewiesene Spieler, auch wenn Matches noch leer sind!
     const activeLeaguesWithData = platformLeagues.filter(l => {
       const data = state.leagueData[l];
       return (data && data.standings?.rows?.length > 0) || (data && data.matchdays?.length > 0);
     });
 
     if (activeLeaguesWithData.length === 0) {
-      container.innerHTML = '<span style="font-size:12px; color:var(--text-secondary); italic">Keine aktiven Ligen mit zugewiesenen Spielern gefunden.</span>';
-      document.getElementById('tableArea').innerHTML = '<div class="empty">Keine aktiven Spieler auf dieser Plattform</div>';
+      container.innerHTML = '<span style="font-size:12px; color:var(--text-secondary); italic">Keine aktiven Ligen mit Daten gefunden.</span>';
+      document.getElementById('tableArea').innerHTML = '<div class="empty">Keine aktiven Spieler oder Begegnungen auf dieser Plattform</div>';
       document.getElementById('matchesArea').innerHTML = '<div class="empty">Keine Matches verfügbar</div>';
       return;
     }
@@ -919,9 +930,17 @@
 
       const { data: sys } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
       state.currentSeason = sys?.current_season || 'Saison 1';
+      const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
-      const matches = matchesData ? matchesData.filter(m => m.season === state.currentSeason) : [];
+      
+      // FEHLERTOLERANTER SAISON-FILTER: Vergleicht Strings und extrahierte Zahlen (z.B. "Saison 1" und "1")
+      const matches = matchesData ? matchesData.filter(m => {
+        if (!m.season) return false;
+        const mSeasonNum = String(m.season).replace(/\D/g, "");
+        return mSeasonNum === stateSeasonNum || String(m.season).trim().toLowerCase() === String(state.currentSeason).trim().toLowerCase();
+      }) : [];
+      
       document.getElementById('statMatches').innerText = matches.length;
 
       let populatedLeaguesCount = 0;
@@ -930,14 +949,14 @@
         const lMatches = matches.filter(m => m.league_name === league);
         const stats = {};
 
-        // BEHEBUNG: Lädt zuerst alle Spieler, die laut Admin-Zuweisung in dieser Liga stecken
+        // 1. Zuweisung über Profile laden (Einteilungen aus dem Admin-Bereich sichtbar machen)
         state.allProfilesCache.forEach(p => {
           if (p.league_name === league || p.league === league || p.current_league === league) {
             stats[p.id] = { name: p.display_name || 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
           }
         });
 
-        // Berechnet anschließend Matchdaten obendrauf, falls vorhanden
+        // 2. Erzeugte Match-Daten einberechnen
         lMatches.forEach(m => {
           if (m.player1_id && !stats[m.player1_id]) {
             const p = state.allProfilesCache.find(prof => prof.id === m.player1_id);
@@ -969,13 +988,22 @@
 
         const standings = Object.values(stats).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff);
 
+        // 3. Generierte Spielpaarungen nach Spieltagen bündeln (Namen direkt aus dem globalen Profil-Cache)
         const groupedMatches = {};
         lMatches.forEach(m => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
           if (!groupedMatches[day]) groupedMatches[day] = [];
+          
           let p1 = "Freilos", p2 = "Freilos";
-          if (m.player1_id && stats[m.player1_id]) p1 = stats[m.player1_id].name;
-          if (m.player2_id && stats[m.player2_id]) p2 = stats[m.player2_id].name;
+          if (m.player1_id) {
+            const prof1 = state.allProfilesCache.find(prof => prof.id === m.player1_id);
+            p1 = prof1?.display_name || "Spieler 1";
+          }
+          if (m.player2_id) {
+            const prof2 = state.allProfilesCache.find(prof => prof.id === m.player2_id);
+            p2 = prof2?.display_name || "Spieler 2";
+          }
+          
           groupedMatches[day].push({ p1Name: p1, p2Name: p2, legs1: m.legs_player1, legs2: m.legs_player2, status: m.status });
         });
 
@@ -988,6 +1016,8 @@
       });
 
       document.getElementById('statLeagues').innerText = populatedLeaguesCount;
+      
+      // Verarbeitet Plattform-Inhalte vorab im Hintergrund für ein nahtloses Wechseln
       switchPlatform("Autodarts");
 
     } catch (error) {
