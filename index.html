@@ -262,7 +262,7 @@
       padding: 20px;
     }
 
-    /* ENGER ZUSAMMENGERÜCKTE TABELLE */
+    /* ENGER FORMATIERTE TABELLE */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -271,7 +271,7 @@
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 8px 10px; /* Reduziert von 12px */
+      padding: 8px 10px;
       text-align: left;
       font-weight: 700;
       font-size: 12px;
@@ -281,7 +281,7 @@
     }
 
     tbody td {
-      padding: 8px 10px; /* Reduziert von 12px */
+      padding: 8px 10px;
       border-bottom: 1px solid var(--border);
       font-size: 13px;
       color: var(--text-primary);
@@ -342,7 +342,7 @@
       color: #ff6b35;
     }
 
-    /* 3 SPIELTAGE NEBENEINANDER (CSS GRID STRUCTURE) */
+    /* 3 SPIELTAGE NEBENEINANDER GRID Layout */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -350,14 +350,10 @@
       width: 100%;
     }
     @media (min-width: 768px) {
-      .matchdays-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
+      .matchdays-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (min-width: 1024px) {
-      .matchdays-grid {
-        grid-template-columns: repeat(3, 1fr); /* Genau 3 nebeneinander */
-      }
+      .matchdays-grid { grid-template-columns: repeat(3, 1fr); }
     }
 
     .matchday-card {
@@ -557,7 +553,7 @@
       font-size: 14px;
     }
 
-    /* CSS FOR MODAL / SPIELERKARTE */
+    /* MODAL STYLE (SPIELERKARTE OVERLAY) */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -581,6 +577,14 @@
     .player-info-row:last-of-type { border-bottom: none; margin-bottom: 12px; }
     .player-info-label { font-weight: 700; color: var(--text-secondary); }
     .player-info-value { font-weight: 600; color: var(--text-primary); }
+    
+    .avatar-wrapper {
+      display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; gap: 8px;
+    }
+    .profile-avatar {
+      width: 85px; height: 80px; border-radius: 50%; border: 3px solid var(--platform-color); object-fit: cover;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
   </style>
 </head>
 <body>
@@ -780,7 +784,7 @@
 
   function matchLeagueName(dbValue, targetLeague) {
     if (!dbValue || !targetLeague) return false;
-    const clean = (str) => String(str).toLowerCase().replace(/[\s_\-]/g, "");
+    const clean = (str) => String(str).toLowerCase().replace(/[\s_\-]/g, "").trim();
     return clean(dbValue) === clean(targetLeague);
   }
 
@@ -789,11 +793,10 @@
     updateAuthUI();
   });
 
-  // FUNKTION ZUM ÖFFNEN DER SPIELERKARTE
+  // SPIELERKARTE RENDERN MIT DISCORD AVATAR, WOHNORT & SETUP
   function openPlayerCard(name) {
     if (!name || name === "Freilos") return;
     
-    // Suche Profil fehlertolerant im Cache
     const p = state.allProfilesCache.find(prof => 
       String(prof.display_name).toLowerCase() === String(name).toLowerCase() || 
       String(prof.username).toLowerCase() === String(name).toLowerCase()
@@ -808,18 +811,28 @@
     const dcName = p?.dartcounter_name || "-";
     const scName = p?.scolia_name || "-";
     
-    // Generiert Deep-Link zu Discord falls ID existiert, sonst Standardfall
+    // Ermittlung des Wohnorts und des Setups aus den Datenbankfeldern
+    const wohnort = p?.wohnort || p?.location || p?.city || "Nicht angegeben";
+    const setup = p?.dart_setup || p?.setup || "Nicht angegeben";
+    
+    // Discord Avatar Fallback-Logik (Prüft auf URL oder nimmt Standard-Discord-Bild)
+    const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
+
     let discordButtonHtml = "";
     if (p && p.id && /^\d+$/.test(p.id)) {
       discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="window.open('https://discord.com/users/${p.id}', '_blank')">💬 Discord Nachricht senden</button>`;
     } else {
-      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Name: ${discordHandle}\\nNutze die Suchfunktion in Discord um eine Nachricht zu senden.')">💬 Name kopieren / anzeigen</button>`;
+      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Name: ${discordHandle}\\nNutze die Direct-Message Suche in Discord.')">💬 Name kopieren / anzeigen</button>`;
     }
 
     container.innerHTML = `
-      <div class="player-card-title">🎯 Spielerkarte</div>
-      <div class="player-info-row"><span class="player-info-label">Name:</span><span class="player-info-value" style="color:var(--platform-color); font-size:16px;">${htmlEscape(dName)}</span></div>
+      <div class="avatar-wrapper">
+        <img src="${avatarImgUrl}" class="profile-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+        <div class="player-card-title">${htmlEscape(dName)}</div>
+      </div>
       <div class="player-info-row"><span class="player-info-label">Discord Name:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">📍 Wohnort:</span><span class="player-info-value">${htmlEscape(wohnort)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">🎯 Spielsetup:</span><span class="player-info-value">${htmlEscape(setup)}</span></div>
       <div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(adName)}</span></div>
       <div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(dcName)}</span></div>
       <div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(scName)}</span></div>
@@ -968,6 +981,7 @@
     return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // RE RENDERT DIE TABELLE MIT RECHTSBÜNDIGER AVG SPALTE
   function renderTable() {
     document.getElementById('tableHeaderTitle').innerText = `📊 Tabelle: ${state.activeLeague}`;
     const data = state.leagueData[state.activeLeague] || { standings: { rows: [] } };
@@ -986,6 +1000,7 @@
           <th style="width: 40px; text-align:center;">Sp</th>
           <th style="width: 40px; text-align:center;">S</th>
           <th style="width: 40px; text-align:center;">N</th>
+          <th style="width: 60px; text-align:center;">AVG</th>
           <th style="width: 50px; text-align:center;">Diff</th>
           <th style="width: 50px; text-align:center;">Pkt</th>
         </tr>
@@ -994,12 +1009,15 @@
 
     rows.forEach((r, idx) => {
       const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
+      const formattedAvg = parseFloat(r.finalAvg || 0).toFixed(2);
+      
       html += `<tr>
         <td style="text-align:center;"><span class="rank ${rankClass}">${idx + 1}</span></td>
         <td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.name)}')">${htmlEscape(r.name || 'Spieler')}</span></td>
         <td class="stat">${r.gamesPlayed || 0}</td>
         <td class="stat" style="color: #00d084;">${r.wins || 0}</td>
         <td class="stat" style="color: #ff6b35;">${r.losses || 0}</td>
+        <td class="stat" style="font-weight:700; color:var(--text-secondary);">${formattedAvg}</td>
         <td class="stat">${r.legDiff > 0 ? '+' + r.legDiff : r.legDiff}</td>
         <td class="stat score">${r.points || 0}</td>
       </tr>`;
@@ -1009,7 +1027,6 @@
     document.getElementById('tableArea').innerHTML = html;
   }
 
-  // RENDERT NUN MEHRERE SPIELTAGE NEBENEINANDER (3 COLUMN GRID)
   function renderMatches() {
     const data = state.leagueData[state.activeLeague] || { matchdays: [] };
     const matchdays = data.matchdays || [];
@@ -1045,9 +1062,9 @@
         `;
       });
       
-      html += '</div>'; // Ende matchday-card
+      html += '</div>';
     });
-    html += '</div>'; // Ende matchdays-grid
+    html += '</div>';
 
     document.getElementById('matchesArea').innerHTML = html;
   }
@@ -1079,38 +1096,53 @@
 
       ALL_LEAGUES.forEach(league => {
         const lMatches = matches.filter(m => {
-          for (const k in m) {
-            if (m.hasOwnProperty(k) && typeof m[k] === 'string' && matchLeagueName(m[k], league)) return true;
-          }
+          if (m.league_name && matchLeagueName(m.league_name, league)) return true;
+          if (m.league && matchLeagueName(m.league, league)) return true;
           return false;
         });
 
         const stats = {};
 
+        // 1. STRICKTER PROFIL-CHECK AUF GENAUE LIGAZUGEHÖRIGKEIT (Verhindert fehlerhafte Spielerzuordnung)
         state.allProfilesCache.forEach(p => {
-          let assigned = false;
-          for (const key in p) {
-            if (p.hasOwnProperty(key) && typeof p[key] === 'string' && matchLeagueName(p[key], league)) {
-              assigned = true;
-              break;
-            }
-          }
-          if (assigned) {
-            stats[p.id] = { name: p.display_name || p.username || 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+          if (matchLeagueName(p.league_name, league) || matchLeagueName(p.league, league) || matchLeagueName(p.liga, league) || matchLeagueName(p.current_league, league)) {
+            // Ermittelt plattformspezifischen Basis-Profil-AVG als Ausgangswert
+            let fallbackAvg = 0;
+            if (league.includes("Autodarts")) fallbackAvg = parseFloat(p.autodarts_avg || 0);
+            else if (league.includes("DartCounter")) fallbackAvg = parseFloat(p.dartcounter_avg || 0);
+
+            stats[p.id] = { 
+              name: p.display_name || p.username || 'Spieler', 
+              wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0,
+              avgSum: 0, avgCount: 0, profileFallbackAvg: fallbackAvg
+            };
           }
         });
 
+        // 2. Matchdaten aggregieren & AVG-Summen pro Match aufaddieren
         lMatches.forEach(m => {
           const p1Key = m.player1_id || 'p1';
           const p2Key = m.player2_id || 'p2';
 
           if (!stats[p1Key]) {
             const p = state.allProfilesCache.find(prof => prof.id === m.player1_id || prof.display_name === m.player1_id);
-            stats[p1Key] = { name: p?.display_name || m.player1_name || m.player1_id || 'Spieler 1', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+            let pAvg = p ? (league.includes("Autodarts") ? (p.autodarts_avg || 0) : (p.dartcounter_avg || 0)) : 0;
+            stats[p1Key] = { name: p?.display_name || m.player1_name || m.player1_id || 'Spieler 1', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, profileFallbackAvg: parseFloat(pAvg) };
           }
           if (!stats[p2Key]) {
             const p = state.allProfilesCache.find(prof => prof.id === m.player2_id || prof.display_name === m.player2_id);
-            stats[p2Key] = { name: p?.display_name || m.player2_name || m.player2_id || 'Spieler 2', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+            let pAvg = p ? (league.includes("Autodarts") ? (p.autodarts_avg || 0) : (p.dartcounter_avg || 0)) : 0;
+            stats[p2Key] = { name: p?.display_name || m.player2_name || m.player2_id || 'Spieler 2', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0, profileFallbackAvg: parseFloat(pAvg) };
+          }
+
+          // Liest Match-Averages fehlertolerant aus, falls vorhanden
+          if (m.player1_avg || m.avg_player1) {
+            stats[p1Key].avgSum += parseFloat(m.player1_avg || m.avg_player1);
+            stats[p1Key].avgCount++;
+          }
+          if (m.player2_avg || m.avg_player2) {
+            stats[p2Key].avgSum += parseFloat(m.player2_avg || m.avg_player2);
+            stats[p2Key].avgCount++;
           }
 
           if ((m.status === 'done' || m.status === 'fertig') && m.player1_id && m.player2_id) {
@@ -1132,8 +1164,13 @@
           }
         });
 
-        const standings = Object.values(stats).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff);
+        // 3. Finalen Liga-AVG berechnen (Entweder errechnet aus Spielen oder Fallback aus Profil)
+        const standings = Object.values(stats).map(s => {
+          const finalAvg = s.avgCount > 0 ? (s.avgSum / s.avgCount) : s.profileFallbackAvg;
+          return { ...s, finalAvg };
+        }).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff || b.finalAvg - a.finalAvg);
 
+        // 4. Spielpaarungen für Spieltage bündeln
         const groupedMatches = {};
         lMatches.forEach(m => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
