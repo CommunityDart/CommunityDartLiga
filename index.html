@@ -132,7 +132,6 @@
       box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
     }
 
-    /* PLATTFORM BANNER (STARTET VERSTECKT FÜR DIE NEWS-SEITE) */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
@@ -202,7 +201,6 @@
       background: var(--hover);
     }
 
-    /* SCHMALERER & KOMPAKTERER CONTAINER (1200px MAX) */
     .container {
       max-width: 1200px;
       margin: 0 auto;
@@ -264,6 +262,7 @@
       padding: 20px;
     }
 
+    /* ENGER ZUSAMMENGERÜCKTE TABELLE */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -272,7 +271,7 @@
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 12px;
+      padding: 8px 10px; /* Reduziert von 12px */
       text-align: left;
       font-weight: 700;
       font-size: 12px;
@@ -282,7 +281,7 @@
     }
 
     tbody td {
-      padding: 12px;
+      padding: 8px 10px; /* Reduziert von 12px */
       border-bottom: 1px solid var(--border);
       font-size: 13px;
       color: var(--text-primary);
@@ -294,7 +293,7 @@
 
     .rank {
       font-weight: 700;
-      font-size: 16px;
+      font-size: 15px;
       text-align: center;
     }
 
@@ -343,13 +342,49 @@
       color: #ff6b35;
     }
 
+    /* 3 SPIELTAGE NEBENEINANDER (CSS GRID STRUCTURE) */
+    .matchdays-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      width: 100%;
+    }
+    @media (min-width: 768px) {
+      .matchdays-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 1024px) {
+      .matchdays-grid {
+        grid-template-columns: repeat(3, 1fr); /* Genau 3 nebeneinander */
+      }
+    }
+
+    .matchday-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .matchday-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
     .match-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
+      padding: 10px 0;
       border-bottom: 1px solid var(--border);
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .match-row:last-child {
@@ -358,7 +393,7 @@
 
     .match-players {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex: 1;
       align-items: center;
     }
@@ -366,7 +401,7 @@
     .match-score {
       font-weight: 700;
       color: #0066ff;
-      min-width: 50px;
+      min-width: 45px;
       text-align: center;
     }
 
@@ -521,6 +556,31 @@
       color: var(--text-secondary);
       font-size: 14px;
     }
+
+    /* CSS FOR MODAL / SPIELERKARTE */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+      z-index: 2000; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 14px; width: 100%; max-width: 440px; padding: 24px;
+      position: relative; box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+      animation: modalFade 0.2s ease forwards;
+    }
+    @keyframes modalFade { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    .modal-close {
+      position: absolute; top: 12px; right: 16px; background: transparent;
+      border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);
+    }
+    .modal-close:hover { color: var(--text-primary); }
+    .player-card-title { font-size: 22px; font-weight: 800; margin-bottom: 16px; color: var(--platform-color); text-align: center;}
+    .player-info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;}
+    .player-info-row:last-of-type { border-bottom: none; margin-bottom: 12px; }
+    .player-info-label { font-weight: 700; color: var(--text-secondary); }
+    .player-info-value { font-weight: 600; color: var(--text-primary); }
   </style>
 </head>
 <body>
@@ -601,7 +661,7 @@
           </div>
 
           <div class="card">
-            <div class="card-header" id="matchesHeaderTitle">🎯 Aktueller Spieltag</div>
+            <div class="card-header" id="matchesHeaderTitle">🎯 Generierte Spieltage</div>
             <div class="card-body">
               <div id="matchesArea"></div>
             </div>
@@ -690,6 +750,13 @@
   </div>
 </div>
 
+<div id="playerModal" class="modal-overlay" onclick="closePlayerModal(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closePlayerModal(null)">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
 <script>
   const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
@@ -711,7 +778,6 @@
     currentUser: null
   };
 
-  // Hilfsfunktion für fehlertolerantes Ligamatching
   function matchLeagueName(dbValue, targetLeague) {
     if (!dbValue || !targetLeague) return false;
     const clean = (str) => String(str).toLowerCase().replace(/[\s_\-]/g, "");
@@ -722,6 +788,50 @@
     state.currentUser = session?.user || null;
     updateAuthUI();
   });
+
+  // FUNKTION ZUM ÖFFNEN DER SPIELERKARTE
+  function openPlayerCard(name) {
+    if (!name || name === "Freilos") return;
+    
+    // Suche Profil fehlertolerant im Cache
+    const p = state.allProfilesCache.find(prof => 
+      String(prof.display_name).toLowerCase() === String(name).toLowerCase() || 
+      String(prof.username).toLowerCase() === String(name).toLowerCase()
+    );
+
+    const modal = document.getElementById('playerModal');
+    const container = document.getElementById('modalContent');
+    
+    const dName = p?.display_name || name;
+    const discordHandle = p?.discord_name || p?.username || "-";
+    const adName = p?.autodarts_name || "-";
+    const dcName = p?.dartcounter_name || "-";
+    const scName = p?.scolia_name || "-";
+    
+    // Generiert Deep-Link zu Discord falls ID existiert, sonst Standardfall
+    let discordButtonHtml = "";
+    if (p && p.id && /^\d+$/.test(p.id)) {
+      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="window.open('https://discord.com/users/${p.id}', '_blank')">💬 Discord Nachricht senden</button>`;
+    } else {
+      discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Name: ${discordHandle}\\nNutze die Suchfunktion in Discord um eine Nachricht zu senden.')">💬 Name kopieren / anzeigen</button>`;
+    }
+
+    container.innerHTML = `
+      <div class="player-card-title">🎯 Spielerkarte</div>
+      <div class="player-info-row"><span class="player-info-label">Name:</span><span class="player-info-value" style="color:var(--platform-color); font-size:16px;">${htmlEscape(dName)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">Discord Name:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(adName)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(dcName)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(scName)}</span></div>
+      ${discordButtonHtml}
+    `;
+    
+    modal.classList.add('active');
+  }
+
+  function closePlayerModal(e) {
+    document.getElementById('playerModal').classList.remove('active');
+  }
 
   function updateAuthUI() {
     const loginTitle = document.getElementById('loginTitle');
@@ -886,7 +996,7 @@
       const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
       html += `<tr>
         <td style="text-align:center;"><span class="rank ${rankClass}">${idx + 1}</span></td>
-        <td><span class="player-link">${htmlEscape(r.name || 'Spieler')}</span></td>
+        <td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.name)}')">${htmlEscape(r.name || 'Spieler')}</span></td>
         <td class="stat">${r.gamesPlayed || 0}</td>
         <td class="stat" style="color: #00d084;">${r.wins || 0}</td>
         <td class="stat" style="color: #ff6b35;">${r.losses || 0}</td>
@@ -899,6 +1009,7 @@
     document.getElementById('tableArea').innerHTML = html;
   }
 
+  // RENDERT NUN MEHRERE SPIELTAGE NEBENEINANDER (3 COLUMN GRID)
   function renderMatches() {
     const data = state.leagueData[state.activeLeague] || { matchdays: [] };
     const matchdays = data.matchdays || [];
@@ -910,24 +1021,35 @@
     }
 
     matchdays.sort((a, b) => (parseInt(a.title.replace(/\D/g, "")) || 0) - (parseInt(b.title.replace(/\D/g, "")) || 0));
-    const latestMatchday = matchdays[matchdays.length - 1];
-    document.getElementById('matchesHeaderTitle').innerText = `🎯 ${latestMatchday.title} (${state.activeLeague})`;
+    document.getElementById('matchesHeaderTitle').innerText = `🎯 Spielplan-Übersicht (${state.activeLeague})`;
 
-    let html = '';
-    latestMatchday.rows.forEach(m => {
-      const status = m.status === 'done' || m.status === 'fertig' ? 'done' : 'open';
-      html += `<div class="match-row">
-        <div class="match-players">
-          <span class="player-link">${htmlEscape(m.p1Name || 'Spieler 1')}</span>
-          <span style="color: var(--text-secondary); font-size: 12px; font-weight:bold;">vs</span>
-          <span class="player-link">${htmlEscape(m.p2Name || 'Spieler 2')}</span>
-        </div>
-        <span class="match-score">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</span>
-        <span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span>
-      </div>`;
+    let html = '<div class="matchdays-grid">';
+    matchdays.forEach(md => {
+      html += `
+        <div class="matchday-card">
+          <div class="matchday-title">⚡ ${htmlEscape(md.title)}</div>
+      `;
+      
+      md.rows.forEach(m => {
+        const status = m.status === 'done' || m.status === 'fertig' ? 'done' : 'open';
+        html += `
+          <div class="match-row">
+            <div class="match-players">
+              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name || 'Spieler 1')}</span>
+              <span style="color: var(--text-secondary); font-size: 11px; font-weight:bold;">vs</span>
+              <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name || 'Spieler 2')}</span>
+            </div>
+            <span class="match-score">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</span>
+            <span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span>
+          </div>
+        `;
+      });
+      
+      html += '</div>'; // Ende matchday-card
     });
+    html += '</div>'; // Ende matchdays-grid
 
-    document.getElementById('matchesArea').innerHTML = html || '<div class="empty">Keine Matches an diesem Spieltag</div>';
+    document.getElementById('matchesArea').innerHTML = html;
   }
 
   async function loadData() {
@@ -942,7 +1064,6 @@
 
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
       
-      // FEHLERTOLERANTER FILTERSYS-FALLBACK: Vergleicht Saisons intelligent. Bei Abweichungen werden Daten erzwungen
       let matches = matchesData ? matchesData.filter(m => {
         if (!m.season) return true;
         const mSeasonNum = String(m.season).replace(/\D/g, "");
@@ -957,7 +1078,6 @@
       let populatedLeaguesCount = 0;
 
       ALL_LEAGUES.forEach(league => {
-        // Findet alle Matches der aktuellen Liga (sucht flexibel in jeder Tabellenspalte nach dem Namen)
         const lMatches = matches.filter(m => {
           for (const k in m) {
             if (m.hasOwnProperty(k) && typeof m[k] === 'string' && matchLeagueName(m[k], league)) return true;
@@ -967,7 +1087,6 @@
 
         const stats = {};
 
-        // 1. VOLLAUTOMATISCHER PROFILE-SCAN: Ordnet Spieler zu, völlig egal wie die Tabellenspalte heißt
         state.allProfilesCache.forEach(p => {
           let assigned = false;
           for (const key in p) {
@@ -981,7 +1100,6 @@
           }
         });
 
-        // 2. Spiel-Ergebnisse einrechnen mit absolutem Namens-Fallback aus dem Cache
         lMatches.forEach(m => {
           const p1Key = m.player1_id || 'p1';
           const p2Key = m.player2_id || 'p2';
@@ -1016,7 +1134,6 @@
 
         const standings = Object.values(stats).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff);
 
-        // 3. Spielpaarungen bündeln
         const groupedMatches = {};
         lMatches.forEach(m => {
           const day = m.matchday ? `Spieltag ${m.matchday}` : 'Spieltag 1';
@@ -1047,7 +1164,6 @@
     }
   }
 
-  // Initialer Start auf der News-Seite
   switchView('news');
   updateTheme();
   loadData();
