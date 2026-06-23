@@ -605,22 +605,23 @@
         area.innerHTML = html;
     }
 
-    // VOLLSTÄNDIG REPARIERTE SPEICHERLOGIK FÜR ERGEBNISSE
+    // ABSOLUT KRISENSICHERE SPEICHERMETHODE FÜR ERGEBNISSE (SCHÜTZT VOR LEEREN INPUTS / DOUBLE-ABSTÜRZEN)
     window.saveMatchFullStats = async function(matchId) {
         if(!supabaseClient) return;
         try {
             const l1 = document.getElementById(`l1_${matchId}`).value;
             const l2 = document.getElementById(`l2_${matchId}`).value;
-            const a1 = document.getElementById(`avg1_${matchId}`).value; 
-            const a2 = document.getElementById(`avg2_${matchId}`).value; 
+            const a1 = document.getElementById(`avg1_${matchId}`).value.trim(); 
+            const a2 = document.getElementById(`avg2_${matchId}`).value.trim(); 
             const h1 = document.getElementById(`hl1_${matchId}`).value.trim();
             const h2 = document.getElementById(`hl2_${matchId}`).value.trim();
 
+            // Verhindert den 'invalid input syntax for type double' Absturz bei leeren Average-Feldern!
             const updates = {
                 legs_player1: l1 === "" ? null : parseInt(l1),
                 legs_player2: l2 === "" ? null : parseInt(l2),
-                player1_avg: a1 === "" ? null : parseFloat(a1), 
-                player2_avg: a2 === "" ? null : parseFloat(a2), 
+                player1_avg: (a1 === "" || isNaN(parseFloat(a1))) ? null : parseFloat(a1), 
+                player2_avg: (a2 === "" || isNaN(parseFloat(a2))) ? null : parseFloat(a2), 
                 highlights_player1: h1 === "" ? null : h1,
                 highlights_player2: h2 === "" ? null : h2,
                 status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
@@ -637,7 +638,6 @@
         }
     };
 
-    // REPARIERT: INTEGRIERTE DOM-IDS BEIM RENDERN DER STRAFENTABELLE (ERLAUBT NUN DAS SPEICHERN DER KARTEN)
     async function loadStrafenkatalogList() {
         const league = document.getElementById("penaltyLeagueSelector").value;
         const tbody = document.getElementById("strafenListBody");
@@ -694,19 +694,18 @@
         }
     }
 
-    // KORRIGIERTE SPEICHERFUNKTION FÜR KARTEN & STRAFEN
     window.savePlayerCards = async function(playerId, leagueName) {
         if(!supabaseClient) return;
         try {
-            const yellow = parseInt(document.getElementById(`yellow_${playerId}`).value) || 0;
-            const red = parseInt(document.getElementById(`red_${playerId}`).value) || 0;
+            const yellow = document.getElementById(`yellow_${playerId}`).value;
+            const red = document.getElementById(`red_${playerId}`).value;
             const note = document.getElementById(`note_${playerId}`).value.trim();
 
             const payload = {
                 player_id: playerId,
                 league_name: leagueName,
-                yellow_cards: yellow,
-                red_cards: red,
+                yellow_cards: yellow === "" ? 0 : parseInt(yellow),
+                red_cards: red === "" ? 0 : parseInt(red),
                 bemerkung: note === "" ? null : note
             };
 
