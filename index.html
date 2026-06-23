@@ -44,7 +44,7 @@
     }
 
     .header-top {
-      padding: 30px 20px;
+      padding: 25px 20px;
       text-align: center;
       border-bottom: 1px solid var(--border);
       display: flex;
@@ -58,9 +58,9 @@
     }
 
     .header-title h1 {
-      font-size: 44px;
+      font-size: 40px;
       font-weight: 800;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       background: linear-gradient(135deg, #0066ff 0%, #ff6b35 50%, #00d084 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -68,7 +68,7 @@
     }
 
     .header-title p {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-secondary);
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -76,13 +76,13 @@
     }
 
     .theme-toggle {
-      width: 50px;
-      height: 50px;
+      width: 46px;
+      height: 46px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
       cursor: pointer;
-      font-size: 24px;
+      font-size: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -100,14 +100,14 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 12px 20px;
+      padding: 10px 20px;
       flex-wrap: wrap;
       background: var(--bg-secondary);
       border-top: 1px solid var(--border);
     }
 
     .nav-btn {
-      padding: 12px 18px;
+      padding: 10px 16px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
@@ -129,13 +129,13 @@
       background: var(--platform-color);
       color: white;
       border-color: var(--platform-color);
-      box-shadow: 0 0 15px rgba(0, 102, 255, 0.15);
+      box-shadow: 0 0 12px rgba(0, 102, 255, 0.12);
     }
 
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
-      padding: 20px;
+      padding: 15px 20px;
       display: none;
       animation: slideDown 0.25s ease forwards;
     }
@@ -153,28 +153,28 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      gap: 12px;
     }
     .platform-selection, .league-selection {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
       width: 100%;
     }
     .banner-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-secondary);
     }
     .p-btn {
-      padding: 8px 16px;
+      padding: 6px 14px;
       border: 1px solid var(--border);
       background: var(--bg-tertiary);
       border-radius: 6px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       color: var(--text-primary);
@@ -185,12 +185,12 @@
     .p-btn.active[data-p="Scolia"] { background: #00d084; color: white; border-color: #00d084; }
 
     .league-btn {
-      padding: 6px 14px;
+      padding: 5px 12px;
       border: 2px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text-primary);
       transition: all 0.3s;
@@ -204,7 +204,7 @@
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 40px 20px;
+      padding: 30px 20px;
     }
 
     .view {
@@ -218,7 +218,7 @@
     .full-width-layout {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
       width: 100%;
     }
 
@@ -227,60 +227,59 @@
       border-radius: 12px;
       border: 1px solid var(--border);
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       transition: all 0.3s ease;
     }
 
-    /* RESTAURIERTE COMPAKTE INFO FOOTER-KACHEL */
     .card.compact-footer-card {
       max-width: 550px;
       width: 100%;
-      margin: 10px auto 0 auto;
+      margin: 5px auto 0 auto;
     }
     .card.compact-footer-card .card-header {
-      padding: 14px 20px;
-      font-size: 15px;
+      padding: 12px 18px;
+      font-size: 14px;
     }
     .card.compact-footer-card .card-body {
-      padding: 18px 20px;
+      padding: 14px 18px;
       text-align: center;
     }
 
     html.dark .card {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
 
     .card:hover {
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
       border-color: var(--platform-color);
     }
 
     .card-header {
       background: var(--bg-tertiary);
-      padding: 20px;
+      padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--text-primary);
     }
 
     .card-body {
-      padding: 20px;
+      padding: 18px 20px;
     }
 
-    /* RESTAURIERTE TABELLEN-ABSTÄNDE (NICHT ZU ENG) */
+    /* HARMONISCH AUSBALANCIERTE, OPTISCH ANSPRECHENDE TABELLENZEILEN */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 12px;
+      margin-top: 8px;
     }
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 10px 12px;
+      padding: 8px 10px;
       text-align: left;
       font-weight: 700;
       font-size: 12px;
@@ -290,7 +289,7 @@
     }
 
     tbody td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-bottom: 1px solid var(--border);
       font-size: 13px;
       color: var(--text-primary);
@@ -302,7 +301,7 @@
 
     .rank {
       font-weight: 700;
-      font-size: 15px;
+      font-size: 14px;
       text-align: center;
     }
 
@@ -350,34 +349,34 @@
       color: #ff6b35;
     }
 
+    /* NEUES DETILLIERTES 2-SPALTEN-LAYOUT FÜR SPIELTAGE (MITTIG GESTAUCHT) */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 20px;
+      gap: 16px;
       width: 100%;
     }
     @media (min-width: 768px) {
-      .matchdays-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (min-width: 1024px) {
-      .matchdays-grid { grid-template-columns: repeat(3, 1fr); }
+      .matchdays-grid { 
+        grid-template-columns: repeat(2, 1fr); /* Genau 2 Spieltage nebeneinander */
+      }
     }
 
     .matchday-card {
       background: var(--bg-primary);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 14px;
+      padding: 12px 14px;
     }
 
     .matchday-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-secondary);
       border-bottom: 2px solid var(--border);
       padding-bottom: 6px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       text-align: center;
     }
 
@@ -385,7 +384,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
+      padding: 8px 0;
       border-bottom: 1px solid var(--border);
       font-size: 12px;
     }
@@ -409,7 +408,7 @@
     }
 
     .btn {
-      padding: 12px 16px;
+      padding: 10px 16px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
@@ -422,7 +421,7 @@
     }
 
     .btn.small-action-btn {
-      padding: 8px 16px;
+      padding: 6px 14px;
       font-size: 12px;
       max-width: max-content;
       width: auto;
@@ -456,7 +455,7 @@
 
     .stat-box {
       background: var(--bg-tertiary);
-      padding: 16px;
+      padding: 14px;
       border-radius: 8px;
       text-align: center;
       border: 1px solid var(--border);
@@ -465,32 +464,32 @@
     .stat-box-label {
       font-size: 11px;
       color: var(--text-secondary);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       font-weight: 600;
       text-transform: uppercase;
     }
 
     .stat-box-value {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
       color: var(--platform-color);
     }
 
     .tab-buttons {
       display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
+      gap: 6px;
+      margin-bottom: 16px;
       border-bottom: 2px solid var(--border);
     }
 
     .tab-btn {
-      padding: 12px 18px;
+      padding: 10px 16px;
       border: none;
       background: transparent;
       color: var(--text-secondary);
       cursor: pointer;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       border-bottom: 3px solid transparent;
       margin-bottom: -2px;
       transition: all 0.3s ease;
@@ -502,8 +501,8 @@
     }
 
     .news-item {
-      margin-bottom: 20px;
-      padding: 20px;
+      margin-bottom: 16px;
+      padding: 16px;
       background: var(--bg-tertiary);
       border-radius: 10px;
       border: 1px solid var(--border);
@@ -514,27 +513,27 @@
       color: var(--text-secondary);
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .news-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--text-primary);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .news-content {
-      font-size: 14px;
+      font-size: 13.5px;
       color: var(--text-primary);
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
     .empty {
-      padding: 40px 20px;
+      padding: 35px 20px;
       text-align: center;
       color: var(--text-secondary);
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .modal-overlay {
@@ -555,14 +554,14 @@
       border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);
     }
     .modal-close:hover { color: var(--text-primary); }
-    .player-card-title { font-size: 22px; font-weight: 800; margin-bottom: 16px; color: var(--platform-color); text-align: center;}
-    .player-info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;}
-    .player-info-row:last-of-type { border-bottom: none; margin-bottom: 12px; }
+    .player-card-title { font-size: 21px; font-weight: 800; margin-bottom: 14px; color: var(--platform-color); text-align: center;}
+    .player-info-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;}
+    .player-info-row:last-of-type { border-bottom: none; margin-bottom: 10px; }
     .player-info-label { font-weight: 700; color: var(--text-secondary); }
     .player-info-value { font-weight: 600; color: var(--text-primary); }
     
     .avatar-wrapper {
-      display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; gap: 8px;
+      display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; gap: 6px;
     }
     .profile-avatar {
       width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--platform-color); object-fit: cover;
@@ -643,7 +642,7 @@
         </div>
 
         <div id="ligenTab">
-          <div class="card" style="margin-bottom: 24px;">
+          <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" id="tableHeaderTitle">📊 Tabelle</div>
             <div class="card-body" style="overflow-x: auto;">
               <div id="tableArea"></div>
@@ -681,7 +680,7 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: 10px;">
+      <div class="card" style="margin-top: 5px;">
         <div class="card-header">📈 Globaler Überblick & Live-Statistiken</div>
         <div class="card-body">
           <div class="stat-grid">
@@ -735,7 +734,7 @@
       </div>
 
       <div class="card compact-footer-card">
-        <div class="card-header">ℹ️ Infos</div>
+        <div class="card-header">⚙️ Optionen</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
@@ -1000,6 +999,15 @@
     updateAuthUI();
   }
 
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    state.currentUser = session?.user || null;
+    updateAuthUI();
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    checkInitialSession();
+  });
+
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
@@ -1095,6 +1103,7 @@
       html.classList.add('dark');
       toggle.textContent = '☀️';
     } else {
+      html.documentElement;
       html.classList.remove('dark');
       toggle.textContent = '🌙';
     }
@@ -1149,6 +1158,7 @@
     document.getElementById('tableArea').innerHTML = html;
   }
 
+  // DETILLIERTE SPIELTAGE NEBENEINANDER RENDERN (EXAKT 2 PER ROW)
   function renderMatches() {
     const data = state.leagueData[state.activeLeague] || { matchdays: [] };
     const matchdays = data.matchdays || [];
