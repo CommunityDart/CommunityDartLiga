@@ -627,55 +627,99 @@
         area.innerHTML = html;
     }
 
-    // ✅ KORREKTE SPEICHERFUNKTION
+    // ✅ VERBESSERTE SPEICHERFUNKTION MIT DETAILLIERTEM DEBUGGING
     window.saveMatchFullStats = async function(matchId) {
-        if(!supabaseClient) return;
+        if(!supabaseClient) {
+            alert("❌ Supabase-Client nicht initialisiert!");
+            return;
+        }
+        
         try {
-            const l1Input = document.getElementById(`l1_${matchId}`).value;
-            const l2Input = document.getElementById(`l2_${matchId}`).value;
-            const a1Input = document.getElementById(`avg1_${matchId}`).value.trim(); 
-            const a2Input = document.getElementById(`avg2_${matchId}`).value.trim(); 
-            const h1 = document.getElementById(`hl1_${matchId}`).value.trim();
-            const h2 = document.getElementById(`hl2_${matchId}`).value.trim();
+            console.log("🔄 Speichere Match:", matchId);
+            
+            const l1El = document.getElementById(`l1_${matchId}`);
+            const l2El = document.getElementById(`l2_${matchId}`);
+            const a1El = document.getElementById(`avg1_${matchId}`);
+            const a2El = document.getElementById(`avg2_${matchId}`);
+            const h1El = document.getElementById(`hl1_${matchId}`);
+            const h2El = document.getElementById(`hl2_${matchId}`);
+
+            if (!l1El || !l2El) {
+                alert("❌ Input-Felder nicht gefunden. Match-ID: " + matchId);
+                console.error("Fehlende Elemente für Match:", matchId);
+                return;
+            }
+
+            const l1Input = l1El.value;
+            const l2Input = l2El.value;
+            const a1Input = a1El ? a1El.value.trim() : "";
+            const a2Input = a2El ? a2El.value.trim() : "";
+            const h1 = h1El ? h1El.value.trim() : "";
+            const h2 = h2El ? h2El.value.trim() : "";
+
+            console.log("📋 Eingabewerte:", { l1Input, l2Input, a1Input, a2Input, h1, h2 });
 
             const updates = {};
 
             // Legs-Zuweisung
-            if (l1Input !== "" && l1Input !== null) updates.legs_player1 = parseInt(l1Input); else updates.legs_player1 = null;
-            if (l2Input !== "" && l2Input !== null) updates.legs_player2 = parseInt(l2Input); else updates.legs_player2 = null;
+            if (l1Input !== "" && l1Input !== null) {
+                updates.legs_player1 = parseInt(l1Input);
+            } else {
+                updates.legs_player1 = null;
+            }
+            
+            if (l2Input !== "" && l2Input !== null) {
+                updates.legs_player2 = parseInt(l2Input);
+            } else {
+                updates.legs_player2 = null;
+            }
 
-            // Averages-Zuweisung (beide Feldvarianten)
+            // Averages-Zuweisung (BEIDE Feldvarianten für Kompatibilität)
             if (a1Input !== "" && !isNaN(parseFloat(a1Input))) {
-                updates.player1_avg = parseFloat(a1Input);
-                updates.avg_player1 = parseFloat(a1Input);
+                const avgValue = parseFloat(a1Input);
+                updates.player1_avg = avgValue;
+                updates.avg_player1 = avgValue;
+                console.log("✅ Player1 AVG gesetzt auf:", avgValue);
             } else {
                 updates.player1_avg = null;
                 updates.avg_player1 = null;
             }
 
             if (a2Input !== "" && !isNaN(parseFloat(a2Input))) {
-                updates.player2_avg = parseFloat(a2Input);
-                updates.avg_player2 = parseFloat(a2Input);
+                const avgValue = parseFloat(a2Input);
+                updates.player2_avg = avgValue;
+                updates.avg_player2 = avgValue;
+                console.log("✅ Player2 AVG gesetzt auf:", avgValue);
             } else {
                 updates.player2_avg = null;
                 updates.avg_player2 = null;
             }
 
+            // Highlights
             updates.highlights_player1 = h1 === "" ? null : h1;
             updates.highlights_player2 = h2 === "" ? null : h2;
 
+            // Status
             updates.status = (l1Input !== "" && l2Input !== "") ? "fertig" : "offen";
 
-            const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
+            console.log("📤 Sende Update zur DB:", updates);
+
+            const { data, error } = await supabaseClient
+                .from('matches')
+                .update(updates)
+                .eq('id', matchId);
+
             if(error) {
-                alert("Fehler beim Eintragen: " + error.message);
+                console.error("❌ Supabase Fehler:", error);
+                alert("❌ Datenbankfehler:\n" + error.message + "\n\nMatch ID: " + matchId);
             } else {
-                alert("Spielbericht erfolgreich live aktualisiert!");
+                console.log("✅ Update erfolgreich:", data);
+                alert("✅ Spielbericht erfolgreich gespeichert!");
                 loadMatchdayPlan();
             }
         } catch(e) {
-            alert("Fehler im Skript beim Verarbeiten des Speicheraufrufs.");
-            console.error(e);
+            console.error("💥 Kritischer Fehler:", e);
+            alert("💥 Fehler beim Speichern:\n" + e.message + "\n\nÖffne die Browser-Konsole (F12) für mehr Details.");
         }
     };
 
