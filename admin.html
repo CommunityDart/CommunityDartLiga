@@ -63,6 +63,8 @@
 
         .gen-options-row { display: flex; align-items: center; gap: 8px; background: rgba(32, 183, 255, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(32, 183, 255, 0.2); margin-top: 6px; }
         .gen-options-row label { font-size: 13.5px; font-weight: bold; color: #20b7ff; cursor: pointer; }
+
+        .season-indicator { background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); padding: 8px 12px; border-radius: 6px; color: #20b7ff; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -70,7 +72,10 @@
 <div class="admin-container">
     <div class="header-row">
         <h1>🎯 Community Dart Liga - Cockpit</h1>
-        <a href="index.html" class="back-home-btn">🏠 Zurück zur Hauptseite</a>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div id="seasonIndicator" class="season-indicator">📅 Saison: Wird geladen...</div>
+            <a href="index.html" class="back-home-btn">🏠 Zurück zur Hauptseite</a>
+        </div>
     </div>
     
     <div class="tabs">
@@ -185,6 +190,10 @@
 
     const ALL_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6", "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6", "Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
 
+    const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
+    const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
+    const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
+
     let currentSeasonGlobal = "Saison 1";
     let newsQuill = null, ruleQuill = null, editingNewsId = null;
     let globalLeagueRules = {}; 
@@ -199,6 +208,24 @@
     function htmlEscape(str) {
         if (!str) return "-";
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // ✅ NEUE FUNKTION: currentSeasonGlobal von Datenbank laden
+    async function loadCurrentSeason() {
+        if(!supabaseClient) return;
+        try {
+            const { data } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+            if(data && data.current_season) {
+                currentSeasonGlobal = data.current_season;
+                console.log("✅ Saison geladen:", currentSeasonGlobal);
+            } else {
+                console.log("⚠️ Keine Saison gefunden, verwende default: " + currentSeasonGlobal);
+            }
+        } catch(e) {
+            console.log("⚠️ Fehler beim Laden der Saison:", e.message);
+        }
+        // Update die UI
+        document.getElementById("seasonIndicator").textContent = "📅 Saison: " + currentSeasonGlobal;
     }
 
     function switchTab(tabId) {
@@ -399,7 +426,13 @@
             const { data: matches, error: mErr } = await query;
             if(mErr) { area.innerHTML = "Fehler beim Laden der Matches: " + mErr.message; return; }
             
-            const filteredMatches = matches ? matches.filter(m => !m.hasOwnProperty('season') || m.season === currentSeasonGlobal) : [];
+            // ✅ FIX: Filtern nach currentSeasonGlobal (korrekt)
+            const filteredMatches = matches ? matches.filter(m => {
+                if (!m.season) return true; // Alte Matches ohne season-Feld miteinbeziehen
+                return String(m.season).trim() === String(currentSeasonGlobal).trim();
+            }) : [];
+            
+            console.log(`📊 Liga: ${league}, Saison: ${currentSeasonGlobal}, Gefundene Matches: ${filteredMatches.length}`);
             
             if(filteredMatches.length === 0) {
                 genArea.style.display = "flex";
@@ -454,7 +487,7 @@
         if(!supabaseClient) return;
         if(!confirm(`⚠️ Möchtest du den Spielplan für "${leagueName}" wirklich löschen?`)) return;
 
-        const { error } = await supabaseClient.from('matches').delete().eq('league_name', leagueName);
+        const { error } = await supabaseClient.from('matches').delete().eq('league_name', leagueName).eq('season', currentSeasonGlobal);
         if(error) alert("Fehler beim Löschen: " + error.message);
         else { alert(`Spielplan gelöscht!`); loadMatchdayPlan(); }
     };
@@ -496,7 +529,7 @@
                         matchesToInsert.push({
                             id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
                             league_name: leagueName, 
-                            season: currentSeasonGlobal, 
+                            season: currentSeasonGlobal,  // ✅ Nutzt currentSeasonGlobal
                             matchday: round + 1,
                             player1_id: home, player2_id: away, status: 'offen'
                         });
@@ -505,7 +538,7 @@
                             matchesToInsert.push({
                                 id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
                                 league_name: leagueName, 
-                                season: currentSeasonGlobal, 
+                                season: currentSeasonGlobal,  // ✅ Nutzt currentSeasonGlobal
                                 matchday: round + 1 + numRounds,
                                 player1_id: away, player2_id: home, status: 'offen'
                             });
@@ -594,7 +627,7 @@
         area.innerHTML = html;
     }
 
-    // VOLLSTÄNDIG REPARIERTE SPEICHERFUNKTION OHNE VARIABLEN-FEHLER (TIFFFEHLER RESTLOS BEHOBEN)
+    // ✅ KORREKTE SPEICHERFUNKTION
     window.saveMatchFullStats = async function(matchId) {
         if(!supabaseClient) return;
         try {
@@ -607,11 +640,11 @@
 
             const updates = {};
 
-            // Krisensichere Legs-Zuweisung
+            // Legs-Zuweisung
             if (l1Input !== "" && l1Input !== null) updates.legs_player1 = parseInt(l1Input); else updates.legs_player1 = null;
             if (l2Input !== "" && l2Input !== null) updates.legs_player2 = parseInt(l2Input); else updates.legs_player2 = null;
 
-            // Krisensichere Averages-Zuweisung (Tippfehler a2Image wurde korrigiert!)
+            // Averages-Zuweisung (beide Feldvarianten)
             if (a1Input !== "" && !isNaN(parseFloat(a1Input))) {
                 updates.player1_avg = parseFloat(a1Input);
                 updates.avg_player1 = parseFloat(a1Input);
@@ -622,7 +655,7 @@
 
             if (a2Input !== "" && !isNaN(parseFloat(a2Input))) {
                 updates.player2_avg = parseFloat(a2Input);
-                updates.avg_player2 = parseFloat(a2Input); // Hier war der Fehler – jetzt zu 100% repariert!
+                updates.avg_player2 = parseFloat(a2Input);
             } else {
                 updates.player2_avg = null;
                 updates.avg_player2 = null;
@@ -642,6 +675,7 @@
             }
         } catch(e) {
             alert("Fehler im Skript beim Verarbeiten des Speicheraufrufs.");
+            console.error(e);
         }
     };
 
@@ -718,7 +752,7 @@
 
             const { error } = await supabaseClient
                 .from('league_penalties')
-                .upsert(payload, { onConflict: 'player_id, league_name' });
+                .upsert(payload, { onConflict: 'player_id,league_name' });
 
             if(error) alert("Datenbank-Fehler beim Speichern: " + error.message);
             else alert(`Karten und Strafen erfolgreich aktualisiert!`);
@@ -832,9 +866,16 @@
         }
     }
 
-    function initAdmin() {
-        initLeagueSelector();
-        setTimeout(() => { loadAllLeagueRules(); }, 50);
+    // ✅ KORRIGIERTE initAdmin - ERST currentSeasonGlobal laden!
+    async function initAdmin() {
+        console.log("🚀 Admin initialisiert...");
+        
+        // ZUERST: Aktuelle Saison laden
+        await loadCurrentSeason();
+        
+        // DANN: Rest laden
+        setTimeout(() => { initLeagueSelector(); }, 50);
+        setTimeout(() => { loadAllLeagueRules(); }, 100);
         setTimeout(() => { loadWaitingList(); }, 150);
     }
 
