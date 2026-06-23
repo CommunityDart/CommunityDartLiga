@@ -231,42 +231,68 @@
       transition: all 0.3s ease;
     }
 
-    /* VEREINHEITLICHTE COMPAKTE INFO-KACHEL FÜR DEN FOOTERBEREICH */
+    /* RESTAURIERTE COMPAKTE INFO FOOTER-KACHEL */
     .card.compact-footer-card {
-      max-width: 500px;
+      max-width: 550px;
       width: 100%;
       margin: 10px auto 0 auto;
     }
     .card.compact-footer-card .card-header {
-      padding: 10px 16px;
-      font-size: 14px;
+      padding: 14px 20px;
+      font-size: 15px;
     }
     .card.compact-footer-card .card-body {
-      padding: 12px 16px;
+      padding: 18px 20px;
       text-align: center;
     }
 
+    html.dark .card {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-color: var(--platform-color);
+    }
+
+    .card-header {
+      background: var(--bg-tertiary);
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* RESTAURIERTE TABELLEN-ABSTÄNDE (NICHT ZU ENG) */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 6px;
+      margin-top: 12px;
     }
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 5px 8px;
+      padding: 10px 12px;
       text-align: left;
       font-weight: 700;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-secondary);
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
     }
 
     tbody td {
-      padding: 5px 8px;
+      padding: 10px 12px;
       border-bottom: 1px solid var(--border);
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-primary);
     }
 
@@ -276,7 +302,7 @@
 
     .rank {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 15px;
       text-align: center;
     }
 
@@ -395,9 +421,8 @@
       text-align: center;
     }
 
-    /* BUTTONS FÜR FOOTERBEREICH ANPASSEN */
     .btn.small-action-btn {
-      padding: 6px 14px;
+      padding: 8px 16px;
       font-size: 12px;
       max-width: max-content;
       width: auto;
@@ -458,7 +483,6 @@
       border-bottom: 2px solid var(--border);
     }
 
-    /* DYNAMISCHER PLATTFORM-HOVER FÜR DIE LIGA TABS */
     .tab-btn {
       padding: 12px 18px;
       border: none;
