@@ -28,7 +28,7 @@
         .card-btn.yellow:hover { background: #f7c948; color: #000; }
         .card-btn.red:hover { background: #e74c3c; color: #fff; }
         
-        /* Reiter Navigation - Kompakter gezogen */
+        /* Reiter Navigation */
         .tabs { display: flex; gap: 8px; border-bottom: 2px solid rgba(75, 135, 165, 0.2); padding-bottom: 8px; margin-bottom: 15px; flex-wrap: wrap; }
         .tab-btn { background: #021017; color: #90a9b7; border: 1px solid #4b87a5; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 13px; }
         .tab-btn.active { background: #3ddc97; color: #000; border-color: #3ddc97; }
@@ -36,7 +36,7 @@
         .tab-content.active { display: block; }
         
         /* Tabellen Styling */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; font-size: 13.5px; }
         th { background: rgba(0,0,0,0.3); color: #90a9b7; font-size: 11.5px; text-transform: uppercase; }
         
@@ -292,7 +292,7 @@
     function buildSelectHtml(idPrefix, playerId, optionsArr, currentVal) {
         let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
         html += `<option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option>`;
-        html += `<option value="REMOVE">❌ Entfernen</option>`;
+        html += `<option value="REMOVE">❌  Entfernen</option>`;
         optionsArr.forEach(l => { html += `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`; });
         html += `</select>`;
         return html;
@@ -605,34 +605,34 @@
         area.innerHTML = html;
     }
 
-    // REPARIERTE SPEICHERFUNKTION: Synchronisiert nun fehlerfrei mit player1_avg / player2_avg
+    // KORRIGIERTE SPEICHERFUNKTION FÜR ADMIN.HTML (Zieht die korrekten Input-IDs)
     window.saveMatchFullStats = async function(matchId) {
         if(!supabaseClient) return;
         try {
             const l1 = document.getElementById(`l1_${matchId}`).value;
             const l2 = document.getElementById(`l2_${matchId}`).value;
-            const a1 = document.getElementById(`avg1_${matchId}`).value;
-            const a2 = document.getElementById(`avg2_${matchId}`).value;
+            const a1 = document.getElementById(`avg1_${matchId}`).value; // Zieht die ID 'avg1_'
+            const a2 = document.getElementById(`avg2_${matchId}`).value; // Zieht die ID 'avg2_'
             const h1 = document.getElementById(`hl1_${matchId}`).value.trim();
             const h2 = document.getElementById(`hl2_${matchId}`).value.trim();
 
             const updates = {
                 legs_player1: l1 === "" ? null : parseInt(l1),
                 legs_player2: l2 === "" ? null : parseInt(l2),
-                player1_avg: a1 === "" ? null : parseFloat(a1), // Korrekter Supabase Tabellen-Key 1
-                player2_avg: a2 === "" ? null : parseFloat(a2), // Korrekter Supabase Tabellen-Key 2
+                player1_avg: a1 === "" ? null : parseFloat(a1), // Mappt korrekt auf player1_avg
+                player2_avg: a2 === "" ? null : parseFloat(a2), // Mappt korrekt auf player2_avg
                 highlights_player1: h1 === "" ? null : h1,
                 highlights_player2: h2 === "" ? null : h2,
                 status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
             };
 
-            // Zusätzliche Absicherung für ältere Tabellenklone
+            // Abwärtskompatibilität für ältere matches-Klone
             updates.avg_player1 = updates.player1_avg;
             updates.avg_player2 = updates.player2_avg;
 
             const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
             if(error) alert("Fehler beim Speichern: " + error.message);
-            else alert("Spielbericht erfolgreich aktualisiert!");
+            else alert("Ergebnis erfolgreich eingetragen!");
         } catch(e) {
             alert("Verarbeitungsfehler beim Speichern.");
         }
