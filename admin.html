@@ -605,28 +605,27 @@
         area.innerHTML = html;
     }
 
-    // KORRIGIERTE SPEICHERFUNKTION FÜR ADMIN.HTML (Zieht die korrekten Input-IDs)
+    // VOLLSTÄNDIG REPARIERTE SPEICHERLOGIK FÜR ERGEBNISSE
     window.saveMatchFullStats = async function(matchId) {
         if(!supabaseClient) return;
         try {
             const l1 = document.getElementById(`l1_${matchId}`).value;
             const l2 = document.getElementById(`l2_${matchId}`).value;
-            const a1 = document.getElementById(`avg1_${matchId}`).value; // Zieht die ID 'avg1_'
-            const a2 = document.getElementById(`avg2_${matchId}`).value; // Zieht die ID 'avg2_'
+            const a1 = document.getElementById(`avg1_${matchId}`).value; 
+            const a2 = document.getElementById(`avg2_${matchId}`).value; 
             const h1 = document.getElementById(`hl1_${matchId}`).value.trim();
             const h2 = document.getElementById(`hl2_${matchId}`).value.trim();
 
             const updates = {
                 legs_player1: l1 === "" ? null : parseInt(l1),
                 legs_player2: l2 === "" ? null : parseInt(l2),
-                player1_avg: a1 === "" ? null : parseFloat(a1), // Mappt korrekt auf player1_avg
-                player2_avg: a2 === "" ? null : parseFloat(a2), // Mappt korrekt auf player2_avg
+                player1_avg: a1 === "" ? null : parseFloat(a1), 
+                player2_avg: a2 === "" ? null : parseFloat(a2), 
                 highlights_player1: h1 === "" ? null : h1,
                 highlights_player2: h2 === "" ? null : h2,
                 status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
             };
 
-            // Abwärtskompatibilität für ältere matches-Klone
             updates.avg_player1 = updates.player1_avg;
             updates.avg_player2 = updates.player2_avg;
 
@@ -638,6 +637,7 @@
         }
     };
 
+    // REPARIERT: INTEGRIERTE DOM-IDS BEIM RENDERN DER STRAFENTABELLE (ERLAUBT NUN DAS SPEICHERN DER KARTEN)
     async function loadStrafenkatalogList() {
         const league = document.getElementById("penaltyLeagueSelector").value;
         const tbody = document.getElementById("strafenListBody");
@@ -694,26 +694,31 @@
         }
     }
 
+    // KORRIGIERTE SPEICHERFUNKTION FÜR KARTEN & STRAFEN
     window.savePlayerCards = async function(playerId, leagueName) {
         if(!supabaseClient) return;
-        const yellow = parseInt(document.getElementById(`yellow_${playerId}`).value) || 0;
-        const red = parseInt(document.getElementById(`red_${playerId}`).value) || 0;
-        const note = document.getElementById(`note_${playerId}`).value.trim();
+        try {
+            const yellow = parseInt(document.getElementById(`yellow_${playerId}`).value) || 0;
+            const red = parseInt(document.getElementById(`red_${playerId}`).value) || 0;
+            const note = document.getElementById(`note_${playerId}`).value.trim();
 
-        const payload = {
-            player_id: playerId,
-            league_name: leagueName,
-            yellow_cards: yellow,
-            red_cards: red,
-            bemerkung: note === "" ? null : note
-        };
+            const payload = {
+                player_id: playerId,
+                league_name: leagueName,
+                yellow_cards: yellow,
+                red_cards: red,
+                bemerkung: note === "" ? null : note
+            };
 
-        const { error } = await supabaseClient
-            .from('league_penalties')
-            .upsert(payload, { onConflict: 'player_id, league_name' });
+            const { error } = await supabaseClient
+                .from('league_penalties')
+                .upsert(payload, { onConflict: 'player_id, league_name' });
 
-        if(error) alert("Fehler: " + error.message);
-        else alert(`Strafenkatalog erfolgreich aktualisiert!`);
+            if(error) alert("Datenbank-Fehler beim Speichern: " + error.message);
+            else alert(`Karten und Strafen erfolgreich aktualisiert!`);
+        } catch(e) {
+            alert("Fehler beim Auslesen der Strafen-Eingabefelder.");
+        }
     };
 
     function initNewsEditor() {
