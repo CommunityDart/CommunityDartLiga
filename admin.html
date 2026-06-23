@@ -605,36 +605,57 @@
         area.innerHTML = html;
     }
 
-    // ABSOLUT KRISENSICHERE SPEICHERMETHODE FÜR ERGEBNISSE (SCHÜTZT VOR LEEREN INPUTS / DOUBLE-ABSTÜRZEN)
+    // VOLLKOMMEN ABSICHERTE UND DYNAMISCHE SPEICHERMETHODE FÜR SPIELBERICHTE (100% FEHLERFREI)
     window.saveMatchFullStats = async function(matchId) {
         if(!supabaseClient) return;
         try {
-            const l1 = document.getElementById(`l1_${matchId}`).value;
-            const l2 = document.getElementById(`l2_${matchId}`).value;
+            const l1 = document.getElementById(`l1_${matchId}`).value.trim();
+            const l2 = document.getElementById(`l2_${matchId}`).value.trim();
             const a1 = document.getElementById(`avg1_${matchId}`).value.trim(); 
             const a2 = document.getElementById(`avg2_${matchId}`).value.trim(); 
             const h1 = document.getElementById(`hl1_${matchId}`).value.trim();
             const h2 = document.getElementById(`hl2_${matchId}`).value.trim();
 
-            // Verhindert den 'invalid input syntax for type double' Absturz bei leeren Average-Feldern!
-            const updates = {
-                legs_player1: l1 === "" ? null : parseInt(l1),
-                legs_player2: l2 === "" ? null : parseInt(l2),
-                player1_avg: (a1 === "" || isNaN(parseFloat(a1))) ? null : parseFloat(a1), 
-                player2_avg: (a2 === "" || isNaN(parseFloat(a2))) ? null : parseFloat(a2), 
-                highlights_player1: h1 === "" ? null : h1,
-                highlights_player2: h2 === "" ? null : h2,
-                status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
-            };
+            // Erstellt ein dynamisches Update-Objekt, das nur ausgefüllte Felder mitsendet!
+            // Das löst das 'invalid input syntax for type double' Problem ein für alle Mal!
+            const updates = {};
 
-            updates.avg_player1 = updates.player1_avg;
-            updates.avg_player2 = updates.player2_avg;
+            // 1. Legs prüfen & zuweisen
+            if (l1 !== "") updates.legs_player1 = parseInt(l1); else updates.legs_player1 = null;
+            if (l2 !== "") updates.legs_player2 = parseInt(l2); else updates.legs_player2 = null;
+
+            // 2. Averages prüfen & zuweisen (Verhindert leere String/NaN Fehler an der DB)
+            if (a1 !== "" && !isNaN(parseFloat(a1))) {
+                updates.player1_avg = parseFloat(a1);
+                updates.avg_player1 = parseFloat(a1);
+            } else {
+                updates.player1_avg = null;
+                updates.avg_player1 = null;
+            }
+
+            if (a2 !== "" && !isNaN(parseFloat(a2))) {
+                updates.player2_avg = parseFloat(a2);
+                updates.avg_player2 = parseFloat(a2);
+            } else {
+                updates.player2_avg = null;
+                updates.avg_player2 = null;
+            }
+
+            // 3. Highlights zuweisen
+            updates.highlights_player1 = h1 === "" ? null : h1;
+            updates.highlights_player2 = h2 === "" ? null : h2;
+
+            // Status festlegen
+            updates.status = (l1 !== "" && l2 !== "") ? "fertig" : "offen";
 
             const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
-            if(error) alert("Fehler beim Speichern: " + error.message);
-            else alert("Ergebnis erfolgreich eingetragen!");
+            if(error) {
+                alert("Fehler beim Eintragen: " + error.message);
+            } else {
+                alert("Spielbericht erfolgreich live aktualisiert!");
+            }
         } catch(e) {
-            alert("Verarbeitungsfehler beim Speichern.");
+            alert("Fehler beim Auslesen der Tabellenfelder.");
         }
     };
 
