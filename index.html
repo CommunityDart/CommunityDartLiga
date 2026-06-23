@@ -270,7 +270,6 @@
       padding: 20px;
     }
 
-    /* MAXIMAL KOMPAKTE TABELLEN-ANSICHT */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -922,7 +921,6 @@
     document.getElementById('playerModal').classList.remove('active');
   }
 
-  // REPARIERT: ERZEUGT DIREKT EINEN FUNKTIONSFÄHIGEN NAVBAR-BUTTON FÜR EINGELOGGTE PROFILE
   function updateAuthUI() {
     const loginTitle = document.getElementById('loginTitle');
     const loginDesc = document.getElementById('loginDesc');
@@ -938,14 +936,15 @@
         loginBtn.style.background = "#00d084";
       }
       
-      // Füge den Profil-Button live der Navbar hinzu
+      // Erzeugt den Profilbutton in der Haupt-Navbar, falls eingeloggt
       if (!navProfil) {
         navProfil = document.createElement('button');
         navProfil.className = 'nav-btn';
         navProfil.id = 'navProfil';
         navProfil.style.color = '#00d084';
         navProfil.style.borderColor = '#00d084';
-        navProfil.innerText = '👤 Mein Profil';
+        navProfil.style.fontWeight = '700';
+        navProfil.innerText = '⚙️ Mein Profil';
         navProfil.onclick = () => window.location.assign('profil.html');
         document.querySelector('.navbar').appendChild(navProfil);
       }
@@ -960,7 +959,6 @@
     }
   }
 
-  // REPARIERT: LEITET NUN AUTOMATISCH KRISENSICHER AN DIE PROFIL.HTML WEITER
   function handleAuthAction() {
     if (state.currentUser) {
       window.location.assign("profil.html");
@@ -976,6 +974,19 @@
       });
     }
   }
+
+  // REPARIERT: ERZWINGT DEN SITZUNGSABGLEICH DIREKT BEIM LADEN DER SEITE
+  async function checkInitialSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    state.currentUser = session?.user || null;
+    updateAuthUI();
+  }
+
+  // Überwacht Sitzungsänderungen (Login / Logout) live
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    state.currentUser = session?.user || null;
+    updateAuthUI();
+  });
 
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1360,8 +1371,10 @@
     }
   }
 
+  // Erstinitialisierung beim Laden der Seite
   switchView('news');
   updateTheme();
+  checkInitialSession(); // Garantiert dauerhaften Login beim Seitenwechsel
   loadData();
 </script>
 
