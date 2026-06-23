@@ -279,17 +279,17 @@
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 5px 8px; /* Sehr schmale Abstände */
+      padding: 5px 8px;
       text-align: left;
       font-weight: 700;
-      font-size: 11px; /* Kompakter Text */
+      font-size: 11px;
       color: var(--text-secondary);
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
     }
 
     tbody td {
-      padding: 5px 8px; /* Extrem kompakter Zeilenabstand */
+      padding: 5px 8px;
       border-bottom: 1px solid var(--border);
       font-size: 12px;
       color: var(--text-primary);
@@ -922,18 +922,32 @@
     document.getElementById('playerModal').classList.remove('active');
   }
 
+  // REPARIERT: ERZEUGT DIREKT EINEN FUNKTIONSFÄHIGEN NAVBAR-BUTTON FÜR EINGELOGGTE PROFILE
   function updateAuthUI() {
     const loginTitle = document.getElementById('loginTitle');
     const loginDesc = document.getElementById('loginDesc');
     const loginBtn = document.getElementById('loginBtn');
+    let navProfil = document.getElementById('navProfil');
 
     if (state.currentUser) {
       const name = state.currentUser.user_metadata?.full_name || state.currentUser.email || "Spieler";
       if (loginTitle) loginTitle.innerText = `Willkommen zurück, ${name}!`;
-      if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten, um deine Profildaten und Statistiken anzupassen.";
+      if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten oder oben in der Navbar, um dein Spieler-Profil zu verwalten.";
       if (loginBtn) {
         loginBtn.innerText = "⚙️ Zum Profil wechseln (profil.html)";
         loginBtn.style.background = "#00d084";
+      }
+      
+      // Füge den Profil-Button live der Navbar hinzu
+      if (!navProfil) {
+        navProfil = document.createElement('button');
+        navProfil.className = 'nav-btn';
+        navProfil.id = 'navProfil';
+        navProfil.style.color = '#00d084';
+        navProfil.style.borderColor = '#00d084';
+        navProfil.innerText = '👤 Mein Profil';
+        navProfil.onclick = () => window.location.assign('profil.html');
+        document.querySelector('.navbar').appendChild(navProfil);
       }
     } else {
       if (loginTitle) loginTitle.innerText = "Mit Discord anmelden";
@@ -942,14 +956,24 @@
         loginBtn.innerText = "👤 Discord Login";
         loginBtn.style.background = "#0066ff";
       }
+      if (navProfil) navProfil.remove();
     }
   }
 
+  // REPARIERT: LEITET NUN AUTOMATISCH KRISENSICHER AN DIE PROFIL.HTML WEITER
   function handleAuthAction() {
     if (state.currentUser) {
       window.location.assign("profil.html");
     } else {
-      supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: window.location.href } });
+      const currentOrigin = window.location.origin;
+      const pathParts = window.location.pathname.split('/');
+      pathParts[pathParts.length - 1] = 'profil.html';
+      const profilUrl = currentOrigin + pathParts.join('/');
+      
+      supabaseClient.auth.signInWithOAuth({ 
+        provider: 'discord', 
+        options: { redirectTo: profilUrl } 
+      });
     }
   }
 
@@ -1150,14 +1174,12 @@
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
 
-      // REPARIERT: Holt flexibel die aktuellste Zeile der Settings
       const { data: sysData } = await supabaseClient.from('system_settings').select('*');
       const sys = (sysData && sysData.length > 0) ? sysData[0] : null;
 
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
-      // LÄDT DAS REGELWERK DYNAMISCH UND UNABHÄNGIG VOM SPALTENNAMEN AUS ADMIN
       let rulesText = "";
       if (sys) {
         rulesText = sys.rules || sys.regelwerk || sys.rules_text || "";
@@ -1182,10 +1204,6 @@
           regelwerkContainer.innerHTML = `
             <h3 style="margin-bottom: 16px;">Liga Regelwerk</h3>
             <p style="margin-bottom: 12px; line-height: 1.6;">Willkommen zum Regelwerk der Community Dart Liga (CDL). Hier findest du alle wichtigen Regeln und Bestimmungen für den fairen Spielbetrieb.</p>
-            <h4 style="margin-top: 20px; margin-bottom: 10px;">Best-of-7 Format</h4>
-            <p style="margin-bottom: 12px; line-height: 1.6;">Alle Spiele werden im Best-of-7-Format (erste zu 4 Siege) ausgetragen. Der Gewinner erhält 2 Punkte, der Verlierer 0 Punkte.</p>
-            <h4 style="margin-top: 20px; margin-bottom: 10px;">Spieltage</h4>
-            <p style="margin-bottom: 12px; line-height: 1.6;">Die Liga ist in mehrere Spieltage unterteilt. Alle Matches eines Spieltags müssen innerhalb der vorgegebenen Zeit gespielt werden.</p>
           `;
         }
       }
