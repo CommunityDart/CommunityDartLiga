@@ -90,7 +90,7 @@
     }
 
     .theme-toggle:hover {
-      border-color: #0066ff;
+      border-color: var(--platform-color);
       background: var(--hover);
       transform: scale(1.05);
     }
@@ -121,15 +121,15 @@
 
     .nav-btn:hover {
       background: var(--hover);
-      border-color: #0066ff;
-      color: #0066ff;
+      border-color: var(--platform-color);
+      color: var(--platform-color);
     }
 
     .nav-btn.active {
-      background: #0066ff;
+      background: var(--platform-color);
       color: white;
-      border-color: #0066ff;
-      box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
+      border-color: var(--platform-color);
+      box-shadow: 0 0 15px rgba(0, 102, 255, 0.15);
     }
 
     .platform-banner {
@@ -231,43 +231,19 @@
       transition: all 0.3s ease;
     }
 
+    /* VEREINHEITLICHTE COMPAKTE INFO-KACHEL FÜR DEN FOOTERBEREICH */
     .card.compact-footer-card {
-      max-width: 450px;
+      max-width: 500px;
       width: 100%;
-      margin: 0 auto;
+      margin: 10px auto 0 auto;
     }
     .card.compact-footer-card .card-header {
-      padding: 12px 16px;
-      font-size: 15px;
+      padding: 10px 16px;
+      font-size: 14px;
     }
     .card.compact-footer-card .card-body {
-      padding: 14px 16px;
+      padding: 12px 16px;
       text-align: center;
-    }
-
-    html.dark .card {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-
-    .card:hover {
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      border-color: var(--platform-color);
-    }
-
-    .card-header {
-      background: var(--bg-tertiary);
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .card-body {
-      padding: 20px;
     }
 
     table {
@@ -310,12 +286,11 @@
 
     .player-link {
       font-weight: 600;
-      color: #0066ff;
+      color: var(--platform-color);
       cursor: pointer;
     }
 
     .player-link:hover {
-      color: #0052cc;
       text-decoration: underline;
     }
 
@@ -326,7 +301,7 @@
 
     .score {
       font-weight: 700;
-      color: #0066ff;
+      color: var(--platform-color);
     }
 
     .badge {
@@ -420,8 +395,9 @@
       text-align: center;
     }
 
+    /* BUTTONS FÜR FOOTERBEREICH ANPASSEN */
     .btn.small-action-btn {
-      padding: 8px 16px;
+      padding: 6px 14px;
       font-size: 12px;
       max-width: max-content;
       width: auto;
@@ -429,8 +405,8 @@
 
     .btn:hover {
       background: var(--hover);
-      border-color: #0066ff;
-      color: #0066ff;
+      border-color: var(--platform-color);
+      color: var(--platform-color);
     }
 
     .btn.primary {
@@ -472,7 +448,7 @@
     .stat-box-value {
       font-size: 26px;
       font-weight: 700;
-      color: #0066ff;
+      color: var(--platform-color);
     }
 
     .tab-buttons {
@@ -482,6 +458,7 @@
       border-bottom: 2px solid var(--border);
     }
 
+    /* DYNAMISCHER PLATTFORM-HOVER FÜR DIE LIGA TABS */
     .tab-btn {
       padding: 12px 18px;
       border: none;
@@ -496,8 +473,8 @@
     }
 
     .tab-btn:hover, .tab-btn.active {
-      color: #0066ff;
-      border-bottom-color: #0066ff;
+      color: var(--platform-color);
+      border-bottom-color: var(--platform-color);
     }
 
     .news-item {
@@ -622,7 +599,11 @@
       <div class="card compact-footer-card">
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
-          <div class="btn-group"><button class="btn small-action-btn">📧 Kontakt</button></div>
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
+          </div>
         </div>
       </div>
     </div>
@@ -682,7 +663,7 @@
           <div class="stat-grid">
             <div class="stat-box">
               <div class="stat-box-label">Registrierte Spieler</div>
-              <div class="stat-box-value" id="statPlayers" style="color: var(--platform-color);">0</div>
+              <div class="stat-box-value" id="statPlayers">0</div>
             </div>
             <div class="stat-box" style="background: rgba(255,107,53,0.06);">
               <div class="stat-box-label" style="color: #ff6b35;">Aktive Ligen (mit Inhalt)</div>
@@ -692,6 +673,17 @@
               <div class="stat-box-label" style="color: #00d084;">Generierte Matches (Saison)</div>
               <div class="stat-box-value" style="color: #00d084;" id="statMatches">0</div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card compact-footer-card">
+        <div class="card-header">ℹ️ Infos</div>
+        <div class="card-body">
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
         </div>
       </div>
@@ -719,9 +711,13 @@
       </div>
 
       <div class="card compact-footer-card">
-        <div class="card-header">⚙️ Optionen</div>
+        <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
-          <div class="btn-group"><button class="btn small-action-btn">☕ Serverkasse unterstützen</button></div>
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
+          </div>
         </div>
       </div>
     </div>
@@ -936,7 +932,6 @@
         loginBtn.style.background = "#00d084";
       }
       
-      // Erzeugt den Profilbutton in der Haupt-Navbar, falls eingeloggt
       if (!navProfil) {
         navProfil = document.createElement('button');
         navProfil.className = 'nav-btn';
@@ -975,18 +970,11 @@
     }
   }
 
-  // REPARIERT: ERZWINGT DEN SITZUNGSABGLEICH DIREKT BEIM LADEN DER SEITE
   async function checkInitialSession() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     state.currentUser = session?.user || null;
     updateAuthUI();
   }
-
-  // Überwacht Sitzungsänderungen (Login / Logout) live
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    state.currentUser = session?.user || null;
-    updateAuthUI();
-  });
 
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1371,10 +1359,9 @@
     }
   }
 
-  // Erstinitialisierung beim Laden der Seite
   switchView('news');
   updateTheme();
-  checkInitialSession(); // Garantiert dauerhaften Login beim Seitenwechsel
+  checkInitialSession(); 
   loadData();
 </script>
 
