@@ -44,7 +44,7 @@
     }
 
     .header-top {
-      padding: 10px 20px; /* Maximal gestaucht */
+      padding: 30px 20px;
       text-align: center;
       border-bottom: 1px solid var(--border);
       display: flex;
@@ -58,9 +58,9 @@
     }
 
     .header-title h1 {
-      font-size: 32px; /* Flachere Schriftgröße */
+      font-size: 44px;
       font-weight: 800;
-      margin-bottom: 0px;
+      margin-bottom: 6px;
       background: linear-gradient(135deg, #0066ff 0%, #ff6b35 50%, #00d084 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -68,21 +68,21 @@
     }
 
     .header-title p {
-      font-size: 11px;
+      font-size: 13px;
       color: var(--text-secondary);
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       font-weight: 600;
     }
 
     .theme-toggle {
-      width: 38px;
-      height: 38px;
+      width: 50px;
+      height: 50px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
       cursor: pointer;
-      font-size: 18px;
+      font-size: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -99,20 +99,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 6px 20px; /* Schmalere Nav-Leiste */
+      gap: 8px;
+      padding: 12px 20px;
       flex-wrap: wrap;
       background: var(--bg-secondary);
       border-top: 1px solid var(--border);
     }
 
     .nav-btn {
-      padding: 6px 12px; /* Kompaktere Buttons */
+      padding: 12px 18px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
       cursor: pointer;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text-primary);
       transition: all 0.3s ease;
@@ -129,14 +129,13 @@
       background: var(--platform-color);
       color: white;
       border-color: var(--platform-color);
-      box-shadow: 0 0 10px rgba(0, 102, 255, 0.1);
+      box-shadow: 0 0 15px rgba(0, 102, 255, 0.15);
     }
 
-    /* MAXIMAL FLER GESTAUCHTER PLATTFORM- & LIGENBANNER */
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
-      padding: 6px 20px; /* Extrem flach gezogen */
+      padding: 20px;
       display: none;
       animation: slideDown 0.25s ease forwards;
     }
@@ -144,7 +143,7 @@
       display: block;
     }
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-5px); }
+      from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
     .banner-row {
@@ -154,28 +153,28 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px; /* Engere Abstände im Kasten */
+      gap: 16px;
     }
     .platform-selection, .league-selection {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 12px;
       flex-wrap: wrap;
       width: 100%;
     }
     .banner-label {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-secondary);
     }
     .p-btn {
-      padding: 4px 10px;
+      padding: 8px 16px;
       border: 1px solid var(--border);
       background: var(--bg-tertiary);
       border-radius: 6px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       color: var(--text-primary);
@@ -186,12 +185,12 @@
     .p-btn.active[data-p="Scolia"] { background: #00d084; color: white; border-color: #00d084; }
 
     .league-btn {
-      padding: 3px 8px;
+      padding: 6px 14px;
       border: 2px solid var(--border);
       background: var(--bg-secondary);
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--text-primary);
       transition: all 0.3s;
@@ -205,7 +204,7 @@
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 12px 20px 20px 20px; /* Minimaler Abstand nach oben */
+      padding: 40px 20px;
     }
 
     .view {
@@ -219,7 +218,7 @@
     .full-width-layout {
       display: flex;
       flex-direction: column;
-      gap: 12px; /* Engere Kachelabstände */
+      gap: 24px;
       width: 100%;
     }
 
@@ -228,70 +227,72 @@
       border-radius: 12px;
       border: 1px solid var(--border);
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       transition: all 0.3s ease;
     }
 
+    /* RESTAURIERTE COMPAKTE INFO FOOTER-KACHEL */
     .card.compact-footer-card {
       max-width: 550px;
       width: 100%;
-      margin: 4px auto 0 auto;
+      margin: 10px auto 0 auto;
     }
     .card.compact-footer-card .card-header {
-      padding: 8px 16px;
-      font-size: 13px;
+      padding: 14px 20px;
+      font-size: 15px;
     }
     .card.compact-footer-card .card-body {
-      padding: 10px 16px;
+      padding: 18px 20px;
       text-align: center;
     }
 
     html.dark .card {
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
     .card:hover {
-      box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
       border-color: var(--platform-color);
     }
 
     .card-header {
       background: var(--bg-tertiary);
-      padding: 10px 16px; /* Flachere Kachel-Header */
+      padding: 20px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14.5px;
+      gap: 10px;
+      font-size: 18px;
       font-weight: 700;
       color: var(--text-primary);
     }
 
     .card-body {
-      padding: 12px 16px; /* Gestauchter Kachel-Inhalt */
+      padding: 20px;
     }
 
+    /* RESTAURIERTE TABELLEN-ABSTÄNDE (NICHT ZU ENG) */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 4px;
+      margin-top: 12px;
     }
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 6px 8px;
+      padding: 10px 12px;
       text-align: left;
       font-weight: 700;
-      font-size: 11.5px;
+      font-size: 12px;
       color: var(--text-secondary);
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
     }
 
     tbody td {
-      padding: 6px 8px; /* Kompakter, übersichtlicher Zeilenabstand */
+      padding: 10px 12px;
       border-bottom: 1px solid var(--border);
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--text-primary);
     }
 
@@ -301,7 +302,7 @@
 
     .rank {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 15px;
       text-align: center;
     }
 
@@ -331,7 +332,7 @@
 
     .badge {
       display: inline-block;
-      padding: 3px 8px;
+      padding: 4px 10px;
       background: var(--bg-tertiary);
       border-radius: 6px;
       font-size: 11px;
@@ -340,42 +341,43 @@
     }
 
     .badge.done {
-      background: rgba(0, 208, 132, 0.12);
+      background: rgba(0, 208, 132, 0.15);
       color: #00d084;
     }
 
     .badge.open {
-      background: rgba(255, 107, 53, 0.12);
+      background: rgba(255, 107, 53, 0.15);
       color: #ff6b35;
     }
 
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 12px;
+      gap: 20px;
       width: 100%;
     }
     @media (min-width: 768px) {
-      .matchdays-grid { 
-        grid-template-columns: repeat(2, 1fr); 
-      }
+      .matchdays-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .matchdays-grid { grid-template-columns: repeat(3, 1fr); }
     }
 
     .matchday-card {
       background: var(--bg-primary);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 10px 12px;
+      padding: 14px;
     }
 
     .matchday-title {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-secondary);
       border-bottom: 2px solid var(--border);
-      padding-bottom: 4px;
-      margin-bottom: 6px;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
       text-align: center;
     }
 
@@ -383,7 +385,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 0;
+      padding: 10px 0;
       border-bottom: 1px solid var(--border);
       font-size: 12px;
     }
@@ -402,12 +404,12 @@
     .btn-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
     }
 
     .btn {
-      padding: 8px 14px;
+      padding: 12px 16px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
@@ -420,8 +422,8 @@
     }
 
     .btn.small-action-btn {
-      padding: 5px 12px;
-      font-size: 11.5px;
+      padding: 8px 16px;
+      font-size: 12px;
       max-width: max-content;
       width: auto;
     }
@@ -448,13 +450,13 @@
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 2px;
+      gap: 16px;
+      margin-top: 4px;
     }
 
     .stat-box {
       background: var(--bg-tertiary);
-      padding: 10px;
+      padding: 16px;
       border-radius: 8px;
       text-align: center;
       border: 1px solid var(--border);
@@ -463,32 +465,32 @@
     .stat-box-label {
       font-size: 11px;
       color: var(--text-secondary);
-      margin-bottom: 2px;
+      margin-bottom: 6px;
       font-weight: 600;
       text-transform: uppercase;
     }
 
     .stat-box-value {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--platform-color);
     }
 
     .tab-buttons {
       display: flex;
-      gap: 4px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 20px;
       border-bottom: 2px solid var(--border);
     }
 
     .tab-btn {
-      padding: 8px 14px;
+      padding: 12px 18px;
       border: none;
       background: transparent;
       color: var(--text-secondary);
       cursor: pointer;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 14px;
       border-bottom: 3px solid transparent;
       margin-bottom: -2px;
       transition: all 0.3s ease;
@@ -500,39 +502,39 @@
     }
 
     .news-item {
-      margin-bottom: 12px;
-      padding: 14px;
+      margin-bottom: 20px;
+      padding: 20px;
       background: var(--bg-tertiary);
       border-radius: 10px;
       border: 1px solid var(--border);
     }
 
     .news-date {
-      font-size: 10.5px;
+      font-size: 11px;
       color: var(--text-secondary);
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 2px;
-    }
-
-    .news-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-primary);
       margin-bottom: 6px;
     }
 
-    .news-content {
-      font-size: 13px;
+    .news-title {
+      font-size: 18px;
+      font-weight: 700;
       color: var(--text-primary);
-      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    .news-content {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.6;
     }
 
     .empty {
-      padding: 25px 20px;
+      padding: 40px 20px;
       text-align: center;
       color: var(--text-secondary);
-      font-size: 13px;
+      font-size: 14px;
     }
 
     .modal-overlay {
@@ -553,14 +555,14 @@
       border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);
     }
     .modal-close:hover { color: var(--text-primary); }
-    .player-card-title { font-size: 21px; font-weight: 800; margin-bottom: 14px; color: var(--platform-color); text-align: center;}
-    .player-info-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;}
-    .player-info-row:last-of-type { border-bottom: none; margin-bottom: 10px; }
+    .player-card-title { font-size: 22px; font-weight: 800; margin-bottom: 16px; color: var(--platform-color); text-align: center;}
+    .player-info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;}
+    .player-info-row:last-of-type { border-bottom: none; margin-bottom: 12px; }
     .player-info-label { font-weight: 700; color: var(--text-secondary); }
     .player-info-value { font-weight: 600; color: var(--text-primary); }
     
     .avatar-wrapper {
-      display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; gap: 6px;
+      display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; gap: 8px;
     }
     .profile-avatar {
       width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--platform-color); object-fit: cover;
@@ -641,7 +643,7 @@
         </div>
 
         <div id="ligenTab">
-          <div class="card" style="margin-bottom: 12px;"> 
+          <div class="card" style="margin-bottom: 24px;">
             <div class="card-header" id="tableHeaderTitle">📊 Tabelle</div>
             <div class="card-body" style="overflow-x: auto;">
               <div id="tableArea"></div>
@@ -668,8 +670,8 @@
           <div class="card">
             <div class="card-header">🏛️ Liga Archiv</div>
             <div class="card-body">
-              <p style="margin-bottom: 12px;">Wähle eine Saison und Liga um historische Daten anzusehen:</p>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <p style="margin-bottom: 16px;">Wähle eine Saison und Liga um historische Daten anzusehen:</p>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
                 <select style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);"><option>Saison 1</option></select>
                 <select style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);"><option>Alle Ligen</option></select>
               </div>
@@ -679,7 +681,7 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: 5px;">
+      <div class="card" style="margin-top: 10px;">
         <div class="card-header">📈 Globaler Überblick & Live-Statistiken</div>
         <div class="card-body">
           <div class="stat-grid">
@@ -687,11 +689,11 @@
               <div class="stat-box-label">Registrierte Spieler</div>
               <div class="stat-box-value" id="statPlayers">0</div>
             </div>
-            <div class="stat-box" style="background: rgba(255,107,53,0.04);">
+            <div class="stat-box" style="background: rgba(255,107,53,0.06);">
               <div class="stat-box-label" style="color: #ff6b35;">Aktive Ligen (mit Inhalt)</div>
               <div class="stat-box-value" style="color: #ff6b35;" id="statLeagues">0</div>
             </div>
-            <div class="stat-box" style="background: rgba(0,208,132,0.04);">
+            <div class="stat-box" style="background: rgba(0,208,132,0.06);">
               <div class="stat-box-label" style="color: #00d084;">Generierte Matches (Saison)</div>
               <div class="stat-box-value" style="color: #00d084;" id="statMatches">0</div>
             </div>
@@ -733,7 +735,7 @@
       </div>
 
       <div class="card compact-footer-card">
-        <div class="card-header">⚖️ Optionen</div>
+        <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
@@ -743,6 +745,13 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="playerModal" class="modal-overlay" onclick="closePlayerModal(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closePlayerModal(null)">&times;</button>
+    <div id="modalContent"></div>
   </div>
 </div>
 
