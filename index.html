@@ -270,28 +270,28 @@
       padding: 20px;
     }
 
-    /* NEUE KOMPAKTERE TABELLE */
+    /* MAXIMAL KOMPAKTE TABELLEN-ANSICHT */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 6px 8px; /* Tighter padding */
+      padding: 5px 8px; /* Sehr schmale Abstände */
       text-align: left;
       font-weight: 700;
-      font-size: 11px; /* Tighter Font */
+      font-size: 11px; /* Kompakter Text */
       color: var(--text-secondary);
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
     }
 
     tbody td {
-      padding: 6px 8px; /* Tighter padding */
+      padding: 5px 8px; /* Extrem kompakter Zeilenabstand */
       border-bottom: 1px solid var(--border);
-      font-size: 12.5px;
+      font-size: 12px;
       color: var(--text-primary);
     }
 
@@ -1150,22 +1150,35 @@
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
 
-      const { data: sys = null } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
+      // REPARIERT: Holt flexibel die aktuellste Zeile der Settings
+      const { data: sysData } = await supabaseClient.from('system_settings').select('*');
+      const sys = (sysData && sysData.length > 0) ? sysData[0] : null;
+
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
-      // REGELWERK DYNAMISCH AUS ADMIN-TABELLE LADEN
-      const rulesText = sys?.rules || sys?.regelwerk || "";
+      // LÄDT DAS REGELWERK DYNAMISCH UND UNABHÄNGIG VOM SPALTENNAMEN AUS ADMIN
+      let rulesText = "";
+      if (sys) {
+        rulesText = sys.rules || sys.regelwerk || sys.rules_text || "";
+        if (!rulesText.trim()) {
+          for (const key in sys) {
+            if (sys.hasOwnProperty(key) && (key.toLowerCase().includes('rule') || key.toLowerCase().includes('regel'))) {
+              if (sys[key] && String(sys[key]).trim() !== "") { rulesText = String(sys[key]); break; }
+            }
+          }
+        }
+      }
+
       const regelwerkContainer = document.getElementById('regelwerkContent');
       if (regelwerkContainer) {
-        if (rulesText.trim() !== "") {
+        if (rulesText && rulesText.trim() !== "") {
           if (rulesText.includes('<p>') || rulesText.includes('<br>') || rulesText.includes('<div>') || rulesText.includes('<h3>')) {
             regelwerkContainer.innerHTML = rulesText;
           } else {
             regelwerkContainer.innerHTML = `<div style="white-space: pre-wrap; line-height: 1.6; font-size:14px;">${htmlEscape(rulesText)}</div>`;
           }
         } else {
-          // Standard-Fallback falls komplett leer
           regelwerkContainer.innerHTML = `
             <h3 style="margin-bottom: 16px;">Liga Regelwerk</h3>
             <p style="margin-bottom: 12px; line-height: 1.6;">Willkommen zum Regelwerk der Community Dart Liga (CDL). Hier findest du alle wichtigen Regeln und Bestimmungen für den fairen Spielbetrieb.</p>
