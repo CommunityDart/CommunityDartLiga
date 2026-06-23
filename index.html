@@ -231,7 +231,6 @@
       transition: all 0.3s ease;
     }
 
-    /* KOMPAKTERE KARTEN FÜR OPTIONEN & INFOS */
     .card.compact-footer-card {
       max-width: 450px;
       width: 100%;
@@ -271,27 +270,28 @@
       padding: 20px;
     }
 
+    /* NEUE KOMPAKTERE TABELLE */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 12px;
+      margin-top: 8px;
     }
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 8px 10px;
+      padding: 6px 8px; /* Tighter padding */
       text-align: left;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px; /* Tighter Font */
       color: var(--text-secondary);
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
     }
 
     tbody td {
-      padding: 8px 10px;
+      padding: 6px 8px; /* Tighter padding */
       border-bottom: 1px solid var(--border);
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--text-primary);
     }
 
@@ -301,7 +301,7 @@
 
     .rank {
       font-weight: 700;
-      font-size: 15px;
+      font-size: 14px;
       text-align: center;
     }
 
@@ -421,7 +421,6 @@
       text-align: center;
     }
 
-    /* KLEINERE BUTTONS FÜR INFOS UND SPENDEN */
     .btn.small-action-btn {
       padding: 8px 16px;
       font-size: 12px;
@@ -658,7 +657,7 @@
         <div id="regelwerkTab" style="display: none;">
           <div class="card">
             <div class="card-header">📑 Regelwerk</div>
-            <div class="card-body" id="regelwerkContent">
+            <div class="card-body" id="regelwerkContent" style="line-height: 1.6;">
               </div>
           </div>
         </div>
@@ -923,6 +922,37 @@
     document.getElementById('playerModal').classList.remove('active');
   }
 
+  function updateAuthUI() {
+    const loginTitle = document.getElementById('loginTitle');
+    const loginDesc = document.getElementById('loginDesc');
+    const loginBtn = document.getElementById('loginBtn');
+
+    if (state.currentUser) {
+      const name = state.currentUser.user_metadata?.full_name || state.currentUser.email || "Spieler";
+      if (loginTitle) loginTitle.innerText = `Willkommen zurück, ${name}!`;
+      if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten, um deine Profildaten und Statistiken anzupassen.";
+      if (loginBtn) {
+        loginBtn.innerText = "⚙️ Zum Profil wechseln (profil.html)";
+        loginBtn.style.background = "#00d084";
+      }
+    } else {
+      if (loginTitle) loginTitle.innerText = "Mit Discord anmelden";
+      if (loginDesc) loginDesc.innerText = "Melde dich mit deinem Discord-Konto an um auf dein Spieler-Profil zuzugreifen und deine Statistiken zu verwalten.";
+      if (loginBtn) {
+        loginBtn.innerText = "👤 Discord Login";
+        loginBtn.style.background = "#0066ff";
+      }
+    }
+  }
+
+  function handleAuthAction() {
+    if (state.currentUser) {
+      window.location.assign("profil.html");
+    } else {
+      supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: window.location.href } });
+    }
+  }
+
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
@@ -1040,14 +1070,14 @@
     let html = `<table>
       <thead>
         <tr>
-          <th style="width: 40px; text-align:center;">P</th>
+          <th style="width: 45px; text-align:center;">P</th>
           <th>Spieler</th>
-          <th style="width: 40px; text-align:center;">Sp</th>
-          <th style="width: 40px; text-align:center;">S</th>
-          <th style="width: 40px; text-align:center;">N</th>
-          <th style="width: 60px; text-align:center;">AVG</th>
-          <th style="width: 50px; text-align:center;">Diff</th>
-          <th style="width: 50px; text-align:center;">Pkt</th>
+          <th style="width: 45px; text-align:center;">Sp</th>
+          <th style="width: 45px; text-align:center;">S</th>
+          <th style="width: 45px; text-align:center;">N</th>
+          <th style="width: 65px; text-align:center;">AVG</th>
+          <th style="width: 55px; text-align:center;">Diff</th>
+          <th style="width: 55px; text-align:center;">Pkt</th>
         </tr>
       </thead>
       <tbody>`;
@@ -1124,17 +1154,18 @@
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
-      // AUSLESEN DES REGELWERKS AUS ADMIN (system_settings -> rules/regelwerk)
+      // REGELWERK DYNAMISCH AUS ADMIN-TABELLE LADEN
       const rulesText = sys?.rules || sys?.regelwerk || "";
       const regelwerkContainer = document.getElementById('regelwerkContent');
       if (regelwerkContainer) {
         if (rulesText.trim() !== "") {
-          if (rulesText.includes('<p>') || rulesText.includes('<br>') || rulesText.includes('<div>')) {
+          if (rulesText.includes('<p>') || rulesText.includes('<br>') || rulesText.includes('<div>') || rulesText.includes('<h3>')) {
             regelwerkContainer.innerHTML = rulesText;
           } else {
-            regelwerkContainer.innerHTML = rulesText.replace(/\n/g, '<br>');
+            regelwerkContainer.innerHTML = `<div style="white-space: pre-wrap; line-height: 1.6; font-size:14px;">${htmlEscape(rulesText)}</div>`;
           }
         } else {
+          // Standard-Fallback falls komplett leer
           regelwerkContainer.innerHTML = `
             <h3 style="margin-bottom: 16px;">Liga Regelwerk</h3>
             <p style="margin-bottom: 12px; line-height: 1.6;">Willkommen zum Regelwerk der Community Dart Liga (CDL). Hier findest du alle wichtigen Regeln und Bestimmungen für den fairen Spielbetrieb.</p>
@@ -1298,7 +1329,6 @@
     }
   }
 
-  // Setzt beim Start den korrekten Modus (News)
   switchView('news');
   updateTheme();
   loadData();
