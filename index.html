@@ -44,7 +44,7 @@
     }
 
     .header-top {
-      padding: 25px 20px;
+      padding: 15px 20px; /* Kompakterer Header-Abstand */
       text-align: center;
       border-bottom: 1px solid var(--border);
       display: flex;
@@ -58,9 +58,9 @@
     }
 
     .header-title h1 {
-      font-size: 40px;
+      font-size: 36px; /* Leicht verkleinert für besseren Fluss */
       font-weight: 800;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       background: linear-gradient(135deg, #0066ff 0%, #ff6b35 50%, #00d084 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -68,21 +68,21 @@
     }
 
     .header-title p {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
-      letter-spacing: 1.5px;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
       font-weight: 600;
     }
 
     .theme-toggle {
-      width: 46px;
+      width: 42px;
       height: 46px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
       cursor: pointer;
-      font-size: 22px;
+      font-size: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -99,15 +99,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 10px 20px;
+      gap: 6px;
+      padding: 8px 20px; /* Weniger Leerraum in der Navigation */
       flex-wrap: wrap;
       background: var(--bg-secondary);
       border-top: 1px solid var(--border);
     }
 
     .nav-btn {
-      padding: 10px 16px;
+      padding: 8px 14px; /* Kompaktisierte Buttons */
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
@@ -129,13 +129,13 @@
       background: var(--platform-color);
       color: white;
       border-color: var(--platform-color);
-      box-shadow: 0 0 12px rgba(0, 102, 255, 0.12);
+      box-shadow: 0 0 10px rgba(0, 102, 255, 0.1);
     }
 
     .platform-banner {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
-      padding: 15px 20px;
+      padding: 12px 20px; /* Banner gestaucht */
       display: none;
       animation: slideDown 0.25s ease forwards;
     }
@@ -143,7 +143,7 @@
       display: block;
     }
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-10px); }
+      from { opacity: 0; transform: translateY(-5px); }
       to { opacity: 1; transform: translateY(0); }
     }
     .banner-row {
@@ -153,7 +153,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px; /* Engere Abstände im Banner */
     }
     .platform-selection, .league-selection {
       display: flex;
@@ -170,7 +170,7 @@
       color: var(--text-secondary);
     }
     .p-btn {
-      padding: 6px 14px;
+      padding: 5px 12px;
       border: 1px solid var(--border);
       background: var(--bg-tertiary);
       border-radius: 6px;
@@ -185,7 +185,7 @@
     .p-btn.active[data-p="Scolia"] { background: #00d084; color: white; border-color: #00d084; }
 
     .league-btn {
-      padding: 5px 12px;
+      padding: 4px 10px;
       border: 2px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
@@ -204,7 +204,7 @@
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 30px 20px;
+      padding: 15px 20px 30px 20px; /* Deutlich weniger Leerraum nach oben */
     }
 
     .view {
@@ -218,7 +218,7 @@
     .full-width-layout {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px; /* Engerer Kachelabstand */
       width: 100%;
     }
 
@@ -227,21 +227,21 @@
       border-radius: 12px;
       border: 1px solid var(--border);
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
       transition: all 0.3s ease;
     }
 
     .card.compact-footer-card {
       max-width: 550px;
       width: 100%;
-      margin: 5px auto 0 auto;
+      margin: 4px auto 0 auto; /* Weniger Leerraum zum Footer */
     }
     .card.compact-footer-card .card-header {
-      padding: 12px 18px;
-      font-size: 14px;
+      padding: 10px 16px;
+      font-size: 13.5px;
     }
     .card.compact-footer-card .card-body {
-      padding: 14px 18px;
+      padding: 12px 16px;
       text-align: center;
     }
 
@@ -250,46 +250,45 @@
     }
 
     .card:hover {
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.06);
       border-color: var(--platform-color);
     }
 
     .card-header {
       background: var(--bg-tertiary);
-      padding: 16px 20px;
+      padding: 12px 18px; /* Header-Höhe gestaucht */
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 16px;
+      gap: 8px;
+      font-size: 15px;
       font-weight: 700;
       color: var(--text-primary);
     }
 
     .card-body {
-      padding: 18px 20px;
+      padding: 14px 18px; /* Innenabstände der Karten verringert */
     }
 
-    /* HARMONISCH AUSBALANCIERTE, OPTISCH ANSPRECHENDE TABELLENZEILEN */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     thead th {
       background: var(--bg-tertiary);
-      padding: 8px 10px;
+      padding: 6px 10px; /* Schlanke, gut lesbare Tabellenköpfe */
       text-align: left;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-secondary);
       text-transform: uppercase;
       border-bottom: 2px solid var(--border);
     }
 
     tbody td {
-      padding: 8px 10px;
+      padding: 7px 10px; /* Perfekt ausbalancierter, kompakter Zeilenabstand */
       border-bottom: 1px solid var(--border);
       font-size: 13px;
       color: var(--text-primary);
@@ -331,7 +330,7 @@
 
     .badge {
       display: inline-block;
-      padding: 4px 10px;
+      padding: 3px 8px;
       background: var(--bg-tertiary);
       border-radius: 6px;
       font-size: 11px;
@@ -340,25 +339,24 @@
     }
 
     .badge.done {
-      background: rgba(0, 208, 132, 0.15);
+      background: rgba(0, 208, 132, 0.12);
       color: #00d084;
     }
 
     .badge.open {
-      background: rgba(255, 107, 53, 0.15);
+      background: rgba(255, 107, 53, 0.12);
       color: #ff6b35;
     }
 
-    /* NEUES DETILLIERTES 2-SPALTEN-LAYOUT FÜR SPIELTAGE (MITTIG GESTAUCHT) */
     .matchdays-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 16px;
+      gap: 12px; /* Lücke zwischen den 2 Spieltagen verringert */
       width: 100%;
     }
     @media (min-width: 768px) {
       .matchdays-grid { 
-        grid-template-columns: repeat(2, 1fr); /* Genau 2 Spieltage nebeneinander */
+        grid-template-columns: repeat(2, 1fr); 
       }
     }
 
@@ -366,7 +364,7 @@
       background: var(--bg-primary);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 12px 14px;
+      padding: 10px 12px; /* Spieltagskarten kompakter */
     }
 
     .matchday-title {
@@ -375,8 +373,8 @@
       text-transform: uppercase;
       color: var(--text-secondary);
       border-bottom: 2px solid var(--border);
-      padding-bottom: 6px;
-      margin-bottom: 8px;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
       text-align: center;
     }
 
@@ -384,7 +382,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
+      padding: 6px 0; /* Reihenhöhe der Paarungen gestaucht */
       border-bottom: 1px solid var(--border);
       font-size: 12px;
     }
@@ -403,12 +401,12 @@
     .btn-group {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
     }
 
     .btn {
-      padding: 10px 16px;
+      padding: 8px 14px;
       border: 1px solid var(--border);
       background: var(--bg-secondary);
       border-radius: 8px;
@@ -421,8 +419,8 @@
     }
 
     .btn.small-action-btn {
-      padding: 6px 14px;
-      font-size: 12px;
+      padding: 5px 12px;
+      font-size: 11.5px;
       max-width: max-content;
       width: auto;
     }
@@ -449,13 +447,13 @@
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 4px;
+      gap: 12px;
+      margin-top: 2px;
     }
 
     .stat-box {
       background: var(--bg-tertiary);
-      padding: 14px;
+      padding: 12px; /* Statistik-Boxen gestaucht */
       border-radius: 8px;
       text-align: center;
       border: 1px solid var(--border);
@@ -464,26 +462,26 @@
     .stat-box-label {
       font-size: 11px;
       color: var(--text-secondary);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       font-weight: 600;
       text-transform: uppercase;
     }
 
     .stat-box-value {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--platform-color);
     }
 
     .tab-buttons {
       display: flex;
-      gap: 6px;
-      margin-bottom: 16px;
+      gap: 4px;
+      margin-bottom: 12px; /* Weniger Abstand unter den Tabs */
       border-bottom: 2px solid var(--border);
     }
 
     .tab-btn {
-      padding: 10px 16px;
+      padding: 8px 14px;
       border: none;
       background: transparent;
       color: var(--text-secondary);
@@ -501,36 +499,36 @@
     }
 
     .news-item {
-      margin-bottom: 16px;
-      padding: 16px;
+      margin-bottom: 12px;
+      padding: 14px;
       background: var(--bg-tertiary);
       border-radius: 10px;
       border: 1px solid var(--border);
     }
 
     .news-date {
-      font-size: 11px;
+      font-size: 10.5px;
       color: var(--text-secondary);
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .news-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       color: var(--text-primary);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .news-content {
-      font-size: 13.5px;
+      font-size: 13px;
       color: var(--text-primary);
-      line-height: 1.5;
+      line-height: 1.45;
     }
 
     .empty {
-      padding: 35px 20px;
+      padding: 25px 20px;
       text-align: center;
       color: var(--text-secondary);
       font-size: 13px;
@@ -642,8 +640,7 @@
         </div>
 
         <div id="ligenTab">
-          <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header" id="tableHeaderTitle">📊 Tabelle</div>
+          <div class="card" style="margin-bottom: 16px;"> <div class="card-header" id="tableHeaderTitle">📊 Tabelle</div>
             <div class="card-body" style="overflow-x: auto;">
               <div id="tableArea"></div>
             </div>
@@ -669,8 +666,8 @@
           <div class="card">
             <div class="card-header">🏛️ Liga Archiv</div>
             <div class="card-body">
-              <p style="margin-bottom: 16px;">Wähle eine Saison und Liga um historische Daten anzusehen:</p>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+              <p style="margin-bottom: 12px;">Wähle eine Saison und Liga um historische Daten anzusehen:</p>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
                 <select style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);"><option>Saison 1</option></select>
                 <select style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);"><option>Alle Ligen</option></select>
               </div>
@@ -688,11 +685,11 @@
               <div class="stat-box-label">Registrierte Spieler</div>
               <div class="stat-box-value" id="statPlayers">0</div>
             </div>
-            <div class="stat-box" style="background: rgba(255,107,53,0.06);">
+            <div class="stat-box" style="background: rgba(255,107,53,0.04);">
               <div class="stat-box-label" style="color: #ff6b35;">Aktive Ligen (mit Inhalt)</div>
               <div class="stat-box-value" style="color: #ff6b35;" id="statLeagues">0</div>
             </div>
-            <div class="stat-box" style="background: rgba(0,208,132,0.06);">
+            <div class="stat-box" style="background: rgba(0,208,132,0.04);">
               <div class="stat-box-label" style="color: #00d084;">Generierte Matches (Saison)</div>
               <div class="stat-box-value" style="color: #00d084;" id="statMatches">0</div>
             </div>
@@ -747,16 +744,9 @@
   </div>
 </div>
 
-<div id="playerModal" class="modal-overlay" onclick="closePlayerModal(event)">
-  <div class="modal-card" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closePlayerModal(null)">&times;</button>
-    <div id="modalContent"></div>
-  </div>
-</div>
-
 <script>
   const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJrY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
@@ -999,15 +989,6 @@
     updateAuthUI();
   }
 
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    state.currentUser = session?.user || null;
-    updateAuthUI();
-  });
-
-  document.addEventListener('DOMContentLoaded', () => {
-    checkInitialSession();
-  });
-
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
@@ -1103,7 +1084,6 @@
       html.classList.add('dark');
       toggle.textContent = '☀️';
     } else {
-      html.documentElement;
       html.classList.remove('dark');
       toggle.textContent = '🌙';
     }
@@ -1158,7 +1138,6 @@
     document.getElementById('tableArea').innerHTML = html;
   }
 
-  // DETILLIERTE SPIELTAGE NEBENEINANDER RENDERN (EXAKT 2 PER ROW)
   function renderMatches() {
     const data = state.leagueData[state.activeLeague] || { matchdays: [] };
     const matchdays = data.matchdays || [];
