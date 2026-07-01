@@ -84,12 +84,12 @@
     </div>
     
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('tabZuteilung')">1. Liga Zuteilung</button>
-        <button class="tab-btn" onclick="switchTab('tabSpielplaene')">2. Spielpläne & Ergebnisse</button>
-        <button class="tab-btn" onclick="switchTab('tabStrafen')">3. Strafenkatalog (pro Liga)</button>
-        <button class="tab-btn" onclick="switchTab('tabNews')">4. News verfassen</button>
-        <button class="tab-btn" onclick="switchTab('tabRegelwerk')">5. Regelwerk bearbeiten</button>
-        <button class="tab-btn" onclick="switchTab('tabTurniere')" style="border-color:#ffd08a; color:#ffd08a;">6. Turniere verwalten</button>
+        <button class="tab-btn active" onclick="switchTab('tabZuteilung', this)">1. Liga Zuteilung</button>
+        <button class="tab-btn" onclick="switchTab('tabSpielplaene', this)">2. Spielpläne & Ergebnisse</button>
+        <button class="tab-btn" onclick="switchTab('tabStrafen', this)">3. Strafenkatalog (pro Liga)</button>
+        <button class="tab-btn" onclick="switchTab('tabNews', this)">4. News verfassen</button>
+        <button class="tab-btn" onclick="switchTab('tabRegelwerk', this)">5. Regelwerk bearbeiten</button>
+        <button class="tab-btn" onclick="switchTab('tabTurniere', this)" style="border-color:#ffd08a; color:#ffd08a;">6. Turniere verwalten</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -266,19 +266,21 @@
     async function loadCurrentSeason() {
         if(!supabaseClient) return;
         try {
-            const { data } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
-            if(data && data.current_season) {
+            const { data, error } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+            if(!error && data && data.current_season) {
                 currentSeasonGlobal = data.current_season;
             }
-        } catch(e) {}
+        } catch(e) { console.warn("Fehler beim Laden der Saison:", e); }
         document.getElementById("seasonIndicator").textContent = "📅 Saison: " + currentSeasonGlobal;
     }
 
-    function switchTab(tabId) {
+    // FIX 1: Event-Referenz komplett ausgebaut und durch direkten Parameter ersetzt
+    function switchTab(tabId, btnElement) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
         document.getElementById(tabId).classList.add('active');
-        if(event && event.currentTarget) event.currentTarget.classList.add('active');
+        if(btnElement) btnElement.classList.add('active');
         
         if (tabId === 'tabRegelwerk') initRuleEditor();
         if (tabId === 'tabNews') initNewsEditor();
@@ -308,14 +310,20 @@
         });
     }
 
+    // FIX 2: Auch wenn die Tabelle fehlt, wird "Werden geladen..." beendet
     async function loadAllLeagueRules() {
-        if(!supabaseClient) return;
-        const { data, error } = await supabaseClient.from('league_rules').select('*');
-        if(!error && data) {
-            globalLeagueRules = {};
-            data.forEach(r => { globalLeagueRules[r.league_name] = r; });
+        if(!supabaseClient) {
             renderRulesSummary();
+            return;
         }
+        try {
+            const { data, error } = await supabaseClient.from('league_rules').select('*');
+            globalLeagueRules = {};
+            if(!error && data) {
+                data.forEach(r => { globalLeagueRules[r.league_name] = r; });
+            }
+        } catch(e) { console.warn("league_rules existiert evtl noch nicht", e); }
+        renderRulesSummary(); // Wird jetzt IMMER ausgeführt!
     }
 
     function renderRulesSummary() {
@@ -381,9 +389,7 @@
         }
         
         alert("✅ Liga-Einstellungen gespeichert!"); 
-        
         await loadAllLeagueRules();
-        renderRulesSummary();
         loadWaitingList();
     };
 
@@ -396,57 +402,68 @@
         return html;
     }
 
+    // FIX 3: Fängt Tabellen-Fehler sicher ab, damit nicht "Wird geladen" stehen bleibt
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
 
-        const { data: players, error } = await supabaseClient.from('profiles').select('*');
-        if (error) { tbody.innerHTML = `<tr><td colspan="6">Fehler: ${error.message}</td></tr>`; return; }
-
-        const activePlayers = players || [];
-        if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Spieler in der Datenbank gefunden.</td></tr>'; return; }
-
-        allLoadedProfilesMap = {};
-        activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
-
-        tbody.innerHTML = activePlayers.map(p => {
-            const isEingeteilt = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
-            let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
-            
-            if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
-                const rule = globalLeagueRules[p.voriga_liga];
-                let statusBadge = "";
-                if(p.voriga_platzierung && rule) {
-                    const pos = p.voriga_platzierung;
-                    if(pos <= (rule.aufsteiger || 0)) statusBadge = `<span class="badge badge-up"> Aufsteiger (Platz ${pos})</span>`;
-                    else if((rule.absteiger || 0) > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down"> Absteiger (Platz ${pos})</span>`;
-                    else if((rule.relegation || 0) > 0 && pos > (10 - (rule.absteiger||0) - rule.relegation) && pos <= (10 - (rule.absteiger||0))) statusBadge = `<span class="badge badge-rel"> Relegation (Platz ${pos})</span>`;
-                    else statusBadge = `<span class="badge" style="background:rgba(255,255,255,0.05);">Klassenerhalt (Platz ${pos})</span>`;
-                }
-                herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong><br>${statusBadge}`;
-            } else if (p.voriga_liga) {
-                herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong>${p.voriga_platzierung ? ` (Platz ${p.voriga_platzierung})` : ''}`;
+        try {
+            const { data: players, error } = await supabaseClient.from('profiles').select('*');
+            if (error) { 
+                tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden der Profile: ${error.message}</td></tr>`; 
+                return; 
             }
 
-            return `
-                <tr id="row_${p.id}">
-                    <td>
-                        <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br>
-                        <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
-                        <div style="margin-top: 6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:4px;">
-                            <small style="color:#90a9b7;">Letzte Saison:</small><br>${herkunftHtml}
-                        </div>
-                    </td>
-                    <td>${formatAllPlattformNames(p)}</td>
-                    <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.assigned_ad_league)}</td>
-                    <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.assigned_dc_league)}</td>
-                    <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league)}</td>
-                    <td>
-                        <button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button>
-                        ${isEingeteilt ? '<br><span style="color:#3ddc97; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
-                    </td>
-                </tr>`;
-        }).join("");
+            const activePlayers = players || [];
+            if (activePlayers.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="6">Keine Spieler in der Datenbank gefunden.</td></tr>'; 
+                return; 
+            }
+
+            allLoadedProfilesMap = {};
+            activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
+
+            tbody.innerHTML = activePlayers.map(p => {
+                const isEingeteilt = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
+                let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
+                
+                if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
+                    const rule = globalLeagueRules[p.voriga_liga];
+                    let statusBadge = "";
+                    if(p.voriga_platzierung && rule) {
+                        const pos = p.voriga_platzierung;
+                        if(pos <= (rule.aufsteiger || 0)) statusBadge = `<span class="badge badge-up"> Aufsteiger (Platz ${pos})</span>`;
+                        else if((rule.absteiger || 0) > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down"> Absteiger (Platz ${pos})</span>`;
+                        else if((rule.relegation || 0) > 0 && pos > (10 - (rule.absteiger||0) - rule.relegation) && pos <= (10 - (rule.absteiger||0))) statusBadge = `<span class="badge badge-rel"> Relegation (Platz ${pos})</span>`;
+                        else statusBadge = `<span class="badge" style="background:rgba(255,255,255,0.05);">Klassenerhalt (Platz ${pos})</span>`;
+                    }
+                    herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong><br>${statusBadge}`;
+                } else if (p.voriga_liga) {
+                    herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong>${p.voriga_platzierung ? ` (Platz ${p.voriga_platzierung})` : ''}`;
+                }
+
+                return `
+                    <tr id="row_${p.id}">
+                        <td>
+                            <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br>
+                            <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
+                            <div style="margin-top: 6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:4px;">
+                                <small style="color:#90a9b7;">Letzte Saison:</small><br>${herkunftHtml}
+                            </div>
+                        </td>
+                        <td>${formatAllPlattformNames(p)}</td>
+                        <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.assigned_ad_league)}</td>
+                        <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.assigned_dc_league)}</td>
+                        <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league)}</td>
+                        <td>
+                            <button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button>
+                            ${isEingeteilt ? '<br><span style="color:#3ddc97; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
+                        </td>
+                    </tr>`;
+            }).join("");
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="6">Kritischer Fehler beim Laden der Spieler.</td></tr>`;
+        }
     }
 
     window.saveSingleAssignment = async function(playerId) {
@@ -1083,29 +1100,21 @@
         } catch(e) { console.error(e); }
     };
 
-    // --- NEU: TURNIER SYSTEM ADMIN LOGIK ---
-    
     async function loadTournamentAdmin() {
         if(!supabaseClient) return;
         try {
-            // Lade System Einstellung (Toggle für Hauptseite)
-            const { data: sysData } = await supabaseClient.from('system_settings').select('tournament_feature_active').eq('id', 1).single();
-            if (sysData) {
+            const { data: sysData, error: sErr } = await supabaseClient.from('system_settings').select('tournament_feature_active').eq('id', 1).single();
+            if (sysData && !sErr) {
                 document.getElementById('tournamentToggleCb').checked = (sysData.tournament_feature_active === true || sysData.tournament_feature_active === "true");
             }
 
-            // Lade Turniere
             const { data: tournaments, error: tErr } = await supabaseClient.from('tournaments').select('*').order('created_at', { ascending: false });
-            if (tErr) throw tErr;
-
-            // Lade Teilnehmer
+            
             const { data: participants, error: pErr } = await supabaseClient.from('tournament_participants').select('tournament_id');
-            if (pErr) throw pErr;
 
             renderAdminTournaments(tournaments || [], participants || []);
         } catch(e) {
-            console.error(e);
-            document.getElementById("adminTournamentsList").innerHTML = "<p>Fehler beim Laden der Turniere. Evtl existieren die Tabellen noch nicht.</p>";
+            document.getElementById("adminTournamentsList").innerHTML = "<p>Ladefehler. Bitte stelle sicher, dass die Tabellen in Supabase angelegt sind.</p>";
         }
     }
 
@@ -1116,7 +1125,6 @@
             await supabaseClient.from('system_settings').update({ tournament_feature_active: isChecked }).eq('id', 1);
             alert(`Der Turnier-Reiter auf der Hauptseite wurde ${isChecked ? 'sichtbar geschaltet' : 'versteckt'}.`);
         } catch(e) {
-            console.error(e);
             alert("Fehler beim Speichern!");
         }
     };
@@ -1140,7 +1148,6 @@
             alert("Turnier erfolgreich erstellt und für Anmeldungen freigegeben!");
             loadTournamentAdmin();
         } catch(e) {
-            console.error(e);
             alert("Fehler beim Erstellen!");
         }
     };
@@ -1208,7 +1215,6 @@
 
             alert("Turnier erfolgreich aktualisiert!");
 
-            // Automatischer News-Generator bei Turnier-Ende
             if (oldStatus !== 'finished' && status === 'finished') {
                 if(confirm("Möchtest du automatisch eine News für das Turnier-Ende (inkl. der Ergebnisse) auf der Startseite generieren?")) {
                     await generateTournamentNews(id, title, results);
@@ -1217,7 +1223,6 @@
             
             loadTournamentAdmin();
         } catch(e) {
-            console.error(e);
             alert("Fehler beim Speichern des Turniers!");
         }
     };
@@ -1248,8 +1253,7 @@
         }
     }
 
-    // --- INIT ---
-
+    // FIX 4: Sequentialer und fehlerfreier Ladeablauf
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
         const cfgSel = document.getElementById("configLeagueSelect");
@@ -1265,17 +1269,15 @@
     }
 
     async function initAdmin() {
-        console.log("🚀 Admin initialisiert...");
-        
-        await loadCurrentSeason();
-        
-        setTimeout(async () => { 
+        try {
+            console.log("🚀 Admin initialisiert...");
+            await loadCurrentSeason();
             await loadAllLeagueRules();
-            console.log("✅ Liga-Regeln geladen und angezeigt");
-        }, 50);
-        
-        setTimeout(() => { initLeagueSelector(); }, 100);
-        setTimeout(() => { loadWaitingList(); }, 150);
+            initLeagueSelector();
+            await loadWaitingList();
+        } catch (e) {
+            console.error("Kritischer Startfehler", e);
+        }
     }
 
     initAdmin();
