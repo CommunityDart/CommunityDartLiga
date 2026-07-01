@@ -65,6 +65,11 @@
         .gen-options-row label { font-size: 13.5px; font-weight: bold; color: #20b7ff; cursor: pointer; }
 
         .season-indicator { background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); padding: 8px 12px; border-radius: 6px; color: #20b7ff; font-size: 12px; font-weight: bold; }
+        
+        /* Editoren (News & Regelwerk) */
+        .editor-container { background: #fff; color: #000; border-radius: 0 0 8px 8px; min-height: 350px; margin-bottom: 15px; }
+        .save-banner-btn { background: #3ddc97; color: #000; font-weight: bold; font-size: 15px; padding: 12px; border-radius: 6px; width: 100%; border: none; cursor: pointer; transition: 0.2s; }
+        .save-banner-btn:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -84,6 +89,7 @@
         <button class="tab-btn" onclick="switchTab('tabStrafen')">3. Strafenkatalog (pro Liga)</button>
         <button class="tab-btn" onclick="switchTab('tabNews')">4. News verfassen</button>
         <button class="tab-btn" onclick="switchTab('tabRegelwerk')">5. Regelwerk bearbeiten</button>
+        <button class="tab-btn" onclick="switchTab('tabTurniere')" style="border-color:#ffd08a; color:#ffd08a;">6. Turniere verwalten</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -147,8 +153,7 @@
                 <button id="endSeasonMatchdayBtn" class="remove-btn-large" style="display:none;" onclick="endSeasonForLeague(document.getElementById('leagueSelector').value)">🏁 Saison für diese Liga beenden</button>
             </div>
             <div id="matchdayLigaInfo" style="display:none; padding: 12px; background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); border-radius: 6px; font-size: 13px; color: #20b7ff; font-weight: bold; max-width: 500px;">
-                <!-- Auf-/Absteiger Info wird hier eingefügt -->
-            </div>
+                </div>
             <div id="generatePlanArea" style="display:none; flex-direction:column; gap: 8px; align-items:flex-start;"></div>
         </div>
         <div style="overflow-x: auto;">
@@ -198,6 +203,32 @@
         <div id="ruleEditor" class="editor-container"></div>
         <button class="save-banner-btn" onclick="saveRegelwerkHtml()">💾 Regelwerk live speichern</button>
     </div>
+
+    <div id="tabTurniere" class="tab-content">
+        <h2>🏆 Turnier-Management</h2>
+        
+        <div class="config-box" style="border-color: #20b7ff; background: rgba(32, 183, 255, 0.05);">
+            <h3>⚙️ Systemeinstellung: Turnier-Feature auf Hauptseite anzeigen</h3>
+            <div class="config-row">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="tournamentToggleCb" style="transform:scale(1.2);"> 
+                    Den Reiter "🏆 Turniere" für alle Spieler auf der Website sichtbar machen
+                </label>
+                <button class="assign-btn" style="width:auto; padding:6px 15px;" onclick="saveTournamentToggle()">💾 Schalter speichern</button>
+            </div>
+        </div>
+
+        <div class="config-box">
+            <h3>➕ Neues Turnier anlegen</h3>
+            <input type="text" id="newTourneyTitle" class="news-headline-field" placeholder="Turnier Titel (z.B. Sommer-Cup 2026)">
+            <textarea id="newTourneyRules" class="comment-input" style="height: 80px; margin-top: 10px; resize:vertical; font-size:14px;" placeholder="Regeln & Infos für die Anmeldung..."></textarea>
+            <button class="save-banner-btn" style="margin-top: 10px;" onclick="createNewTournament()">🚀 Turnier erstellen & Anmeldung öffnen</button>
+        </div>
+
+        <h3 style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">Aktuelle & Beendete Turniere verwalten</h3>
+        <div id="adminTournamentsList">Lade Turniere...</div>
+    </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -224,7 +255,7 @@
     const quillToolbarOptions = [
         [{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'],        
         [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'align': [] }], ['link', 'clean']                                   
+        [{ 'align': [] }], ['link', 'clean']                                       
     ];
 
     function htmlEscape(str) {
@@ -232,21 +263,14 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // ✅ NEUE FUNKTION: currentSeasonGlobal von Datenbank laden
     async function loadCurrentSeason() {
         if(!supabaseClient) return;
         try {
             const { data } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
             if(data && data.current_season) {
                 currentSeasonGlobal = data.current_season;
-                console.log("✅ Saison geladen:", currentSeasonGlobal);
-            } else {
-                console.log("⚠️ Keine Saison gefunden, verwende default: " + currentSeasonGlobal);
             }
-        } catch(e) {
-            console.log("⚠️ Fehler beim Laden der Saison:", e.message);
-        }
-        // Update die UI
+        } catch(e) {}
         document.getElementById("seasonIndicator").textContent = "📅 Saison: " + currentSeasonGlobal;
     }
 
@@ -259,6 +283,7 @@
         if (tabId === 'tabRegelwerk') initRuleEditor();
         if (tabId === 'tabNews') initNewsEditor();
         if (tabId === 'tabZuteilung') loadWaitingList();
+        if (tabId === 'tabTurniere') loadTournamentAdmin();
     }
 
     function formatAllPlattformNames(prof) {
@@ -297,15 +322,11 @@
         const tbody = document.getElementById("rulesTableBody");
         if(!tbody) return;
         
-        console.log("🔄 Render Rules Summary - globalLeagueRules:", globalLeagueRules);
-        
         if(!globalLeagueRules || Object.keys(globalLeagueRules).length === 0) {
-            console.log("⚠️ Keine Regeln vorhanden");
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
             return;
         }
         
-        // ✅ Konvertiere Object zu Array und sortiere
         const allRules = Object.values(globalLeagueRules).map(r => ({
             league: r.league_name || r.liga || r.league || "Unbekannt",
             aufsteiger: r.aufsteiger || 0,
@@ -313,15 +334,9 @@
             relegation: r.relegation || 0
         })).sort((a, b) => a.league.localeCompare(b.league));
         
-        console.log("📊 Sortierte Regeln:", allRules);
-        
-        // ✅ Zeige nur Ligen mit Einstellungen (> 0)
         const activeRules = allRules.filter(r => r.aufsteiger > 0 || r.absteiger > 0 || r.relegation > 0);
         
-        console.log("✅ Aktive Regeln (> 0):", activeRules);
-        
         if(activeRules.length === 0) {
-            console.log("⚠️ Keine aktiven Regeln");
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
             return;
         }
@@ -334,8 +349,6 @@
                 <td style="text-align:center; color:#ffd08a;"><strong>${rule.relegation}</strong></td>
             </tr>
         `).join("");
-        
-        console.log("✅ Tabelle gerendert");
     }
 
     window.loadLeagueRules = function() {
@@ -355,8 +368,6 @@
         const ab = parseInt(document.getElementById("inputAb").value) || 0;
         const rel = parseInt(document.getElementById("inputRel").value) || 0;
 
-        console.log(`💾 Speichere Liga-Regeln: ${league} - 🟢${auf} 🔴${ab} 🟡${rel}`);
-
         const { error } = await supabaseClient.from('league_rules').upsert({
             league_name: league,
             aufsteiger: auf,
@@ -365,17 +376,13 @@
         });
         
         if(error) {
-            console.error("Fehler beim Speichern:", error);
             alert("❌ Fehler beim Speichern: " + error.message);
             return;
         }
         
-        console.log("✅ In Supabase gespeichert");
         alert("✅ Liga-Einstellungen gespeichert!"); 
         
-        // ✅ WICHTIG: Sofort neu laden und anzeigen
         await loadAllLeagueRules();
-        console.log("✅ globalLeagueRules nach Reload:", globalLeagueRules);
         renderRulesSummary();
         loadWaitingList();
     };
@@ -456,8 +463,6 @@
         }
 
         const updates = { id: playerId, status_neue_saison: 'assigned' };
-
-        // ✅ ALLE drei Felder IMMER speichern
         
         // Autodarts
         const adVal = adEl ? adEl.value : "";
@@ -492,18 +497,11 @@
             updates.assigned_sc_league = scVal.trim();
         }
 
-        console.log("💾 Speichere Zuteilungen für Spieler:", playerId, updates);
-
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update(updates)
-            .eq('id', playerId);
+        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
 
         if(error) {
-            console.error("❌ Fehler:", error);
             alert("❌ Fehler beim Abspeichern: " + error.message);
         } else {
-            console.log("✅ Zuteilungen gespeichert");
             alert("✅ Zuteilungen erfolgreich abgespeichert!");
             loadWaitingList();
         }
@@ -529,21 +527,18 @@
         endBtn.style.display = "none";
         
         try {
-            // ✅ Zeige Auf-/Absteiger Info
             const rule = globalLeagueRules[league] || { aufsteiger: 0, absteiger: 0, relegation: 0 };
             let infoHTML = `<strong>📋 Auf-/Absteiger Einstellungen:</strong><br>
                             🟢 ${rule.aufsteiger} Aufsteiger | 🔴 ${rule.absteiger} Absteiger | 🟡 ${rule.relegation} Relegation`;
             infoBox.innerHTML = infoHTML;
             infoBox.style.display = "block";
             
-            // ✅ Zeige Saison-Beenden Button
             endBtn.style.display = "inline-flex";
 
             const { data: profilesData, error: pErr } = await supabaseClient.from('profiles').select('*');
             if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
             const localPlayersList = profilesData || [];
 
-            // ✅ LADE AUCH KARTEN-DATEN
             const { data: penaltiesData, error: penErr } = await supabaseClient
                 .from('league_penalties')
                 .select('*')
@@ -551,9 +546,7 @@
             
             const penaltiesMap = {};
             if(penaltiesData && !penErr) {
-                penaltiesData.forEach(p => {
-                    penaltiesMap[p.player_id] = p;
-                });
+                penaltiesData.forEach(p => { penaltiesMap[p.player_id] = p; });
             }
 
             let query = supabaseClient.from('matches').select('*').eq('league_name', league);
@@ -564,8 +557,6 @@
                 if (!m.season) return true;
                 return String(m.season).trim() === String(currentSeasonGlobal).trim();
             }) : [];
-            
-            console.log(`📊 Liga: ${league}, Saison: ${currentSeasonGlobal}, Gefundene Matches: ${filteredMatches.length}`);
             
             if(filteredMatches.length === 0) {
                 genArea.style.display = "flex";
@@ -595,18 +586,18 @@
                                     ${assignedPlayers.map(p => {
                                         const pen = penaltiesMap[p.id] || { yellow_cards: 0, red_cards: 0 };
                                         const kartenInfo = pen.yellow_cards > 0 || pen.red_cards > 0 
-                                            ? `🟨${pen.yellow_cards} 🟥${pen.red_cards}` 
+                                            ? \`🟨\${pen.yellow_cards} 🟥\${pen.red_cards}\` 
                                             : '✓';
-                                        return `
+                                        return \`
                                         <tr>
                                             <td>
-                                                <strong style="color:#3ddc97;">${htmlEscape(p.discord_name || p.username)}</strong><br>
-                                                <small style="color:#90a9b7;">Echtname: ${htmlEscape(p.real_name)}</small>
+                                                <strong style="color:#3ddc97;">\${htmlEscape(p.discord_name || p.username)}</strong><br>
+                                                <small style="color:#90a9b7;">Echtname: \${htmlEscape(p.real_name)}</small>
                                             </td>
-                                            <td>${formatAllPlattformNames(p)}</td>
-                                            <td style="text-align:center; color: ${pen.red_cards > 0 ? '#e74c3c' : 'inherit'}">${kartenInfo}</td>
+                                            <td>\${formatAllPlattformNames(p)}</td>
+                                            <td style="text-align:center; color: \${pen.red_cards > 0 ? '#e74c3c' : 'inherit'}">\${kartenInfo}</td>
                                         </tr>
-                                    `}).join("")}
+                                    \`}).join("")}
                                 </tbody>
                             </table>
                         </div>`;
@@ -620,7 +611,6 @@
 
             renderMatchesPlan(filteredMatches, localPlayersList, area, league, penaltiesMap);
         } catch(err) { 
-            console.error("Fehler:", err);
             area.innerHTML = "Kritischer Ladefehler im System."; 
         }
     };
@@ -671,7 +661,7 @@
                         matchesToInsert.push({
                             id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
                             league_name: leagueName, 
-                            season: currentSeasonGlobal,  // ✅ Nutzt currentSeasonGlobal
+                            season: currentSeasonGlobal, 
                             matchday: round + 1,
                             player1_id: home, player2_id: away, status: 'offen'
                         });
@@ -680,7 +670,7 @@
                             matchesToInsert.push({
                                 id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
                                 league_name: leagueName, 
-                                season: currentSeasonGlobal,  // ✅ Nutzt currentSeasonGlobal
+                                season: currentSeasonGlobal, 
                                 matchday: round + 1 + numRounds,
                                 player1_id: away, player2_id: home, status: 'offen'
                             });
@@ -728,7 +718,6 @@
                 const p2Name = p2 ? (p2.discord_name || p2.username) : "Freilos";
                 const isFreilos = !m.player1_id || !m.player2_id;
 
-                // ✅ Karten auslesen
                 const pen1 = penaltiesMap[m.player1_id] || { yellow_cards: 0, red_cards: 0 };
                 const pen2 = penaltiesMap[m.player2_id] || { yellow_cards: 0, red_cards: 0 };
                 
@@ -786,7 +775,6 @@
         area.innerHTML = html;
     }
 
-    // ✅ KOMPLETT REPARIERTE SPEICHERFUNKTION - 400 BAD REQUEST FIX
     window.saveMatchFullStats = async function(matchId) {
         if(!supabaseClient) {
             alert("❌ Supabase-Client nicht initialisiert!");
@@ -794,8 +782,6 @@
         }
         
         try {
-            console.log("🔄 Speichere Match:", matchId);
-            
             const l1El = document.getElementById(`l1_${matchId}`);
             const l2El = document.getElementById(`l2_${matchId}`);
             const a1El = document.getElementById(`avg1_${matchId}`);
@@ -805,7 +791,6 @@
 
             if (!l1El || !l2El) {
                 alert("❌ Input-Felder nicht gefunden. Match-ID: " + matchId);
-                console.error("Fehlende Elemente für Match:", matchId);
                 return;
             }
 
@@ -816,15 +801,11 @@
             const h1 = h1El ? String(h1El.value).trim() : "";
             const h2 = h2El ? String(h2El.value).trim() : "";
 
-            console.log("📋 Eingabewerte:", { l1Input, l2Input, a1Input, a2Input, h1, h2 });
-
             const updates = {};
 
-            // Legs-Zuweisung (INT oder NULL)
             updates.legs_player1 = (l1Input !== "" && !isNaN(parseInt(l1Input))) ? parseInt(l1Input) : null;
             updates.legs_player2 = (l2Input !== "" && !isNaN(parseInt(l2Input))) ? parseInt(l2Input) : null;
 
-            // Averages-Zuweisung (DECIMAL oder NULL)
             if (a1Input !== "" && !isNaN(parseFloat(a1Input))) {
                 const avgVal = parseFloat(a1Input);
                 updates.player1_avg = avgVal;
@@ -843,46 +824,22 @@
                 updates.avg_player2 = null;
             }
 
-            // Highlights (TEXT oder NULL)
             updates.highlights_player1 = (h1 !== "") ? h1 : null;
             updates.highlights_player2 = (h2 !== "") ? h2 : null;
-
-            // Status (TEXT - immer ein Wert)
             updates.status = (l1Input !== "" && l2Input !== "") ? "fertig" : "offen";
 
-            console.log("📤 Sende Update zur DB:", JSON.stringify(updates));
-
-            // ✅ FIXIERT: Nutze .eq() mit dem korrekten Feldnamen für WHERE-Klausel
             const { data, error } = await supabaseClient
                 .from('matches')
                 .update(updates)
-                .eq('id', matchId);  // ← Das ist die korrekte Syntax!
+                .eq('id', matchId); 
 
             if(error) {
-                console.error("❌ Supabase Fehler Details:", error);
-                console.error("Status:", error.status);
-                console.error("Message:", error.message);
-                
-                // Versuche alternative Update-Methode bei Fehler
-                console.log("🔄 Versuche alternative Update-Methode...");
-                const { data: data2, error: error2 } = await supabaseClient
-                    .from('matches')
-                    .upsert(updates)
-                    .eq('id', matchId);
-                
-                if(error2) {
-                    alert("❌ Datenbankfehler:\n" + error2.message + "\n\nMatch ID: " + matchId);
-                } else {
-                    alert("✅ Spielbericht erfolgreich gespeichert!");
-                    loadMatchdayPlan();
-                }
+                alert("❌ Datenbankfehler:\n" + error.message + "\n\nMatch ID: " + matchId);
             } else {
-                console.log("✅ Update erfolgreich:", data);
                 alert("✅ Spielbericht erfolgreich gespeichert!");
                 loadMatchdayPlan();
             }
         } catch(e) {
-            console.error("💥 Kritischer Fehler:", e);
             alert("💥 Fehler beim Speichern:\n" + e.message);
         }
     };
@@ -939,7 +896,6 @@
                     </tr>`;
             }).join("");
         } catch(e) { 
-            console.error("Fehler:", e);
             tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden der Strafen.</td></tr>`; 
         }
     }
@@ -959,9 +915,6 @@
                 bemerkung: note === "" ? null : note
             };
 
-            console.log("🟨 Speichere Karten:", payload);
-
-            // ✅ FIXIERT: Nutze upsert mit korrektem onConflict Format
             const { error } = await supabaseClient
                 .from('league_penalties')
                 .upsert([payload], { 
@@ -969,20 +922,16 @@
                 });
 
             if(error) {
-                console.error("❌ Fehler beim Speichern:", error);
                 alert("❌ Datenbank-Fehler:\n" + error.message);
             } else {
-                console.log("✅ Karten gespeichert!");
                 alert(`✅ Karten und Strafen für ${leagueName} aktualisiert!`);
                 loadStrafenkatalogList();
             }
         } catch(e) {
-            console.error("❌ Fehler:", e);
             alert("❌ Fehler beim Auslesen der Strafen-Eingabefelder.");
         }
     };
 
-    // ✅ NEUE FUNKTION: Saison pro Liga beenden
     window.endSeasonForLeague = async function(leagueName) {
         if(!supabaseClient) return;
         
@@ -990,32 +939,24 @@
         if(!confirmEnd) return;
 
         try {
-            console.log("🏁 Beende Saison für:", leagueName);
             alert("⏳ Verarbeite Saison-Ende...");
 
-            // 1️⃣ Lade alle Spieler dieser Liga
-            const { data: players, error: pErr } = await supabaseClient
-                .from('profiles')
-                .select('*');
-            
+            const { data: players, error: pErr } = await supabaseClient.from('profiles').select('*');
             if(pErr) throw pErr;
 
             const leaguePlayers = getPlayersForLeague(players || [], leagueName);
-            console.log(`📊 Gefundene Spieler: ${leaguePlayers.length}`);
 
             if(leaguePlayers.length === 0) {
                 alert("❌ Keine Spieler in dieser Liga gefunden!");
                 return;
             }
 
-            // 2️⃣ Sortiere nach Platzierung (aus Tabelle wenn verfügbar, sonst alphabetisch)
             const sortedPlayers = leaguePlayers.sort((a, b) => {
                 const aName = a.discord_name || a.username || '';
                 const bName = b.discord_name || b.username || '';
                 return aName.localeCompare(bName);
             });
 
-            // 3️⃣ Speichere Platzierungen und lösche Zuteilungen
             let successCount = 0;
             for (let idx = 0; idx < sortedPlayers.length; idx++) {
                 const player = sortedPlayers[idx];
@@ -1027,7 +968,6 @@
                     status_neue_saison: 'waiting'
                 };
 
-                // Entferne die Zuteilung der aktuellen Plattform
                 if (leagueName.includes('Autodarts')) {
                     updates.assigned_ad_league = null;
                 } else if (leagueName.includes('DartCounter')) {
@@ -1042,14 +982,12 @@
                     .eq('id', player.id);
 
                 if(!uErr) successCount++;
-                else console.error(`⚠️ Fehler für Spieler ${player.id}:`, uErr);
             }
 
             alert(`✅ Saison für "${leagueName}" beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler aktualisiert\n\nPlatzierungen sind gespeichert.\nSpieler wurden aus der Liga entfernt.`);
             loadWaitingList();
 
         } catch(e) {
-            console.error("💥 Fehler beim Beenden der Saison:", e);
             alert("❌ Fehler:\n" + e.message);
         }
     };
@@ -1145,6 +1083,173 @@
         } catch(e) { console.error(e); }
     };
 
+    // --- NEU: TURNIER SYSTEM ADMIN LOGIK ---
+    
+    async function loadTournamentAdmin() {
+        if(!supabaseClient) return;
+        try {
+            // Lade System Einstellung (Toggle für Hauptseite)
+            const { data: sysData } = await supabaseClient.from('system_settings').select('tournament_feature_active').eq('id', 1).single();
+            if (sysData) {
+                document.getElementById('tournamentToggleCb').checked = (sysData.tournament_feature_active === true || sysData.tournament_feature_active === "true");
+            }
+
+            // Lade Turniere
+            const { data: tournaments, error: tErr } = await supabaseClient.from('tournaments').select('*').order('created_at', { ascending: false });
+            if (tErr) throw tErr;
+
+            // Lade Teilnehmer
+            const { data: participants, error: pErr } = await supabaseClient.from('tournament_participants').select('tournament_id');
+            if (pErr) throw pErr;
+
+            renderAdminTournaments(tournaments || [], participants || []);
+        } catch(e) {
+            console.error(e);
+            document.getElementById("adminTournamentsList").innerHTML = "<p>Fehler beim Laden der Turniere. Evtl existieren die Tabellen noch nicht.</p>";
+        }
+    }
+
+    window.saveTournamentToggle = async function() {
+        if(!supabaseClient) return;
+        const isChecked = document.getElementById('tournamentToggleCb').checked;
+        try {
+            await supabaseClient.from('system_settings').update({ tournament_feature_active: isChecked }).eq('id', 1);
+            alert(`Der Turnier-Reiter auf der Hauptseite wurde ${isChecked ? 'sichtbar geschaltet' : 'versteckt'}.`);
+        } catch(e) {
+            console.error(e);
+            alert("Fehler beim Speichern!");
+        }
+    };
+
+    window.createNewTournament = async function() {
+        if(!supabaseClient) return;
+        const title = document.getElementById("newTourneyTitle").value.trim();
+        const rules = document.getElementById("newTourneyRules").value.trim();
+        
+        if(!title) return alert("Bitte gib dem Turnier einen Namen!");
+
+        try {
+            await supabaseClient.from('tournaments').insert([{ 
+                title: title, 
+                rules: rules, 
+                status: 'open' 
+            }]);
+            
+            document.getElementById("newTourneyTitle").value = "";
+            document.getElementById("newTourneyRules").value = "";
+            alert("Turnier erfolgreich erstellt und für Anmeldungen freigegeben!");
+            loadTournamentAdmin();
+        } catch(e) {
+            console.error(e);
+            alert("Fehler beim Erstellen!");
+        }
+    };
+
+    function renderAdminTournaments(tournaments, participants) {
+        const container = document.getElementById("adminTournamentsList");
+        if(tournaments.length === 0) {
+            container.innerHTML = "<div style='color:#90a9b7;'>Derzeit gibt es keine Turniere.</div>";
+            return;
+        }
+
+        const pCounts = {};
+        participants.forEach(p => {
+            pCounts[p.tournament_id] = (pCounts[p.tournament_id] || 0) + 1;
+        });
+
+        let html = "";
+        tournaments.forEach(t => {
+            const count = pCounts[t.id] || 0;
+            html += `
+            <div class="config-box" style="margin-bottom: 20px;">
+                <label class="meta-text" style="display:block; margin-bottom:4px;">Turnier-Titel:</label>
+                <input type="text" id="tTitle_${t.id}" class="news-headline-field" value="${htmlEscape(t.title)}" style="margin-bottom:10px;">
+                
+                <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                    <select id="tStatus_${t.id}" class="league-select" style="flex:1; min-width:200px;">
+                        <option value="open" ${t.status === 'open' ? 'selected' : ''}>🟢 Anmeldung für Spieler geöffnet</option>
+                        <option value="running" ${t.status === 'running' ? 'selected' : ''}>🟡 Turnier läuft aktiv</option>
+                        <option value="finished" ${t.status === 'finished' ? 'selected' : ''}>🔴 Turnier beendet</option>
+                    </select>
+                    <div style="background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:6px; font-size:13px; color:#90a9b7; display:flex; align-items:center;">
+                        👥 ${count} Spieler angemeldet
+                    </div>
+                </div>
+
+                <label class="meta-text" style="display:block; margin-bottom:4px;">Regeln & Beschreibung:</label>
+                <textarea id="tRules_${t.id}" class="comment-input" style="height: 60px; resize:vertical; margin-bottom:10px;" placeholder="Regeln...">${htmlEscape(t.rules)}</textarea>
+                
+                <label class="meta-text" style="display:block; margin-bottom:4px; color:#ffd08a;">Ergebnisse & Gewinner (Wird für die News genutzt):</label>
+                <textarea id="tResults_${t.id}" class="comment-input" style="height: 80px; resize:vertical; margin-bottom:10px; border-color:#ffd08a;" placeholder="Schreibe hier die Platzierungen rein...">${htmlEscape(t.results)}</textarea>
+                
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+                    <button class="assign-btn" style="width:auto; padding:10px 20px;" onclick="updateTournament('${t.id}', '${t.status}')">💾 Turnier updaten</button>
+                    <button class="remove-btn-large" onclick="deleteTournament('${t.id}')">🗑️ Löschen</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    window.updateTournament = async function(id, oldStatus) {
+        if(!supabaseClient) return;
+        const title = document.getElementById(`tTitle_${id}`).value.trim();
+        const status = document.getElementById(`tStatus_${id}`).value;
+        const rules = document.getElementById(`tRules_${id}`).value.trim();
+        const results = document.getElementById(`tResults_${id}`).value.trim();
+
+        try {
+            await supabaseClient.from('tournaments').update({
+                title: title, 
+                status: status, 
+                rules: rules, 
+                results: results
+            }).eq('id', id);
+
+            alert("Turnier erfolgreich aktualisiert!");
+
+            // Automatischer News-Generator bei Turnier-Ende
+            if (oldStatus !== 'finished' && status === 'finished') {
+                if(confirm("Möchtest du automatisch eine News für das Turnier-Ende (inkl. der Ergebnisse) auf der Startseite generieren?")) {
+                    await generateTournamentNews(id, title, results);
+                }
+            }
+            
+            loadTournamentAdmin();
+        } catch(e) {
+            console.error(e);
+            alert("Fehler beim Speichern des Turniers!");
+        }
+    };
+
+    window.deleteTournament = async function(id) {
+        if(!supabaseClient) return;
+        if(confirm("Bist du sicher? Alle Anmeldungen und Daten zu diesem Turnier werden gelöscht!")) {
+            await supabaseClient.from('tournaments').delete().eq('id', id);
+            loadTournamentAdmin();
+        }
+    };
+
+    async function generateTournamentNews(tourneyId, title, results) {
+        try {
+            const { data } = await supabaseClient.from('tournament_participants').select('id').eq('tournament_id', tourneyId);
+            const count = data ? data.length : 0;
+
+            const newsTitle = `🏆 Turnier-Sieger: ${title}`;
+            let content = `Das Turnier <strong>${htmlEscape(title)}</strong> ist beendet!<br><br>`;
+            content += `Vielen Dank an die stolzen <strong>${count} Teilnehmer</strong> für die spannenden Matches!<br><br>`;
+            content += `<strong>Offizielle Ergebnisse & Highlights:</strong><br><br>`;
+            content += `${htmlEscape(results).replace(/\n/g, '<br>')}`;
+
+            await supabaseClient.from('news').insert([{ title: newsTitle, content: content }]);
+            alert("✅ News wurde automatisch veröffentlicht! Du findest sie im Reiter 'News verfassen' oder direkt auf der Startseite.");
+        } catch(e) {
+            console.error("Fehler beim Generieren der News:", e);
+        }
+    }
+
+    // --- INIT ---
+
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector");
         const cfgSel = document.getElementById("configLeagueSelect");
@@ -1159,22 +1264,17 @@
         }
     }
 
-    // ✅ KORRIGIERTE initAdmin - ERST currentSeasonGlobal, DANN Regeln laden!
     async function initAdmin() {
         console.log("🚀 Admin initialisiert...");
         
-        // ZUERST: Aktuelle Saison laden
         await loadCurrentSeason();
         
-        // DANN: Liga-Regeln laden (WICHTIG!)
         setTimeout(async () => { 
             await loadAllLeagueRules();
             console.log("✅ Liga-Regeln geladen und angezeigt");
         }, 50);
         
         setTimeout(() => { initLeagueSelector(); }, 100);
-        
-        // Warte-Liste laden
         setTimeout(() => { loadWaitingList(); }, 150);
     }
 
