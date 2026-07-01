@@ -450,36 +450,63 @@
         const scEl = document.getElementById(`sc_${playerId}`);
         const playerProfile = allLoadedProfilesMap[playerId];
 
-        const updates = { status_neue_saison: 'assigned' };
-
-        if (adEl) {
-            const val = adEl.value;
-            if (val === 'REMOVE' || val === '') updates.assigned_ad_league = null;
-            else {
-                if(!playerProfile.autodarts_name || playerProfile.autodarts_name === "-") return alert(`❌ Abbruch: Kein Autodarts-Name hinterlegt!`);
-                updates.assigned_ad_league = val.trim();
-            }
-        }
-        if (dcEl) {
-            const val = dcEl.value;
-            if (val === 'REMOVE' || val === '') updates.assigned_dc_league = null;
-            else {
-                if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name === "-") return alert(`❌ Abbruch: Kein DartCounter-Name hinterlegt!`);
-                updates.assigned_dc_league = val.trim();
-            }
-        }
-        if (scEl) {
-            const val = scEl.value;
-            if (val === 'REMOVE' || val === '') updates.assigned_sc_league = null;
-            else {
-                if(!playerProfile.scolia_name || playerProfile.scolia_name === "-") return alert(`❌ Abbruch: Kein Scolia-Name hinterlegt!`);
-                updates.assigned_sc_league = val.trim();
-            }
+        if(!playerProfile) {
+            alert("❌ Spieler nicht gefunden!");
+            return;
         }
 
-        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
-        if(error) alert("Fehler beim Abspeichern: " + error.message);
-        else { alert("Zuteilungen erfolgreich abgespeichert!"); loadWaitingList(); }
+        const updates = { id: playerId, status_neue_saison: 'assigned' };
+
+        // ✅ ALLE drei Felder IMMER speichern
+        
+        // Autodarts
+        const adVal = adEl ? adEl.value : "";
+        if (adVal === 'REMOVE' || adVal === '') {
+            updates.assigned_ad_league = null;
+        } else {
+            if(!playerProfile.autodarts_name || playerProfile.autodarts_name === "-") {
+                return alert(`❌ Abbruch: Kein Autodarts-Name hinterlegt!`);
+            }
+            updates.assigned_ad_league = adVal.trim();
+        }
+
+        // DartCounter
+        const dcVal = dcEl ? dcEl.value : "";
+        if (dcVal === 'REMOVE' || dcVal === '') {
+            updates.assigned_dc_league = null;
+        } else {
+            if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name === "-") {
+                return alert(`❌ Abbruch: Kein DartCounter-Name hinterlegt!`);
+            }
+            updates.assigned_dc_league = dcVal.trim();
+        }
+
+        // Scolia
+        const scVal = scEl ? scEl.value : "";
+        if (scVal === 'REMOVE' || scVal === '') {
+            updates.assigned_sc_league = null;
+        } else {
+            if(!playerProfile.scolia_name || playerProfile.scolia_name === "-") {
+                return alert(`❌ Abbruch: Kein Scolia-Name hinterlegt!`);
+            }
+            updates.assigned_sc_league = scVal.trim();
+        }
+
+        console.log("💾 Speichere Zuteilungen für Spieler:", playerId, updates);
+
+        const { error } = await supabaseClient
+            .from('profiles')
+            .update(updates)
+            .eq('id', playerId);
+
+        if(error) {
+            console.error("❌ Fehler:", error);
+            alert("❌ Fehler beim Abspeichern: " + error.message);
+        } else {
+            console.log("✅ Zuteilungen gespeichert");
+            alert("✅ Zuteilungen erfolgreich abgespeichert!");
+            loadWaitingList();
+        }
     };
 
     window.loadMatchdayPlan = async function() {
