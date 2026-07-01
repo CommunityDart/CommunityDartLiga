@@ -98,7 +98,23 @@
                 <label>🟡 Relegation: <input type="number" id="inputRel" class="num-input" value="0" min="0"></label>
                 <button class="card-btn yellow" onclick="saveLeagueRules()">💾 Speichern</button>
             </div>
-            <div id="leagueRulesSummary" style="margin-top: 10px; font-size: 13px; color: #3ddc97;"></div>
+        </div>
+
+        <h2>📊 Gespeicherte Auf-/Absteiger Einstellungen pro Liga</h2>
+        <div style="overflow-x: auto; margin-bottom: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Liga</th>
+                        <th style="width: 20%; text-align:center;">🟢 Aufsteiger</th>
+                        <th style="width: 20%; text-align:center;">🔴 Absteiger</th>
+                        <th style="width: 20%; text-align:center;">🟡 Relegation</th>
+                    </tr>
+                </thead>
+                <tbody id="rulesTableBody">
+                    <tr><td colspan="4" style="text-align:center; color:#90a9b7;">Werden geladen...</td></tr>
+                </tbody>
+            </table>
         </div>
 
         <h2>Spieler für die neue Saison einteilen</h2>
@@ -278,13 +294,46 @@
     }
 
     function renderRulesSummary() {
-        const summary = document.getElementById("leagueRulesSummary");
-        if(!summary || !globalLeagueRules) return;
-        let html = "<strong>Aktive Vorgaben:</strong> ";
-        Object.values(globalLeagueRules).forEach(r => {
-            html += `[${r.league_name}: 🟢${r.aufsteiger} 🔴${r.absteiger} 🟡${r.relegation}] | `;
+        const tbody = document.getElementById("rulesTableBody");
+        if(!tbody || !globalLeagueRules) return;
+        
+        const allRules = [];
+        
+        // ✅ ALLE Ligen durchgehen und deren Regeln sammeln
+        ALL_LEAGUES.forEach(league => {
+            const rule = globalLeagueRules[league] || { aufsteiger: 0, absteiger: 0, relegation: 0 };
+            allRules.push({
+                league: league,
+                aufsteiger: rule.aufsteiger || 0,
+                absteiger: rule.absteiger || 0,
+                relegation: rule.relegation || 0
+            });
         });
-        summary.innerHTML = html;
+        
+        // ✅ Sortiere nach Plattform (Autodarts, DartCounter, Scolia)
+        allRules.sort((a, b) => a.league.localeCompare(b.league));
+        
+        if(allRules.length === 0 || allRules.every(r => r.aufsteiger === 0 && r.absteiger === 0 && r.relegation === 0)) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
+            return;
+        }
+        
+        // ✅ Zeige nur Ligen mit Einstellungen
+        const activeRules = allRules.filter(r => r.aufsteiger > 0 || r.absteiger > 0 || r.relegation > 0);
+        
+        if(activeRules.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = activeRules.map(rule => `
+            <tr>
+                <td><strong style="color:#20b7ff;">${htmlEscape(rule.league)}</strong></td>
+                <td style="text-align:center; color:#3ddc97;"><strong>${rule.aufsteiger}</strong></td>
+                <td style="text-align:center; color:#e74c3c;"><strong>${rule.absteiger}</strong></td>
+                <td style="text-align:center; color:#ffd08a;"><strong>${rule.relegation}</strong></td>
+            </tr>
+        `).join("");
     }
 
     window.loadLeagueRules = function() {
