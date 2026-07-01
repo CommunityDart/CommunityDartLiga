@@ -4,130 +4,480 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kommandozentrale - Admin Dashboard</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #010a0f; color: #fff; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #010a0f; color: #fff; margin: 0; padding: 20px; }
         .admin-container { max-width: 1500px; margin: 0 auto; background: #021622; border: 1px solid rgba(75, 135, 165, 0.2); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
         h1, h2, h3 { color: #3ddc97; margin: 0; }
+        
+        .back-home-btn { background: #021017; color: #20b7ff; border: 1px solid #20b7ff; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .back-home-btn:hover { background: #20b7ff; color: #000; }
+        .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; }
+        .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; margin-top: 4px; width: 100%; }
+        
+        .generate-btn { background: #20b7ff; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+        .generate-btn:hover { opacity: 0.9; }
+        .remove-btn-large { background: #e74c3c; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+        .remove-btn-large:hover { opacity: 0.9; }
+        .card-btn { background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .card-btn.yellow:hover { background: #f7c948; color: #000; }
+        .card-btn.red:hover { background: #e74c3c; color: #fff; }
+        
         .tabs { display: flex; gap: 8px; border-bottom: 2px solid rgba(75, 135, 165, 0.2); padding-bottom: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .tab-btn { background: #021017; color: #90a9b7; border: 1px solid #4b87a5; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .tab-btn { background: #021017; color: #90a9b7; border: 1px solid #4b87a5; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 13px; }
         .tab-btn.active { background: #3ddc97; color: #000; border-color: #3ddc97; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .config-box { background: rgba(61, 220, 151, 0.05); border: 1px solid rgba(61, 220, 151, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 15px; }
-        .league-select, .comment-input, .news-headline-field { padding: 8px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; }
-        .news-headline-field { width: 100%; font-size: 16px; }
-        .comment-input { width: 100%; }
-        .save-banner-btn { background: #3ddc97; color: #000; font-weight: bold; padding: 12px; border-radius: 6px; width: 100%; border: none; cursor: pointer; margin-top: 10px; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; font-size: 13.5px; }
+        th { background: rgba(0,0,0,0.3); color: #90a9b7; font-size: 11.5px; text-transform: uppercase; }
+        
+        .league-select, .leg-input, .num-input, .stat-input { padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; }
+        .num-input { width: 50px; text-align: center; }
+        .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 14px; }
+        .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
+        .txt-input { padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
+        .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; box-sizing: border-box; }
+        
+        .news-headline-field { width: 100%; padding: 10px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 16px; box-sizing: border-box; }
+        .config-box { background: rgba(61, 220, 151, 0.05); border: 1px solid rgba(61, 220, 151, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 15px; }
+        .config-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+        .meta-text { font-size: 12px; color: #90a9b7; margin-top: 2px; }
+        .player-info-block { font-size: 13px; line-height: 1.35; }
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
+        .badge-up { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .badge-down { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+        .badge-rel { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+        .flex-row-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .flex-col-gap { display: flex; flex-direction: column; gap: 4px; }
+        .gen-options-row { display: flex; align-items: center; gap: 8px; background: rgba(32, 183, 255, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(32, 183, 255, 0.2); margin-top: 6px; }
+        .gen-options-row label { font-size: 13.5px; font-weight: bold; color: #20b7ff; cursor: pointer; }
+        .season-indicator { background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); padding: 8px 12px; border-radius: 6px; color: #20b7ff; font-size: 12px; font-weight: bold; }
+        .editor-container { background: #fff; color: #000; min-height: 250px; margin-bottom: 15px; border-radius: 8px; }
+        .save-banner-btn { background: #3ddc97; color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
     </style>
 </head>
 <body>
 
 <div class="admin-container">
     <div class="header-row">
-        <h1>🎯 CDL - Cockpit</h1>
-        <div id="seasonIndicator" style="color:#20b7ff; font-weight:bold;">Saison: Lade...</div>
-        <a href="index.html" style="color:#20b7ff; text-decoration:none; font-weight:bold;">🏠 Hauptseite</a>
+        <h1>🎯 Community Dart Liga - Cockpit</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div id="seasonIndicator" class="season-indicator">📅 Saison: Wird geladen...</div>
+            <a href="index.html" class="back-home-btn">🏠 Zurück zur Hauptseite</a>
+        </div>
     </div>
     
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tabZuteilung', this)">1. Liga Zuteilung</button>
-        <button class="tab-btn" onclick="switchTab('tabNews', this)">2. News verfassen</button>
-        <button class="tab-btn" onclick="switchTab('tabTurniere', this)" style="color:#ffd08a;">3. Turniere verwalten</button>
+        <button class="tab-btn" onclick="switchTab('tabSpielplaene', this)">2. Spielpläne & Ergebnisse</button>
+        <button class="tab-btn" onclick="switchTab('tabStrafen', this)">3. Strafenkatalog (pro Liga)</button>
+        <button class="tab-btn" onclick="switchTab('tabNews', this)">4. News verfassen</button>
+        <button class="tab-btn" onclick="switchTab('tabRegelwerk', this)">5. Regelwerk bearbeiten</button>
+        <button class="tab-btn" onclick="switchTab('tabTurniere', this)" style="border-color:#ffd08a; color:#ffd08a;">6. Turniere verwalten</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
         <div class="config-box">
-            <h3>Spieler-Zuteilung</h3>
-            <p>Hier werden die Spieler für die Ligen gelistet, sobald die Verbindung steht.</p>
+            <h3>⚙️ Auf- / Abstiegseinstellungen pro Liga festlegen</h3>
+            <div class="config-row">
+                <select id="configLeagueSelect" class="league-select" onchange="loadLeagueRules()">
+                    <option value="" disabled selected>-- Liga wählen --</option>
+                </select>
+                <label>🟢 Aufsteiger: <input type="number" id="inputAuf" class="num-input" value="0" min="0"></label>
+                <label>🔴 Absteiger: <input type="number" id="inputAb" class="num-input" value="0" min="0"></label>
+                <label>🟡 Relegation: <input type="number" id="inputRel" class="num-input" value="0" min="0"></label>
+                <button class="card-btn yellow" onclick="saveLeagueRules()">💾 Speichern</button>
+            </div>
+        </div>
+
+        <h2>📊 Gespeicherte Auf-/Absteiger Einstellungen pro Liga</h2>
+        <div style="overflow-x: auto; margin-bottom: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Liga</th>
+                        <th style="width: 20%; text-align:center;">🟢 Aufsteiger</th>
+                        <th style="width: 20%; text-align:center;">🔴 Absteiger</th>
+                        <th style="width: 20%; text-align:center;">🟡 Relegation</th>
+                    </tr>
+                </thead>
+                <tbody id="rulesTableBody">
+                    <tr><td colspan="4" style="text-align:center; color:#90a9b7;">Werden geladen...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>Spieler für die neue Saison einteilen</h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Spieler & Herkunft</th>
+                        <th>Plattform Ingame-Namen</th>
+                        <th>Autodarts Zuteilung</th>
+                        <th>DartCounter Zuteilung</th>
+                        <th>Scolia Zuteilung</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="waitingListBody">
+                    <tr><td colspan="6">Warteliste wird geladen...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tabSpielplaene" class="tab-content">
+        <h2>Ergebnisse, Averages & Highlights eintragen</h2>
+        <div style="margin-bottom: 12px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <select id="leagueSelector" class="league-select" onchange="loadMatchdayPlan()" style="max-width:300px;">
+                    <option value="" disabled selected>-- Liga Auswählen --</option>
+                </select>
+                <button id="endSeasonMatchdayBtn" class="remove-btn-large" style="display:none;" onclick="endSeasonForLeague(document.getElementById('leagueSelector').value)">🏁 Saison für diese Liga beenden</button>
+            </div>
+            <div id="matchdayLigaInfo" style="display:none; padding: 12px; background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); border-radius: 6px; font-size: 13px; color: #20b7ff; font-weight: bold; max-width: 500px;"></div>
+            <div id="generatePlanArea" style="display:none; flex-direction:column; gap: 8px; align-items:flex-start;"></div>
+        </div>
+        <div style="overflow-x: auto;">
+            <div id="scheduleArea">Bitte wähle zuerst eine Liga aus.</div>
+        </div>
+    </div>
+
+    <div id="tabStrafen" class="tab-content">
+        <h2>Karten & Strafen pro Liga verwalten</h2>
+        <div style="margin-bottom: 12px;">
+            <select id="penaltyLeagueSelector" class="league-select" onchange="loadStrafenkatalogList()" style="max-width:300px;">
+                <option value="" disabled selected>-- Liga Auswählen --</option>
+            </select>
+        </div>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 22%;">Spieler & Name</th>
+                        <th style="width: 22%;">Plattform Ingame-Namen</th>
+                        <th style="width: 10%;">Gelbe Karten</th>
+                        <th style="width: 10%;">Rote Karten</th>
+                        <th style="width: 26%;">Bemerkung / Strafe</th>
+                        <th style="width: 10%;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="strafenListBody">
+                    <tr><td colspan="6">Bitte wähle zuerst eine Liga aus.</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
     <div id="tabNews" class="tab-content">
-        <h2>Neuigkeiten veröffentlichen</h2>
-        <input type="text" id="newsTitleInput" class="news-headline-field" placeholder="Überschrift...">
-        <textarea id="newsTextInput" class="comment-input" style="height:120px; margin-top:10px;" placeholder="Inhalt der News..."></textarea>
-        <button class="save-banner-btn" onclick="publishNews()">📢 News senden</button>
+        <h2>Neuigkeiten auf der Startseite veröffentlichen</h2>
+        <div style="margin-bottom: 12px;">
+            <input type="text" id="newsTitleInput" class="news-headline-field" placeholder="Überschrift der News...">
+        </div>
+        <div id="newsEditor" class="editor-container"></div>
+        <button class="save-banner-btn" onclick="publishNews()">📢 News veröffentlichen</button>
+        <h3 style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">Bestehende News verwalten</h3>
+        <div id="adminNewsContainer">Lade geschriebene Beiträge...</div>
+    </div>
+
+    <div id="tabRegelwerk" class="tab-content">
+        <h2>Globales Regelwerk anpassen</h2>
+        <div id="ruleEditor" class="editor-container"></div>
+        <button class="save-banner-btn" onclick="saveRegelwerkHtml()">💾 Regelwerk live speichern</button>
     </div>
 
     <div id="tabTurniere" class="tab-content">
         <h2>🏆 Turnier-Management</h2>
-        <div class="config-box" style="border-color: #20b7ff;">
-            <h3>Systemeinstellung: Turnier-Feature anzeigen</h3>
-            <label style="cursor:pointer;"><input type="checkbox" id="tournamentToggleCb"> Turnier-Reiter auf Startseite anzeigen</label>
-            <button class="save-banner-btn" style="width:auto; padding:6px 12px; margin-top:5px; display:block;" onclick="saveTournamentToggle()">💾 Speichern</button>
+        <div class="config-box" style="border-color: #20b7ff; background: rgba(32, 183, 255, 0.05);">
+            <h3>⚙️ Systemeinstellung: Turnier-Feature anzeigen</h3>
+            <div class="config-row">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="tournamentToggleCb" style="transform:scale(1.2);"> 
+                    Den Reiter "🏆 Turniere" für alle Spieler auf der Website sichtbar machen
+                </label>
+                <button class="assign-btn" style="width:auto; padding:6px 15px;" onclick="saveTournamentToggle()">💾 Schalter speichern</button>
+            </div>
         </div>
         <div class="config-box">
-            <h3>➕ Neues Turnier erstellen</h3>
-            <input type="text" id="newTourneyTitle" class="news-headline-field" placeholder="Turniertitel...">
-            <textarea id="newTourneyRules" class="comment-input" style="height:60px; margin-top:10px;" placeholder="Regeln..."></textarea>
-            <button class="save-banner-btn" onclick="createNewTournament()">🚀 Turnier anlegen</button>
+            <h3>➕ Neues Turnier anlegen</h3>
+            <input type="text" id="newTourneyTitle" class="news-headline-field" placeholder="Turnier Titel (z.B. Sommer-Cup 2026)">
+            <textarea id="newTourneyRules" class="comment-input" style="height: 80px; margin-top: 10px; resize:vertical; font-size:14px;" placeholder="Regeln & Infos für die Anmeldung..."></textarea>
+            <button class="save-banner-btn" style="margin-top: 10px;" onclick="createNewTournament()">🚀 Turnier erstellen & Anmeldung öffnen</button>
         </div>
-        <div id="adminTournamentsList"></div>
+        <h3 style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">Aktuelle Turniere</h3>
+        <div id="adminTournamentsList">Lade Turniere...</div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q"; 
     let supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const ALL_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6", "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6", "Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
+    const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
+    const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
+    const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
+
+    let currentSeasonGlobal = "Saison 1";
+    let newsQuill = null, ruleQuill = null, editingNewsId = null;
+    let globalLeagueRules = {}; 
+    let allLoadedProfilesMap = {}; 
+
+    const quillToolbarOptions = [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], [{ 'align': [] }], ['link', 'clean']];
+
+    function htmlEscape(str) { if (!str) return "-"; return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
     function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        const content = document.getElementById(tabId);
+        if(content) content.classList.add('active');
+        if(btnElement) btnElement.classList.add('active');
+        if (tabId === 'tabRegelwerk') initRuleEditor();
+        if (tabId === 'tabNews') initNewsEditor();
+        if (tabId === 'tabZuteilung') loadWaitingList();
+        if (tabId === 'tabTurniere') loadTournamentAdmin();
+    }
+
+    async function loadCurrentSeason() {
         try {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            const content = document.getElementById(tabId);
-            if(content) content.classList.add('active');
-            if(btnElement) btnElement.classList.add('active');
-        } catch(e) { console.error(e); }
+            const { data } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+            if(data?.current_season) currentSeasonGlobal = data.current_season;
+        } catch(e){}
+        document.getElementById("seasonIndicator").textContent = "📅 Saison: " + currentSeasonGlobal;
     }
 
-    async function saveTournamentToggle() {
-        const val = document.getElementById('tournamentToggleCb').checked;
-        await supabaseClient.from('system_settings').update({ tournament_feature_active: val }).eq('id', 1);
-        alert("Einstellung gespeichert!");
-    }
-
-    async function createNewTournament() {
-        const title = document.getElementById("newTourneyTitle").value.trim();
-        const rules = document.getElementById("newTourneyRules").value.trim();
-        if(!title) return alert("Titel fehlt!");
-        await supabaseClient.from('tournaments').insert([{ title, rules, status: 'open' }]);
-        alert("Turnier angelegt!");
-        loadTournaments();
-    }
-
-    async function publishNews() {
-        const title = document.getElementById("newsTitleInput").value.trim();
-        const content = document.getElementById("newsTextInput").value.trim();
-        if(!title || !content) return alert("Felder ausfüllen!");
-        await supabaseClient.from('news').insert([{ title, content }]);
-        alert("News veröffentlicht!");
-    }
-
-    async function loadTournaments() {
+    async function loadAllLeagueRules() {
         try {
-            const { data: ts } = await supabaseClient.from('tournaments').select('*').order('created_at',{ascending:false});
-            const list = document.getElementById("adminTournamentsList");
-            if(!list) return;
-            if(!ts || ts.length===0) { list.innerHTML = "Keine Turniere."; return; }
-            list.innerHTML = ts.map(t => `<div class="config-box"><h4>${t.title} [Status: ${t.status}]</h4></div>`).join("");
+            const { data } = await supabaseClient.from('league_rules').select('*');
+            globalLeagueRules = {};
+            if(data) { data.forEach(r => { globalLeagueRules[r.league_name] = r; }); renderRulesSummary(); }
         } catch(e){}
     }
 
-    async function initAdmin() {
+    function renderRulesSummary() {
+        const tbody = document.getElementById("rulesTableBody");
+        if(!tbody) return;
+        if(Object.keys(globalLeagueRules).length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`; return;
+        }
+        tbody.innerHTML = Object.values(globalLeagueRules).map(rule => `
+            <tr>
+                <td><strong style="color:#20b7ff;">${htmlEscape(rule.league_name)}</strong></td>
+                <td style="text-align:center; color:#3ddc97;"><strong>${rule.aufsteiger || 0}</strong></td>
+                <td style="text-align:center; color:#e74c3c;"><strong>${rule.absteiger || 0}</strong></td>
+                <td style="text-align:center; color:#ffd08a;"><strong>${rule.relegation || 0}</strong></td>
+            </tr>`).join("");
+    }
+
+    window.loadLeagueRules = function() {
+        const league = document.getElementById("configLeagueSelect").value;
+        const rule = globalLeagueRules[league] || { aufsteiger: 0, absteiger: 0, relegation: 0 };
+        document.getElementById("inputAuf").value = rule.aufsteiger || 0;
+        document.getElementById("inputAb").value = rule.absteiger || 0;
+        document.getElementById("inputRel").value = rule.relegation || 0;
+    };
+
+    window.saveLeagueRules = async function() {
+        const league = document.getElementById("configLeagueSelect").value;
+        if(!league) return alert("Bitte wähle zuerst eine Liga aus!");
+        await supabaseClient.from('league_rules').upsert({
+            league_name: league,
+            aufsteiger: parseInt(document.getElementById("inputAuf").value) || 0,
+            absteiger: parseInt(document.getElementById("inputAb").value) || 0,
+            relegation: parseInt(document.getElementById("inputRel").value) || 0
+        });
+        alert("Liga-Einstellungen gespeichert!"); loadAllLeagueRules(); loadWaitingList();
+    };
+
+    function formatAllPlattformNames(prof) {
+        if(!prof) return "";
+        return `<div style="margin-top:4px; font-size:11.5px; color:#90a9b7;">⚫ AD: ${htmlEscape(prof.autodarts_name)} | 🟠 DC: ${htmlEscape(prof.dartcounter_name)}</div>`;
+    }
+    function buildSelectHtml(idPrefix, playerId, optionsArr, currentVal) {
+        return `<select id="${idPrefix}_${playerId}" class="league-select"><option value="" ${!currentVal ? 'selected' : ''}>-- Keine --</option><option value="REMOVE">❌ Entfernen</option>${optionsArr.map(l => `<option value="${l}" ${currentVal === l ? 'selected' : ''}>${l}</option>`).join("")}</select>`;
+    }
+
+    function getPlayersForLeague(players, leagueName) {
+        if (!leagueName) return []; const target = leagueName.toLowerCase().replace(/\s+/g, '');
+        return players.filter(p => (p.assigned_ad_league||"").toLowerCase().replace(/\s+/g, '') === target || (p.assigned_dc_league||"").toLowerCase().replace(/\s+/g, '') === target || (p.assigned_sc_league||"").toLowerCase().replace(/\s+/g, '') === target);
+    }
+
+    async function loadWaitingList() {
         try {
-            const { data } = await supabaseClient.from('system_settings').select('*').eq('id', 1).single();
-            if(data) {
-                document.getElementById("seasonIndicator").innerText = "Saison: " + (data.current_season || 'Saison 1');
-                document.getElementById('tournamentToggleCb').checked = (data.tournament_feature_active === true || data.tournament_feature_active === "true");
+            const { data: players } = await supabaseClient.from('profiles').select('*');
+            const tbody = document.getElementById("waitingListBody"); if (!tbody || !players) return;
+            players.forEach(p => { allLoadedProfilesMap[p.id] = p; });
+            tbody.innerHTML = players.map(p => `
+                <tr>
+                    <td><strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong></td>
+                    <td>${formatAllPlattformNames(p)}</td>
+                    <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.assigned_ad_league)}</td>
+                    <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.assigned_dc_league)}</td>
+                    <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league)}</td>
+                    <td><button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button></td>
+                </tr>`).join("");
+        } catch(e){}
+    }
+
+    window.saveSingleAssignment = async function(playerId) {
+        const updates = {
+            assigned_ad_league: document.getElementById(`ad_${playerId}`).value === 'REMOVE' ? null : document.getElementById(`ad_${playerId}`).value || null,
+            assigned_dc_league: document.getElementById(`dc_${playerId}`).value === 'REMOVE' ? null : document.getElementById(`dc_${playerId}`).value || null,
+            assigned_sc_league: document.getElementById(`sc_${playerId}`).value === 'REMOVE' ? null : document.getElementById(`sc_${playerId}`).value || null
+        };
+        await supabaseClient.from('profiles').update(updates).eq('id', playerId);
+        alert("Zuteilung gespeichert!"); loadWaitingList();
+    };
+
+    async function loadMatchdayPlan() {
+        const league = document.getElementById("leagueSelector").value;
+        const area = document.getElementById("scheduleArea"); if(!league || !area) return;
+        area.innerHTML = "Lade Spielplan...";
+        try {
+            const { data: profiles } = await supabaseClient.from('profiles').select('*');
+            const { data: matches } = await supabaseClient.from('matches').select('*').eq('league_name', league).eq('season', currentSeasonGlobal);
+            const { data: penalties } = await supabaseClient.from('league_penalties').select('*').eq('league_name', league);
+            const penMap = {}; if(penalties) penalties.forEach(p => penMap[p.player_id] = p);
+
+            if(!matches || matches.length === 0) {
+                document.getElementById("generatePlanArea").style.display = "flex";
+                document.getElementById("generatePlanArea").innerHTML = `<button class="generate-btn" onclick="generateScheduleForLeague('${league}')">📅 Spielplan generieren</button>`;
+                area.innerHTML = "<div class='empty'>Kein Plan vorhanden.</div>"; return;
             }
-            loadTournaments();
-        } catch(e){ console.error(e); }
+            document.getElementById("generatePlanArea").style.display = "none";
+
+            let html = "";
+            matches.forEach(m => {
+                const p1 = profiles?.find(x => x.id === m.player1_id); const p2 = profiles?.find(x => x.id === m.player2_id);
+                html += `<tr><td>${htmlEscape(p1?.discord_name || 'Freilos')}</td><td>${htmlEscape(p2?.discord_name || 'Freilos')}</td>
+                <td><input type='number' id='l1_${m.id}' class='leg-input' value='${m.legs_player1??''}'> : <input type='number' id='l2_${m.id}' class='leg-input' value='${m.legs_player2??''}'></td>
+                <td><input type='text' id='avg1_${m.id}' class='stat-input' value='${m.player1_avg??''}'> : <input type='text' id='avg2_${m.id}' class='stat-input' value='${m.player2_avg??''}'></td>
+                <td><button class='assign-btn' onclick='saveMatchFullStats("${m.id}")'>💾</button></td></tr>`;
+            });
+            area.innerHTML = `<table><thead><tr><th>Heim</th><th>Auswärts</th><th>Legs</th><th>AVG</th><th>Aktion</th></tr></thead><tbody>${html}</tbody></table>`;
+        } catch(e){ area.innerHTML = "Fehler beim Laden."; }
+    }
+
+    window.saveMatchFullStats = async function(matchId) {
+        const updates = {
+            legs_player1: parseInt(document.getElementById(`l1_${matchId}`).value) || null,
+            legs_player2: parseInt(document.getElementById(`l2_${matchId}`).value) || null,
+            player1_avg: parseFloat(document.getElementById(`avg1_${matchId}`).value) || null,
+            player2_avg: parseFloat(document.getElementById(`avg2_${matchId}`).value) || null,
+            status: (document.getElementById(`l1_${matchId}`).value !== "" && document.getElementById(`l2_${matchId}`).value !== "") ? "fertig" : "offen"
+        };
+        await supabaseClient.from('matches').update(updates).eq('id', matchId); alert("Gespeichert!"); loadMatchdayPlan();
+    };
+
+    async function loadStrafenkatalogList() {
+        const league = document.getElementById("penaltyLeagueSelector").value;
+        const tbody = document.getElementById("strafenListBody"); if(!league || !tbody) return;
+        const { data: players } = await supabaseClient.from('profiles').select('*');
+        const leaguePlayers = getPlayersForLeague(players || [], league);
+        const { data: pens } = await supabaseClient.from('league_penalties').select('*').eq('league_name', league);
+        const penMap = {}; if(pens) pens.forEach(p => penMap[p.player_id] = p);
+
+        tbody.innerHTML = leaguePlayers.map(p => `
+            <tr>
+                <td><strong>${htmlEscape(p.discord_name || p.username)}</strong></td>
+                <td>${formatAllPlattformNames(p)}</td>
+                <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${penMap[p.id]?.yellow_cards || 0}"></td>
+                <td><input type="number" id="red_${p.id}" class="leg-input" value="${penMap[p.id]?.red_cards || 0}"></td>
+                <td><input type="text" id="note_${p.id}" class="comment-input" value="${htmlEscape(penMap[p.id]?.bemerkung || '')}"></td>
+                <td><button class="assign-btn" onclick="savePlayerCards('${p.id}', '${league}')">💾</button></td>
+            </tr>`).join("");
+    }
+
+    window.savePlayerCards = async function(pId, league) {
+        await supabaseClient.from('league_penalties').upsert({
+            player_id: pId, league_name: league,
+            yellow_cards: parseInt(document.getElementById(`yellow_${pId}`).value)||0,
+            red_cards: parseInt(document.getElementById(`red_${pId}`).value)||0,
+            bemerkung: document.getElementById(`note_${pId}`).value.trim() || null
+        }, { onConflict: 'player_id,league_name' });
+        alert("Karten gespeichert!"); loadStrafenkatalogList();
+    };
+
+    function initNewsEditor() { if(!newsQuill) newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } }); loadAdminNewsList(); }
+    async function loadAdminNewsList() {
+        const { data } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
+        if(data) document.getElementById("adminNewsContainer").innerHTML = data.map(n => `<div style='padding:5px; border-bottom:1px solid #333;'>${htmlEscape(n.title)} <button class='card-btn red' onclick='deleteNews("${n.id}")'>🗑️</button></div>`).join("");
+    }
+    window.publishNews = async function() {
+        await supabaseClient.from('news').insert([{ title: document.getElementById("newsTitleInput").value, content: newsQuill.root.innerHTML }]);
+        alert("News gesendet!"); document.getElementById("newsTitleInput").value = ""; newsQuill.root.innerHTML = ""; loadAdminNewsList();
+    };
+    window.deleteNews = async function(id) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); };
+
+    function initRuleEditor() { if(!ruleQuill) ruleQuill = new Quill('#ruleEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } }); loadCurrentRegelwerk(); }
+    async function loadCurrentRegelwerk() { const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single(); if(data) ruleQuill.root.innerHTML = data.regelwerk_html; }
+    window.saveRegelwerkHtml = async function() { await supabaseClient.from('system_settings').update({ regelwerk_html: ruleQuill.root.innerHTML }).eq('id', 1); alert("Live geschaltet!"); };
+
+    async function loadTournamentAdmin() {
+        try {
+            const { data: sys } = await supabaseClient.from('system_settings').select('tournament_feature_active').eq('id', 1).single();
+            if (sys) document.getElementById('tournamentToggleCb').checked = (sys.tournament_feature_active === true || sys.tournament_feature_active === "true");
+            const { data: ts } = await supabaseClient.from('tournaments').select('*').order('created_at', { ascending: false });
+            const { data: ps } = await supabaseClient.from('tournament_participants').select('tournament_id');
+            const pCounts = {}; if(ps) ps.forEach(p => pCounts[p.tournament_id] = (pCounts[p.tournament_id] || 0) + 1);
+
+            if(ts) {
+                document.getElementById("adminTournamentsList").innerHTML = ts.map(t => `
+                <div class="config-box">
+                    <input type="text" id="tTitle_${t.id}" class="news-headline-field" value="${htmlEscape(t.title)}">
+                    <select id="tStatus_${t.id}" class="league-select" style="margin-top:5px;">
+                        <option value="open" ${t.status==='open'?'selected':''}>🟢 Offen</option>
+                        <option value="running" ${t.status==='running'?'selected':''}>🟡 Läuft</option>
+                        <option value="finished" ${t.status==='finished'?'selected':''}>🔴 Beendet</option>
+                    </select>
+                    <span style='margin-left:10px;'>👥 ${pCounts[t.id]||0} Spieler</span>
+                    <textarea id="tRules_${t.id}" class="comment-input" style="height:50px; margin-top:5px;">${htmlEscape(t.rules)}</textarea>
+                    <textarea id="tResults_${t.id}" class="comment-input" style="height:50px; margin-top:5px; border-color:#ffd08a;" placeholder="Ergebnisse...">${htmlEscape(t.results||'')}</textarea>
+                    <button class="assign-btn" style="width:auto; margin-top:5px;" onclick="updateTournament('${t.id}', '${t.status}')">💾 Update</button>
+                </div>`).join("");
+            }
+        } catch(e){}
+    }
+
+    window.saveTournamentToggle = async function() {
+        await supabaseClient.from('system_settings').update({ tournament_feature_active: document.getElementById('tournamentToggleCb').checked }).eq('id', 1); alert("Gespeichert!");
+    };
+    window.createNewTournament = async function() {
+        await supabaseClient.from('tournaments').insert([{ title: document.getElementById("newTourneyTitle").value, rules: document.getElementById("newTourneyRules").value, status: 'open' }]);
+        alert("Turnier erstellt!"); loadTournamentAdmin();
+    };
+    window.updateTournament = async function(id, oldStatus) {
+        const stat = document.getElementById(`tStatus_${id}`).value;
+        const res = document.getElementById(`tResults_${id}`).value;
+        await supabaseClient.from('tournaments').update({ title: document.getElementById(`tTitle_${id}`).value, status: stat, rules: document.getElementById(`tRules_${id}`).value, results: res }).eq('id', id);
+        alert("Geupdatet!");
+        if (oldStatus !== 'finished' && stat === 'finished') {
+            if(confirm("News automatisch generieren?")) {
+                const { data } = await supabaseClient.from('tournament_participants').select('id').eq('tournament_id', id);
+                let content = `Das Turnier ist beendet! Danke an alle ${data?.length||0} Teilnehmer.<br><br><strong>Ergebnisse:</strong><br>${res.replace(/\n/g, '<br>')}`;
+                await supabaseClient.from('news').insert([{ title: `🏆 Turniersieger: ${document.getElementById(`tTitle_${id}`).value}`, content: content }]);
+            }
+        }
+        loadTournamentAdmin();
+    };
+
+    async function initAdmin() {
+        ALL_LEAGUES.forEach(l => {
+            document.getElementById("configLeagueSelect").innerHTML += `<option value="${l}">${l}</option>`;
+            document.getElementById("leagueSelector").innerHTML += `<option value="${l}">${l}</option>`;
+            document.getElementById("penaltyLeagueSelector").innerHTML += `<option value="${l}">${l}</option>`;
+        });
+        await loadCurrentSeason(); await loadAllLeagueRules(); await loadWaitingList();
     }
     initAdmin();
 </script>
