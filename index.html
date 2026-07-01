@@ -566,20 +566,6 @@
       width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--platform-color); object-fit: cover;
       box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
-    
-    /* Neues Styling für Teilnehmer Badges */
-    .participant-badge {
-      padding: 6px 12px; 
-      background: var(--bg-primary); 
-      border: 1px solid var(--border); 
-      border-radius: 8px; 
-      font-size: 13px; 
-      font-weight: 600;
-      color: var(--text-primary);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
   </style>
 </head>
 <body>
@@ -596,7 +582,6 @@
   <div class="navbar">
     <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
     <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
-    <button class="nav-btn" id="navTurniere" onclick="switchView('turniere')" style="display: none;">🏆 Turniere</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
   </div>
 
@@ -618,7 +603,6 @@
 </div>
 
 <div class="container">
-  
   <div id="newsView" class="view active">
     <div class="full-width-layout">
       <div class="card">
@@ -626,7 +610,7 @@
         <div class="card-body">
           <div id="newsArea">
             <div class="news-item">
-              <div class="news-date">Lade...</div>
+              <div class="news-date">22. Juni 2026</div>
               <div class="news-title">Willkommen zur CDL!</div>
               <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
             </div>
@@ -641,45 +625,6 @@
             <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="turniereView" class="view">
-    <div class="full-width-layout">
-      <div class="card">
-        <div class="card-header" id="tournamentTitle">🏆 Aktuelles Turnier</div>
-        <div class="card-body">
-          <div id="tournamentStatus" style="margin-bottom: 15px; font-weight: bold; font-size: 14px;">Lade Turnierdaten...</div>
-          <div id="tournamentRules" style="margin-bottom: 20px; line-height: 1.6; font-size: 14px; background: var(--bg-tertiary); padding: 15px; border-radius: 8px; border: 1px solid var(--border);"></div>
-          
-          <button class="btn primary" id="btnRegisterTournament" style="display:none; width: 100%; font-size: 15px; padding: 14px;" onclick="registerForTournament()">✅ Am Turnier teilnehmen</button>
-          <div id="tournamentMessage" style="margin-top: 12px; font-size: 13px; font-weight: 600; text-align: center; color: var(--text-secondary);"></div>
-        </div>
-      </div>
-
-      <div class="card" id="tournamentResultsCard" style="display:none;">
-        <div class="card-header">🎯 Ergebnisse & Gewinner</div>
-        <div class="card-body" id="tournamentResultsArea" style="line-height: 1.6; font-size: 14px;">
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">👥 Teilnehmer (<span id="tournamentParticipantCount">0</span>)</div>
-        <div class="card-body">
-          <div id="tournamentParticipantsList" style="display: flex; flex-wrap: wrap; gap: 10px;">
-            </div>
-        </div>
-      </div>
-
-      <div class="card compact-footer-card">
-        <div class="card-header">ℹ️ Infos</div>
-        <div class="card-body">
-          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
-            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
           </div>
         </div>
       </div>
@@ -826,9 +771,7 @@
     currentSeason: "Saison 1",
     darkMode: localStorage.getItem('darkMode') === 'true',
     currentView: 'news', 
-    currentUser: null,
-    currentTournament: null,
-    tournamentParticipants: []
+    currentUser: null
   };
 
   function isIdString(str) {
@@ -935,7 +878,10 @@
     const realName = p?.real_name || p?.full_name || p?.echter_name || p?.name || "Nicht angegeben";
     const discordHandle = p?.discord_name || p?.username || "-";
     const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
+    
+    // REPARIERT: Erweiterte Suche nach dem Wohnort
     const wohnort = p ? (p.wohnort || p.ort || p.stadt || p.location || p.city || "Nicht angegeben") : "Nicht angegeben";
+    
     const setup = p ? (p.dart_setup || p.setup || "Nicht angegeben") : "Nicht angegeben";
 
     let adHtml = "";
@@ -974,18 +920,11 @@
       discordButtonHtml = `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Name: ${discordHandle}')">💬 Discord Name: ${htmlEscape(discordHandle)}</button>`;
     }
 
-    // Turnier-Badge Logic für die Profil-Karte
-    let tournamentWinnerBadge = "";
-    if (p && (p.tournament_winner || p.turnier_sieger || p.badges?.includes('tournament_winner'))) {
-       tournamentWinnerBadge = `<div style="text-align:center; margin-bottom:15px;"><span class="badge" style="background:#ffd700; color:#856404; font-size:12px; font-weight:800; border:1px solid #ffeeba;">🏆 Turnier-Champion</span></div>`;
-    }
-
     container.innerHTML = `
       <div class="avatar-wrapper">
         <img src="${avatarImgUrl}" class="profile-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
         <div class="player-card-title">${htmlEscape(dName)}</div>
       </div>
-      ${tournamentWinnerBadge}
       <div class="player-info-row"><span class="player-info-label">Echter Name:</span><span class="player-info-value" style="color: var(--platform-color); font-weight:bold;">${htmlEscape(realName)}</span></div>
       <div class="player-info-row"><span class="player-info-label">Discord Handle:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
       <div class="player-info-row"><span class="player-info-label">📍 Wohnort:</span><span class="player-info-value">${htmlEscape(wohnort)}</span></div>
@@ -1074,10 +1013,6 @@
       document.getElementById('platformBanner').classList.remove('active');
       if (view === 'news') document.getElementById('navNews').classList.add('active');
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
-      if (view === 'turniere') {
-         document.getElementById('navTurniere').classList.add('active');
-         loadTournamentData(); 
-      }
     }
     state.currentView = view;
   }
@@ -1170,135 +1105,6 @@
     return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  // --- NEU: TURNIER SYSTEM LOGIK ---
-  
-  async function loadTournamentData() {
-    try {
-      const { data: tournaments, error } = await supabaseClient
-        .from('tournaments')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) { throw error; }
-
-      if (!tournaments || tournaments.length === 0) {
-        document.getElementById('tournamentStatus').innerText = "Momentan ist kein Turnier geplant.";
-        document.getElementById('tournamentRules').style.display = 'none';
-        return;
-      }
-
-      const t = tournaments[0];
-      state.currentTournament = t;
-
-      document.getElementById('tournamentTitle').innerText = `🏆 ${t.title || 'Aktuelles Turnier'}`;
-      document.getElementById('tournamentRules').style.display = 'block';
-      document.getElementById('tournamentRules').innerHTML = t.rules ? `<div style="white-space: pre-wrap;">${htmlEscape(t.rules)}</div>` : 'Keine spezifischen Regeln hinterlegt.';
-      
-      let statusText = "";
-      if (t.status === 'open') statusText = "🟢 Anmeldung geöffnet! Sichere dir deinen Platz.";
-      else if (t.status === 'running') statusText = "🟡 Das Turnier läuft derzeit!";
-      else if (t.status === 'finished') statusText = "🔴 Das Turnier wurde beendet!";
-      
-      document.getElementById('tournamentStatus').innerText = statusText;
-      document.getElementById('tournamentStatus').style.color = t.status === 'open' ? '#00d084' : (t.status === 'running' ? '#ffc107' : '#ff4444');
-
-      // Teilnehmer abrufen
-      const { data: participants } = await supabaseClient
-        .from('tournament_participants')
-        .select('*')
-        .eq('tournament_id', t.id);
-      
-      state.tournamentParticipants = participants || [];
-      document.getElementById('tournamentParticipantCount').innerText = state.tournamentParticipants.length;
-
-      renderTournamentParticipants();
-
-      // UI Button & Meldungen für Anmeldung
-      const btnReg = document.getElementById('btnRegisterTournament');
-      const msgArea = document.getElementById('tournamentMessage');
-      
-      if (t.status === 'open') {
-        if (state.currentUser) {
-          const isRegistered = state.tournamentParticipants.find(p => p.user_id === state.currentUser.id);
-          if (isRegistered) {
-            btnReg.style.display = 'none';
-            msgArea.innerText = "✅ Du bist erfolgreich für dieses Turnier angemeldet!";
-            msgArea.style.color = "#00d084";
-          } else {
-            btnReg.style.display = 'block';
-            msgArea.innerText = "";
-          }
-        } else {
-          btnReg.style.display = 'none';
-          msgArea.innerText = "Bitte logge dich über den Tab 'Discord' ein, um dich für das Turnier anzumelden.";
-        }
-      } else {
-        btnReg.style.display = 'none';
-        msgArea.innerText = "";
-      }
-
-      // Ergebnisse anzeigen falls beendet
-      if (t.status === 'finished' && t.results) {
-        document.getElementById('tournamentResultsCard').style.display = 'block';
-        document.getElementById('tournamentResultsArea').innerHTML = `<div style="white-space: pre-wrap;">${htmlEscape(t.results)}</div>`;
-      } else {
-        document.getElementById('tournamentResultsCard').style.display = 'none';
-      }
-
-    } catch (error) {
-      console.warn("Tournaments table existiert evtl. noch nicht:", error);
-    }
-  }
-
-  function renderTournamentParticipants() {
-    const container = document.getElementById('tournamentParticipantsList');
-    if (state.tournamentParticipants.length === 0) {
-      container.innerHTML = "<span style='font-size:12px; color:var(--text-secondary);'>Noch keine Anmeldungen.</span>";
-      return;
-    }
-    
-    let html = "";
-    state.tournamentParticipants.forEach(p => {
-      const profile = findProfile(p.user_id);
-      const name = profile ? (profile.display_name || profile.discord_name || "Spieler") : "Spieler";
-      const userClickParam = profile ? profile.id : "";
-      
-      html += `<div class="participant-badge" style="cursor:pointer;" onclick="openPlayerCard('${userClickParam}')">
-                  🎯 ${htmlEscape(name)}
-               </div>`;
-    });
-    container.innerHTML = html;
-  }
-
-  async function registerForTournament() {
-    if (!state.currentUser || !state.currentTournament) return;
-    
-    const btnReg = document.getElementById('btnRegisterTournament');
-    btnReg.innerText = "⏳ Melde an...";
-    btnReg.disabled = true;
-
-    try {
-      const { error } = await supabaseClient
-        .from('tournament_participants')
-        .insert([{ 
-          tournament_id: state.currentTournament.id, 
-          user_id: state.currentUser.id 
-        }]);
-      
-      if (error) throw error;
-      
-      loadTournamentData(); // Refresh UI
-    } catch (err) {
-      console.error(err);
-      alert("Fehler bei der Anmeldung. Bitte lade die Seite neu und versuche es erneut.");
-      btnReg.innerText = "✅ Am Turnier teilnehmen";
-      btnReg.disabled = false;
-    }
-  }
-
-  // --- CORE SYSTEM & RENDER ---
-
   function renderTable() {
     document.getElementById('tableHeaderTitle').innerText = `📊 Tabelle: ${state.activeLeague}`;
     const data = state.leagueData[state.activeLeague] || { standings: { rows: [] } };
@@ -1328,6 +1134,7 @@
       const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
       const formattedAvg = parseFloat(r.finalAvg || 0).toFixed(2);
       
+      // REPARIERT: Hier werden die Gelben und Roten Karten als Icon generiert
       let cardIconHtml = "";
       if (r.yellowCards > 0) {
         cardIconHtml += `<span style="display:inline-block; width:10px; height:14px; background:#ffc107; border-radius:2px; margin-left:6px; vertical-align:middle; box-shadow:0 0 4px rgba(255,193,7,0.4);" title="Gelbe Karte"></span>`;
@@ -1406,31 +1213,6 @@
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
-      // Turnier Button aktivieren wenn vom Admin eingeschaltet
-      if (sys && (sys.tournament_feature_active === true || sys.tournament_feature_active === "true")) {
-        document.getElementById('navTurniere').style.display = 'inline-block';
-      }
-
-      // News System (dynamisch)
-      try {
-        const { data: newsData } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
-        if (newsData && newsData.length > 0) {
-          let newsHtml = "";
-          newsData.forEach(n => {
-            const dateStr = new Date(n.created_at || new Date()).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-            newsHtml += `
-            <div class="news-item">
-              <div class="news-date">${dateStr}</div>
-              <div class="news-title">${htmlEscape(n.title)}</div>
-              <div class="news-content">${n.content ? n.content.replace(/\n/g, '<br>') : ''}</div>
-            </div>`;
-          });
-          document.getElementById('newsArea').innerHTML = newsHtml;
-        }
-      } catch (newsErr) {
-        // Falls Tabelle noch nicht existiert, hardcoded lassen
-      }
-
       let rulesText = "";
       if (sys) {
         rulesText = sys.rules || sys.regelwerk || sys.rules_text || "";
@@ -1495,6 +1277,7 @@
               name: isIdString(pName) ? 'Spieler' : pName, 
               wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0,
               avgSum: 0, avgCount: 0,
+              // REPARIERT: Auslesen der gelben & roten Karten aus dem Profil-Cache
               yellowCards: parseInt(p.gelbe_karten || p.yellow_cards || p.yellow || 0) || 0,
               redCards: parseInt(p.rote_karten || p.red_cards || p.red || 0) || 0
             };
