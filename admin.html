@@ -672,7 +672,7 @@
         
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
         
-        // ✅ KORRIGIERT: 'league_name' komplett weggelassen, um den Cache-Fehler zu vermeiden!
+        // ✅ FIX: 'league_name' komplett weggelassen, um den Cache-Fehler zu vermeiden!
         const { error } = await supabaseClient.from('tournaments').insert([{
             name: name,
             platform: platform,
@@ -687,13 +687,17 @@
         }
     };
 
+    // ✅ FIX: Spalten explizit benannt statt '*', um den Schema-Cache-Fehler zu umgehen!
     async function loadActiveTournaments() {
         if(!supabaseClient) return;
-        const { data: tournaments, error } = await supabaseClient.from('tournaments').select('*').order('created_at', { ascending: false });
+        const { data: tournaments, error } = await supabaseClient
+            .from('tournaments')
+            .select('id, name, platform, status, created_at, completed_at, first_place_name, second_place_name, third_place_name')
+            .order('created_at', { ascending: false });
         
         const activeBody = document.getElementById("activeTournamentsBody");
         const completedBody = document.getElementById("completedTournamentsBody");
-        if(error) { activeBody.innerHTML = `<tr><td colspan="5">Fehler beim Laden</td></tr>`; return; }
+        if(error) { activeBody.innerHTML = `<tr><td colspan="5">Fehler beim Laden: ${error.message}</td></tr>`; return; }
         
         const activeTournaments = tournaments ? tournaments.filter(t => t.status === 'active') : [];
         const completedTournaments = tournaments ? tournaments.filter(t => t.status === 'completed') : [];
@@ -702,7 +706,7 @@
         else {
             activeBody.innerHTML = activeTournaments.map(t => `
                 <tr>
-                    <td><strong style="color:#3ddc97; font-size:15px;">${htmlEscape(t.name)}</strong></td>
+                    <td><strong style="color:#3ddc97;">${htmlEscape(t.name)}</strong></td>
                     <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
                     <td id="count_${t.id}">0</td>
                     <td><span style="color: #f7c948; font-weight: bold;">🟡 Aktiv</span></td>
@@ -736,7 +740,7 @@
         }
     }
 
-    // --- ÖFFNET DEN TURNIER MANAGER (tournament_matches) ---
+    // --- ÖFFNET DEN SEPARATEN MANAGER (tournament_matches) ---
     window.openTournamentManager = async function(id, nameEscaped) {
         currentManageTID = id;
         currentManageTName = unescape(nameEscaped);
@@ -813,7 +817,7 @@
             playerIds.splice(1, 0, playerIds.pop());
         }
         
-        // 🎯 SPEICHERN IN TOURNAMENT_MATCHES!
+        // 🎯 INSERTER IN TOURNAMENT_MATCHES!
         const { error } = await supabaseClient.from('tournament_matches').insert(matchesToInsert);
         if(error) alert("❌ Fehler: " + error.message);
         else { alert(`🎉 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
@@ -821,6 +825,7 @@
 
     window.deleteTournamentSchedule = async function() {
         if(!confirm(`⚠️ Möchtest du alle Begegnungen dieses Turniers unwiderruflich löschen?`)) return;
+        // 🎯 LÖSCHEN AUS TOURNAMENT_MATCHES!
         await supabaseClient.from('tournament_matches').delete().eq('tournament_id', currentManageTID);
         alert("Turnier-Spielplan wurde gelöscht.");
         loadTournamentSchedule(); 
@@ -842,6 +847,7 @@
             status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
         };
 
+        // 🎯 SPEICHERN IN TOURNAMENT_MATCHES!
         const { error } = await supabaseClient.from('tournament_matches').update(updates).eq('id', matchId);
         if(error) alert("❌ Fehler: " + error.message); 
         else { alert("✅ Turnier-Ergebnis gespeichert!"); loadTournamentSchedule(); }
@@ -940,8 +946,10 @@
 
                 const { error: uErr } = await supabaseClient.from('profiles').update(updates).eq('id', player.id);
                 if(!uErr) successCount++;
+                else console.error(`⚠️ Fehler für Spieler ${player.id}:`, uErr);
             }
-            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler aktualisiert`); loadWaitingList();
+            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler aktualisiert\n\nPlatzierungen sind gespeichert.\nSpieler wurden aus der Liga entfernt.`);
+            loadWaitingList();
         } catch(e) { alert("❌ Fehler:\n" + e.message); }
     };
 
@@ -972,7 +980,7 @@
     };
 
     window.deleteNews = async function(id) {
-        if(confirm("Nachricht wirklich lolschen?")) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); }
+        if(confirm("Nachricht wirklich löschen?")) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); }
     };
 
     function initRuleEditor() {
