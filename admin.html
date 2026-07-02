@@ -260,7 +260,6 @@
             </table>
         </div>
     </div>
-
     <div id="tabNews" class="tab-content">
         <h2>Neuigkeiten auf der Startseite veröffentlichen</h2>
         <div style="margin-bottom: 12px;">
@@ -664,7 +663,7 @@
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG: tournament_matches)
+    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG + CACHE FIX)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     window.createTournament = async function() {
@@ -673,10 +672,10 @@
         
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
         
+        // ✅ KORRIGIERT: 'league_name' komplett weggelassen, um den Cache-Fehler zu vermeiden!
         const { error } = await supabaseClient.from('tournaments').insert([{
             name: name,
             platform: platform,
-            league_name: null, 
             status: 'active'
         }]);
         
@@ -737,7 +736,7 @@
         }
     }
 
-    // --- ÖFFNET DEN SEPARATEN MANAGER (tournament_matches) ---
+    // --- ÖFFNET DEN TURNIER MANAGER (tournament_matches) ---
     window.openTournamentManager = async function(id, nameEscaped) {
         currentManageTID = id;
         currentManageTName = unescape(nameEscaped);
@@ -758,7 +757,7 @@
             listEl.innerHTML = currentManageParticipants.map(r => `<li>🎯 <strong style="color:#ffd08a;">${htmlEscape(r.player_name)}</strong></li>`).join("");
         }
         
-        // 2. Spielplan laden aus neuer separater Tabelle
+        // 2. Spielplan laden aus neuer Tabelle
         loadTournamentSchedule();
     };
 
@@ -782,7 +781,6 @@
             btnDelete.style.display = 'none';
         } else {
             btnDelete.style.display = 'inline-flex';
-            // Render im Kontext 'Turnier', um Karten-Spalte wegzulassen
             renderMatchesPlan(matches, localPlayersList, area, 'Turnier', {}); 
         }
     }
@@ -792,7 +790,7 @@
         if(!confirm(`Möchtest du jetzt den Spielplan für das Turnier "${currentManageTName}" in der Tabelle 'tournament_matches' erzeugen?`)) return;
         
         let playerIds = currentManageParticipants.map(p => p.player_id);
-        if (playerIds.length % 2 !== 0) playerIds.push(null); // Freilos einkalkulieren
+        if (playerIds.length % 2 !== 0) playerIds.push(null); 
         
         let numPlayers = playerIds.length;
         let matchesToInsert = [];
@@ -815,7 +813,7 @@
             playerIds.splice(1, 0, playerIds.pop());
         }
         
-        // 🎯 INSERTER IN TOURNAMENT_MATCHES!
+        // 🎯 SPEICHERN IN TOURNAMENT_MATCHES!
         const { error } = await supabaseClient.from('tournament_matches').insert(matchesToInsert);
         if(error) alert("❌ Fehler: " + error.message);
         else { alert(`🎉 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
@@ -823,7 +821,6 @@
 
     window.deleteTournamentSchedule = async function() {
         if(!confirm(`⚠️ Möchtest du alle Begegnungen dieses Turniers unwiderruflich löschen?`)) return;
-        // 🎯 LÖSCHEN AUS TOURNAMENT_MATCHES!
         await supabaseClient.from('tournament_matches').delete().eq('tournament_id', currentManageTID);
         alert("Turnier-Spielplan wurde gelöscht.");
         loadTournamentSchedule(); 
@@ -845,7 +842,6 @@
             status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
         };
 
-        // 🎯 SPEICHERN IN TOURNAMENT_MATCHES!
         const { error } = await supabaseClient.from('tournament_matches').update(updates).eq('id', matchId);
         if(error) alert("❌ Fehler: " + error.message); 
         else { alert("✅ Turnier-Ergebnis gespeichert!"); loadTournamentSchedule(); }
@@ -976,7 +972,7 @@
     };
 
     window.deleteNews = async function(id) {
-        if(confirm("Nachricht wirklich löschen?")) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); }
+        if(confirm("Nachricht wirklich lolschen?")) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); }
     };
 
     function initRuleEditor() {
