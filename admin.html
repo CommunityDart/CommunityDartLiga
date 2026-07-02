@@ -298,7 +298,6 @@
     let globalLeagueRules = {}; 
     let allLoadedProfilesMap = {}; 
 
-    // Globale Turniervariablen für den Manager
     let currentManageTID = null;
     let currentManageTName = null;
     let currentManageParticipants = [];
@@ -575,7 +574,7 @@
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen generieren?`)) return;
         const { data: players } = await supabaseClient.from('profiles').select('*');
         let leaguePlayers = getPlayersForLeague(players || [], leagueName);
-        if(leaguePlayers.length < 2) return alert("Zu wenige Spieler eingeteilt.");
+        if(leaguePlayers.length < 2) return alert("Zu wie wenige Spieler eingeteilt.");
 
         const includeReturnLeg = document.getElementById("includeReturnLeg") ? document.getElementById("includeReturnLeg").checked : true;
         let playerIds = leaguePlayers.map(p => p.id);
@@ -663,7 +662,7 @@
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG + KOMPLETTER FIX)
+    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG + CACHE FIX IMMUNISIERUNG)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     window.createTournament = async function() {
@@ -672,7 +671,7 @@
         
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
         
-        // ✅ FIX: 'league_name' komplett weggelassen, um den Cache-Fehler zu vermeiden!
+        // Spalten explizit ansprechen, 'league_name' weglassen
         const { error } = await supabaseClient.from('tournaments').insert([{
             name: name,
             platform: platform,
@@ -687,7 +686,7 @@
         }
     };
 
-    // ✅ FIX: Spalten explizit benannt statt '*', um den Schema-Cache-Fehler zu umgehen!
+    // ✅ IMMUN-FIX: Spalten explizit benannt statt '*', um den Schema-Cache-Fehler zu umgehen!
     async function loadActiveTournaments() {
         if(!supabaseClient) return;
         const { data: tournaments, error } = await supabaseClient
@@ -720,9 +719,9 @@
             `).join("");
             
             for(let t of activeTournaments) {
-                const { count } = await supabaseClient.from('tournament_registrations').select('*', { count: 'exact', head: true }).eq('tournament_id', t.id);
+                const { count } = await supabaseClient.from('tournament_registrations').select('id').eq('tournament_id', t.id);
                 const el = document.getElementById(`count_${t.id}`);
-                if(el) el.textContent = count || 0;
+                if(el) el.textContent = count ? count.length : 0;
             }
         }
         
@@ -740,7 +739,6 @@
         }
     }
 
-    // --- ÖFFNET DEN SEPARATEN MANAGER (tournament_matches) ---
     window.openTournamentManager = async function(id, nameEscaped) {
         currentManageTID = id;
         currentManageTName = unescape(nameEscaped);
@@ -749,8 +747,7 @@
         document.getElementById('tournamentManagerArea').style.display = 'block';
         document.getElementById('tScheduleArea').innerHTML = 'Lade Daten...';
         
-        // 1. Anmeldungen laden
-        const { data: registrations } = await supabaseClient.from('tournament_registrations').select('*').eq('tournament_id', id);
+        const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, player_name, player_id').eq('tournament_id', id);
         currentManageParticipants = registrations || [];
         
         document.getElementById('tParticipantCount').innerText = currentManageParticipants.length;
@@ -761,7 +758,6 @@
             listEl.innerHTML = currentManageParticipants.map(r => `<li>🎯 <strong style="color:#ffd08a;">${htmlEscape(r.player_name)}</strong></li>`).join("");
         }
         
-        // 2. Spielplan laden aus neuer Tabelle
         loadTournamentSchedule();
     };
 
@@ -772,7 +768,6 @@
         const { data: profilesData } = await supabaseClient.from('profiles').select('*');
         const localPlayersList = profilesData || [];
         
-        // 🎯 GREIFT AUF TOURNAMENT_MATCHES ZU!
         const { data: matches, error } = await supabaseClient.from('tournament_matches').select('*').eq('tournament_id', currentManageTID).order('matchday', { ascending: true });
         
         if(error) {
@@ -817,10 +812,9 @@
             playerIds.splice(1, 0, playerIds.pop());
         }
         
-        // 🎯 INSERTER IN TOURNAMENT_MATCHES!
         const { error } = await supabaseClient.from('tournament_matches').insert(matchesToInsert);
         if(error) alert("❌ Fehler: " + error.message);
-        else { alert(`📅 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
+        else { alert(`🎉 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
     };
 
     window.deleteTournamentSchedule = async function() {
@@ -854,13 +848,13 @@
     window.finishTournament = async function(tournamentId) {
         if(!confirm("Turnier abschließen? Auto-News wird vorgefüllt.")) return;
         
-        const { data: registrations } = await supabaseClient.from('tournament_registrations').select('*').eq('tournament_id', tournamentId).order('position', { ascending: true }).limit(3);
+        const { data: registrations } = await supabaseClient.from('tournament_registrations').select('player_name').eq('tournament_id', tournamentId).order('position', { ascending: true }).limit(3);
         
         let first = registrations && registrations[0] ? registrations[0].player_name : null;
         let second = registrations && registrations[1] ? registrations[1].player_name : null;
         let third = registrations && registrations[2] ? registrations[2].player_name : null;
         
-        // ✅ FIX: In 'from' select() Spalten explizit benannt statt '*' zur Cache-Sicherheit
+        // ✅ IMMUN-FIX: Spalten explizit benannt
         const { error } = await supabaseClient.from('tournaments').update({
                 status: 'completed', completed_at: new Date().toISOString(),
                 first_place_name: first, second_place_name: second, third_place_name: third
@@ -871,7 +865,7 @@
     };
 
     window.editTournamentNews = async function(tournamentId) {
-        // ✅ FIX: Spalten explizit abgefragt statt '*', um den Schema-Fehler vollständig zu verbannen!
+        // ✅ IMMER EXPLIZIT SELECTEN FÜR CACHE-SICHERHEIT
         const { data: tournament } = await supabaseClient.from('tournaments')
             .select('id, name, first_place_name, second_place_name, third_place_name')
             .eq('id', tournamentId)
@@ -950,7 +944,6 @@
 
                 const { error: uErr } = await supabaseClient.from('profiles').update(updates).eq('id', player.id);
                 if(!uErr) successCount++;
-                else console.error(`⚠️ Fehler für Spieler ${player.id}:`, uErr);
             }
             alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler aktualisiert\n\nPlatzierungen sind gespeichert.\nSpieler wurden aus der Liga entfernt.`);
             loadWaitingList();
