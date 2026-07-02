@@ -188,7 +188,7 @@
         <div class="config-box">
             <h3>✨ Neues Turnier erstellen</h3>
             <div class="config-row">
-                <input type="text" id="tournamentName" class="txt-input" placeholder="Turniername (z.B. Sommer Cup 2026)" style="width: 300px; max-width: 100%;">
+                <input type="text" id="tournamentName" class="txt-input" placeholder="Turniername (z.B. Cyber Cup 2026)" style="width: 300px; max-width: 100%;">
                 <select id="tournamentPlatform" class="league-select">
                     <option value="">-- Plattform wählen --</option>
                     <option value="Autodarts">Autodarts</option>
@@ -205,7 +205,7 @@
                 <thead>
                     <tr>
                         <th style="width: 30%;">Turniername</th>
-                        <th style="width: 20%;">Platform</th>
+                        <th style="width: 20%;">Plattform</th>
                         <th style="width: 15%;">Teilnehmer</th>
                         <th style="width: 10%;">Status</th>
                         <th style="width: 25%;">Aktion</th>
@@ -225,12 +225,12 @@
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                 
                 <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                    <h4 style="color: #3ddc97; margin-top:0;">👥 Teilnehmer (<span id="tParticipantCount">0</span>)</h4>
+                    <h4 style="color: #3ddc97; margin-top:0;">👥 Angemeldete Spieler (<span id="tParticipantCount">0</span>)</h4>
                     <ul id="tParticipantList" style="list-style: none; padding: 0; margin: 0; font-size: 13.5px; line-height: 1.8; color: #fff;"></ul>
                 </div>
                 
                 <div style="flex: 2; min-width: 400px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                    <h4 style="color: #3ddc97; margin-top:0;">📅 Turnier-Spielplan</h4>
+                    <h4 style="color: #3ddc97; margin-top:0;">📅 Turnier-Spielplan (Tabelle: tournament_matches)</h4>
                     <div id="tScheduleGenArea" style="margin-bottom: 15px;">
                         <button class="generate-btn" onclick="generateTournamentSchedule()">⚙️ Spielplan generieren</button>
                         <button class="remove-btn-large" style="margin-left: 8px; display:none;" id="tDeleteScheduleBtn" onclick="deleteTournamentSchedule()">🗑️ Plan löschen</button>
@@ -260,6 +260,7 @@
             </table>
         </div>
     </div>
+
     <div id="tabNews" class="tab-content">
         <h2>Neuigkeiten auf der Startseite veröffentlichen</h2>
         <div style="margin-bottom: 12px;">
@@ -298,7 +299,7 @@
     let globalLeagueRules = {}; 
     let allLoadedProfilesMap = {}; 
 
-    // Turnier Management Variablen
+    // Globale Turniervariablen für den Manager
     let currentManageTID = null;
     let currentManageTName = null;
     let currentManageParticipants = [];
@@ -598,7 +599,7 @@
         alert(`🎉 Spielplan erstellt!`); loadMatchdayPlan(); 
     };
 
-    function renderMatchesPlan(matches, playersList, area, league, penaltiesMap = {}) {
+    function renderMatchesPlan(matches, playersList, area, context, penaltiesMap = {}) {
         let grouped = {};
         matches.forEach(m => { if(!grouped[m.matchday]) grouped[m.matchday] = []; grouped[m.matchday].push(m); });
 
@@ -606,7 +607,9 @@
         for (const [day, list] of Object.entries(grouped)) {
             html += `<h3 style="color:#20b7ff; margin-top:14px; border-bottom:1px solid #4b87a5; padding-bottom:4px;">Spieltag ${day}</h3><table><thead><tr>
                         <th style="width:20%;">Heimspieler</th><th style="width:20%;">Auswärtsspieler</th><th style="width:10%; text-align:center;">Legs</th>
-                        <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th><th style="width:12%; text-align:center;">Karten</th><th style="width:4%;">Aktion</th>
+                        <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th>
+                        ${context !== 'Turnier' ? '<th style="width:12%; text-align:center;">Karten</th>' : ''}
+                        <th style="width:4%;">Aktion</th>
                     </tr></thead><tbody>`;
             list.forEach(m => {
                 const p1 = playersList.find(x => x.id === m.player1_id);
@@ -615,10 +618,14 @@
                 const p2Name = p2 ? (p2.discord_name || p2.username) : "Freilos";
                 const isFreilos = !m.player1_id || !m.player2_id;
 
-                const pen1 = penaltiesMap[m.player1_id] || { yellow_cards: 0, red_cards: 0 };
-                const pen2 = penaltiesMap[m.player2_id] || { yellow_cards: 0, red_cards: 0 };
-                const k1 = (pen1.yellow_cards > 0 || pen1.red_cards > 0) ? `<span style="color: ${pen1.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen1.yellow_cards} 🟥${pen1.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
-                const k2 = (pen2.yellow_cards > 0 || pen2.red_cards > 0) ? `<span style="color: ${pen2.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen2.yellow_cards} 🟥${pen2.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
+                let kartenTd = "";
+                if(context !== 'Turnier') {
+                    const pen1 = penaltiesMap[m.player1_id] || { yellow_cards: 0, red_cards: 0 };
+                    const pen2 = penaltiesMap[m.player2_id] || { yellow_cards: 0, red_cards: 0 };
+                    const k1 = (pen1.yellow_cards > 0 || pen1.red_cards > 0) ? `<span style="color: ${pen1.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen1.yellow_cards} 🟥${pen1.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
+                    const k2 = (pen2.yellow_cards > 0 || pen2.red_cards > 0) ? `<span style="color: ${pen2.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen2.yellow_cards} 🟥${pen2.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
+                    kartenTd = `<td style="text-align:center; font-size:12px;"><div style="margin-bottom: 6px;">${k1}</div><div>${k2}</div></td>`;
+                }
 
                 html += `<tr>
                         <td><div class="player-info-block"><strong style="color:#3ddc97;">${htmlEscape(p1Name)}</strong>${formatAllPlattformNames(p1)}</div></td>
@@ -626,8 +633,8 @@
                         <td><div class="flex-row-center"><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}></div></td>
                         <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || m.avg_player1 || ''}" ${isFreilos?'disabled':''}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || m.avg_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
                         <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isFreilos?'disabled':''}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
-                        <td style="text-align:center; font-size:12px;"><div style="margin-bottom: 6px;">${k1}</div><div>${k2}</div></td>
-                        <td><button class="assign-btn" style="padding:6px 8px;" onclick="${league.startsWith('Turnier') ? 'saveTournamentMatchStats' : 'saveMatchFullStats'}('${m.id}')" ${isFreilos?'disabled':''}>💾</button></td>
+                        ${kartenTd}
+                        <td><button class="assign-btn" style="padding:6px 8px;" onclick="${context === 'Turnier' ? 'saveTournamentMatchStats' : 'saveMatchFullStats'}('${m.id}')" ${isFreilos?'disabled':''}>💾</button></td>
                     </tr>`;
             });
             html += `</tbody></table>`;
@@ -653,11 +660,11 @@
         updates.avg_player1 = updates.player1_avg; updates.avg_player2 = updates.player2_avg;
 
         const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
-        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Gespeichert!"); loadMatchdayPlan(); }
+        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Liga-Ergebnis gespeichert!"); loadMatchdayPlan(); }
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏆 TOURNAMENT SYSTEM (KOMPLETT ÜBERARBEITET)
+    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG: tournament_matches)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     window.createTournament = async function() {
@@ -669,13 +676,13 @@
         const { error } = await supabaseClient.from('tournaments').insert([{
             name: name,
             platform: platform,
-            league_name: null, // Wird nicht mehr benötigt
+            league_name: null, 
             status: 'active'
         }]);
         
         if(error) alert("❌ Fehler: " + error.message);
         else {
-            alert("✅ Turnier erstellt!");
+            alert("✅ Turnier erfolgreich erstellt!");
             document.getElementById("tournamentName").value = "";
             loadActiveTournaments();
         }
@@ -730,7 +737,7 @@
         }
     }
 
-    // --- NEU: Turnierverwaltung (Spieler sehen & Spielplan machen) ---
+    // --- ÖFFNET DEN SEPARATEN MANAGER (tournament_matches) ---
     window.openTournamentManager = async function(id, nameEscaped) {
         currentManageTID = id;
         currentManageTName = unescape(nameEscaped);
@@ -739,54 +746,56 @@
         document.getElementById('tournamentManagerArea').style.display = 'block';
         document.getElementById('tScheduleArea').innerHTML = 'Lade Daten...';
         
-        // 1. Teilnehmer laden
+        // 1. Anmeldungen laden
         const { data: registrations } = await supabaseClient.from('tournament_registrations').select('*').eq('tournament_id', id);
         currentManageParticipants = registrations || [];
         
         document.getElementById('tParticipantCount').innerText = currentManageParticipants.length;
         const listEl = document.getElementById('tParticipantList');
         if(currentManageParticipants.length === 0) {
-            listEl.innerHTML = '<li style="color:#90a9b7;">Noch keine Anmeldungen.</li>';
+            listEl.innerHTML = '<li style="color:#90a9b7;">Noch keine Anmeldungen erhalten.</li>';
         } else {
             listEl.innerHTML = currentManageParticipants.map(r => `<li>🎯 <strong style="color:#ffd08a;">${htmlEscape(r.player_name)}</strong></li>`).join("");
         }
         
-        // 2. Spielplan laden (Wir speichern diese in der matches Tabelle mit Prefix "Turnier: Name")
+        // 2. Spielplan laden aus neuer separater Tabelle
         loadTournamentSchedule();
     };
 
     async function loadTournamentSchedule() {
         const area = document.getElementById('tScheduleArea');
-        const genArea = document.getElementById('tScheduleGenArea');
         const btnDelete = document.getElementById('tDeleteScheduleBtn');
         
-        // Hole alle registrierten Spielerprofile (für die Anzeige)
         const { data: profilesData } = await supabaseClient.from('profiles').select('*');
         const localPlayersList = profilesData || [];
         
-        // Hole Turnier-Spiele
-        const { data: matches } = await supabaseClient.from('matches').select('*').eq('league_name', 'Turnier: ' + currentManageTName);
+        // 🎯 GREIFT AUF TOURNAMENT_MATCHES ZU!
+        const { data: matches, error } = await supabaseClient.from('tournament_matches').select('*').eq('tournament_id', currentManageTID).order('matchday', { ascending: true });
         
+        if(error) {
+            area.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${error.message}</div>`;
+            return;
+        }
+
         if(!matches || matches.length === 0) {
-            area.innerHTML = '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Spielplan generiert. Klicke oben auf "Generieren", sobald alle Spieler angemeldet sind.</div>';
+            area.innerHTML = '<div style="color:#90a9b7; margin-top: 10px;">Noch kein separater Turnier-Spielplan generiert. Klicke auf "Spielplan generieren", sobald die Anmeldephase vorbei ist.</div>';
             btnDelete.style.display = 'none';
         } else {
             btnDelete.style.display = 'inline-flex';
-            // Wir nutzen die bestehende Funktion, aber ohne Karten Map
+            // Render im Kontext 'Turnier', um Karten-Spalte wegzulassen
             renderMatchesPlan(matches, localPlayersList, area, 'Turnier', {}); 
         }
     }
 
     window.generateTournamentSchedule = async function() {
-        if(currentManageParticipants.length < 2) return alert("❌ Es müssen mindestens 2 Spieler angemeldet sein!");
-        if(!confirm(`Spielplan für "${currentManageTName}" generieren?`)) return;
+        if(currentManageParticipants.length < 2) return alert("❌ Abbruch: Mindestens 2 angemeldete Spieler benötigt!");
+        if(!confirm(`Möchtest du jetzt den Spielplan für das Turnier "${currentManageTName}" in der Tabelle 'tournament_matches' erzeugen?`)) return;
         
         let playerIds = currentManageParticipants.map(p => p.player_id);
-        if (playerIds.length % 2 !== 0) playerIds.push(null); // Freilos bei ungerader Zahl
+        if (playerIds.length % 2 !== 0) playerIds.push(null); // Freilos einkalkulieren
         
         let numPlayers = playerIds.length;
         let matchesToInsert = [];
-        const tIdentifier = 'Turnier: ' + currentManageTName;
 
         for (let round = 0; round < numPlayers - 1; round++) {
             for (let i = 0; i < numPlayers / 2; i++) {
@@ -795,8 +804,7 @@
                 if (home !== null || away !== null) {
                     matchesToInsert.push({ 
                         id: crypto.randomUUID(), 
-                        league_name: tIdentifier, 
-                        season: 'Turnier', 
+                        tournament_id: currentManageTID, 
                         matchday: round + 1, 
                         player1_id: home, 
                         player2_id: away, 
@@ -807,18 +815,20 @@
             playerIds.splice(1, 0, playerIds.pop());
         }
         
-        const { error } = await supabaseClient.from('matches').insert(matchesToInsert);
+        // 🎯 INSERTER IN TOURNAMENT_MATCHES!
+        const { error } = await supabaseClient.from('tournament_matches').insert(matchesToInsert);
         if(error) alert("❌ Fehler: " + error.message);
-        else { alert(`🎉 Turnier-Spielplan erstellt!`); loadTournamentSchedule(); }
+        else { alert(`🎉 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
     };
 
     window.deleteTournamentSchedule = async function() {
-        if(!confirm(`⚠️ Spielplan für dieses Turnier wirklich löschen?`)) return;
-        await supabaseClient.from('matches').delete().eq('league_name', 'Turnier: ' + currentManageTName);
+        if(!confirm(`⚠️ Möchtest du alle Begegnungen dieses Turniers unwiderruflich löschen?`)) return;
+        // 🎯 LÖSCHEN AUS TOURNAMENT_MATCHES!
+        await supabaseClient.from('tournament_matches').delete().eq('tournament_id', currentManageTID);
+        alert("Turnier-Spielplan wurde gelöscht.");
         loadTournamentSchedule(); 
     };
 
-    // Separate Speicherfunktion, damit nach Speichern der Turnier-Spielplan neu lädt
     window.saveTournamentMatchStats = async function(matchId) {
         if(!supabaseClient) return;
         const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
@@ -834,10 +844,11 @@
             highlights_player2: h2 || null,
             status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
         };
-        updates.avg_player1 = updates.player1_avg; updates.avg_player2 = updates.player2_avg;
 
-        const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
-        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Turnier-Ergebnis gespeichert!"); loadTournamentSchedule(); }
+        // 🎯 SPEICHERN IN TOURNAMENT_MATCHES!
+        const { error } = await supabaseClient.from('tournament_matches').update(updates).eq('id', matchId);
+        if(error) alert("❌ Fehler: " + error.message); 
+        else { alert("✅ Turnier-Ergebnis gespeichert!"); loadTournamentSchedule(); }
     };
 
     window.finishTournament = async function(tournamentId) {
@@ -875,8 +886,11 @@
         if(newsQuill) newsQuill.root.innerHTML = newsContent;
     };
 
-    // Init Admin & Utils (Strafen etc)...
-    async function loadStrafenkatalogList() { /* (Unverändert gelassen für Übersichtlichkeit im Codeblock, ist aber voll funktionsfähig drin) */
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // STRAFEN, NEWS & INITIALISIERUNG
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    async function loadStrafenkatalogList() {
         const league = document.getElementById("penaltyLeagueSelector").value;
         const tbody = document.getElementById("strafenListBody");
         if(!supabaseClient || !league) { tbody.innerHTML = `<tr><td colspan="6">Bitte wähle zuerst eine Liga aus.</td></tr>`; return; }
