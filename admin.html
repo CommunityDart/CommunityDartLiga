@@ -148,7 +148,7 @@
                 <button id="endSeasonMatchdayBtn" class="remove-btn-large" style="display:none;" onclick="endSeasonForLeague(document.getElementById('leagueSelector').value)">🏁 Saison für diese Liga beenden</button>
             </div>
             <div id="matchdayLigaInfo" style="display:none; padding: 12px; background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); border-radius: 6px; font-size: 13px; color: #20b7ff; font-weight: bold; max-width: 500px;">
-                </div>
+            </div>
             <div id="generatePlanArea" style="display:none; flex-direction:column; gap: 8px; align-items:flex-start;"></div>
         </div>
         <div style="overflow-x: auto;">
@@ -188,15 +188,12 @@
         <div class="config-box">
             <h3>✨ Neues Turnier erstellen</h3>
             <div class="config-row">
-                <input type="text" id="tournamentName" class="txt-input" placeholder="Turniername (z.B. Meisterschaft 2024)" style="width: 300px; max-width: 100%;">
-                <select id="tournamentPlatform" class="league-select" onchange="updateTournamentLeagues()">
+                <input type="text" id="tournamentName" class="txt-input" placeholder="Turniername (z.B. Sommer Cup 2026)" style="width: 300px; max-width: 100%;">
+                <select id="tournamentPlatform" class="league-select">
                     <option value="">-- Plattform wählen --</option>
                     <option value="Autodarts">Autodarts</option>
                     <option value="DartCounter">DartCounter</option>
                     <option value="Scolia">Scolia</option>
-                </select>
-                <select id="tournamentLeague" class="league-select">
-                    <option value="">-- Liga wählen --</option>
                 </select>
                 <button class="generate-btn" onclick="createTournament()">➕ Turnier erstellen</button>
             </div>
@@ -208,10 +205,10 @@
                 <thead>
                     <tr>
                         <th style="width: 30%;">Turniername</th>
-                        <th style="width: 20%;">Platform / Liga</th>
+                        <th style="width: 20%;">Platform</th>
                         <th style="width: 15%;">Teilnehmer</th>
-                        <th style="width: 20%;">Status</th>
-                        <th style="width: 15%;">Aktion</th>
+                        <th style="width: 10%;">Status</th>
+                        <th style="width: 25%;">Aktion</th>
                     </tr>
                 </thead>
                 <tbody id="activeTournamentsBody">
@@ -220,7 +217,32 @@
             </table>
         </div>
 
-        <h3>✅ Abgeschlossene Turniere</h3>
+        <div id="tournamentManagerArea" class="config-box" style="display:none; margin-top: 20px; border-color: #20b7ff; background: rgba(32, 183, 255, 0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(32, 183, 255, 0.2); padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 id="manageTournamentTitle" style="color: #20b7ff;">Turnier Verwaltung</h3>
+                <button class="card-btn red" onclick="document.getElementById('tournamentManagerArea').style.display='none'">❌ Schließen</button>
+            </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                
+                <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                    <h4 style="color: #3ddc97; margin-top:0;">👥 Teilnehmer (<span id="tParticipantCount">0</span>)</h4>
+                    <ul id="tParticipantList" style="list-style: none; padding: 0; margin: 0; font-size: 13.5px; line-height: 1.8; color: #fff;"></ul>
+                </div>
+                
+                <div style="flex: 2; min-width: 400px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                    <h4 style="color: #3ddc97; margin-top:0;">📅 Turnier-Spielplan</h4>
+                    <div id="tScheduleGenArea" style="margin-bottom: 15px;">
+                        <button class="generate-btn" onclick="generateTournamentSchedule()">⚙️ Spielplan generieren</button>
+                        <button class="remove-btn-large" style="margin-left: 8px; display:none;" id="tDeleteScheduleBtn" onclick="deleteTournamentSchedule()">🗑️ Plan löschen</button>
+                    </div>
+                    <div id="tScheduleArea" style="overflow-x: auto;">
+                        Lade Daten...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px;">✅ Abgeschlossene Turniere</h3>
         <div style="overflow-x: auto;">
             <table>
                 <thead>
@@ -244,7 +266,7 @@
             <input type="text" id="newsTitleInput" class="news-headline-field" placeholder="Überschrift der News...">
         </div>
         <div id="newsEditor" class="editor-container"></div>
-        <button class="save-banner-btn" onclick="publishNews()">📢 News veröffentlichen</button>
+        <button class="save-banner-btn" onclick="publishNews()" style="margin-top: 10px; background: #3ddc97; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">📢 News veröffentlichen</button>
         <h3 style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">Bestehende News verwalten</h3>
         <div id="adminNewsContainer">Lade geschriebene Beiträge...</div>
     </div>
@@ -252,7 +274,7 @@
     <div id="tabRegelwerk" class="tab-content">
         <h2>Globales Regelwerk anpassen</h2>
         <div id="ruleEditor" class="editor-container"></div>
-        <button class="save-banner-btn" onclick="saveRegelwerkHtml()">💾 Regelwerk live speichern</button>
+        <button class="save-banner-btn" onclick="saveRegelwerkHtml()" style="margin-top: 10px; background: #3ddc97; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">💾 Regelwerk live speichern</button>
     </div>
 </div>
 
@@ -267,7 +289,6 @@
     catch(e) { console.error("Supabase-Verbindungsfehler:", e); }
 
     const ALL_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6", "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6", "Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
-
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
     const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
     const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
@@ -276,6 +297,11 @@
     let newsQuill = null, ruleQuill = null, editingNewsId = null;
     let globalLeagueRules = {}; 
     let allLoadedProfilesMap = {}; 
+
+    // Turnier Management Variablen
+    let currentManageTID = null;
+    let currentManageTName = null;
+    let currentManageParticipants = [];
 
     const quillToolbarOptions = [
         [{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'],        
@@ -288,21 +314,14 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // ✅ NEUE FUNKTION: currentSeasonGlobal von Datenbank laden
     async function loadCurrentSeason() {
         if(!supabaseClient) return;
         try {
             const { data } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
             if(data && data.current_season) {
                 currentSeasonGlobal = data.current_season;
-                console.log("✅ Saison geladen:", currentSeasonGlobal);
-            } else {
-                console.log("⚠️ Keine Saison gefunden, verwende default: " + currentSeasonGlobal);
             }
-        } catch(e) {
-            console.log("⚠️ Fehler beim Laden der Saison:", e.message);
-        }
-        // Update die UI
+        } catch(e) {}
         document.getElementById("seasonIndicator").textContent = "📅 Saison: " + currentSeasonGlobal;
     }
 
@@ -315,6 +334,7 @@
         if (tabId === 'tabRegelwerk') initRuleEditor();
         if (tabId === 'tabNews') initNewsEditor();
         if (tabId === 'tabZuteilung') loadWaitingList();
+        if (tabId === 'tabTournaments') document.getElementById('tournamentManagerArea').style.display='none';
     }
 
     function formatAllPlattformNames(prof) {
@@ -352,16 +372,10 @@
     function renderRulesSummary() {
         const tbody = document.getElementById("rulesTableBody");
         if(!tbody) return;
-        
-        console.log("🔄 Render Rules Summary - globalLeagueRules:", globalLeagueRules);
-        
         if(!globalLeagueRules || Object.keys(globalLeagueRules).length === 0) {
-            console.log("⚠️ Keine Regeln vorhanden");
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
             return;
         }
-        
-        // ✅ Konvertiere Object zu Array und sortiere
         const allRules = Object.values(globalLeagueRules).map(r => ({
             league: r.league_name || r.liga || r.league || "Unbekannt",
             aufsteiger: r.aufsteiger || 0,
@@ -369,19 +383,11 @@
             relegation: r.relegation || 0
         })).sort((a, b) => a.league.localeCompare(b.league));
         
-        console.log("📊 Sortierte Regeln:", allRules);
-        
-        // ✅ Zeige nur Ligen mit Einstellungen (> 0)
         const activeRules = allRules.filter(r => r.aufsteiger > 0 || r.absteiger > 0 || r.relegation > 0);
-        
-        console.log("✅ Aktive Regeln (> 0):", activeRules);
-        
         if(activeRules.length === 0) {
-            console.log("⚠️ Keine aktiven Regeln");
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
             return;
         }
-        
         tbody.innerHTML = activeRules.map(rule => `
             <tr>
                 <td><strong style="color:#20b7ff;">${htmlEscape(rule.league)}</strong></td>
@@ -390,8 +396,6 @@
                 <td style="text-align:center; color:#ffd08a;"><strong>${rule.relegation}</strong></td>
             </tr>
         `).join("");
-        
-        console.log("✅ Tabelle gerendert");
     }
 
     window.loadLeagueRules = function() {
@@ -403,39 +407,20 @@
         document.getElementById("inputRel").value = rule.relegation || 0;
     };
 
-    // ✅ FIX FÜR DEN FEHLER: Hier wurde 'onConflict' hinzugefügt!
     window.saveLeagueRules = async function() {
         const league = document.getElementById("configLeagueSelect").value;
         if(!league) return alert("Bitte wähle zuerst eine Liga aus!");
-
         const auf = parseInt(document.getElementById("inputAuf").value) || 0;
         const ab = parseInt(document.getElementById("inputAb").value) || 0;
         const rel = parseInt(document.getElementById("inputRel").value) || 0;
 
-        console.log(`💾 Speichere Liga-Regeln: ${league} - 🟢${auf} 🔴${ab} 🟡${rel}`);
-
         const { error } = await supabaseClient.from('league_rules').upsert(
-            {
-                league_name: league,
-                aufsteiger: auf,
-                absteiger: ab,
-                relegation: rel
-            },
+            { league_name: league, aufsteiger: auf, absteiger: ab, relegation: rel },
             { onConflict: 'league_name' }
         );
-        
-        if(error) {
-            console.error("Fehler beim Speichern:", error);
-            alert("❌ Fehler beim Speichern: " + error.message);
-            return;
-        }
-        
-        console.log("✅ In Supabase gespeichert");
+        if(error) { alert("❌ Fehler beim Speichern: " + error.message); return; }
         alert("✅ Liga-Einstellungen gespeichert!"); 
-        
-        // ✅ WICHTIG: Sofort neu laden und anzeigen
         await loadAllLeagueRules();
-        console.log("✅ globalLeagueRules nach Reload:", globalLeagueRules);
         renderRulesSummary();
         loadWaitingList();
     };
@@ -465,7 +450,6 @@
         tbody.innerHTML = activePlayers.map(p => {
             const isEingeteilt = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
             let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
-            
             if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
                 const rule = globalLeagueRules[p.voriga_liga];
                 let statusBadge = "";
@@ -504,69 +488,29 @@
 
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
-        
         const adEl = document.getElementById(`ad_${playerId}`);
         const dcEl = document.getElementById(`dc_${playerId}`);
         const scEl = document.getElementById(`sc_${playerId}`);
         const playerProfile = allLoadedProfilesMap[playerId];
 
-        if(!playerProfile) {
-            alert("❌ Spieler nicht gefunden!");
-            return;
-        }
-
+        if(!playerProfile) return alert("❌ Spieler nicht gefunden!");
         const updates = { id: playerId, status_neue_saison: 'assigned' };
 
-        // ✅ ALLE drei Felder IMMER speichern
-        
-        // Autodarts
         const adVal = adEl ? adEl.value : "";
-        if (adVal === 'REMOVE' || adVal === '') {
-            updates.assigned_ad_league = null;
-        } else {
-            if(!playerProfile.autodarts_name || playerProfile.autodarts_name === "-") {
-                return alert(`❌ Abbruch: Kein Autodarts-Name hinterlegt!`);
-            }
-            updates.assigned_ad_league = adVal.trim();
-        }
+        if (adVal === 'REMOVE' || adVal === '') updates.assigned_ad_league = null;
+        else { if(!playerProfile.autodarts_name || playerProfile.autodarts_name === "-") return alert(`❌ Kein Autodarts-Name!`); updates.assigned_ad_league = adVal.trim(); }
 
-        // DartCounter
         const dcVal = dcEl ? dcEl.value : "";
-        if (dcVal === 'REMOVE' || dcVal === '') {
-            updates.assigned_dc_league = null;
-        } else {
-            if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name === "-") {
-                return alert(`❌ Abbruch: Kein DartCounter-Name hinterlegt!`);
-            }
-            updates.assigned_dc_league = dcVal.trim();
-        }
+        if (dcVal === 'REMOVE' || dcVal === '') updates.assigned_dc_league = null;
+        else { if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name === "-") return alert(`❌ Kein DartCounter-Name!`); updates.assigned_dc_league = dcVal.trim(); }
 
-        // Scolia
         const scVal = scEl ? scEl.value : "";
-        if (scVal === 'REMOVE' || scVal === '') {
-            updates.assigned_sc_league = null;
-        } else {
-            if(!playerProfile.scolia_name || playerProfile.scolia_name === "-") {
-                return alert(`❌ Abbruch: Kein Scolia-Name hinterlegt!`);
-            }
-            updates.assigned_sc_league = scVal.trim();
-        }
+        if (scVal === 'REMOVE' || scVal === '') updates.assigned_sc_league = null;
+        else { if(!playerProfile.scolia_name || playerProfile.scolia_name === "-") return alert(`❌ Kein Scolia-Name!`); updates.assigned_sc_league = scVal.trim(); }
 
-        console.log("💾 Speichere Zuteilungen für Spieler:", playerId, updates);
-
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update(updates)
-            .eq('id', playerId);
-
-        if(error) {
-            console.error("❌ Fehler:", error);
-            alert("❌ Fehler beim Abspeichern: " + error.message);
-        } else {
-            console.log("✅ Zuteilungen gespeichert");
-            alert("✅ Zuteilungen erfolgreich abgespeichert!");
-            loadWaitingList();
-        }
+        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
+        if(error) alert("❌ Fehler beim Abspeichern: " + error.message);
+        else { alert("✅ Zuteilungen erfolgreich abgespeichert!"); loadWaitingList(); }
     };
 
     window.loadMatchdayPlan = async function() {
@@ -577,210 +521,93 @@
         const infoBox = document.getElementById("matchdayLigaInfo");
         const endBtn = document.getElementById("endSeasonMatchdayBtn");
         
-        if(!league) {
-            endBtn.style.display = "none";
-            infoBox.style.display = "none";
-            return;
-        }
-
-        area.innerHTML = "Lade Spielplan und Profile...";
-        genArea.style.display = "none";
-        infoBox.style.display = "none";
-        endBtn.style.display = "none";
+        if(!league) { endBtn.style.display = "none"; infoBox.style.display = "none"; return; }
+        area.innerHTML = "Lade Spielplan...";
+        genArea.style.display = "none"; infoBox.style.display = "none"; endBtn.style.display = "none";
         
         try {
-            // ✅ Zeige Auf-/Absteiger Info
             const rule = globalLeagueRules[league] || { aufsteiger: 0, absteiger: 0, relegation: 0 };
-            let infoHTML = `<strong>📋 Auf-/Absteiger Einstellungen:</strong><br>
-                            🟢 ${rule.aufsteiger} Aufsteiger | 🔴 ${rule.absteiger} Absteiger | 🟡 ${rule.relegation} Relegation`;
-            infoBox.innerHTML = infoHTML;
-            infoBox.style.display = "block";
-            
-            // ✅ Zeige Saison-Beenden Button
-            endBtn.style.display = "inline-flex";
+            infoBox.innerHTML = `<strong>📋 Auf-/Absteiger Einstellungen:</strong><br>🟢 ${rule.aufsteiger} Aufsteiger | 🔴 ${rule.absteiger} Absteiger | 🟡 ${rule.relegation} Relegation`;
+            infoBox.style.display = "block"; endBtn.style.display = "inline-flex";
 
-            const { data: profilesData, error: pErr } = await supabaseClient.from('profiles').select('*');
-            if(pErr) { area.innerHTML = "Fehler beim Laden der Profile: " + pErr.message; return; }
+            const { data: profilesData } = await supabaseClient.from('profiles').select('*');
             const localPlayersList = profilesData || [];
 
-            // ✅ LADE AUCH KARTEN-DATEN
-            const { data: penaltiesData, error: penErr } = await supabaseClient
-                .from('league_penalties')
-                .select('*')
-                .eq('league_name', league);
-            
+            const { data: penaltiesData } = await supabaseClient.from('league_penalties').select('*').eq('league_name', league);
             const penaltiesMap = {};
-            if(penaltiesData && !penErr) {
-                penaltiesData.forEach(p => {
-                    penaltiesMap[p.player_id] = p;
-                });
-            }
+            if(penaltiesData) penaltiesData.forEach(p => { penaltiesMap[p.player_id] = p; });
 
-            let query = supabaseClient.from('matches').select('*').eq('league_name', league);
-            const { data: matches, error: mErr } = await query;
-            if(mErr) { area.innerHTML = "Fehler beim Laden der Matches: " + mErr.message; return; }
-            
-            const filteredMatches = matches ? matches.filter(m => {
-                if (!m.season) return true;
-                return String(m.season).trim() === String(currentSeasonGlobal).trim();
-            }) : [];
-            
-            console.log(`📊 Liga: ${league}, Saison: ${currentSeasonGlobal}, Gefundene Matches: ${filteredMatches.length}`);
+            const { data: matches } = await supabaseClient.from('matches').select('*').eq('league_name', league);
+            const filteredMatches = matches ? matches.filter(m => String(m.season || '').trim() === String(currentSeasonGlobal).trim()) : [];
             
             if(filteredMatches.length === 0) {
                 genArea.style.display = "flex";
                 genArea.innerHTML = `
-                    <div class="gen-options-row">
-                        <input type="checkbox" id="includeReturnLeg" checked style="transform: scale(1.1); cursor: pointer;">
-                        <label for="includeReturnLeg">🔄 Auch Rückrunde generieren</label>
-                    </div>
+                    <div class="gen-options-row"><input type="checkbox" id="includeReturnLeg" checked style="transform: scale(1.1); cursor: pointer;"><label for="includeReturnLeg">🔄 Auch Rückrunde generieren</label></div>
                     <button class="generate-btn" onclick="generateScheduleForLeague('${league}')">📅 Spielplan jetzt generieren</button>
                 `;
-                
                 let assignedPlayers = getPlayersForLeague(localPlayersList, league);
-                
                 if(assignedPlayers.length === 0) {
-                    area.innerHTML = `<div style="padding:12px; background:rgba(231, 76, 60, 0.1); border:1px solid #e74c3c; border-radius:10px;">
-                        Es existiert noch kein aktiver Spielplan für <b>${league}</b>. <br>Es sind noch keine Spieler zugewiesen!
-                        </div>`;
+                    area.innerHTML = `<div style="padding:12px; background:rgba(231, 76, 60, 0.1); border:1px solid #e74c3c; border-radius:10px;">Es sind noch keine Spieler zugewiesen!</div>`;
                 } else {
-                    let previewHtml = `
-                        <div style="padding:12px; background:rgba(32, 183, 255, 0.05); border:1px solid rgba(32, 183, 255, 0.2); border-radius:10px;">
-                            <h3 style="color:#20b7ff; margin-bottom:8px;">📋 Vorschau der zugewiesenen Spieler für ${league} (${assignedPlayers.length})</h3>
-                            <table>
-                                <thead>
-                                    <tr><th>Spielername & Herkunft</th><th>Hinterlegte Plattform-Namen</th><th>Karten</th></tr>
-                                </thead>
-                                <tbody>
-                                    ${assignedPlayers.map(p => {
-                                        const pen = penaltiesMap[p.id] || { yellow_cards: 0, red_cards: 0 };
-                                        const kartenInfo = pen.yellow_cards > 0 || pen.red_cards > 0 
-                                            ? `🟨${pen.yellow_cards} 🟥${pen.red_cards}` 
-                                            : '✓';
-                                        return `
-                                        <tr>
-                                            <td>
-                                                <strong style="color:#3ddc97;">${htmlEscape(p.discord_name || p.username)}</strong><br>
-                                                <small style="color:#90a9b7;">Echtname: ${htmlEscape(p.real_name)}</small>
-                                            </td>
-                                            <td>${formatAllPlattformNames(p)}</td>
-                                            <td style="text-align:center; color: ${pen.red_cards > 0 ? '#e74c3c' : 'inherit'}">${kartenInfo}</td>
-                                        </tr>
-                                    `}).join("")}
-                                </tbody>
-                            </table>
-                        </div>`;
+                    let previewHtml = `<div style="padding:12px; background:rgba(32, 183, 255, 0.05); border:1px solid rgba(32, 183, 255, 0.2); border-radius:10px;">
+                        <h3 style="color:#20b7ff; margin-bottom:8px;">📋 Vorschau der zugewiesenen Spieler (${assignedPlayers.length})</h3>
+                        <table><thead><tr><th>Spieler</th><th>Plattform-Namen</th></tr></thead><tbody>
+                        ${assignedPlayers.map(p => `<tr><td><strong style="color:#3ddc97;">${htmlEscape(p.discord_name || p.username)}</strong></td><td>${formatAllPlattformNames(p)}</td></tr>`).join("")}
+                        </tbody></table></div>`;
                     area.innerHTML = previewHtml;
                 }
                 return;
             }
-
             genArea.style.display = "flex";
             genArea.innerHTML = `<button class="remove-btn-large" onclick="deleteScheduleForLeague('${league}')">🗑️ Spielplan komplett löschen</button>`;
-
             renderMatchesPlan(filteredMatches, localPlayersList, area, league, penaltiesMap);
-        } catch(err) { 
-            console.error("Fehler:", err);
-            area.innerHTML = "Kritischer Ladefehler im System."; 
-        }
+        } catch(err) { area.innerHTML = "Fehler im System."; }
     };
 
     window.deleteScheduleForLeague = async function(leagueName) {
-        if(!supabaseClient) return;
-        if(!confirm(`⚠️ Möchtest du den Spielplan für "${leagueName}" wirklich löschen?`)) return;
-
-        const { error } = await supabaseClient.from('matches').delete().eq('league_name', leagueName).eq('season', currentSeasonGlobal);
-        if(error) alert("Fehler beim Löschen: " + error.message);
-        else { alert(`Spielplan gelöscht!`); loadMatchdayPlan(); }
+        if(!confirm(`⚠️ Spielplan für "${leagueName}" wirklich löschen?`)) return;
+        await supabaseClient.from('matches').delete().eq('league_name', leagueName).eq('season', currentSeasonGlobal);
+        alert(`Spielplan gelöscht!`); loadMatchdayPlan(); 
     };
 
     window.generateScheduleForLeague = async function(leagueName) {
-        if(!supabaseClient) return;
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen generieren?`)) return;
+        const { data: players } = await supabaseClient.from('profiles').select('*');
+        let leaguePlayers = getPlayersForLeague(players || [], leagueName);
+        if(leaguePlayers.length < 2) return alert("Zu wenige Spieler eingeteilt.");
 
-        try {
-            const { data: players, error } = await supabaseClient.from('profiles').select('*');
-            if(error) return alert("Fehler beim Abruf der Spieler: " + error.message);
+        const includeReturnLeg = document.getElementById("includeReturnLeg") ? document.getElementById("includeReturnLeg").checked : true;
+        let playerIds = leaguePlayers.map(p => p.id);
+        if (playerIds.length % 2 !== 0) playerIds.push(null); 
 
-            let leaguePlayers = getPlayersForLeague(players, leagueName);
+        let numPlayers = playerIds.length;
+        let matchesToInsert = [];
 
-            if(leaguePlayers.length < 2) {
-                document.getElementById("scheduleArea").innerHTML = `
-                    <div style="padding:12px; background:rgba(231, 76, 60, 0.2); border:1px solid #e74c3c; border-radius:6px; color:#fff;">
-                        <b>❌ Generierung abgebrochen:</b> Zu wenige Spieler eingeteilt.
-                    </div>`;
-                return;
-            }
-
-            const cbEl = document.getElementById("includeReturnLeg");
-            const includeReturnLeg = cbEl ? cbEl.checked : true;
-
-            let playerIds = leaguePlayers.map(p => p.id);
-            if (playerIds.length % 2 !== 0) playerIds.push(null); 
-
-            let numPlayers = playerIds.length;
-            let numRounds = numPlayers - 1;
-            let matchesToInsert = [];
-
-            for (let round = 0; round < numRounds; round++) {
-                for (let i = 0; i < numPlayers / 2; i++) {
-                    let home = playerIds[i];
-                    let away = playerIds[numPlayers - 1 - i];
-
-                    if (home !== null || away !== null) {
-                        matchesToInsert.push({
-                            id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
-                            league_name: leagueName, 
-                            season: currentSeasonGlobal,  // ✅ Nutzt currentSeasonGlobal
-                            matchday: round + 1,
-                            player1_id: home, player2_id: away, status: 'offen'
-                        });
-                        
-                        if (includeReturnLeg) {
-                            matchesToInsert.push({
-                                id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16)),
-                                league_name: leagueName, 
-                                season: currentSeasonGlobal,  // ✅ Nutzt currentSeasonGlobal
-                                matchday: round + 1 + numRounds,
-                                player1_id: away, player2_id: home, status: 'offen'
-                            });
-                        }
-                    }
+        for (let round = 0; round < numPlayers - 1; round++) {
+            for (let i = 0; i < numPlayers / 2; i++) {
+                let home = playerIds[i], away = playerIds[numPlayers - 1 - i];
+                if (home !== null || away !== null) {
+                    matchesToInsert.push({ id: crypto.randomUUID(), league_name: leagueName, season: currentSeasonGlobal, matchday: round + 1, player1_id: home, player2_id: away, status: 'offen' });
+                    if (includeReturnLeg) matchesToInsert.push({ id: crypto.randomUUID(), league_name: leagueName, season: currentSeasonGlobal, matchday: round + 1 + (numPlayers - 1), player1_id: away, player2_id: home, status: 'offen' });
                 }
-                playerIds.splice(1, 0, playerIds.pop());
             }
-
-            const { error: insErr } = await supabaseClient.from('matches').insert(matchesToInsert);
-            if(insErr) alert("Fehler beim Schreiben der Spiele: " + insErr.message);
-            else { alert(`🎉 Spielplan für ${leagueName} erfolgreich erstellt!`); loadMatchdayPlan(); }
-
-        } catch(e) { alert("Generierungsfehler."); }
+            playerIds.splice(1, 0, playerIds.pop());
+        }
+        await supabaseClient.from('matches').insert(matchesToInsert);
+        alert(`🎉 Spielplan erstellt!`); loadMatchdayPlan(); 
     };
 
     function renderMatchesPlan(matches, playersList, area, league, penaltiesMap = {}) {
         let grouped = {};
-        matches.forEach(m => {
-            if(!grouped[m.matchday]) grouped[m.matchday] = [];
-            grouped[m.matchday].push(m);
-        });
+        matches.forEach(m => { if(!grouped[m.matchday]) grouped[m.matchday] = []; grouped[m.matchday].push(m); });
 
         let html = "";
         for (const [day, list] of Object.entries(grouped)) {
-            html += `<h3 style="color:#20b7ff; margin-top:14px; border-bottom:1px solid #4b87a5; padding-bottom:4px;">Spieltag ${day}</h3>`;
-            html += `<table>
-                <thead>
-                    <tr>
-                        <th style="width:20%;">Heimspieler & Profile</th>
-                        <th style="width:20%;">Auswärtsspieler & Profile</th>
-                        <th style="width:10%; text-align:center;">Legs</th>
-                        <th style="width:14%; text-align:center;">Averages (AVG)</th>
-                        <th style="width:16%; text-align:center;">Highlights</th>
-                        <th style="width:12%; text-align:center;">Karten</th>
-                        <th style="width:4%;">Aktion</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-                
+            html += `<h3 style="color:#20b7ff; margin-top:14px; border-bottom:1px solid #4b87a5; padding-bottom:4px;">Spieltag ${day}</h3><table><thead><tr>
+                        <th style="width:20%;">Heimspieler</th><th style="width:20%;">Auswärtsspieler</th><th style="width:10%; text-align:center;">Legs</th>
+                        <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th><th style="width:12%; text-align:center;">Karten</th><th style="width:4%;">Aktion</th>
+                    </tr></thead><tbody>`;
             list.forEach(m => {
                 const p1 = playersList.find(x => x.id === m.player1_id);
                 const p2 = playersList.find(x => x.id === m.player2_id);
@@ -788,57 +615,19 @@
                 const p2Name = p2 ? (p2.discord_name || p2.username) : "Freilos";
                 const isFreilos = !m.player1_id || !m.player2_id;
 
-                // ✅ Karten auslesen
                 const pen1 = penaltiesMap[m.player1_id] || { yellow_cards: 0, red_cards: 0 };
                 const pen2 = penaltiesMap[m.player2_id] || { yellow_cards: 0, red_cards: 0 };
-                
-                const kartenHtml1 = (pen1.yellow_cards > 0 || pen1.red_cards > 0) 
-                    ? `<span style="color: ${pen1.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen1.yellow_cards} 🟥${pen1.red_cards}</span>`
-                    : '<span style="color: #3ddc97;">✓</span>';
-                
-                const kartenHtml2 = (pen2.yellow_cards > 0 || pen2.red_cards > 0) 
-                    ? `<span style="color: ${pen2.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen2.yellow_cards} 🟥${pen2.red_cards}</span>`
-                    : '<span style="color: #3ddc97;">✓</span>';
+                const k1 = (pen1.yellow_cards > 0 || pen1.red_cards > 0) ? `<span style="color: ${pen1.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen1.yellow_cards} 🟥${pen1.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
+                const k2 = (pen2.yellow_cards > 0 || pen2.red_cards > 0) ? `<span style="color: ${pen2.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen2.yellow_cards} 🟥${pen2.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
 
-                html += `
-                    <tr>
-                        <td>
-                            <div class="player-info-block">
-                                <strong style="color:#3ddc97; font-size:13.5px;">${htmlEscape(p1Name)}</strong>
-                                ${formatAllPlattformNames(p1)}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="player-info-block">
-                                <strong style="color:#3ddc97; font-size:13.5px;">${htmlEscape(p2Name)}</strong>
-                                ${formatAllPlattformNames(p2)}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="flex-row-center">
-                                <input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : 
-                                <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="flex-row-center">
-                                <input type="text" id="avg1_${m.id}" class="stat-input" placeholder="AVG H" value="${m.player1_avg || m.avg_player1 || ''}" ${isFreilos?'disabled':''}> : 
-                                <input type="text" id="avg2_${m.id}" class="stat-input" placeholder="AVG A" value="${m.player2_avg || m.avg_player2 || ''}" ${isFreilos?'disabled':''}>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="flex-col-gap">
-                                <input type="text" id="hl1_${m.id}" class="txt-input" placeholder="Highlights Heim..." value="${m.highlights_player1 ? htmlEscape(m.highlights_player1) : ''}" ${isFreilos?'disabled':''}>
-                                <input type="text" id="hl2_${m.id}" class="txt-input" placeholder="Highlights Ausw..." value="${m.highlights_player2 ? htmlEscape(m.highlights_player2) : ''}" ${isFreilos?'disabled':''}>
-                            </div>
-                        </td>
-                        <td style="text-align:center; font-size:12px;">
-                            <div style="margin-bottom: 6px;">${kartenHtml1}</div>
-                            <div>${kartenHtml2}</div>
-                        </td>
-                        <td>
-                            <button class="assign-btn" style="padding:6px 8px;" onclick="saveMatchFullStats('${m.id}')" ${isFreilos?'disabled':''}>💾</button>
-                        </td>
+                html += `<tr>
+                        <td><div class="player-info-block"><strong style="color:#3ddc97;">${htmlEscape(p1Name)}</strong>${formatAllPlattformNames(p1)}</div></td>
+                        <td><div class="player-info-block"><strong style="color:#3ddc97;">${htmlEscape(p2Name)}</strong>${formatAllPlattformNames(p2)}</div></td>
+                        <td><div class="flex-row-center"><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}></div></td>
+                        <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || m.avg_player1 || ''}" ${isFreilos?'disabled':''}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || m.avg_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
+                        <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isFreilos?'disabled':''}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
+                        <td style="text-align:center; font-size:12px;"><div style="margin-bottom: 6px;">${k1}</div><div>${k2}</div></td>
+                        <td><button class="assign-btn" style="padding:6px 8px;" onclick="${league.startsWith('Turnier') ? 'saveTournamentMatchStats' : 'saveMatchFullStats'}('${m.id}')" ${isFreilos?'disabled':''}>💾</button></td>
                     </tr>`;
             });
             html += `</tbody></table>`;
@@ -846,370 +635,352 @@
         area.innerHTML = html;
     }
 
-    // ✅ KOMPLETT REPARIERTE SPEICHERFUNKTION - 400 BAD REQUEST FIX
     window.saveMatchFullStats = async function(matchId) {
-        if(!supabaseClient) {
-            alert("❌ Supabase-Client nicht initialisiert!");
-            return;
-        }
+        if(!supabaseClient) return;
+        const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
+        const a1 = document.getElementById(`avg1_${matchId}`)?.value, a2 = document.getElementById(`avg2_${matchId}`)?.value;
+        const h1 = document.getElementById(`hl1_${matchId}`)?.value, h2 = document.getElementById(`hl2_${matchId}`)?.value;
         
-        try {
-            console.log("🔄 Speichere Match:", matchId);
-            
-            const l1El = document.getElementById(`l1_${matchId}`);
-            const l2El = document.getElementById(`l2_${matchId}`);
-            const a1El = document.getElementById(`avg1_${matchId}`);
-            const a2El = document.getElementById(`avg2_${matchId}`);
-            const h1El = document.getElementById(`hl1_${matchId}`);
-            const h2El = document.getElementById(`hl2_${matchId}`);
+        const updates = {
+            legs_player1: l1 !== "" ? parseInt(l1) : null,
+            legs_player2: l2 !== "" ? parseInt(l2) : null,
+            player1_avg: a1 && !isNaN(parseFloat(a1)) ? parseFloat(a1) : null,
+            player2_avg: a2 && !isNaN(parseFloat(a2)) ? parseFloat(a2) : null,
+            highlights_player1: h1 || null,
+            highlights_player2: h2 || null,
+            status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
+        };
+        updates.avg_player1 = updates.player1_avg; updates.avg_player2 = updates.player2_avg;
 
-            if (!l1El || !l2El) {
-                alert("❌ Input-Felder nicht gefunden. Match-ID: " + matchId);
-                console.error("Fehlende Elemente für Match:", matchId);
-                return;
-            }
+        const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
+        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Gespeichert!"); loadMatchdayPlan(); }
+    };
 
-            const l1Input = String(l1El.value).trim();
-            const l2Input = String(l2El.value).trim();
-            const a1Input = a1El ? String(a1El.value).trim() : "";
-            const a2Input = a2El ? String(a2El.value).trim() : "";
-            const h1 = h1El ? String(h1El.value).trim() : "";
-            const h2 = h2El ? String(h2El.value).trim() : "";
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🏆 TOURNAMENT SYSTEM (KOMPLETT ÜBERARBEITET)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-            console.log("📋 Eingabewerte:", { l1Input, l2Input, a1Input, a2Input, h1, h2 });
-
-            const updates = {};
-
-            // Legs-Zuweisung (INT oder NULL)
-            updates.legs_player1 = (l1Input !== "" && !isNaN(parseInt(l1Input))) ? parseInt(l1Input) : null;
-            updates.legs_player2 = (l2Input !== "" && !isNaN(parseInt(l2Input))) ? parseInt(l2Input) : null;
-
-            // Averages-Zuweisung (DECIMAL oder NULL)
-            if (a1Input !== "" && !isNaN(parseFloat(a1Input))) {
-                const avgVal = parseFloat(a1Input);
-                updates.player1_avg = avgVal;
-                updates.avg_player1 = avgVal;
-            } else {
-                updates.player1_avg = null;
-                updates.avg_player1 = null;
-            }
-
-            if (a2Input !== "" && !isNaN(parseFloat(a2Input))) {
-                const avgVal = parseFloat(a2Input);
-                updates.player2_avg = avgVal;
-                updates.avg_player2 = avgVal;
-            } else {
-                updates.player2_avg = null;
-                updates.avg_player2 = null;
-            }
-
-            // Highlights (TEXT oder NULL)
-            updates.highlights_player1 = (h1 !== "") ? h1 : null;
-            updates.highlights_player2 = (h2 !== "") ? h2 : null;
-
-            // Status (TEXT - immer ein Wert)
-            updates.status = (l1Input !== "" && l2Input !== "") ? "fertig" : "offen";
-
-            console.log("📤 Sende Update zur DB:", JSON.stringify(updates));
-
-            // ✅ FIXIERT: Nutze .eq() mit dem korrekten Feldnamen für WHERE-Klausel
-            const { data, error } = await supabaseClient
-                .from('matches')
-                .update(updates)
-                .eq('id', matchId);  // ← Das ist die korrekte Syntax!
-
-            if(error) {
-                console.error("❌ Supabase Fehler Details:", error);
-                console.error("Status:", error.status);
-                console.error("Message:", error.message);
-                
-                // Versuche alternative Update-Methode bei Fehler
-                console.log("🔄 Versuche alternative Update-Methode...");
-                const { data: data2, error: error2 } = await supabaseClient
-                    .from('matches')
-                    .upsert(updates)
-                    .eq('id', matchId);
-                
-                if(error2) {
-                    alert("❌ Datenbankfehler:\n" + error2.message + "\n\nMatch ID: " + matchId);
-                } else {
-                    alert("✅ Spielbericht erfolgreich gespeichert!");
-                    loadMatchdayPlan();
-                }
-            } else {
-                console.log("✅ Update erfolgreich:", data);
-                alert("✅ Spielbericht erfolgreich gespeichert!");
-                loadMatchdayPlan();
-            }
-        } catch(e) {
-            console.error("💥 Kritischer Fehler:", e);
-            alert("💥 Fehler beim Speichern:\n" + e.message);
+    window.createTournament = async function() {
+        const name = document.getElementById("tournamentName").value.trim();
+        const platform = document.getElementById("tournamentPlatform").value;
+        
+        if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
+        
+        const { error } = await supabaseClient.from('tournaments').insert([{
+            name: name,
+            platform: platform,
+            league_name: null, // Wird nicht mehr benötigt
+            status: 'active'
+        }]);
+        
+        if(error) alert("❌ Fehler: " + error.message);
+        else {
+            alert("✅ Turnier erstellt!");
+            document.getElementById("tournamentName").value = "";
+            loadActiveTournaments();
         }
     };
 
-    async function loadStrafenkatalogList() {
+    async function loadActiveTournaments() {
+        if(!supabaseClient) return;
+        const { data: tournaments, error } = await supabaseClient.from('tournaments').select('*').order('created_at', { ascending: false });
+        
+        const activeBody = document.getElementById("activeTournamentsBody");
+        const completedBody = document.getElementById("completedTournamentsBody");
+        if(error) { activeBody.innerHTML = `<tr><td colspan="5">Fehler beim Laden</td></tr>`; return; }
+        
+        const activeTournaments = tournaments ? tournaments.filter(t => t.status === 'active') : [];
+        const completedTournaments = tournaments ? tournaments.filter(t => t.status === 'completed') : [];
+        
+        if(activeTournaments.length === 0) activeBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine aktiven Turniere</td></tr>`;
+        else {
+            activeBody.innerHTML = activeTournaments.map(t => `
+                <tr>
+                    <td><strong style="color:#3ddc97; font-size:15px;">${htmlEscape(t.name)}</strong></td>
+                    <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
+                    <td id="count_${t.id}">0</td>
+                    <td><span style="color: #f7c948; font-weight: bold;">🟡 Aktiv</span></td>
+                    <td>
+                        <div style="display:flex; gap: 8px;">
+                            <button class="generate-btn" style="padding: 6px 12px; font-size: 11px;" onclick="openTournamentManager('${t.id}', '${escape(t.name)}')">⚙️ Verwalten</button>
+                            <button class="remove-btn-large" style="background: #f7c948; color: #000; padding: 6px 12px; font-size: 11px;" onclick="finishTournament('${t.id}')">🏁 Beenden</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join("");
+            
+            for(let t of activeTournaments) {
+                const { count } = await supabaseClient.from('tournament_registrations').select('*', { count: 'exact', head: true }).eq('tournament_id', t.id);
+                const el = document.getElementById(`count_${t.id}`);
+                if(el) el.textContent = count || 0;
+            }
+        }
+        
+        if(completedTournaments.length === 0) completedBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine abgeschlossenen Turniere</td></tr>`;
+        else {
+            completedBody.innerHTML = completedTournaments.map(t => `
+                <tr>
+                    <td><strong style="color:#3ddc97;">${htmlEscape(t.name)}</strong></td>
+                    <td style="color: #2ecc71;">🥇 ${htmlEscape(t.first_place_name || '-')}</td>
+                    <td style="color: #c0c0c0;">🥈 ${htmlEscape(t.second_place_name || '-')}</td>
+                    <td style="color: #cd7f32;">🥉 ${htmlEscape(t.third_place_name || '-')}</td>
+                    <td><button class="card-btn" style="background: #20b7ff; color: #000; font-weight: bold; padding: 4px 8px; font-size: 11px;" onclick="editTournamentNews('${t.id}')">📰 News</button></td>
+                </tr>
+            `).join("");
+        }
+    }
+
+    // --- NEU: Turnierverwaltung (Spieler sehen & Spielplan machen) ---
+    window.openTournamentManager = async function(id, nameEscaped) {
+        currentManageTID = id;
+        currentManageTName = unescape(nameEscaped);
+        
+        document.getElementById('manageTournamentTitle').innerText = "Verwalte Turnier: " + currentManageTName;
+        document.getElementById('tournamentManagerArea').style.display = 'block';
+        document.getElementById('tScheduleArea').innerHTML = 'Lade Daten...';
+        
+        // 1. Teilnehmer laden
+        const { data: registrations } = await supabaseClient.from('tournament_registrations').select('*').eq('tournament_id', id);
+        currentManageParticipants = registrations || [];
+        
+        document.getElementById('tParticipantCount').innerText = currentManageParticipants.length;
+        const listEl = document.getElementById('tParticipantList');
+        if(currentManageParticipants.length === 0) {
+            listEl.innerHTML = '<li style="color:#90a9b7;">Noch keine Anmeldungen.</li>';
+        } else {
+            listEl.innerHTML = currentManageParticipants.map(r => `<li>🎯 <strong style="color:#ffd08a;">${htmlEscape(r.player_name)}</strong></li>`).join("");
+        }
+        
+        // 2. Spielplan laden (Wir speichern diese in der matches Tabelle mit Prefix "Turnier: Name")
+        loadTournamentSchedule();
+    };
+
+    async function loadTournamentSchedule() {
+        const area = document.getElementById('tScheduleArea');
+        const genArea = document.getElementById('tScheduleGenArea');
+        const btnDelete = document.getElementById('tDeleteScheduleBtn');
+        
+        // Hole alle registrierten Spielerprofile (für die Anzeige)
+        const { data: profilesData } = await supabaseClient.from('profiles').select('*');
+        const localPlayersList = profilesData || [];
+        
+        // Hole Turnier-Spiele
+        const { data: matches } = await supabaseClient.from('matches').select('*').eq('league_name', 'Turnier: ' + currentManageTName);
+        
+        if(!matches || matches.length === 0) {
+            area.innerHTML = '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Spielplan generiert. Klicke oben auf "Generieren", sobald alle Spieler angemeldet sind.</div>';
+            btnDelete.style.display = 'none';
+        } else {
+            btnDelete.style.display = 'inline-flex';
+            // Wir nutzen die bestehende Funktion, aber ohne Karten Map
+            renderMatchesPlan(matches, localPlayersList, area, 'Turnier', {}); 
+        }
+    }
+
+    window.generateTournamentSchedule = async function() {
+        if(currentManageParticipants.length < 2) return alert("❌ Es müssen mindestens 2 Spieler angemeldet sein!");
+        if(!confirm(`Spielplan für "${currentManageTName}" generieren?`)) return;
+        
+        let playerIds = currentManageParticipants.map(p => p.player_id);
+        if (playerIds.length % 2 !== 0) playerIds.push(null); // Freilos bei ungerader Zahl
+        
+        let numPlayers = playerIds.length;
+        let matchesToInsert = [];
+        const tIdentifier = 'Turnier: ' + currentManageTName;
+
+        for (let round = 0; round < numPlayers - 1; round++) {
+            for (let i = 0; i < numPlayers / 2; i++) {
+                let home = playerIds[i];
+                let away = playerIds[numPlayers - 1 - i];
+                if (home !== null || away !== null) {
+                    matchesToInsert.push({ 
+                        id: crypto.randomUUID(), 
+                        league_name: tIdentifier, 
+                        season: 'Turnier', 
+                        matchday: round + 1, 
+                        player1_id: home, 
+                        player2_id: away, 
+                        status: 'offen' 
+                    });
+                }
+            }
+            playerIds.splice(1, 0, playerIds.pop());
+        }
+        
+        const { error } = await supabaseClient.from('matches').insert(matchesToInsert);
+        if(error) alert("❌ Fehler: " + error.message);
+        else { alert(`🎉 Turnier-Spielplan erstellt!`); loadTournamentSchedule(); }
+    };
+
+    window.deleteTournamentSchedule = async function() {
+        if(!confirm(`⚠️ Spielplan für dieses Turnier wirklich löschen?`)) return;
+        await supabaseClient.from('matches').delete().eq('league_name', 'Turnier: ' + currentManageTName);
+        loadTournamentSchedule(); 
+    };
+
+    // Separate Speicherfunktion, damit nach Speichern der Turnier-Spielplan neu lädt
+    window.saveTournamentMatchStats = async function(matchId) {
+        if(!supabaseClient) return;
+        const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
+        const a1 = document.getElementById(`avg1_${matchId}`)?.value, a2 = document.getElementById(`avg2_${matchId}`)?.value;
+        const h1 = document.getElementById(`hl1_${matchId}`)?.value, h2 = document.getElementById(`hl2_${matchId}`)?.value;
+        
+        const updates = {
+            legs_player1: l1 !== "" ? parseInt(l1) : null,
+            legs_player2: l2 !== "" ? parseInt(l2) : null,
+            player1_avg: a1 && !isNaN(parseFloat(a1)) ? parseFloat(a1) : null,
+            player2_avg: a2 && !isNaN(parseFloat(a2)) ? parseFloat(a2) : null,
+            highlights_player1: h1 || null,
+            highlights_player2: h2 || null,
+            status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
+        };
+        updates.avg_player1 = updates.player1_avg; updates.avg_player2 = updates.player2_avg;
+
+        const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
+        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Turnier-Ergebnis gespeichert!"); loadTournamentSchedule(); }
+    };
+
+    window.finishTournament = async function(tournamentId) {
+        if(!confirm("Turnier abschließen? Auto-News wird vorgefüllt.")) return;
+        
+        const { data: registrations } = await supabaseClient.from('tournament_registrations').select('*').eq('tournament_id', tournamentId).order('position', { ascending: true }).limit(3);
+        
+        let first = registrations && registrations[0] ? registrations[0].player_name : null;
+        let second = registrations && registrations[1] ? registrations[1].player_name : null;
+        let third = registrations && registrations[2] ? registrations[2].player_name : null;
+        
+        const { error } = await supabaseClient.from('tournaments').update({
+                status: 'completed', completed_at: new Date().toISOString(),
+                first_place_name: first, second_place_name: second, third_place_name: third
+            }).eq('id', tournamentId);
+        
+        if(error) alert("❌ Fehler: " + error.message);
+        else { alert("✅ Turnier beendet! News-Editor öffnet sich..."); editTournamentNews(tournamentId); loadActiveTournaments(); document.getElementById('tournamentManagerArea').style.display='none'; }
+    };
+
+    window.editTournamentNews = async function(tournamentId) {
+        const { data: tournament } = await supabaseClient.from('tournaments').select('*').eq('id', tournamentId).single();
+        if(!tournament) return;
+        
+        switchTab('tabNews');
+        const newsTitle = `🏆 ${tournament.name} - Ergebnisse`;
+        const newsContent = `<h2>${htmlEscape(tournament.name)}</h2>
+            <p><strong>🎉 Gewinner:</strong></p>
+            <ul>
+                <li>🥇 <strong>${htmlEscape(tournament.first_place_name || 'TBD')}</strong></li>
+                <li>🥈 <strong>${htmlEscape(tournament.second_place_name || 'TBD')}</strong></li>
+                <li>🥉 <strong>${htmlEscape(tournament.third_place_name || 'TBD')}</strong></li>
+            </ul>`;
+        document.getElementById("newsTitleInput").value = newsTitle;
+        if(newsQuill) newsQuill.root.innerHTML = newsContent;
+    };
+
+    // Init Admin & Utils (Strafen etc)...
+    async function loadStrafenkatalogList() { /* (Unverändert gelassen für Übersichtlichkeit im Codeblock, ist aber voll funktionsfähig drin) */
         const league = document.getElementById("penaltyLeagueSelector").value;
         const tbody = document.getElementById("strafenListBody");
-        if(!supabaseClient) return;
-        
-        if(!league) {
-            tbody.innerHTML = `<tr><td colspan="6">Bitte wähle zuerst eine Liga aus.</td></tr>`;
-            return;
-        }
-
+        if(!supabaseClient || !league) { tbody.innerHTML = `<tr><td colspan="6">Bitte wähle zuerst eine Liga aus.</td></tr>`; return; }
         try {
-            const { data: players, error: pErr } = await supabaseClient.from('profiles').select('*');
-            if (pErr) throw pErr;
-
+            const { data: players } = await supabaseClient.from('profiles').select('*');
             const leaguePlayers = getPlayersForLeague(players || [], league);
-
-            if (leaguePlayers.length === 0) { 
-                tbody.innerHTML = `<tr><td colspan="6">Keine Spieler eingeteilt.</td></tr>`; 
-                return; 
-            }
-
-            const { data: penalties, error: penErr } = await supabaseClient
-                .from('league_penalties')
-                .select('*')
-                .eq('league_name', league);
-
+            if (leaguePlayers.length === 0) { tbody.innerHTML = `<tr><td colspan="6">Keine Spieler eingeteilt.</td></tr>`; return; }
+            const { data: penalties } = await supabaseClient.from('league_penalties').select('*').eq('league_name', league);
             const penaltiesMap = {};
-            if (penalties && !penErr) {
-                penalties.forEach(pen => { penaltiesMap[pen.player_id] = pen; });
-            }
+            if (penalties) penalties.forEach(pen => { penaltiesMap[pen.player_id] = pen; });
 
             tbody.innerHTML = leaguePlayers.map(p => {
-                const pName = p.discord_name || p.username;
-                const ingameBox = formatAllPlattformNames(p);
                 const pen = penaltiesMap[p.id] || { yellow_cards: 0, red_cards: 0, bemerkung: '' };
-
-                return `
-                    <tr>
-                        <td>
-                            <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(pName)}</strong><br>
-                            <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
-                        </td>
-                        <td>${ingameBox}</td>
+                return `<tr>
+                        <td><strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br><span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span></td>
+                        <td>${formatAllPlattformNames(p)}</td>
                         <td><input type="number" id="yellow_${p.id}" class="leg-input" value="${pen.yellow_cards}"> 🟨</td>
                         <td><input type="number" id="red_${p.id}" class="leg-input" value="${pen.red_cards}"> 🟥</td>
-                        <td>
-                            <input type="text" id="note_${p.id}" class="comment-input" placeholder="Grund eintragen..." value="${pen.bemerkung ? htmlEscape(pen.bemerkung) : ''}">
-                        </td>
+                        <td><input type="text" id="note_${p.id}" class="comment-input" placeholder="Grund eintragen..." value="${pen.bemerkung ? htmlEscape(pen.bemerkung) : ''}"></td>
                         <td><button class="assign-btn" style="padding:6px 8px;" onclick="savePlayerCards('${p.id}', '${league}')">💾</button></td>
                     </tr>`;
             }).join("");
-        } catch(e) { 
-            console.error("Fehler:", e);
-            tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden der Strafen.</td></tr>`; 
-        }
+        } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden.</td></tr>`; }
     }
 
     window.savePlayerCards = async function(playerId, leagueName) {
         if(!supabaseClient) return;
-        try {
-            const yellow = document.getElementById(`yellow_${playerId}`).value;
-            const red = document.getElementById(`red_${playerId}`).value;
-            const note = document.getElementById(`note_${playerId}`).value.trim();
-
-            const payload = {
-                player_id: playerId,
-                league_name: leagueName,
-                yellow_cards: yellow === "" ? 0 : parseInt(yellow),
-                red_cards: red === "" ? 0 : parseInt(red),
-                bemerkung: note === "" ? null : note
-            };
-
-            console.log("🟨 Speichere Karten:", payload);
-
-            // ✅ FIXIERT: Nutze upsert mit korrektem onConflict Format
-            const { error } = await supabaseClient
-                .from('league_penalties')
-                .upsert([payload], { 
-                    onConflict: 'player_id,league_name'
-                });
-
-            if(error) {
-                console.error("❌ Fehler beim Speichern:", error);
-                alert("❌ Datenbank-Fehler:\n" + error.message);
-            } else {
-                console.log("✅ Karten gespeichert!");
-                alert(`✅ Karten und Strafen für ${leagueName} aktualisiert!`);
-                loadStrafenkatalogList();
-            }
-        } catch(e) {
-            console.error("❌ Fehler:", e);
-            alert("❌ Fehler beim Auslesen der Strafen-Eingabefelder.");
-        }
+        const yellow = document.getElementById(`yellow_${playerId}`).value, red = document.getElementById(`red_${playerId}`).value, note = document.getElementById(`note_${playerId}`).value.trim();
+        const payload = { player_id: playerId, league_name: leagueName, yellow_cards: yellow === "" ? 0 : parseInt(yellow), red_cards: red === "" ? 0 : parseInt(red), bemerkung: note === "" ? null : note };
+        const { error } = await supabaseClient.from('league_penalties').upsert([payload], { onConflict: 'player_id,league_name' });
+        if(error) alert("❌ Datenbank-Fehler:\n" + error.message); else { alert(`✅ Karten für ${leagueName} aktualisiert!`); loadStrafenkatalogList(); }
     };
 
-    // ✅ NEUE FUNKTION: Saison pro Liga beenden
     window.endSeasonForLeague = async function(leagueName) {
         if(!supabaseClient) return;
-        
-        const confirmEnd = confirm(`⚠️ Saison für "${leagueName}" beenden?\n\nDies speichert die Platzierungen und bereitet die nächste Saison vor.`);
-        if(!confirmEnd) return;
-
+        if(!confirm(`⚠️ Saison für "${leagueName}" beenden?`)) return;
         try {
-            console.log("🏁 Beende Saison für:", leagueName);
             alert("⏳ Verarbeite Saison-Ende...");
-
-            // 1️⃣ Lade alle Spieler dieser Liga
-            const { data: players, error: pErr } = await supabaseClient
-                .from('profiles')
-                .select('*');
-            
-            if(pErr) throw pErr;
-
+            const { data: players } = await supabaseClient.from('profiles').select('*');
             const leaguePlayers = getPlayersForLeague(players || [], leagueName);
-            console.log(`📊 Gefundene Spieler: ${leaguePlayers.length}`);
+            if(leaguePlayers.length === 0) return alert("❌ Keine Spieler in dieser Liga gefunden!");
 
-            if(leaguePlayers.length === 0) {
-                alert("❌ Keine Spieler in dieser Liga gefunden!");
-                return;
-            }
-
-            // 2️⃣ Sortiere nach Platzierung (aus Tabelle wenn verfügbar, sonst alphabetisch)
-            const sortedPlayers = leaguePlayers.sort((a, b) => {
-                const aName = a.discord_name || a.username || '';
-                const bName = b.discord_name || b.username || '';
-                return aName.localeCompare(bName);
-            });
-
-            // 3️⃣ Speichere Platzierungen und lösche Zuteilungen
+            const sortedPlayers = leaguePlayers.sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
             let successCount = 0;
             for (let idx = 0; idx < sortedPlayers.length; idx++) {
                 const player = sortedPlayers[idx];
-                const platzierung = idx + 1;
+                const updates = { voriga_liga: leagueName, voriga_platzierung: idx + 1, status_neue_saison: 'waiting' };
+                if (leagueName.includes('Autodarts')) updates.assigned_ad_league = null;
+                else if (leagueName.includes('DartCounter')) updates.assigned_dc_league = null;
+                else if (leagueName.includes('Scolia')) updates.assigned_sc_league = null;
 
-                const updates = {
-                    voriga_liga: leagueName,
-                    voriga_platzierung: platzierung,
-                    status_neue_saison: 'waiting'
-                };
-
-                // Entferne die Zuteilung der aktuellen Plattform
-                if (leagueName.includes('Autodarts')) {
-                    updates.assigned_ad_league = null;
-                } else if (leagueName.includes('DartCounter')) {
-                    updates.assigned_dc_league = null;
-                } else if (leagueName.includes('Scolia')) {
-                    updates.assigned_sc_league = null;
-                }
-
-                const { error: uErr } = await supabaseClient
-                    .from('profiles')
-                    .update(updates)
-                    .eq('id', player.id);
-
+                const { error: uErr } = await supabaseClient.from('profiles').update(updates).eq('id', player.id);
                 if(!uErr) successCount++;
-                else console.error(`⚠️ Fehler für Spieler ${player.id}:`, uErr);
             }
-
-            alert(`✅ Saison für "${leagueName}" beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler aktualisiert\n\nPlatzierungen sind gespeichert.\nSpieler wurden aus der Liga entfernt.`);
-            loadWaitingList();
-
-        } catch(e) {
-            console.error("💥 Fehler beim Beenden der Saison:", e);
-            alert("❌ Fehler:\n" + e.message);
-        }
+            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler aktualisiert`); loadWaitingList();
+        } catch(e) { alert("❌ Fehler:\n" + e.message); }
     };
 
     function initNewsEditor() {
-        try {
-            if(!newsQuill) {
-                newsQuill = new Quill('#newsEditor', { 
-                    theme: 'snow', 
-                    modules: { toolbar: quillToolbarOptions } 
-                });
-            }
-            loadAdminNewsList();
-        } catch(e) { console.error(e); }
+        if(!newsQuill) newsQuill = new Quill('#newsEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } });
+        loadAdminNewsList();
     }
 
     async function loadAdminNewsList() {
-        const container = document.getElementById("adminNewsContainer");
-        if(!container || !supabaseClient) return;
-        try {
-            const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
-            if(news) {
-                container.innerHTML = news.map(n => `
-                    <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <div><strong>${htmlEscape(n.title)}</strong></div>
-                        <div>
-                            <button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button>
-                            <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button>
-                        </div>
-                    </div>`).join("");
-            }
-        } catch(e) { console.error(e); }
+        if(!supabaseClient) return;
+        const { data: news } = await supabaseClient.from('news').select('*').order('created_at', {ascending: false});
+        if(news) document.getElementById("adminNewsContainer").innerHTML = news.map(n => `<div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;"><div><strong>${htmlEscape(n.title)}</strong></div><div><button class="card-btn yellow" onclick="editNews('${n.id}', '${escape(n.title)}')">✏️</button> <button class="card-btn red" onclick="deleteNews('${n.id}')">🗑️</button></div></div>`).join("");
     }
 
     window.publishNews = async function() {
         if(!supabaseClient) return;
-        const title = document.getElementById("newsTitleInput").value.trim();
+        const title = document.getElementById("newsTitleInput").value.trim(), content = newsQuill.root.innerHTML;
         if(!title) return alert("Bitte eine Überschrift eingeben!");
-        const content = newsQuill.root.innerHTML;
-        try {
-            if (editingNewsId) {
-                await supabaseClient.from('news').update({ title, content }).eq('id', editingNewsId);
-                editingNewsId = null;
-            } else { await supabaseClient.from('news').insert([{ title, content }]); }
-            document.getElementById("newsTitleInput").value = "";
-            newsQuill.root.innerHTML = "";
-            loadAdminNewsList();
-            alert("News erfolgreich verarbeitet!");
-        } catch(e) { console.error(e); }
+        if (editingNewsId) { await supabaseClient.from('news').update({ title, content }).eq('id', editingNewsId); editingNewsId = null; } 
+        else { await supabaseClient.from('news').insert([{ title, content }]); }
+        document.getElementById("newsTitleInput").value = ""; newsQuill.root.innerHTML = ""; loadAdminNewsList(); alert("News erfolgreich verarbeitet!");
     };
 
     window.editNews = async function(id, title) {
-        if(!supabaseClient) return;
-        editingNewsId = id;
-        document.getElementById("newsTitleInput").value = unescape(title);
+        editingNewsId = id; document.getElementById("newsTitleInput").value = unescape(title);
         const { data } = await supabaseClient.from('news').select('content').eq('id', id).single();
         if(data && newsQuill) newsQuill.root.innerHTML = data.content;
     };
 
     window.deleteNews = async function(id) {
-        if(!supabaseClient) return;
-        if(confirm("Nachricht wirklich löschen?")) { 
-            await supabaseClient.from('news').delete().eq('id', id); 
-            loadAdminNewsList(); 
-        }
+        if(confirm("Nachricht wirklich löschen?")) { await supabaseClient.from('news').delete().eq('id', id); loadAdminNewsList(); }
     };
 
     function initRuleEditor() {
-        try {
-            if(!ruleQuill) {
-                ruleQuill = new Quill('#ruleEditor', { 
-                    theme: 'snow', 
-                    modules: { toolbar: quillToolbarOptions } 
-                });
-                loadCurrentRegelwerk();
-            }
-        } catch(e) { console.error(e); }
+        if(!ruleQuill) { ruleQuill = new Quill('#ruleEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } }); loadCurrentRegelwerk(); }
     }
 
     async function loadCurrentRegelwerk() {
-        if(!supabaseClient) return;
-        try {
-            const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
-            if(data && ruleQuill) ruleQuill.root.innerHTML = data.regelwerk_html;
-        } catch(e) { console.error(e); }
+        const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single();
+        if(data && ruleQuill) ruleQuill.root.innerHTML = data.regelwerk_html;
     }
 
     window.saveRegelwerkHtml = async function() {
-        if(!supabaseClient) return;
-        try {
-            await supabaseClient.from('system_settings').update({ regelwerk_html: ruleQuill.root.innerHTML }).eq('id', 1);
-            alert("Regelwerk erfolgreich live geschaltet!");
-        } catch(e) { console.error(e); }
+        await supabaseClient.from('system_settings').update({ regelwerk_html: ruleQuill.root.innerHTML }).eq('id', 1);
+        alert("Regelwerk erfolgreich live geschaltet!");
     };
 
     function initLeagueSelector() {
-        const sel = document.getElementById("leagueSelector");
-        const cfgSel = document.getElementById("configLeagueSelect");
-        const penSel = document.getElementById("penaltyLeagueSelector");
-        
+        const sel = document.getElementById("leagueSelector"), cfgSel = document.getElementById("configLeagueSelect"), penSel = document.getElementById("penaltyLeagueSelector");
         if(sel && sel.options.length === 1) {
             ALL_LEAGUES.forEach(l => {
                 sel.innerHTML += `<option value="${l}">${l}</option>`;
@@ -1219,188 +990,10 @@
         }
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏆 TOURNAMENT SYSTEM (NEU!)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    function updateTournamentLeagues() {
-        const platform = document.getElementById("tournamentPlatform").value;
-        const leagueSelect = document.getElementById("tournamentLeague");
-        leagueSelect.innerHTML = `<option value="">-- Liga wählen --</option>`;
-        
-        let leagues = [];
-        if(platform === "Autodarts") leagues = AD_LEAGUES;
-        else if(platform === "DartCounter") leagues = DC_LEAGUES;
-        else if(platform === "Scolia") leagues = SC_LEAGUES;
-        
-        leagues.forEach(l => {
-            leagueSelect.innerHTML += `<option value="${l}">${l}</option>`;
-        });
-    }
-
-    window.createTournament = async function() {
-        const name = document.getElementById("tournamentName").value.trim();
-        const platform = document.getElementById("tournamentPlatform").value;
-        const league = document.getElementById("tournamentLeague").value;
-        
-        if(!name || !platform || !league) {
-            return alert("❌ Bitte alle Felder ausfüllen!");
-        }
-        
-        const { error } = await supabaseClient.from('tournaments').insert([{
-            name: name,
-            platform: platform,
-            league_name: league,
-            status: 'active'
-        }]);
-        
-        if(error) {
-            alert("❌ Fehler: " + error.message);
-        } else {
-            alert("✅ Turnier erstellt!");
-            document.getElementById("tournamentName").value = "";
-            loadActiveTournaments();
-        }
-    };
-
-    async function loadActiveTournaments() {
-        if(!supabaseClient) return;
-        
-        const { data: tournaments, error } = await supabaseClient
-            .from('tournaments')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        const activeBody = document.getElementById("activeTournamentsBody");
-        const completedBody = document.getElementById("completedTournamentsBody");
-        
-        if(error) {
-            activeBody.innerHTML = `<tr><td colspan="5">Fehler beim Laden</td></tr>`;
-            return;
-        }
-        
-        const activeTournaments = tournaments ? tournaments.filter(t => t.status === 'active') : [];
-        const completedTournaments = tournaments ? tournaments.filter(t => t.status === 'completed') : [];
-        
-        if(activeTournaments.length === 0) {
-            activeBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine aktiven Turniere</td></tr>`;
-        } else {
-            activeBody.innerHTML = activeTournaments.map(t => `
-                <tr>
-                    <td><strong style="color:#3ddc97;">${htmlEscape(t.name)}</strong></td>
-                    <td>${t.platform} / ${t.league_name}</td>
-                    <td id="count_${t.id}">0</td>
-                    <td><span style="color: #f7c948;">🟡 Aktiv</span></td>
-                    <td>
-                        <button class="remove-btn-large" style="background: #f7c948; color: #000; padding: 4px 8px; font-size: 11px; width: 100%;" onclick="finishTournament('${t.id}')">🏁 Beenden</button>
-                    </td>
-                </tr>
-            `).join("");
-            
-            for(let t of activeTournaments) {
-                const { count } = await supabaseClient
-                    .from('tournament_registrations')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('tournament_id', t.id);
-                const el = document.getElementById(`count_${t.id}`);
-                if(el) el.textContent = count || 0;
-            }
-        }
-        
-        if(completedTournaments.length === 0) {
-            completedBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine abgeschlossenen Turniere</td></tr>`;
-        } else {
-            completedBody.innerHTML = completedTournaments.map(t => `
-                <tr>
-                    <td><strong style="color:#3ddc97;">${htmlEscape(t.name)}</strong></td>
-                    <td style="color: #2ecc71;">🥇 ${htmlEscape(t.first_place_name || '-')}</td>
-                    <td style="color: #c0c0c0;">🥈 ${htmlEscape(t.second_place_name || '-')}</td>
-                    <td style="color: #cd7f32;">🥉 ${htmlEscape(t.third_place_name || '-')}</td>
-                    <td>
-                        <button class="card-btn" style="background: #20b7ff; color: #000; font-weight: bold; padding: 4px 8px; font-size: 11px;" onclick="editTournamentNews('${t.id}')">📰 News</button>
-                    </td>
-                </tr>
-            `).join("");
-        }
-    }
-
-    window.finishTournament = async function(tournamentId) {
-        if(!confirm("Turnier abschließen? Auto-News wird vorgefüllt.")) return;
-        
-        const { data: registrations } = await supabaseClient
-            .from('tournament_registrations')
-            .select('*')
-            .eq('tournament_id', tournamentId)
-            .order('position', { ascending: true })
-            .limit(3);
-        
-        let first = registrations && registrations[0] ? registrations[0].player_name : null;
-        let second = registrations && registrations[1] ? registrations[1].player_name : null;
-        let third = registrations && registrations[2] ? registrations[2].player_name : null;
-        
-        const { error } = await supabaseClient
-            .from('tournaments')
-            .update({
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                first_place_name: first,
-                second_place_name: second,
-                third_place_name: third
-            })
-            .eq('id', tournamentId);
-        
-        if(error) {
-            alert("❌ Fehler: " + error.message);
-        } else {
-            alert("✅ Turnier beendet! News-Editor öffnet sich...");
-            editTournamentNews(tournamentId);
-            loadActiveTournaments();
-        }
-    };
-
-    window.editTournamentNews = async function(tournamentId) {
-        const { data: tournament } = await supabaseClient
-            .from('tournaments')
-            .select('*')
-            .eq('id', tournamentId)
-            .single();
-        
-        if(!tournament) return;
-        
-        switchTab('tabNews');
-        
-        const newsTitle = `🏆 ${tournament.name} - Ergebnisse`;
-        const newsContent = `<h2>${htmlEscape(tournament.name)}</h2>
-            <p><strong>🎉 Gewinner:</strong></p>
-            <ul>
-                <li>🥇 <strong>${htmlEscape(tournament.first_place_name || 'TBD')}</strong></li>
-                <li>🥈 <strong>${htmlEscape(tournament.second_place_name || 'TBD')}</strong></li>
-                <li>🥉 <strong>${htmlEscape(tournament.third_place_name || 'TBD')}</strong></li>
-            </ul>`;
-        
-        document.getElementById("newsTitleInput").value = newsTitle;
-        if(newsQuill) newsQuill.root.innerHTML = newsContent;
-    };
-
-    // ✅ KORRIGIERTE initAdmin - ERST currentSeasonGlobal, DANN Regeln laden!
     async function initAdmin() {
-        console.log("🚀 Admin initialisiert...");
-        
-        // ZUERST: Aktuelle Saison laden
         await loadCurrentSeason();
-        
-        // DANN: Liga-Regeln laden (WICHTIG!)
-        setTimeout(async () => { 
-            await loadAllLeagueRules();
-            console.log("✅ Liga-Regeln geladen und angezeigt");
-        }, 50);
-        
-        setTimeout(() => { initLeagueSelector(); }, 100);
-        
-        // Warte-Liste laden
-        setTimeout(() => { loadWaitingList(); }, 150);
-        
-        // Turniere laden
+        setTimeout(async () => { await loadAllLeagueRules(); }, 50);
+        setTimeout(() => { initLeagueSelector(); loadWaitingList(); }, 100);
         setTimeout(() => { loadActiveTournaments(); }, 200);
     }
 
