@@ -148,8 +148,7 @@
                 <button id="endSeasonMatchdayBtn" class="remove-btn-large" style="display:none;" onclick="endSeasonForLeague(document.getElementById('leagueSelector').value)">🏁 Saison für diese Liga beenden</button>
             </div>
             <div id="matchdayLigaInfo" style="display:none; padding: 12px; background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); border-radius: 6px; font-size: 13px; color: #20b7ff; font-weight: bold; max-width: 500px;">
-                <!-- Auf-/Absteiger Info wird hier eingefügt -->
-            </div>
+                </div>
             <div id="generatePlanArea" style="display:none; flex-direction:column; gap: 8px; align-items:flex-start;"></div>
         </div>
         <div style="overflow-x: auto;">
@@ -183,14 +182,13 @@
         </div>
     </div>
 
-    <!-- TOURNAMENT TAB START -->
     <div id="tabTournaments" class="tab-content">
         <h2>🏆 Turniere verwalten</h2>
         
         <div class="config-box">
             <h3>✨ Neues Turnier erstellen</h3>
             <div class="config-row">
-                <input type="text" id="tournamentName" class="txt-input" placeholder="Turnierназвание (z.B. Meisterschaft 2024)" style="width: 300px; max-width: 100%;">
+                <input type="text" id="tournamentName" class="txt-input" placeholder="Turniername (z.B. Meisterschaft 2024)" style="width: 300px; max-width: 100%;">
                 <select id="tournamentPlatform" class="league-select" onchange="updateTournamentLeagues()">
                     <option value="">-- Plattform wählen --</option>
                     <option value="Autodarts">Autodarts</option>
@@ -209,7 +207,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 30%;">Turnierназвание</th>
+                        <th style="width: 30%;">Turniername</th>
                         <th style="width: 20%;">Platform / Liga</th>
                         <th style="width: 15%;">Teilnehmer</th>
                         <th style="width: 20%;">Status</th>
@@ -227,7 +225,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 25%;">Turnierназвание</th>
+                        <th style="width: 25%;">Turniername</th>
                         <th style="width: 20%;">1. Platz</th>
                         <th style="width: 20%;">2. Platz</th>
                         <th style="width: 20%;">3. Platz</th>
@@ -240,8 +238,6 @@
             </table>
         </div>
     </div>
-    <!-- TOURNAMENT TAB END -->
-
     <div id="tabNews" class="tab-content">
         <h2>Neuigkeiten auf der Startseite veröffentlichen</h2>
         <div style="margin-bottom: 12px;">
@@ -284,7 +280,7 @@
     const quillToolbarOptions = [
         [{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'],        
         [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'align': [] }], ['link', 'clean']                                   
+        [{ 'align': [] }], ['link', 'clean']                                         
     ];
 
     function htmlEscape(str) {
@@ -407,6 +403,7 @@
         document.getElementById("inputRel").value = rule.relegation || 0;
     };
 
+    // ✅ FIX FÜR DEN FEHLER: Hier wurde 'onConflict' hinzugefügt!
     window.saveLeagueRules = async function() {
         const league = document.getElementById("configLeagueSelect").value;
         if(!league) return alert("Bitte wähle zuerst eine Liga aus!");
@@ -417,12 +414,15 @@
 
         console.log(`💾 Speichere Liga-Regeln: ${league} - 🟢${auf} 🔴${ab} 🟡${rel}`);
 
-        const { error } = await supabaseClient.from('league_rules').upsert({
-            league_name: league,
-            aufsteiger: auf,
-            absteiger: ab,
-            relegation: rel
-        });
+        const { error } = await supabaseClient.from('league_rules').upsert(
+            {
+                league_name: league,
+                aufsteiger: auf,
+                absteiger: ab,
+                relegation: rel
+            },
+            { onConflict: 'league_name' }
+        );
         
         if(error) {
             console.error("Fehler beim Speichern:", error);
