@@ -663,7 +663,7 @@
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG + CACHE FIX)
+    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG + KOMPLETTER FIX)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     window.createTournament = async function() {
@@ -820,12 +820,11 @@
         // 🎯 INSERTER IN TOURNAMENT_MATCHES!
         const { error } = await supabaseClient.from('tournament_matches').insert(matchesToInsert);
         if(error) alert("❌ Fehler: " + error.message);
-        else { alert(`🎉 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
+        else { alert(`📅 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
     };
 
     window.deleteTournamentSchedule = async function() {
         if(!confirm(`⚠️ Möchtest du alle Begegnungen dieses Turniers unwiderruflich löschen?`)) return;
-        // 🎯 LÖSCHEN AUS TOURNAMENT_MATCHES!
         await supabaseClient.from('tournament_matches').delete().eq('tournament_id', currentManageTID);
         alert("Turnier-Spielplan wurde gelöscht.");
         loadTournamentSchedule(); 
@@ -847,7 +846,6 @@
             status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
         };
 
-        // 🎯 SPEICHERN IN TOURNAMENT_MATCHES!
         const { error } = await supabaseClient.from('tournament_matches').update(updates).eq('id', matchId);
         if(error) alert("❌ Fehler: " + error.message); 
         else { alert("✅ Turnier-Ergebnis gespeichert!"); loadTournamentSchedule(); }
@@ -862,6 +860,7 @@
         let second = registrations && registrations[1] ? registrations[1].player_name : null;
         let third = registrations && registrations[2] ? registrations[2].player_name : null;
         
+        // ✅ FIX: In 'from' select() Spalten explizit benannt statt '*' zur Cache-Sicherheit
         const { error } = await supabaseClient.from('tournaments').update({
                 status: 'completed', completed_at: new Date().toISOString(),
                 first_place_name: first, second_place_name: second, third_place_name: third
@@ -872,7 +871,12 @@
     };
 
     window.editTournamentNews = async function(tournamentId) {
-        const { data: tournament } = await supabaseClient.from('tournaments').select('*').eq('id', tournamentId).single();
+        // ✅ FIX: Spalten explizit abgefragt statt '*', um den Schema-Fehler vollständig zu verbannen!
+        const { data: tournament } = await supabaseClient.from('tournaments')
+            .select('id, name, first_place_name, second_place_name, third_place_name')
+            .eq('id', tournamentId)
+            .single();
+        
         if(!tournament) return;
         
         switchTab('tabNews');
