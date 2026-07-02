@@ -433,6 +433,7 @@
         return html;
     }
 
+    // ✅ HOCHGRADIG OPTIMIERT: Lädt die Historie pro Plattform aufgeteilt!
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -443,25 +444,49 @@
         const activePlayers = players || [];
         if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Spieler in der Datenbank gefunden.</td></tr>'; return; }
 
+        // Lade die komplette separate Historien-Tabelle
+        const { data: historyRows } = await supabaseClient.from('player_history').select('*').order('created_at', { ascending: false });
+        
+        const historyMap = {};
+        if (historyRows) {
+            historyRows.forEach(h => {
+                if (!historyMap[h.player_id]) historyMap[h.player_id] = {};
+                if (!historyMap[h.player_id][h.platform]) {
+                    historyMap[h.player_id][h.platform] = h; // Merkt sich den letzten Stand der Plattform
+                }
+            });
+        }
+
         allLoadedProfilesMap = {};
         activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
 
         tbody.innerHTML = activePlayers.map(p => {
             const isEingeteilt = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
-            let herkunftHtml = `<span style="color:#aaa;">Keine Historie</span>`;
-            if(p.voriga_liga && globalLeagueRules && globalLeagueRules[p.voriga_liga]) {
-                const rule = globalLeagueRules[p.voriga_liga];
-                let statusBadge = "";
-                if(p.voriga_platzierung && rule) {
-                    const pos = p.voriga_platzierung;
-                    if(pos <= (rule.aufsteiger || 0)) statusBadge = `<span class="badge badge-up"> Aufsteiger (Platz ${pos})</span>`;
-                    else if((rule.absteiger || 0) > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down"> Absteiger (Platz ${pos})</span>`;
-                    else if((rule.relegation || 0) > 0 && pos > (10 - (rule.absteiger||0) - rule.relegation) && pos <= (10 - (rule.absteiger||0))) statusBadge = `<span class="badge badge-rel"> Relegation (Platz ${pos})</span>`;
-                    else statusBadge = `<span class="badge" style="background:rgba(255,255,255,0.05);">Klassenerhalt (Platz ${pos})</span>`;
+            
+            // ✅ Generiere Historie übersichtlich pro Plattform aufgeteilt
+            let herkunftHtml = "";
+            const pHist = historyMap[p.id] || {};
+            
+            ['Autodarts', 'DartCounter', 'Scolia'].forEach(plat => {
+                const h = pHist[plat];
+                if (h) {
+                    const rule = globalLeagueRules[h.league_name];
+                    let statusBadge = "";
+                    if (rule) {
+                        const pos = h.placement;
+                        if (pos <= (rule.aufsteiger || 0)) statusBadge = `<span class="badge badge-up">🟢 Aufsteiger</span>`;
+                        else if ((rule.absteiger || 0) > 0 && pos > (10 - rule.absteiger)) statusBadge = `<span class="badge badge-down">🔴 Absteiger</span>`;
+                        else if ((rule.relegation || 0) > 0 && pos > (10 - (rule.absteiger||0) - rule.relegation) && pos <= (10 - (rule.absteiger||0))) statusBadge = `<span class="badge badge-rel">🟡 Relegation</span>`;
+                        else statusBadge = `<span class="badge" style="background:rgba(255,255,255,0.05); color:#90a9b7;">Klassenerhalt</span>`;
+                    }
+                    herkunftHtml += `<div style="margin-top: 4px; padding: 2px 6px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size:11.5px;">
+                        <span style="color:#20b7ff; font-weight:bold;">${plat}:</span> <strong>${htmlEscape(h.league_name)}</strong> (Platz ${h.placement}) ${statusBadge}
+                    </div>`;
                 }
-                herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong><br>${statusBadge}`;
-            } else if (p.voriga_liga) {
-                herkunftHtml = `<strong style="color:#ffd08a;">${htmlEscape(p.voriga_liga)}</strong>${p.voriga_platzierung ? ` (Platz ${p.voriga_platzierung})` : ''}`;
+            });
+            
+            if (!herkunftHtml) {
+                herkunftHtml = `<span style="color:#aaa; font-size:12px;">Keine Historie vorhanden</span>`;
             }
 
             return `
@@ -470,7 +495,8 @@
                         <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br>
                         <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
                         <div style="margin-top: 6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:4px;">
-                            <small style="color:#90a9b7;">Letzte Saison:</small><br>${herkunftHtml}
+                            <small style="color:#90a9b7; font-weight:bold; display:block; margin-bottom:2px;">Verlauf Vor-Saison:</small>
+                            ${herkunftHtml}
                         </div>
                     </td>
                     <td>${formatAllPlattformNames(p)}</td>
@@ -495,17 +521,20 @@
         if(!playerProfile) return alert("❌ Spieler nicht gefunden!");
         const updates = { id: playerId, status_neue_saison: 'assigned' };
 
+        // Autodarts
         const adVal = adEl ? adEl.value : "";
-        if (adVal === 'REMOVE' || adVal === '') updates.assigned_ad_league = null;
-        else { if(!playerProfile.autodarts_name || playerProfile.autodarts_name === "-") return alert(`❌ Kein Autodarts-Name!`); updates.assigned_ad_league = adVal.trim(); }
+        if (adVal === 'REMOVE' || adVal === '') { updates.assigned_ad_league = null; } 
+        else { updates.assigned_ad_league = adVal.trim(); }
 
+        // DartCounter
         const dcVal = dcEl ? dcEl.value : "";
-        if (dcVal === 'REMOVE' || dcVal === '') updates.assigned_dc_league = null;
-        else { if(!playerProfile.dartcounter_name || playerProfile.dartcounter_name === "-") return alert(`❌ Kein DartCounter-Name!`); updates.assigned_dc_league = dcVal.trim(); }
+        if (dcVal === 'REMOVE' || dcVal === '') { updates.assigned_dc_league = null; } 
+        else { updates.assigned_dc_league = dcVal.trim(); }
 
+        // Scolia
         const scVal = scEl ? scEl.value : "";
-        if (scVal === 'REMOVE' || scVal === '') updates.assigned_sc_league = null;
-        else { if(!playerProfile.scolia_name || playerProfile.scolia_name === "-") return alert(`❌ Kein Scolia-Name!`); updates.assigned_sc_league = scVal.trim(); }
+        if (scVal === 'REMOVE' || scVal === '') { updates.assigned_sc_league = null; } 
+        else { updates.assigned_sc_league = scVal.trim(); }
 
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
         if(error) alert("❌ Fehler beim Abspeichern: " + error.message);
@@ -574,7 +603,7 @@
         if(!confirm(`Möchtest du für "${leagueName}" jetzt die Begegnungen generieren?`)) return;
         const { data: players } = await supabaseClient.from('profiles').select('*');
         let leaguePlayers = getPlayersForLeague(players || [], leagueName);
-        if(leaguePlayers.length < 2) return alert("Zu wie wenige Spieler eingeteilt.");
+        if(leaguePlayers.length < 2) return alert("Zu wenige Spieler eingeteilt.");
 
         const includeReturnLeg = document.getElementById("includeReturnLeg") ? document.getElementById("includeReturnLeg").checked : true;
         let playerIds = leaguePlayers.map(p => p.id);
@@ -671,7 +700,6 @@
         
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
         
-        // Spalten explizit ansprechen, 'league_name' weglassen
         const { error } = await supabaseClient.from('tournaments').insert([{
             name: name,
             platform: platform,
@@ -686,7 +714,6 @@
         }
     };
 
-    // ✅ IMMUN-FIX: Spalten explizit benannt statt '*', um den Schema-Cache-Fehler zu umgehen!
     async function loadActiveTournaments() {
         if(!supabaseClient) return;
         const { data: tournaments, error } = await supabaseClient
@@ -854,7 +881,6 @@
         let second = registrations && registrations[1] ? registrations[1].player_name : null;
         let third = registrations && registrations[2] ? registrations[2].player_name : null;
         
-        // ✅ IMMUN-FIX: Spalten explizit benannt
         const { error } = await supabaseClient.from('tournaments').update({
                 status: 'completed', completed_at: new Date().toISOString(),
                 first_place_name: first, second_place_name: second, third_place_name: third
@@ -865,7 +891,6 @@
     };
 
     window.editTournamentNews = async function(tournamentId) {
-        // ✅ IMMER EXPLIZIT SELECTEN FÜR CACHE-SICHERHEIT
         const { data: tournament } = await supabaseClient.from('tournaments')
             .select('id, name, first_place_name, second_place_name, third_place_name')
             .eq('id', tournamentId)
@@ -884,6 +909,95 @@
             </ul>`;
         document.getElementById("newsTitleInput").value = newsTitle;
         if(newsQuill) newsQuill.root.innerHTML = newsContent;
+    };
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📅 NEUE FUNKTION: GLOBALE SAISON-VERWALTUNG (ARCHIVIERUNG)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    // Füge die UI-Box dynamisch am Anfang von Reiter 1 ein
+    function injectSeasonManagerUI() {
+        const targetTab = document.getElementById("tabZuteilung");
+        if (!targetTab) return;
+        
+        // Prüfe, ob die Box schon existiert
+        if (document.getElementById("globalSeasonConfigBox")) return;
+        
+        const box = document.createElement("div");
+        box.id = "globalSeasonConfigBox";
+        box.className = "config-box";
+        box.style.borderColor = "#ffd08a";
+        box.style.background = "rgba(255, 208, 138, 0.05)";
+        box.innerHTML = `
+            <h3>📅 Globale Saison-Verwaltung</h3>
+            <p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird hiermit abgeschlossen und archiviert.</p>
+            <div class="config-row">
+                <input type="text" id="newSeasonNameInput" class="txt-input" placeholder="z.B. Saison 2" style="width: 250px; max-width:100%;">
+                <button class="generate-btn" style="background: #ffd08a; color:#000;" onclick="updateGlobalSeasonName()">🔄 Neue Saison starten & wechseln</button>
+            </div>
+        `;
+        targetTab.insertBefore(box, targetTab.firstChild);
+    }
+
+    window.updateGlobalSeasonName = async function() {
+        const newName = document.getElementById("newSeasonNameInput").value.trim();
+        if (!newName) return alert("❌ Bitte gib einen Namen für die neue Saison ein!");
+        if (!confirm(`⚠️ Bist du sicher?\n\nDie aktuelle Saison wird beendet. Neue Spielpläne filtern ab sofort nach '${newName}'. Alle alten Matches bleiben im Archiv erhalten.`)) return;
+        
+        const { error } = await supabaseClient.from('system_settings').update({ current_season: name }).eq('id', 1);
+        if(error) alert("❌ Fehler: " + error.message);
+        else {
+            alert(`🎉 Erfolg! '${name}' wurde als aktive Saison eingetragen.`);
+            location.reload();
+        }
+    };
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // SAISONABSCHLUSS (SCHREIBT IN SEPARATE HISTORIE)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    window.endSeasonForLeague = async function(leagueName) {
+        if(!supabaseClient) return;
+        if(!confirm(`⚠️ Saison für "${leagueName}" beenden?\n\nDies archiviert den Endstand aller Spieler in der neuen 'player_history'-Tabelle und setzt die Zuteilungen zurück.`)) return;
+        try {
+            alert("⏳ Verarbeite Saison-Ende...");
+            const { data: players } = await supabaseClient.from('profiles').select('*');
+            const leaguePlayers = getPlayersForLeague(players || [], leagueName);
+            if(leaguePlayers.length === 0) return alert("❌ Keine Spieler in dieser Liga gefunden!");
+
+            // Sortierung alphabetisch oder nach Performance
+            const sortedPlayers = leaguePlayers.sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
+            
+            let successCount = 0;
+            const platformLabel = leagueName.includes('Autodarts') ? 'Autodarts' : (leagueName.includes('DartCounter') ? 'DartCounter' : 'Scolia');
+            
+            for (let idx = 0; idx < sortedPlayers.length; idx++) {
+                const player = sortedPlayers[idx];
+                const platzierung = idx + 1;
+
+                // 1️⃣ Eintrag in die neue, unlimitierte Historien-Tabelle schreiben
+                const { error: histErr } = await supabaseClient.from('player_history').insert([{
+                    player_id: player.id,
+                    season: currentSeasonGlobal,
+                    platform: platformLabel,
+                    league_name: leagueName,
+                    placement: platzierung
+                }]);
+
+                if(histErr) console.error("Fehler beim Schreiben der Historie:", histErr);
+
+                // 2. Clear die Zuteilung im Profil für die nächste Saison
+                const updates = { status_neue_saison: 'waiting' };
+                if (leagueName.includes('Autodarts')) updates.assigned_ad_league = null;
+                else if (leagueName.includes('DartCounter')) updates.assigned_dc_league = null;
+                else if (leagueName.includes('Scolia')) updates.assigned_sc_league = null;
+
+                const { error: uErr } = await supabaseClient.from('profiles').update(updates).eq('id', player.id);
+                if(!uErr) successCount++;
+            }
+            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler in 'player_history' archiviert und Zuteilung zurückgesetzt.`);
+            loadWaitingList();
+        } catch(e) { alert("❌ Fehler:\n" + e.message); }
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -922,32 +1036,6 @@
         const payload = { player_id: playerId, league_name: leagueName, yellow_cards: yellow === "" ? 0 : parseInt(yellow), red_cards: red === "" ? 0 : parseInt(red), bemerkung: note === "" ? null : note };
         const { error } = await supabaseClient.from('league_penalties').upsert([payload], { onConflict: 'player_id,league_name' });
         if(error) alert("❌ Datenbank-Fehler:\n" + error.message); else { alert(`✅ Karten für ${leagueName} aktualisiert!`); loadStrafenkatalogList(); }
-    };
-
-    window.endSeasonForLeague = async function(leagueName) {
-        if(!supabaseClient) return;
-        if(!confirm(`⚠️ Saison für "${leagueName}" beenden?`)) return;
-        try {
-            alert("⏳ Verarbeite Saison-Ende...");
-            const { data: players } = await supabaseClient.from('profiles').select('*');
-            const leaguePlayers = getPlayersForLeague(players || [], leagueName);
-            if(leaguePlayers.length === 0) return alert("❌ Keine Spieler in dieser Liga gefunden!");
-
-            const sortedPlayers = leaguePlayers.sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
-            let successCount = 0;
-            for (let idx = 0; idx < sortedPlayers.length; idx++) {
-                const player = sortedPlayers[idx];
-                const updates = { voriga_liga: leagueName, voriga_platzierung: idx + 1, status_neue_saison: 'waiting' };
-                if (leagueName.includes('Autodarts')) updates.assigned_ad_league = null;
-                else if (leagueName.includes('DartCounter')) updates.assigned_dc_league = null;
-                else if (leagueName.includes('Scolia')) updates.assigned_sc_league = null;
-
-                const { error: uErr } = await supabaseClient.from('profiles').update(updates).eq('id', player.id);
-                if(!uErr) successCount++;
-            }
-            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler aktualisiert\n\nPlatzierungen sind gespeichert.\nSpieler wurden aus der Liga entfernt.`);
-            loadWaitingList();
-        } catch(e) { alert("❌ Fehler:\n" + e.message); }
     };
 
     function initNewsEditor() {
@@ -1008,7 +1096,11 @@
     async function initAdmin() {
         await loadCurrentSeason();
         setTimeout(async () => { await loadAllLeagueRules(); }, 50);
-        setTimeout(() => { initLeagueSelector(); loadWaitingList(); }, 100);
+        setTimeout(() => { 
+            initLeagueSelector(); 
+            injectSeasonManagerUI();
+            loadWaitingList(); 
+        }, 100);
         setTimeout(() => { loadActiveTournaments(); }, 200);
     }
 
