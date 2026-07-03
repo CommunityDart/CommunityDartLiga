@@ -433,7 +433,7 @@
         return html;
     }
 
-    // ✅ HOCHGRADIG OPTIMIERT: Lädt die Historie pro Plattform aufgeteilt!
+    // ✅ HOCHGRADIG OPTIMIERT: Lädt die Historie pro Plattform sauber aufgeteilt!
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
@@ -452,7 +452,7 @@
             historyRows.forEach(h => {
                 if (!historyMap[h.player_id]) historyMap[h.player_id] = {};
                 if (!historyMap[h.player_id][h.platform]) {
-                    historyMap[h.player_id][h.platform] = h; // Merkt sich den letzten Stand der Plattform
+                    historyMap[h.player_id][h.platform] = h; // Letzten Stand der Plattform merken
                 }
             });
         }
@@ -521,19 +521,16 @@
         if(!playerProfile) return alert("❌ Spieler nicht gefunden!");
         const updates = { id: playerId, status_neue_saison: 'assigned' };
 
-        // Autodarts
         const adVal = adEl ? adEl.value : "";
-        if (adVal === 'REMOVE' || adVal === '') { updates.assigned_ad_league = null; } 
+        if (adVal === 'REMOVE' || adVal === '') updates.assigned_ad_league = null;
         else { updates.assigned_ad_league = adVal.trim(); }
 
-        // DartCounter
         const dcVal = dcEl ? dcEl.value : "";
-        if (dcVal === 'REMOVE' || dcVal === '') { updates.assigned_dc_league = null; } 
+        if (dcVal === 'REMOVE' || dcVal === '') updates.assigned_dc_league = null;
         else { updates.assigned_dc_league = dcVal.trim(); }
 
-        // Scolia
         const scVal = scEl ? scEl.value : "";
-        if (scVal === 'REMOVE' || scVal === '') { updates.assigned_sc_league = null; } 
+        if (scVal === 'REMOVE' || scVal === '') updates.assigned_sc_league = null;
         else { updates.assigned_sc_league = scVal.trim(); }
 
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
@@ -691,7 +688,7 @@
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG + CACHE FIX IMMUNISIERUNG)
+    // 🏆 TURNIER SYSTEM (STRIKTE TRENNUNG + SEPARATE TABELLE)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     window.createTournament = async function() {
@@ -714,6 +711,7 @@
         }
     };
 
+    // ✅ IMMUN-FIX GEGEN CACHE-FEHLER: Spalten immer namentlich anfordern!
     async function loadActiveTournaments() {
         if(!supabaseClient) return;
         const { data: tournaments, error } = await supabaseClient
@@ -746,9 +744,9 @@
             `).join("");
             
             for(let t of activeTournaments) {
-                const { count } = await supabaseClient.from('tournament_registrations').select('id').eq('tournament_id', t.id);
+                const { data: regs } = await supabaseClient.from('tournament_registrations').select('id').eq('tournament_id', t.id);
                 const el = document.getElementById(`count_${t.id}`);
-                if(el) el.textContent = count ? count.length : 0;
+                if(el) el.textContent = regs ? regs.length : 0;
             }
         }
         
@@ -912,16 +910,12 @@
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📅 NEUE FUNKTION: GLOBALE SAISON-VERWALTUNG (ARCHIVIERUNG)
+    // 📅 GLOBALE SAISON-VERWALTUNG (ARCHIV-LOGIK)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     
-    // Füge die UI-Box dynamisch am Anfang von Reiter 1 ein
     function injectSeasonManagerUI() {
         const targetTab = document.getElementById("tabZuteilung");
-        if (!targetTab) return;
-        
-        // Prüfe, ob die Box schon existiert
-        if (document.getElementById("globalSeasonConfigBox")) return;
+        if (!targetTab || document.getElementById("globalSeasonConfigBox")) return;
         
         const box = document.createElement("div");
         box.id = "globalSeasonConfigBox";
@@ -930,7 +924,7 @@
         box.style.background = "rgba(255, 208, 138, 0.05)";
         box.innerHTML = `
             <h3>📅 Globale Saison-Verwaltung</h3>
-            <p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird hiermit abgeschlossen und archiviert.</p>
+            <p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird archiviert.</p>
             <div class="config-row">
                 <input type="text" id="newSeasonNameInput" class="txt-input" placeholder="z.B. Saison 2" style="width: 250px; max-width:100%;">
                 <button class="generate-btn" style="background: #ffd08a; color:#000;" onclick="updateGlobalSeasonName()">🔄 Neue Saison starten & wechseln</button>
@@ -942,18 +936,19 @@
     window.updateGlobalSeasonName = async function() {
         const newName = document.getElementById("newSeasonNameInput").value.trim();
         if (!newName) return alert("❌ Bitte gib einen Namen für die neue Saison ein!");
-        if (!confirm(`⚠️ Bist du sicher?\n\nDie aktuelle Saison wird beendet. Neue Spielpläne filtern ab sofort nach '${newName}'. Alle alten Matches bleiben im Archiv erhalten.`)) return;
+        if (!confirm(`⚠️ Bist du sicher?\n\nDie aktuelle Saison wird beendet. Neue Spielpläne filtern ab sofort nach '${newName}'. Alle alten Ligen-Matches bleiben im Archiv sichtbar.`)) return;
         
-        const { error } = await supabaseClient.from('system_settings').update({ current_season: name }).eq('id', 1);
+        // ✅ FIX: Nutzt jetzt die korrekte Variable 'newName'
+        const { error } = await supabaseClient.from('system_settings').update({ current_season: newName }).eq('id', 1);
         if(error) alert("❌ Fehler: " + error.message);
         else {
-            alert(`🎉 Erfolg! '${name}' wurde als aktive Saison eingetragen.`);
+            alert(`🎉 Erfolg! '${newName}' wurde als aktive Saison eingetragen.`);
             location.reload();
         }
     };
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // SAISONABSCHLUSS (SCHREIBT IN SEPARATE HISTORIE)
+    // SAISONABSCHLUSS (SCHREIBT IN SEPARATE HISTORIE FÜR PROFILE)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     window.endSeasonForLeague = async function(leagueName) {
@@ -965,7 +960,6 @@
             const leaguePlayers = getPlayersForLeague(players || [], leagueName);
             if(leaguePlayers.length === 0) return alert("❌ Keine Spieler in dieser Liga gefunden!");
 
-            // Sortierung alphabetisch oder nach Performance
             const sortedPlayers = leaguePlayers.sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
             
             let successCount = 0;
@@ -984,9 +978,9 @@
                     placement: platzierung
                 }]);
 
-                if(histErr) console.error("Fehler beim Schreiben der Historie:", histErr);
+                if(histErr) console.error("Historien-Fehler:", histErr);
 
-                // 2. Clear die Zuteilung im Profil für die nächste Saison
+                // 2️⃣ Alte Zuteilung leeren, damit sie in die Warteliste rücken
                 const updates = { status_neue_saison: 'waiting' };
                 if (leagueName.includes('Autodarts')) updates.assigned_ad_league = null;
                 else if (leagueName.includes('DartCounter')) updates.assigned_dc_league = null;
@@ -995,7 +989,7 @@
                 const { error: uErr } = await supabaseClient.from('profiles').update(updates).eq('id', player.id);
                 if(!uErr) successCount++;
             }
-            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler in 'player_history' archiviert und Zuteilung zurückgesetzt.`);
+            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler in 'player_history' archiviert und Zuteilungen zurückgesetzt.`);
             loadWaitingList();
         } catch(e) { alert("❌ Fehler:\n" + e.message); }
     };
