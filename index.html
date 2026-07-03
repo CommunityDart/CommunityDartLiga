@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 5</title>
+  <title>CDL Dart Liga test 6</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1078,25 +1078,80 @@
     html += '</div>'; document.getElementById('matchesArea').innerHTML = html;
   }
 
+  // Ordnet jeder Plattform eine feste Farbe + Icon zu, damit man auf einen
+  // Blick erkennt worum es sich handelt: Autodarts = blau, DartCounter = orange, Scolia = grün.
+  function platformBadge(platform) {
+    const p = String(platform || '').toLowerCase();
+    if (p.includes('autodart')) return { color: '#0066ff', icon: '⚫', label: platform || 'Autodarts' };
+    if (p.includes('dartcounter')) return { color: '#ff6b35', icon: '🟠', label: platform || 'DartCounter' };
+    if (p.includes('scolia')) return { color: '#00d084', icon: '🟢', label: platform || 'Scolia' };
+    return { color: '#888', icon: '⚪', label: platform || '-' };
+  }
+
+  // Findet das Spieler-Profil des aktuell eingeloggten Discord-Nutzers,
+  // damit wir wissen ob er für ein Turnier bereits angemeldet ist.
+  function getCurrentPlayerProfile() {
+    if (!state.currentUser) return null;
+    const u = state.currentUser;
+    return findProfile(u.user_metadata?.provider_id) || findProfile(u.user_metadata?.sub) || findProfile(u.id) || (u.email ? findProfile(u.email) : null) || null;
+  }
+
+  async function toggleTournamentRegistration(tournamentId, isRegistered) {
+    if (!state.currentUser) { alert('Bitte melde dich zuerst mit Discord an, um dich für Turniere anzumelden.'); switchView('discord'); return; }
+    const profile = getCurrentPlayerProfile();
+    if (!profile) { alert('Dein Spieler-Profil konnte nicht gefunden werden. Bitte kontaktiere einen Admin.'); return; }
+    try {
+      if (isRegistered) {
+        await supabaseClient.from('tournament_registrations').delete().eq('tournament_id', tournamentId).eq('player_id', profile.id);
+      } else {
+        await supabaseClient.from('tournament_registrations').insert({ tournament_id: tournamentId, player_id: profile.id });
+      }
+      await loadTournamentsData();
+    } catch (err) {
+      console.error('Fehler bei Turnier-Anmeldung:', err);
+      alert('Es gab ein Problem bei der Anmeldung. Versuch es später erneut.');
+    }
+  }
+
   // FIX: Turnier-Archiv (abgeschlossene Cups) wird jetzt NUR noch in der
   // Turniere-Ansicht (mainCompletedArea) angezeigt, nicht mehr zusätzlich
   // im Liga-Archiv-Tab. Die Karte "Turnier Archiv & Hall of Fame" wurde
   // dafür aus dem Liga-Archiv-Tab entfernt (siehe HTML oben).
-  function renderTournamentsData(tournaments, tourMatches) {
+  function renderTournamentsData(tournaments, tourMatches, registrations) {
+    registrations = registrations || [];
     const mainActiveArea = document.getElementById('mainActiveTournamentsArea');
     const mainCompletedArea = document.getElementById('mainCompletedTournamentsArea');
     
     const activeTs = tournaments.filter(t => t.status === 'active');
     const completedTs = tournaments.filter(t => t.status === 'completed');
+    const currentProfile = getCurrentPlayerProfile();
 
     let activeHtml = "";
     if (activeTs.length > 0) {
       activeTs.forEach(t => {
-        activeHtml += `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
-          <h3 style="color: var(--platform-color); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">🏆 ${htmlEscape(t.title)} <span style="font-size:11px; font-weight:bold; background: rgba(0,102,255,0.1); color: var(--platform-color); padding: 2px 6px; border-radius:4px;">${t.platform}</span></h3>`;
+        const pb = platformBadge(t.platform);
+        activeHtml += `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); border-left: 4px solid ${pb.color}; padding-left: 12px;">
+          <h3 style="color: ${pb.color}; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">🏆 ${htmlEscape(t.title)} <span style="font-size:11px; font-weight:bold; background: ${pb.color}1A; color: ${pb.color}; padding: 3px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">${pb.icon} ${htmlEscape(pb.label)}</span></h3>`;
         
         const currentTMatches = tourMatches.filter(m => m.tournament_id === t.id);
+        const tRegs = registrations.filter(r => r.tournament_id === t.id);
+        const isRegistered = !!(currentProfile && tRegs.some(r => r.player_id === currentProfile.id));
+
         if (currentTMatches.length === 0) {
+          let regButtonHtml;
+          if (!state.currentUser) {
+            regButtonHtml = `<button class="btn small-action-btn" onclick="switchView('discord')">👤 Zum Anmelden einloggen</button>`;
+          } else if (!currentProfile) {
+            regButtonHtml = `<span style="font-size:12px; color:var(--text-secondary);">Profil nicht gefunden - bitte Admin kontaktieren</span>`;
+          } else if (isRegistered) {
+            regButtonHtml = `<button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35;" onclick="toggleTournamentRegistration('${t.id}', true)">✖️ Abmelden</button>`;
+          } else {
+            regButtonHtml = `<button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none;" onclick="toggleTournamentRegistration('${t.id}', false)">✅ Anmelden</button>`;
+          }
+          activeHtml += `<div style="margin: 10px 0 16px 0; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">👥 ${tRegs.length} angemeldet</span>
+            ${regButtonHtml}
+          </div>`;
           activeHtml += '<p style="font-size: 13px; color: var(--text-secondary); font-style:italic;">Der Spielplan für diesen Cup wird in Kürze vom Admin ausgelost...</p>';
         } else {
           let grouped = {};
@@ -1129,15 +1184,15 @@
     let completedHtml = "";
     if (completedTs.length > 0) {
       completedHtml = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-        ${completedTs.map(t => `
-          <div class="matchday-card" style="background: var(--bg-secondary); border-left: 4px solid #3ddc97;">
+        ${completedTs.map(t => { const pb = platformBadge(t.platform); return `
+          <div class="matchday-card" style="background: var(--bg-secondary); border-left: 4px solid ${pb.color};">
             <div class="matchday-title" style="color: var(--text-primary); font-size: 14px; text-align: left; border-color: var(--border);">${htmlEscape(t.title)}</div>
             <div style="padding: 6px 0; font-size: 13.5px; color: #ffd700; font-weight: bold;">🥇 1. Platz: ${htmlEscape(t.first_place_name || '-')}</div>
             <div style="padding: 4px 0; font-size: 13px; color: #c0c0c0; font-weight: 600;">🥈 2. Platz: ${htmlEscape(t.second_place_name || '-')}</div>
             <div style="padding: 4px 0; font-size: 13px; color: #cd7f32; font-weight: 600;">🥉 3. Platz: ${htmlEscape(t.third_place_name || '-')}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 10px; text-transform: uppercase; font-weight: 700;">Plattform: ${t.platform}</div>
+            <div style="font-size: 11px; color: ${pb.color}; margin-top: 10px; text-transform: uppercase; font-weight: 700; display:flex; align-items:center; gap:4px;">${pb.icon} ${htmlEscape(pb.label)}</div>
           </div>
-        `).join("")}
+        `; }).join("")}
       </div>`;
       if (mainCompletedArea) mainCompletedArea.innerHTML = completedHtml;
     } else {
@@ -1212,18 +1267,26 @@
       document.getElementById('statLeagues').innerText = populatedLeaguesCount;
       switchPlatform("Autodarts");
 
-      try {
-        const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
-        const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status');
-        renderTournamentsData(tournaments || [], tourMatches || []);
-      } catch(tErr) { console.error("Turnierdaten Ladefehler abgefangen:", tErr); }
+      await loadTournamentsData();
 
     } catch (error) { console.error("Fehler im Daten-Core:", error); }
+  }
+
+  // Lädt Turniere, Turnier-Matches und Anmeldungen und rendert sie neu.
+  // Wird beim initialen Laden UND nach jeder An-/Abmeldung erneut aufgerufen.
+  async function loadTournamentsData() {
+    try {
+      const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
+      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status');
+      const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
+      renderTournamentsData(tournaments || [], tourMatches || [], registrations || []);
+    } catch(tErr) { console.error("Turnierdaten Ladefehler abgefangen:", tErr); }
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
     updateAuthUI();
+    loadTournamentsData();
   });
 
   switchView('news'); updateTheme(); checkInitialSession(); loadData();
