@@ -763,7 +763,7 @@
   <div id="discordView" class="view">
     <div class="full-width-layout">
       <div class="card">
-        <div class="header" class="card-header">🌐 Discord Server</div>
+        <div class="card-header">🌐 Discord Server</div>
         <div class="card-body">
           <h3 style="margin-bottom: 12px;">Beitreten!</h3>
           <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten!</p>
@@ -803,7 +803,7 @@
 
 <script>
   const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHwnqbovrnvzkcpyrcjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const ALL_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6", "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6", "Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
@@ -938,7 +938,6 @@
 
   function closePlayerModal(e) { document.getElementById('playerModal').classList.remove('active'); }
 
-  // ✅ BEREINIGT & ERWEITERT: Aktualisiert das Auth-Layout dynamisch und stabil
   function updateAuthUI() {
     const loginTitle = document.getElementById('loginTitle');
     const loginDesc = document.getElementById('loginDesc');
@@ -971,11 +970,6 @@
       pathParts[pathParts.length - 1] = 'profil.html';
       supabaseClient.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: window.location.origin + pathParts.join('/') } });
     }
-  }
-
-  async function checkInitialSession() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    state.currentUser = session?.user || null; updateAuthUI();
   }
 
   function switchView(view) {
@@ -1018,7 +1012,7 @@
     });
 
     if (activeLeaguesWithData.length === 0) {
-      container.innerHTML = '<span style="font-size:12px; color holiday:var(--text-secondary); italic">Keine aktiven Ligen mit Daten gefunden.</span>';
+      container.innerHTML = '<span style="font-size:12px; color:var(--text-secondary); font-style:italic">Keine aktiven Ligen mit Daten gefunden.</span>';
       document.getElementById('tableArea').innerHTML = '<div class="empty">Keine aktiven Spieler oder Begegnungen auf dieser Plattform</div>';
       document.getElementById('matchesArea').innerHTML = '<div class="empty">Keine Matches verfügbar</div>';
       return;
@@ -1049,7 +1043,7 @@
   function updateTheme() {
     const html = document.documentElement; const toggle = document.getElementById('themeToggle');
     if (state.darkMode) { html.classList.add('dark'); toggle.textContent = '☀️'; } 
-    else { html.documentElement; html.classList.remove('dark'); toggle.textContent = '🌙'; }
+    else { html.classList.remove('dark'); toggle.textContent = '🌙'; }
   }
 
   function renderTable() {
@@ -1085,7 +1079,6 @@
     html += '</div>'; document.getElementById('matchesArea').innerHTML = html;
   }
 
-  // ✅ VOLLSTÄNDIG REPARIERT: Lädt und mappt Turnier-Live-Daten absolut ausfallsicher
   function renderTournamentsData(tournaments, tourMatches) {
     const activeBox = document.getElementById('activeTournamentsContainer');
     const activeArea = document.getElementById('activeTournamentsArea');
@@ -1105,7 +1098,7 @@
         
         const currentTMatches = tourMatches.filter(m => m.tournament_id === t.id);
         if (currentTMatches.length === 0) {
-          activeHtml += '<p style="font-size: 13px; color: var(--text-secondary); italic;">Der Spielplan für diesen Cup wird in Kürze vom Admin ausgelost...</p>';
+          activeHtml += '<p style="font-size: 13px; color: var(--text-secondary); font-style:italic;">Der Spielplan für diesen Cup wird in Kürze vom Admin ausgelost...</p>';
         } else {
           let grouped = {};
           currentTMatches.forEach(m => {
@@ -1225,17 +1218,17 @@
       document.getElementById('statLeagues').innerText = populatedLeaguesCount;
       switchPlatform("Autodarts");
 
-      // 🎯 JIZT STRKT GENAU GEFILTERTE RESISTENZ-ABFRAGE FÜR DIE TURNIERE
+      // 🎯 IMMUN-FIX: Spalten explizit benennen, um Cache-Fehler auszuschließen!
       try {
-        const { data: tournaments } = await supabaseClient.from('tournaments').select('*');
-        const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('*');
+        const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
+        const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status');
         renderTournamentsData(tournaments || [], tourMatches || []);
-      } catch(tErr) { console.error("Turnierdaten Ladefehler:", tErr); }
+      } catch(tErr) { console.error("Turnier-Ladefehler abgefangen:", tErr); }
 
-    } catch (error) { console.error("Fehler im Daten-Core:", error); }
+    } catch (error) { console.error("Kritischer Fehler im Daten-Core:", error); }
   }
 
-  // ✅ NEU: Dynamischer Auth-Sitzungs-Listener für den Profil-Button
+  // ✅ Automatischer Auth-Listener für sofortiges Erscheinen des Profilbuttons
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
     updateAuthUI();
