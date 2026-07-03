@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 3</title>
+  <title>CDL Dart Liga test 4</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -683,13 +683,6 @@
               <div id="archivResult" class="empty">Wähle Saison und Liga</div>
             </div>
           </div>
-
-          <div class="card" style="margin-top:24px; border-color: #3ddc97;">
-            <div class="card-header" style="color: #3ddc97;">🏛️ Turnier Archiv & Hall of Fame</div>
-            <div class="card-body">
-              <div id="tournamentArchivArea">Lade abgeschlossene Cups...</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -798,7 +791,6 @@
 
 <script>
   const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
-  // ✅ REPARIERT: Hier steht nun wieder der echte, unbeschädigte Anon Key!
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -968,6 +960,19 @@
     }
   }
 
+  // FIX: Diese Funktion hat komplett gefehlt, wurde aber unten aufgerufen.
+  // Dadurch brach das Script mit einem ReferenceError ab, BEVOR loadData()
+  // ausgeführt wurde -> deshalb luden weder Spieler noch Turniere.
+  async function checkInitialSession() {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      state.currentUser = session?.user || null;
+      updateAuthUI();
+    } catch (err) {
+      console.error("Fehler beim Prüfen der Session:", err);
+    }
+  }
+
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
@@ -1042,6 +1047,11 @@
     else { html.classList.remove('dark'); toggle.textContent = '🌙'; }
   }
 
+  function htmlEscape(str) {
+    if (str === undefined || str === null) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
   function renderTable() {
     document.getElementById('tableHeaderTitle').innerText = `📊 Tabelle: ${state.activeLeague}`;
     const data = state.leagueData[state.activeLeague] || { standings: { rows: [] } };
@@ -1075,11 +1085,13 @@
     html += '</div>'; document.getElementById('matchesArea').innerHTML = html;
   }
 
-  // ✅ KORRIGIERT & GEFILTERT: Lädt die Turnier-Live-Daten absolut immun gegen Cache-Fehler
+  // FIX: Turnier-Archiv (abgeschlossene Cups) wird jetzt NUR noch in der
+  // Turniere-Ansicht (mainCompletedArea) angezeigt, nicht mehr zusätzlich
+  // im Liga-Archiv-Tab. Die Karte "Turnier Archiv & Hall of Fame" wurde
+  // dafür aus dem Liga-Archiv-Tab entfernt (siehe HTML oben).
   function renderTournamentsData(tournaments, tourMatches) {
     const activeBox = document.getElementById('activeTournamentsContainer');
     const activeArea = document.getElementById('activeTournamentsArea');
-    const archivArea = document.getElementById('tournamentArchivArea');
     
     const mainActiveArea = document.getElementById('mainActiveTournamentsArea');
     const mainCompletedArea = document.getElementById('mainCompletedTournamentsArea');
@@ -1140,11 +1152,9 @@
           </div>
         `).join("")}
       </div>`;
-      if (archivArea) archivArea.innerHTML = completedHtml;
       if (mainCompletedArea) mainCompletedArea.innerHTML = completedHtml;
     } else {
       const emptyMsg = '<div class="empty">Noch keine abgeschlossenen Turniere im Archiv.</div>';
-      if (archivArea) archivArea.innerHTML = emptyMsg;
       if (mainCompletedArea) mainCompletedArea.innerHTML = emptyMsg;
     }
   }
@@ -1215,7 +1225,6 @@
       document.getElementById('statLeagues').innerText = populatedLeaguesCount;
       switchPlatform("Autodarts");
 
-      // Spalten explizit anfordern statt '*' zur Cache-Sicherheit
       try {
         const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
         const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status');
@@ -1225,7 +1234,6 @@
     } catch (error) { console.error("Fehler im Daten-Core:", error); }
   }
 
-  // Automatischer Auth-Listener für sofortiges Erscheinen des Profilbuttons
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
     updateAuthUI();
