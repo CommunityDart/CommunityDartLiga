@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga</title>
+  <title>CDL Dart Liga v1</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -581,6 +581,7 @@
   
   <div class="navbar">
     <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
+    <button class="nav-btn" id="navTournaments" onclick="switchView('tournaments')">🏆 Turniere</button>
     <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
   </div>
@@ -602,9 +603,11 @@
 </div>
 
 <div class="container">
+  <!-- REITER 1: NEWS -->
   <div id="newsView" class="view active">
     <div class="full-width-layout">
       
+      <!-- Live Turnier-Kachel auf der Startseite (blendet sich aus wenn nichts aktiv ist) -->
       <div id="activeTournamentsContainer" style="display: none; margin-bottom: 10px;">
         <div class="card" style="border-color: #ffd08a; background: rgba(255, 208, 138, 0.02);">
           <div class="card-header" style="color: #ffd08a; font-weight: 800;">🏆 Aktive Cups & Turniere</div>
@@ -638,6 +641,7 @@
     </div>
   </div>
 
+  <!-- REITER 2: LIGEN & STANDINGS -->
   <div id="ligenView" class="view">
     <div class="full-width-layout">
       <div class="main-cards">
@@ -725,6 +729,37 @@
     </div>
   </div>
 
+  <!-- ✅ REITER 3: DAUERHAFTER TURNIER TAB (AUFGEBAUT WIE LIGA LAYOUT) -->
+  <div id="tournamentsView" class="view">
+    <div class="full-width-layout">
+      <div class="card" style="border-color: #ff6b35;">
+        <div class="card-header" style="color: #ff6b35; font-weight: 800;">🏆 Aktive Cups & Live-Turniere</div>
+        <div class="card-body">
+          <div id="mainActiveTournamentsArea">Lade laufende eSports Turniere...</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 10px; border-color: #3ddc97;">
+        <div class="card-header" style="color: #3ddc97; font-weight: 800;">🏛️ Turnier Archiv & Ruhmeshalle</div>
+        <div class="card-body">
+          <div id="mainCompletedTournamentsArea">Lade Ruhmeshalle...</div>
+        </div>
+      </div>
+      
+      <div class="card compact-footer-card">
+        <div class="card-header">ℹ️ Infos</div>
+        <div class="card-body">
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REITER 4: DISCORD & AUTH -->
   <div id="discordView" class="view">
     <div class="full-width-layout">
       <div class="card">
@@ -818,7 +853,6 @@
     );
   }
 
-  // Helfer-Funktion für Namen-Lookup (UUID zu Klartext)
   function getProfileNameFromId(id) {
     if (!id) return "Freilos";
     const p = state.allProfilesCache.find(x => x.id === id);
@@ -920,7 +954,7 @@
         <img src="${avatarImgUrl}" class="profile-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
         <div class="player-card-title">${htmlEscape(dName)}</div>
       </div>
-      <div class="player-info-row"><span class="player-info-row"><span class="player-info-label">Echter Name:</span><span class="player-info-value" style="color: var(--platform-color); font-weight:bold;">${htmlEscape(realName)}</span></div>
+      <div class="player-info-row"><span class="player-info-label">Echter Name:</span><span class="player-info-value" style="color: var(--platform-color); font-weight:bold;">${htmlEscape(realName)}</span></div>
       <div class="player-info-row"><span class="player-info-label">Discord Handle:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
       <div class="player-info-row"><span class="player-info-label">📍 Wohnort:</span><span class="player-info-value">${htmlEscape(wohnort)}</span></div>
       <div class="player-info-row"><span class="player-info-label">🎯 Spielsetup:</span><span class="player-info-value">${htmlEscape(setup)}</span></div>
@@ -965,11 +999,7 @@
     }
   }
 
-  async function checkInitialSession() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    state.currentUser = session?.user || null; updateAuthUI();
-  }
-
+  // ✅ KORRIGIERT: Behandelt das Umschalten auf die neue Turnieransicht fehlerfrei
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
@@ -981,6 +1011,7 @@
     } else {
       document.getElementById('platformBanner').classList.remove('active');
       if (view === 'news') document.getElementById('navNews').classList.add('active');
+      if (view === 'tournaments') document.getElementById('navTournaments').classList.add('active');
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
     }
     state.currentView = view;
@@ -1082,27 +1113,27 @@
     html += '</div>'; document.getElementById('matchesArea').innerHTML = html;
   }
 
-  // ✅ NEU: DYNAMISCHE STRUKTUREN FÜR DIE TURNIER-ANZEIGE & ARCHIVIERUNG
+  // ✅ KORRIGIERT & ERWEITERT: Befüllt nun auch die permanenten eSports Turnier-Bereiche
   function renderTournamentsData(tournaments, tourMatches) {
     const activeBox = document.getElementById('activeTournamentsContainer');
     const activeArea = document.getElementById('activeTournamentsArea');
     const archivArea = document.getElementById('tournamentArchivArea');
     
+    const mainActiveArea = document.getElementById('mainActiveTournamentsArea');
+    const mainCompletedArea = document.getElementById('mainCompletedTournamentsArea');
+    
     const activeTs = tournaments.filter(t => t.status === 'active');
     const completedTs = tournaments.filter(t => t.status === 'completed');
 
-    // 1. Offenes Live-Turnier rendern
+    let activeHtml = "";
     if (activeTs.length > 0) {
-      activeBox.style.display = 'block';
-      let html = "";
-      
       activeTs.forEach(t => {
-        html += `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
+        activeHtml += `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
           <h3 style="color: var(--platform-color); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">🏆 ${htmlEscape(t.title)} <span style="font-size:11px; font-weight:bold; background: rgba(0,102,255,0.1); color: var(--platform-color); padding: 2px 6px; border-radius:4px;">${t.platform}</span></h3>`;
         
         const currentTMatches = tourMatches.filter(m => m.tournament_id === t.id);
         if (currentTMatches.length === 0) {
-          html += '<p style="font-size: 13px; color: var(--text-secondary); italic;">Der Spielplan für diesen Cup wird in Kürze vom Admin ausgelost...</p>';
+          activeHtml += '<p style="font-size: 13px; color: var(--text-secondary); italic;">Der Spielplan für diesen Cup wird in Kürze vom Admin ausgelost...</p>';
         } else {
           let grouped = {};
           currentTMatches.forEach(m => {
@@ -1110,29 +1141,33 @@
             if (!grouped[rKey]) grouped[rKey] = []; grouped[rKey].push(m);
           });
 
-          html += '<div class="matchdays-grid">';
+          activeHtml += '<div class="matchdays-grid">';
           Object.entries(grouped).forEach(([roundTitle, roundRows]) => {
-            html += `<div class="matchday-card" style="background: var(--bg-secondary);"><div class="matchday-title">⚡ ${htmlEscape(roundTitle)}</div>`;
+            activeHtml += `<div class="matchday-card" style="background: var(--bg-secondary);"><div class="matchday-title">⚡ ${htmlEscape(roundTitle)}</div>`;
             roundRows.forEach(m => {
               const p1Name = getProfileNameFromId(m.player1_id);
               const p2Name = getProfileNameFromId(m.player2_id);
               const status = m.status === 'done' || m.status === 'fertig' ? 'done' : 'open';
-              html += `<div class="match-row"><div class="match-players"><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player1_id)}', '${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span><span style="color:var(--text-secondary); font-size:10px;">vs</span><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player2_id)}', '${htmlEscape(p2Name)}')">${htmlEscape(p2Name)}</span></div><span class="match-score" style="font-weight:700;">${m.legs_player1 ?? '-'} : ${m.legs_player2 ?? '-'}</span><span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span></div>`;
+              activeHtml += `<div class="match-row"><div class="match-players"><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player1_id)}', '${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span><span style="color:var(--text-secondary); font-size:10px;">vs</span><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player2_id)}', '${htmlEscape(p2Name)}')">${htmlEscape(p2Name)}</span></div><span class="match-score" style="font-weight:700;">${m.legs_player1 ?? '-'} : ${m.legs_player2 ?? '-'}</span><span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span></div>`;
             });
-            html += '</div>';
+            activeHtml += '</div>';
           });
-          html += '</div>';
+          activeHtml += '</div>';
         }
-        html += '</div>';
+        activeHtml += '</div>';
       });
-      activeArea.innerHTML = html;
+      
+      if (activeArea) activeArea.innerHTML = activeHtml;
+      if (mainActiveArea) mainActiveArea.innerHTML = activeHtml;
+      if (activeBox) activeBox.style.display = 'block';
     } else {
-      activeBox.style.display = 'none';
+      if (activeBox) activeBox.style.display = 'none';
+      if (mainActiveArea) mainActiveArea.innerHTML = '<div class="empty">Aktuell laufen keine aktiven Turniere oder Cups. Schau bald wieder vorbei!</div>';
     }
 
-    // 2. Beendete Turniere im Archiv (Hall of Fame) listen
+    let completedHtml = "";
     if (completedTs.length > 0) {
-      archivArea.innerHTML = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      completedHtml = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
         ${completedTs.map(t => `
           <div class="matchday-card" style="background: var(--bg-secondary); border-left: 4px solid #3ddc97;">
             <div class="matchday-title" style="color: var(--text-primary); font-size: 14px; text-align: left; border-color: var(--border);">${htmlEscape(t.title)}</div>
@@ -1143,8 +1178,13 @@
           </div>
         `).join("")}
       </div>`;
+      
+      if (archivArea) archivArea.innerHTML = completedHtml;
+      if (mainCompletedArea) mainCompletedArea.innerHTML = completedHtml;
     } else {
-      archivArea.innerHTML = '<div class="empty">Noch keine historischen Turniere vorhanden.</div>';
+      const emptyMsg = '<div class="empty">Noch keine abgeschlossenen Turniere im Archiv.</div>';
+      if (archivArea) archivArea.innerHTML = emptyMsg;
+      if (mainCompletedArea) mainCompletedArea.innerHTML = emptyMsg;
     }
   }
 
@@ -1214,12 +1254,11 @@
       document.getElementById('statLeagues').innerText = populatedLeaguesCount;
       switchPlatform("Autodarts");
 
-      // 🎯 SEPARATES TURNIER-LADEN MIT VOLLKOMMENEM TRY-CATCH SCHUTZ
       try {
         const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
         const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status');
         renderTournamentsData(tournaments || [], tourMatches || []);
-      } catch(tErr) { console.error("Turnierdaten konnten nicht geladen werden:", tErr); }
+      } catch(tErr) { console.error("Turnierdaten Ladefehler:", tErr); }
 
     } catch (error) { console.error("Fehler im Daten-Core:", error); }
   }
