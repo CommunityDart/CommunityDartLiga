@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 4</title>
+  <title>CDL Dart Liga test 5</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -606,13 +606,6 @@
   <div id="newsView" class="view active">
     <div class="full-width-layout">
       
-      <div id="activeTournamentsContainer" style="display: none; margin-bottom: 10px;">
-        <div class="card" style="border-color: #ffd08a; background: rgba(255, 208, 138, 0.02);">
-          <div class="card-header" style="color: #ffd08a; font-weight: 800;">🏆 Aktive Cups & Turniere</div>
-          <div class="card-body" id="activeTournamentsArea"></div>
-        </div>
-      </div>
-
       <div class="card">
         <div class="card-header">📰 Neuigkeiten</div>
         <div class="card-body">
@@ -1090,9 +1083,6 @@
   // im Liga-Archiv-Tab. Die Karte "Turnier Archiv & Hall of Fame" wurde
   // dafür aus dem Liga-Archiv-Tab entfernt (siehe HTML oben).
   function renderTournamentsData(tournaments, tourMatches) {
-    const activeBox = document.getElementById('activeTournamentsContainer');
-    const activeArea = document.getElementById('activeTournamentsArea');
-    
     const mainActiveArea = document.getElementById('mainActiveTournamentsArea');
     const mainCompletedArea = document.getElementById('mainCompletedTournamentsArea');
     
@@ -1131,11 +1121,8 @@
         activeHtml += '</div>';
       });
       
-      if (activeArea) activeArea.innerHTML = activeHtml;
       if (mainActiveArea) mainActiveArea.innerHTML = activeHtml;
-      if (activeBox) activeBox.style.display = 'block';
     } else {
-      if (activeBox) activeBox.style.display = 'none';
       if (mainActiveArea) mainActiveArea.innerHTML = '<div class="empty">Aktuell laufen keine aktiven Turniere oder Cups. Schau bald wieder vorbei!</div>';
     }
 
