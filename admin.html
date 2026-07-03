@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kommandozentrale - Admin Dashboard</title>
+    <title>Kommandozentrale - Admin Dashboard v2</title>
     
     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -275,7 +275,7 @@
     <div id="tabRegelwerk" class="tab-content">
         <h2>Globales Regelwerk anpassen</h2>
         <div id="ruleEditor" class="editor-container"></div>
-        <button class="save-banner-btn" onclick="saveRegelwerkHtml()" style="margin-top: 10px; background: #3ddc97; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">💾 Regelwerk live保存</button>
+        <button class="save-banner-btn" onclick="saveRegelwerkHtml()" style="margin-top: 10px; background: #3ddc97; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">💾 Regelwerk live speichern</button>
     </div>
 </div>
 
@@ -536,8 +536,9 @@
         
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
         
+        // ✅ MAPPE NAME AUF 'title' WEGEN DB CONSTRAINT FIX!
         const { error } = await supabaseClient.from('tournaments').insert([{
-            name: name,
+            title: name,
             platform: platform,
             status: 'active'
         }]);
@@ -550,11 +551,12 @@
         }
     };
 
+    // ✅ FIX: Nutzt 'title' anstelle von 'name'
     async function loadActiveTournaments() {
         if(!supabaseClient) return;
         const { data: tournaments, error } = await supabaseClient
             .from('tournaments')
-            .select('id, name, platform, status, created_at, completed_at, first_place_name, second_place_name, third_place_name')
+            .select('id, title, platform, status, created_at, completed_at, first_place_name, second_place_name, third_place_name')
             .order('created_at', { ascending: false });
         
         const activeBody = document.getElementById("activeTournamentsBody");
@@ -568,13 +570,13 @@
         else {
             activeBody.innerHTML = activeTournaments.map(t => `
                 <tr>
-                    <td><strong style="color:#3ddc97;">${htmlEscape(t.name)}</strong></td>
+                    <td><strong style="color:#3ddc97;">${htmlEscape(t.title)}</strong></td>
                     <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
                     <td id="count_${t.id}">0</td>
                     <td><span style="color: #f7c948; font-weight: bold;">🟡 Aktiv</span></td>
                     <td>
                         <div style="display:flex; gap: 8px;">
-                            <button class="generate-btn" style="padding: 6px 12px; font-size: 11px;" onclick="openTournamentManager('${t.id}', '${escape(t.name)}')">⚙️ Verwalten</button>
+                            <button class="generate-btn" style="padding: 6px 12px; font-size: 11px;" onclick="openTournamentManager('${t.id}', '${escape(t.title)}')">⚙️ Verwalten</button>
                             <button class="remove-btn-large" style="background: #f7c948; color: #000; padding: 6px 12px; font-size: 11px;" onclick="finishTournament('${t.id}')">🏁 Beenden</button>
                         </div>
                     </td>
@@ -592,7 +594,7 @@
         else {
             completedBody.innerHTML = completedTournaments.map(t => `
                 <tr>
-                    <td><strong style="color:#3ddc97;">${htmlEscape(t.name)}</strong></td>
+                    <td><strong style="color:#3ddc97;">${htmlEscape(t.title)}</strong></td>
                     <td style="color: #2ecc71;">🥇 ${htmlEscape(t.first_place_name || '-')}</td>
                     <td style="color: #c0c0c0;">🥈 ${htmlEscape(t.second_place_name || '-')}</td>
                     <td style="color: #cd7f32;">🥉 ${htmlEscape(t.third_place_name || '-')}</td>
@@ -716,12 +718,13 @@
     };
 
     window.editTournamentNews = async function(tournamentId) {
-        const { data: tournament } = await supabaseClient.from('tournaments').select('id, name, first_place_name, second_place_name, third_place_name').eq('id', tournamentId).single();
+        // ✅ FIX: Nutzt 'title' anstelle von 'name'
+        const { data: tournament } = await supabaseClient.from('tournaments').select('id, title, first_place_name, second_place_name, third_place_name').eq('id', tournamentId).single();
         if(!tournament) return;
         
         switchTab('tabNews');
-        const newsTitle = `🏆 ${tournament.name} - Ergebnisse`;
-        const newsContent = `<h2>${htmlEscape(tournament.name)}</h2><p><strong>🎉 Gewinner:</strong></p><ul><li>🥇 <strong>${htmlEscape(tournament.first_place_name || 'TBD')}</strong></li><li>🥈 <strong>${htmlEscape(tournament.second_place_name || 'TBD')}</strong></li><li>🥉 <strong>${htmlEscape(tournament.third_place_name || 'TBD')}</strong></li></ul>`;
+        const newsTitle = `🏆 ${tournament.title} - Ergebnisse`;
+        const newsContent = `<h2>${htmlEscape(tournament.title)}</h2><p><strong>🎉 Gewinner:</strong></p><ul><li>🥇 <strong>${htmlEscape(tournament.first_place_name || 'TBD')}</strong></li><li>🥈 <strong>${htmlEscape(tournament.second_place_name || 'TBD')}</strong></li><li>🥉 <strong>${htmlEscape(tournament.third_place_name || 'TBD')}</strong></li></ul>`;
         document.getElementById("newsTitleInput").value = newsTitle;
         if(newsQuill) newsQuill.root.innerHTML = newsContent;
     };
@@ -818,6 +821,19 @@
     function initRuleEditor() { if(!ruleQuill) { ruleQuill = new Quill('#ruleEditor', { theme: 'snow', modules: { toolbar: quillToolbarOptions } }); loadCurrentRegelwerk(); } }
     async function loadCurrentRegelwerk() { const { data } = await supabaseClient.from('system_settings').select('regelwerk_html').eq('id', 1).single(); if(data && ruleQuill) ruleQuill.root.innerHTML = data.regelwerk_html; }
     window.saveRegelwerkHtml = async function() { await supabaseClient.from('system_settings').update({ regelwerk_html: ruleQuill.root.innerHTML }).eq('id', 1); alert("Regelwerk live geschaltet!"); };
+
+    function injectSeasonManagerUI() {
+        const targetTab = document.getElementById("tabZuteilung");
+        if (!targetTab || document.getElementById("globalSeasonConfigBox")) return;
+        
+        const box = document.createElement("div");
+        box.id = "globalSeasonConfigBox";
+        box.className = "config-box";
+        box.style.borderColor = "#ffd08a";
+        box.style.background = "rgba(255, 208, 138, 0.05)";
+        box.innerHTML = `<h3>📅 Globale Saison-Verwaltung</h3><p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird archiviert.</p><div class="config-row"><input type="text" id="newSeasonNameInput" class="txt-input" placeholder="z.B. Saison 2" style="width: 250px; max-width:100%;"><button class="generate-btn" style="background: #ffd08a; color:#000;" onclick="updateGlobalSeasonName()">🔄 Neue Saison starten & wechseln</button></div>`;
+        targetTab.insertBefore(box, targetTab.firstChild);
+    }
 
     function initLeagueSelector() {
         const sel = document.getElementById("leagueSelector"), cfgSel = document.getElementById("configLeagueSelect"), penSel = document.getElementById("penaltyLeagueSelector");
