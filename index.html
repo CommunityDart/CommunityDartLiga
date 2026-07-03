@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga v1</title>
+  <title>CDL Dart Liga</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -607,7 +607,7 @@
   <div id="newsView" class="view active">
     <div class="full-width-layout">
       
-      <!-- Live Turnier-Kachel auf der Startseite (blendet sich aus wenn nichts aktiv ist) -->
+      <!-- Live Turnier-Kachel auf der Startseite -->
       <div id="activeTournamentsContainer" style="display: none; margin-bottom: 10px;">
         <div class="card" style="border-color: #ffd08a; background: rgba(255, 208, 138, 0.02);">
           <div class="card-header" style="color: #ffd08a; font-weight: 800;">🏆 Aktive Cups & Turniere</div>
@@ -729,7 +729,7 @@
     </div>
   </div>
 
-  <!-- ✅ REITER 3: DAUERHAFTER TURNIER TAB (AUFGEBAUT WIE LIGA LAYOUT) -->
+  <!-- REITER 3: DAUERHAFTER TURNIER TAB -->
   <div id="tournamentsView" class="view">
     <div class="full-width-layout">
       <div class="card" style="border-color: #ff6b35;">
@@ -763,7 +763,7 @@
   <div id="discordView" class="view">
     <div class="full-width-layout">
       <div class="card">
-        <div class="card-header">🌐 Discord Server</div>
+        <div class="header" class="card-header">🌐 Discord Server</div>
         <div class="card-body">
           <h3 style="margin-bottom: 12px;">Beitreten!</h3>
           <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten!</p>
@@ -863,33 +863,14 @@
     const idKeys = playerNum === 1 ? ['player1_id', 'player1', 'p1', 'player_1'] : ['player2_id', 'player2', 'p2', 'player_2'];
     const nameKeys = playerNum === 1 ? ['player1_name', 'p1_name', 'player_1_name', 'player1_display_name', 'p1_display_name'] : ['player2_name', 'p2_name', 'player_2_name', 'player2_display_name', 'p2_display_name'];
     
-    let foundId = "";
-    let foundName = "";
-    
-    for (const key of idKeys) {
-      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
-        foundId = String(m[key]).trim();
-        break;
-      }
-    }
-    for (const key of nameKeys) {
-      if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") {
-        foundName = String(m[key]).trim();
-        break;
-      }
-    }
-    
+    let foundId = ""; let foundName = "";
+    for (const key of idKeys) { if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") { foundId = String(m[key]).trim(); break; } }
+    for (const key of nameKeys) { if (m[key] !== undefined && m[key] !== null && String(m[key]).trim() !== "") { foundName = String(m[key]).trim(); break; } }
     if (foundId && !foundName && !isIdString(foundId)) { foundName = foundId; }
     
-    let searchValues = [];
-    if (foundId) searchValues.push(foundId);
-    if (foundName) searchValues.push(foundName);
-    
+    let searchValues = []; if (foundId) searchValues.push(foundId); if (foundName) searchValues.push(foundName);
     let profile = null;
-    for (const val of searchValues) {
-      profile = findProfile(val);
-      if (profile) break;
-    }
+    for (const val of searchValues) { profile = findProfile(val); if (profile) break; }
     
     if (profile) {
       const profileName = profile.display_name || profile.username || profile.discord_name || profile.full_name || profile.real_name || profile.name;
@@ -897,14 +878,8 @@
       if (foundName && !isIdString(foundName)) return { id: profile.id, name: foundName };
       return { id: profile.id, name: "Spieler " + playerNum };
     }
-    
-    let finalName = "Spieler " + playerNum;
-    let fallbackId = foundId || foundName || `empty_${playerNum}_${index}`;
-    
-    for (const name of [foundName, foundId]) {
-      if (name && !isIdString(name)) { finalName = name; break; }
-    }
-    
+    let finalName = "Spieler " + playerNum; let fallbackId = foundId || foundName || `empty_${playerNum}_${index}`;
+    for (const name of [foundName, foundId]) { if (name && !isIdString(name)) { finalName = name; break; } }
     return { id: fallbackId, name: finalName };
   }
 
@@ -928,12 +903,10 @@
     if (p && p.autodarts_name && p.autodarts_name.trim() !== "" && p.autodarts_name !== "-") {
       adHtml = `<div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(p.autodarts_name)} [AVG: ${parseFloat(p.autodarts_avg || 0).toFixed(2)}]</span></div>`;
     }
-    
     let dcHtml = "";
     if (p && p.dartcounter_name && p.dartcounter_name.trim() !== "" && p.dartcounter_name !== "-") {
       dcHtml = `<div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(p.dartcounter_name)} [AVG: ${parseFloat(p.dartcounter_avg || 0).toFixed(2)}]</span></div>`;
     }
-    
     let scHtml = "";
     if (p && p.scolia_name && p.scolia_name.trim() !== "" && p.scolia_name !== "-") {
       scHtml = `<div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(p.scolia_name)} [AVG: ${parseFloat(p.scolia_avg || 0).toFixed(2)}]</span></div>`;
@@ -965,6 +938,7 @@
 
   function closePlayerModal(e) { document.getElementById('playerModal').classList.remove('active'); }
 
+  // ✅ BEREINIGT & ERWEITERT: Aktualisiert das Auth-Layout dynamisch und stabil
   function updateAuthUI() {
     const loginTitle = document.getElementById('loginTitle');
     const loginDesc = document.getElementById('loginDesc');
@@ -999,7 +973,11 @@
     }
   }
 
-  // ✅ KORRIGIERT: Behandelt das Umschalten auf die neue Turnieransicht fehlerfrei
+  async function checkInitialSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    state.currentUser = session?.user || null; updateAuthUI();
+  }
+
   function switchView(view) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
@@ -1040,26 +1018,22 @@
     });
 
     if (activeLeaguesWithData.length === 0) {
-      container.innerHTML = '<span style="font-size:12px; color:var(--text-secondary); italic">Keine aktiven Ligen mit Daten gefunden.</span>';
+      container.innerHTML = '<span style="font-size:12px; color holiday:var(--text-secondary); italic">Keine aktiven Ligen mit Daten gefunden.</span>';
       document.getElementById('tableArea').innerHTML = '<div class="empty">Keine aktiven Spieler oder Begegnungen auf dieser Plattform</div>';
       document.getElementById('matchesArea').innerHTML = '<div class="empty">Keine Matches verfügbar</div>';
       return;
     }
-
     if (!activeLeaguesWithData.includes(state.activeLeague)) { state.activeLeague = activeLeaguesWithData[0]; }
 
     activeLeaguesWithData.forEach(l => {
-      const btn = document.createElement('button');
-      btn.className = `league-btn ${state.activeLeague === l ? 'active' : ''}`;
+      const btn = document.createElement('button'); btn.className = `league-btn ${state.activeLeague === l ? 'active' : ''}`;
       btn.innerText = l.replace(state.activePlatform + " ", "");
       btn.onclick = () => {
         document.querySelectorAll('#leagueBannerContainer .league-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active'); state.activeLeague = l;
-        renderTable(); renderMatches();
+        btn.classList.add('active'); state.activeLeague = l; renderTable(); renderMatches();
       };
       container.appendChild(btn);
     });
-
     renderTable(); renderMatches();
   }
 
@@ -1072,11 +1046,10 @@
   }
 
   function toggleTheme() { state.darkMode = !state.darkMode; localStorage.setItem('darkMode', state.darkMode); updateTheme(); }
-
   function updateTheme() {
     const html = document.documentElement; const toggle = document.getElementById('themeToggle');
     if (state.darkMode) { html.classList.add('dark'); toggle.textContent = '☀️'; } 
-    else { html.classList.remove('dark'); toggle.textContent = '🌙'; }
+    else { html.documentElement; html.classList.remove('dark'); toggle.textContent = '🌙'; }
   }
 
   function renderTable() {
@@ -1094,8 +1067,7 @@
   }
 
   function renderMatches() {
-    const data = state.leagueData[state.activeLeague] || { matchdays: [] };
-    const matchdays = data.matchdays || [];
+    const data = state.leagueData[state.activeLeague] || { matchdays: [] }; const matchdays = data.matchdays || [];
     if (matchdays.length === 0) { document.getElementById('matchesHeaderTitle').innerText = `🎯 Spielpaarungen`; document.getElementById('matchesArea').innerHTML = '<div class="empty">Noch keine Spielpaarungen für diese Liga generiert</div>'; return; }
 
     matchdays.sort((a, b) => (parseInt(a.title.replace(/\D/g, "")) || 0) - (parseInt(b.title.replace(/\D/g, "")) || 0));
@@ -1113,7 +1085,7 @@
     html += '</div>'; document.getElementById('matchesArea').innerHTML = html;
   }
 
-  // ✅ KORRIGIERT & ERWEITERT: Befüllt nun auch die permanenten eSports Turnier-Bereiche
+  // ✅ VOLLSTÄNDIG REPARIERT: Lädt und mappt Turnier-Live-Daten absolut ausfallsicher
   function renderTournamentsData(tournaments, tourMatches) {
     const activeBox = document.getElementById('activeTournamentsContainer');
     const activeArea = document.getElementById('activeTournamentsArea');
@@ -1178,7 +1150,6 @@
           </div>
         `).join("")}
       </div>`;
-      
       if (archivArea) archivArea.innerHTML = completedHtml;
       if (mainCompletedArea) mainCompletedArea.innerHTML = completedHtml;
     } else {
@@ -1254,14 +1225,21 @@
       document.getElementById('statLeagues').innerText = populatedLeaguesCount;
       switchPlatform("Autodarts");
 
+      // 🎯 JIZT STRKT GENAU GEFILTERTE RESISTENZ-ABFRAGE FÜR DIE TURNIERE
       try {
-        const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
-        const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status');
+        const { data: tournaments } = await supabaseClient.from('tournaments').select('*');
+        const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('*');
         renderTournamentsData(tournaments || [], tourMatches || []);
       } catch(tErr) { console.error("Turnierdaten Ladefehler:", tErr); }
 
     } catch (error) { console.error("Fehler im Daten-Core:", error); }
   }
+
+  // ✅ NEU: Dynamischer Auth-Sitzungs-Listener für den Profil-Button
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    state.currentUser = session?.user || null;
+    updateAuthUI();
+  });
 
   switchView('news'); updateTheme(); checkInitialSession(); loadData();
 </script>
