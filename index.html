@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 8</title>
+  <title>CDL Dart Liga test 10 </title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -610,11 +610,7 @@
         <div class="card-header">📰 Neuigkeiten</div>
         <div class="card-body">
           <div id="newsArea">
-            <div class="news-item">
-              <div class="news-date">22. Juni 2026</div>
-              <div class="news-title">Willkommen zur CDL!</div>
-              <div class="news-content">Die Community Dart Liga startet in eine neue Saison. Wir freuen uns auf spannende Matches und großartige Wettkämpfe zwischen unseren Spielern!</div>
-            </div>
+            <div class="empty">Lade Neuigkeiten...</div>
           </div>
         </div>
       </div>
@@ -1047,6 +1043,36 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
+  // Lädt die News-Beiträge, die im Admin-Panel unter "News verfassen" erstellt wurden
+  async function loadNews() {
+    try {
+      const { data: newsData, error } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      renderNews(newsData || []);
+    } catch (e) {
+      console.error("Fehler beim Laden der News:", e);
+      const area = document.getElementById('newsArea');
+      if (area) area.innerHTML = '<div class="empty">Neuigkeiten konnten nicht geladen werden.</div>';
+    }
+  }
+
+  function renderNews(newsList) {
+    const area = document.getElementById('newsArea');
+    if (!area) return;
+    if (!newsList || newsList.length === 0) {
+      area.innerHTML = '<div class="empty">Noch keine Neuigkeiten vorhanden.</div>';
+      return;
+    }
+    area.innerHTML = newsList.map(n => {
+      const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+      return `<div class="news-item">
+        <div class="news-date">${htmlEscape(dateStr)}</div>
+        <div class="news-title">${htmlEscape(n.title)}</div>
+        <div class="news-content">${n.content || ''}</div>
+      </div>`;
+    }).join("");
+  }
+
   // Befüllt die Saison-/Liga-Auswahl im Liga-Archiv-Tab mit den Daten aus player_history
   function populateArchivSelectors() {
     const seasonSel = document.getElementById('archivSeasonSelect');
@@ -1277,6 +1303,8 @@
 
   async function loadData() {
     try {
+      loadNews();
+
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
