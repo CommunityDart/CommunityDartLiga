@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 7</title>
+  <title>CDL Dart Liga test 8</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -668,10 +668,10 @@
           <div class="card">
             <div class="card-header">🏛️ Liga Archiv</div>
             <div class="card-body">
-              <p style="margin-bottom: 16px;">Wähle eine Saison und Liga um historische Daten anzusehen:</p>
+              <p style="margin-bottom: 16px;">Wähle eine Saison und Liga um historische Endstände anzusehen:</p>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
-                <select style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);"><option>Saison 1</option></select>
-                <select style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);"><option>Alle Ligen</option></select>
+                <select id="archivSeasonSelect" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);" onchange="renderArchivResult()"><option value="">Lade Saisons...</option></select>
+                <select id="archivLeagueSelect" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);" onchange="renderArchivResult()"><option value="">Alle Ligen</option></select>
               </div>
               <div id="archivResult" class="empty">Wähle Saison und Liga</div>
             </div>
@@ -800,7 +800,9 @@
     currentSeason: "Saison 1",
     darkMode: localStorage.getItem('darkMode') === 'true',
     currentView: 'news', 
-    currentUser: null
+    currentUser: null,
+    penaltiesByLeague: {},
+    playerHistoryCache: []
   };
 
   function isIdString(str) {
@@ -1045,6 +1047,58 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
+  // Befüllt die Saison-/Liga-Auswahl im Liga-Archiv-Tab mit den Daten aus player_history
+  function populateArchivSelectors() {
+    const seasonSel = document.getElementById('archivSeasonSelect');
+    const leagueSel = document.getElementById('archivLeagueSelect');
+    if (!seasonSel || !leagueSel) return;
+
+    const seasons = [...new Set(state.playerHistoryCache.map(h => h.season).filter(Boolean))].sort().reverse();
+    const prevSeasonVal = seasonSel.value;
+    seasonSel.innerHTML = seasons.length > 0
+      ? seasons.map(s => `<option value="${htmlEscape(s)}">${htmlEscape(s)}</option>`).join("")
+      : '<option value="">Noch keine archivierten Saisons</option>';
+    if (seasons.includes(prevSeasonVal)) seasonSel.value = prevSeasonVal;
+
+    if (leagueSel.options.length <= 1) {
+      leagueSel.innerHTML = '<option value="">Alle Ligen</option>' + ALL_LEAGUES.map(l => `<option value="${htmlEscape(l)}">${htmlEscape(l)}</option>`).join("");
+    }
+    renderArchivResult();
+  }
+
+  function renderArchivResult() {
+    const area = document.getElementById('archivResult');
+    const seasonSel = document.getElementById('archivSeasonSelect');
+    const leagueSel = document.getElementById('archivLeagueSelect');
+    if (!area || !seasonSel) return;
+
+    const season = seasonSel.value;
+    const league = leagueSel ? leagueSel.value : "";
+
+    if (!season) { area.innerHTML = '<div class="empty">Noch keine archivierten Saisons vorhanden</div>'; return; }
+
+    let rows = state.playerHistoryCache.filter(h => h.season === season);
+    if (league) rows = rows.filter(h => matchLeagueName(h.league_name, league));
+    if (rows.length === 0) { area.innerHTML = '<div class="empty">Keine archivierten Daten für diese Auswahl</div>'; return; }
+
+    let grouped = {};
+    rows.forEach(h => { const key = h.league_name || 'Unbekannte Liga'; if (!grouped[key]) grouped[key] = []; grouped[key].push(h); });
+
+    let html = '<div class="matchdays-grid">';
+    Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0])).forEach(([leagueName, list]) => {
+      list.sort((a, b) => (a.placement || 99) - (b.placement || 99));
+      html += `<div class="matchday-card"><div class="matchday-title">🏛️ ${htmlEscape(leagueName)}</div>`;
+      list.forEach(h => {
+        const pName = getProfileNameFromId(h.player_id);
+        const rankClass = h.placement === 1 ? 'gold' : h.placement === 2 ? 'silver' : h.placement === 3 ? 'bronze' : '';
+        html += `<div class="match-row"><span class="rank ${rankClass}" style="width:26px; text-align:left;">${h.placement || '-'}.</span><span class="player-link" style="flex:1;" onclick="openPlayerCard('${htmlEscape(h.player_id)}', '${htmlEscape(pName)}')">${htmlEscape(pName)}</span></div>`;
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    area.innerHTML = html;
+  }
+
   function renderTable() {
     document.getElementById('tableHeaderTitle').innerText = `📊 Tabelle: ${state.activeLeague}`;
     const data = state.leagueData[state.activeLeague] || { standings: { rows: [] } };
@@ -1054,7 +1108,17 @@
     let html = `<table><thead><tr><th style="width: 45px; text-align:center;">P</th><th>Spieler</th><th style="width: 45px; text-align:center;">Sp</th><th style="width: 45px; text-align:center;">S</th><th style="width: 45px; text-align:center;">N</th><th style="width: 65px; text-align:center;">AVG</th><th style="width: 55px; text-align:center;">Diff</th><th style="width: 55px; text-align:center;">Pkt</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
       const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
-      html += `<tr><td style="text-align:center;"><span class="rank ${rankClass}">${idx + 1}</span></td><td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.id)}', '${htmlEscape(r.name)}')">${htmlEscape(r.name || 'Spieler')}</span></td><td class="stat">${r.gamesPlayed || 0}</td><td class="stat" style="color: #00d084;">${r.wins || 0}</td><td class="stat" style="color: #ff6b35;">${r.losses || 0}</td><td class="stat" style="font-weight:700; color:var(--text-secondary);">${parseFloat(r.finalAvg || 0).toFixed(2)}</td><td class="stat">${r.legDiff > 0 ? '+' + r.legDiff : r.legDiff}</td><td class="stat score">${r.points || 0}</td></tr>`;
+      // Karten gelten ausschließlich für die aktuell ausgewählte Liga - ein Spieler
+      // der z.B. in Autodarts Liga 1 UND Scolia Liga 1 spielt und in beiden je eine
+      // gelbe Karte hat, zeigt hier pro Liga nur die Karte(n) dieser einen Liga.
+      const pen = (state.penaltiesByLeague[state.activeLeague] || {})[r.id];
+      let cardDot = '';
+      if (pen && (pen.yellow_cards > 0 || pen.red_cards > 0)) {
+        const title = `🟨 ${pen.yellow_cards || 0}  🟥 ${pen.red_cards || 0}`;
+        const dotColor = pen.red_cards > 0 ? '#e74c3c' : '#ffd700';
+        cardDot = `<span title="${title}" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${dotColor}; margin-left:7px; vertical-align:middle;"></span>`;
+      }
+      html += `<tr><td style="text-align:center;"><span class="rank ${rankClass}">${idx + 1}</span></td><td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.id)}', '${htmlEscape(r.name)}')">${htmlEscape(r.name || 'Spieler')}</span>${cardDot}</td><td class="stat">${r.gamesPlayed || 0}</td><td class="stat" style="color: #00d084;">${r.wins || 0}</td><td class="stat" style="color: #ff6b35;">${r.losses || 0}</td><td class="stat" style="font-weight:700; color:var(--text-secondary);">${parseFloat(r.finalAvg || 0).toFixed(2)}</td><td class="stat">${r.legDiff > 0 ? '+' + r.legDiff : r.legDiff}</td><td class="stat score">${r.points || 0}</td></tr>`;
     });
     html += `</tbody></table>`; document.getElementById('tableArea').innerHTML = html;
   }
@@ -1222,7 +1286,7 @@
       state.currentSeason = sys?.current_season || 'Saison 1';
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
-      let rulesText = sys?.rules || sys?.regelwerk || sys?.rules_text || "";
+      let rulesText = sys?.regelwerk_html || sys?.rules || sys?.regelwerk || sys?.rules_text || "";
       const regelwerkContainer = document.getElementById('regelwerkContent');
       if (regelwerkContainer && rulesText) {
         regelwerkContainer.innerHTML = rulesText.includes('<p>') ? rulesText : `<div style="white-space: pre-wrap; line-height: 1.6; font-size:14px;">${htmlEscape(rulesText)}</div>`;
@@ -1232,6 +1296,21 @@
       let matches = matchesData ? matchesData.filter(m => String(m.season || '').replace(/\D/g, "") === stateSeasonNum || String(m.season || '').trim().toLowerCase() === String(state.currentSeason).trim().toLowerCase()) : [];
       if (matches.length === 0 && matchesData) matches = matchesData;
       document.getElementById('statMatches').innerText = matches.length;
+
+      // Karten/Strafen pro Liga laden - wichtig: Zuordnung bleibt strikt pro Liga,
+      // damit z.B. eine gelbe Karte in Scolia Liga 1 nicht auch in Autodarts Liga 1 auftaucht.
+      const { data: penaltiesData } = await supabaseClient.from('league_penalties').select('*');
+      state.penaltiesByLeague = {};
+      (penaltiesData || []).forEach(p => {
+        const matchedLeague = ALL_LEAGUES.find(l => matchLeagueName(p.league_name, l)) || p.league_name;
+        if (!state.penaltiesByLeague[matchedLeague]) state.penaltiesByLeague[matchedLeague] = {};
+        state.penaltiesByLeague[matchedLeague][p.player_id] = { yellow_cards: p.yellow_cards || 0, red_cards: p.red_cards || 0 };
+      });
+
+      // Saison-Archiv (player_history) laden für den Archiv-Tab
+      const { data: historyData } = await supabaseClient.from('player_history').select('*');
+      state.playerHistoryCache = historyData || [];
+      populateArchivSelectors();
 
       let populatedLeaguesCount = 0;
       ALL_LEAGUES.forEach(league => {
