@@ -956,7 +956,7 @@
       const name = state.currentUser.user_metadata?.full_name || state.currentUser.email || "Spieler";
       if (loginTitle) loginTitle.innerText = `Willkommen zurück, ${name}!`;
       if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten oder oben in der Navbar, um dein Spieler-Profil zu verwalten.";
-      if (loginBtn) { loginBtn.innerText = "⚙️ Zum Profil wechseln (profil.html)"; loginBtn.style.background = "#00d084"; }
+      if (loginBtn) { loginBtn.innerText = "⚙️ Zum Profil wechseln"; loginBtn.style.background = "#00d084"; }
       
       if (!navProfil) {
         navProfil = document.createElement('button'); navProfil.className = 'nav-btn'; navProfil.id = 'navProfil';
