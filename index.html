@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 10 </title>
+  <title>CDL Dart Liga test 11</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -582,6 +582,7 @@
   <div class="navbar">
     <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
     <button class="nav-btn" id="navTournaments" onclick="switchView('tournaments')">🏆 Turniere</button>
+    <button class="nav-btn" id="navMembercard" onclick="switchView('membercard')">🪪 Mitgliederkarte</button>
     <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
   </div>
@@ -737,6 +738,29 @@
     </div>
   </div>
 
+  <div id="membercardView" class="view">
+    <div class="full-width-layout">
+      <div class="card" style="border-color: #20b7ff;">
+        <div class="card-header" style="color: #20b7ff; font-weight: 800;">🪪 Mitgliederausweise</div>
+        <div class="card-body">
+          <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">Mitglieder, die ihre Karte in ihrem Profil öffentlich sichtbar geschaltet haben. Klick auf eine Karte für das volle Profil.</p>
+          <div id="membercardGridArea"><div class="empty">Lade Mitgliederausweise...</div></div>
+        </div>
+      </div>
+
+      <div class="card compact-footer-card">
+        <div class="card-header">ℹ️ Infos</div>
+        <div class="card-body">
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="discordView" class="view">
     <div class="full-width-layout">
       <div class="card">
@@ -798,8 +822,12 @@
     currentView: 'news', 
     currentUser: null,
     penaltiesByLeague: {},
-    playerHistoryCache: []
+    playerHistoryCache: [],
+    newsCache: [],
+    newsReactionsCache: []
   };
+
+  const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
 
   function isIdString(str) {
     if (!str) return true;
@@ -875,7 +903,8 @@
     const realName = p?.real_name || p?.full_name || p?.echter_name || p?.name || "Nicht angegeben";
     const discordHandle = p?.discord_name || p?.username || "-";
     const avatarImgUrl = p?.avatar_url || p?.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
-    const wohnort = p ? (p.wohnort || p.location || p.city || "Nicht angegeben") : "Nicht angegeben";
+    const plzOrt = p ? [p.plz, p.ort].filter(Boolean).join(' ') : '';
+    const wohnort = plzOrt || (p ? (p.wohnort || p.location || p.city || "Nicht angegeben") : "Nicht angegeben");
     const setup = p ? (p.dart_setup || p.setup || "Nicht angegeben") : "Nicht angegeben";
 
     let adHtml = "";
@@ -976,6 +1005,7 @@
       document.getElementById('platformBanner').classList.remove('active');
       if (view === 'news') document.getElementById('navNews').classList.add('active');
       if (view === 'tournaments') document.getElementById('navTournaments').classList.add('active');
+      if (view === 'membercard') document.getElementById('navMembercard').classList.add('active');
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
     }
     state.currentView = view;
@@ -1048,7 +1078,10 @@
     try {
       const { data: newsData, error } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
       if (error) throw error;
-      renderNews(newsData || []);
+      state.newsCache = newsData || [];
+      const { data: reactionsData } = await supabaseClient.from('news_reactions').select('id, news_id, player_id, emoji');
+      state.newsReactionsCache = reactionsData || [];
+      renderNews(state.newsCache);
     } catch (e) {
       console.error("Fehler beim Laden der News:", e);
       const area = document.getElementById('newsArea');
@@ -1069,9 +1102,49 @@
         <div class="news-date">${htmlEscape(dateStr)}</div>
         <div class="news-title">${htmlEscape(n.title)}</div>
         <div class="news-content">${n.content || ''}</div>
+        ${renderNewsReactionBar(n.id)}
       </div>`;
     }).join("");
   }
+
+  // Reaktions-Leiste unter jedem News-Beitrag: fixe Emoji-Auswahl, Klick
+  // schaltet die eigene Reaktion an/aus. Nur eingeloggte Spieler mit
+  // gefundenem Profil können reagieren.
+  function renderNewsReactionBar(newsId) {
+    const currentProfile = getCurrentPlayerProfile();
+    const reactionsForNews = state.newsReactionsCache.filter(r => r.news_id === newsId);
+    const countsByEmoji = {};
+    reactionsForNews.forEach(r => { countsByEmoji[r.emoji] = (countsByEmoji[r.emoji] || 0) + 1; });
+    const myEmojis = currentProfile ? reactionsForNews.filter(r => r.player_id === currentProfile.id).map(r => r.emoji) : [];
+
+    const chips = NEWS_EMOJIS.map(e => {
+      const count = countsByEmoji[e] || 0;
+      const active = myEmojis.includes(e);
+      return `<button class="btn small-action-btn" style="padding:5px 10px; font-size:14px; ${active ? 'background:var(--platform-color); color:white; border-color:var(--platform-color);' : ''}" onclick="toggleNewsReaction('${newsId}','${e}')">${e}${count > 0 ? ' ' + count : ''}</button>`;
+    }).join("");
+
+    return `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">${chips}</div>`;
+  }
+
+  window.toggleNewsReaction = async function(newsId, emoji) {
+    if (!state.currentUser) { alert('Bitte melde dich zuerst mit Discord an, um zu reagieren.'); switchView('discord'); return; }
+    const profile = getCurrentPlayerProfile();
+    if (!profile) { alert('Dein Spieler-Profil konnte nicht gefunden werden. Bitte kontaktiere einen Admin.'); return; }
+    const existing = state.newsReactionsCache.find(r => r.news_id === newsId && r.player_id === profile.id && r.emoji === emoji);
+    try {
+      if (existing) {
+        await supabaseClient.from('news_reactions').delete().eq('id', existing.id);
+      } else {
+        await supabaseClient.from('news_reactions').insert({ news_id: newsId, player_id: profile.id, emoji: emoji });
+      }
+      const { data: reactionsData } = await supabaseClient.from('news_reactions').select('id, news_id, player_id, emoji');
+      state.newsReactionsCache = reactionsData || [];
+      renderNews(state.newsCache);
+    } catch (e) {
+      console.error('Fehler beim Reagieren:', e);
+      alert('Es gab ein Problem beim Speichern deiner Reaktion.');
+    }
+  };
 
   // Befüllt die Saison-/Liga-Auswahl im Liga-Archiv-Tab mit den Daten aus player_history
   function populateArchivSelectors() {
@@ -1184,6 +1257,47 @@
     if (!state.currentUser) return null;
     const u = state.currentUser;
     return findProfile(u.user_metadata?.provider_id) || findProfile(u.user_metadata?.sub) || findProfile(u.id) || (u.email ? findProfile(u.email) : null) || null;
+  }
+
+  // Zeigt alle Profile mit gesetztem "show_membership_card"-Haken als
+  // schlichte ID-Ausweis-Karten (Foto, Name, Mitglied seit, Wohnort, Plattformen).
+  function renderMembercards() {
+    const area = document.getElementById('membercardGridArea');
+    if (!area) return;
+    const members = state.allProfilesCache.filter(p => p.show_membership_card === true);
+
+    if (members.length === 0) {
+      area.innerHTML = '<div class="empty">Noch niemand hat seine Mitgliederkarte öffentlich sichtbar gemacht.</div>';
+      return;
+    }
+
+    area.innerHTML = '<div class="matchdays-grid">' + members.map(p => {
+      const name = p.display_name || p.discord_name || p.username || 'Spieler';
+      const avatarUrl = p.avatar_url || p.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
+      const plzOrt = [p.plz, p.ort].filter(Boolean).join(' ');
+      const joinDate = p.created_at ? new Date(p.created_at).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) : null;
+
+      let platformChips = "";
+      [['Autodarts', p.autodarts_name], ['DartCounter', p.dartcounter_name], ['Scolia', p.scolia_name]].forEach(([plat, val]) => {
+        if (val && val.trim() !== '' && val !== '-') {
+          const pb = platformBadge(plat);
+          platformChips += `<span style="font-size:10px; font-weight:700; background:${pb.color}1A; color:${pb.color}; padding:2px 7px; border-radius:10px; display:inline-flex; align-items:center; gap:3px;">${pb.icon} ${plat}</span>`;
+        }
+      });
+
+      return `<div class="matchday-card" style="cursor:pointer; padding:0; overflow:hidden;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
+        <div style="background:var(--bg-primary); padding:6px 14px; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-secondary); border-bottom:1px solid var(--border);">🪪 CDL Mitgliedsausweis</div>
+        <div style="display:flex; gap:14px; align-items:center; padding:14px;">
+          <img src="${avatarUrl}" style="width:56px; height:56px; border-radius:10px; object-fit:cover; border:2px solid var(--border); flex-shrink:0;" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:800; font-size:15px; color:var(--text-primary);">${htmlEscape(name)}</div>
+            ${plzOrt ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">📍 ${htmlEscape(plzOrt)}</div>` : ''}
+            ${joinDate ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Mitglied seit ${htmlEscape(joinDate)}</div>` : ''}
+            <div style="display:flex; gap:5px; margin-top:8px; flex-wrap:wrap;">${platformChips}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join("") + '</div>';
   }
 
   async function toggleTournamentRegistration(tournamentId, isRegistered) {
@@ -1308,6 +1422,7 @@
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
+      renderMembercards();
 
       const { data: sysData } = await supabaseClient.from('system_settings').select('*');
       const sys = (sysData && sysData.length > 0) ? sysData[0] : null;
@@ -1404,6 +1519,7 @@
     state.currentUser = session?.user || null;
     updateAuthUI();
     loadTournamentsData();
+    renderNews(state.newsCache);
   });
 
   switchView('news'); updateTheme(); checkInitialSession(); loadData();
