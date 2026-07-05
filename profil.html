@@ -100,6 +100,10 @@
         <label><input type="checkbox" id="show_in_members"> 🌐 Profil in der öffentlichen Mitgliederübersicht anzeigen</label>
       </div>
 
+      <div class="visibility-box">
+        <label><input type="checkbox" id="show_membership_card"> 🪪 Meine Mitgliederkarte im "Mitgliederkarte"-Reiter öffentlich anzeigen</label>
+      </div>
+
       <div class="input-group">
         <div><label>Vorname</label><input type="text" id="real_name" placeholder="Dein Vorname"></div>
         <div style="flex:0 0 100px;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" inputmode="numeric" placeholder="12345"></div>
@@ -159,6 +163,7 @@
           // NEUE FELDER EINTRAGEN
           document.getElementById("display_name").value = data.display_name || data.username || "";
           document.getElementById("show_in_members").checked = data.show_in_members !== false; // standardmäßig true
+          document.getElementById("show_membership_card").checked = data.show_membership_card === true; // standardmäßig false (Opt-In)
 
           // Bestehende Felder befüllen
           document.getElementById("real_name").value = data.real_name || "";
@@ -206,6 +211,7 @@
             id: currentUser.id,
             display_name: document.getElementById("display_name").value.trim() || null,
             show_in_members: document.getElementById("show_in_members").checked,
+            show_membership_card: document.getElementById("show_membership_card").checked,
             real_name: document.getElementById("real_name").value.trim() || null, 
             plz: document.getElementById("plz").value.trim() || null,
             ort: document.getElementById("ort").value.trim() || null, 
