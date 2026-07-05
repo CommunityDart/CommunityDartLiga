@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 6</title>
+  <title>CDL Dart Liga test 7</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1148,9 +1148,19 @@
           } else {
             regButtonHtml = `<button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none;" onclick="toggleTournamentRegistration('${t.id}', false)">✅ Anmelden</button>`;
           }
-          activeHtml += `<div style="margin: 10px 0 16px 0; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">👥 ${tRegs.length} angemeldet</span>
-            ${regButtonHtml}
+          let participantsHtml = '<span style="font-size:12px; color:var(--text-secondary); font-style:italic;">Noch keine Anmeldungen</span>';
+          if (tRegs.length > 0) {
+            participantsHtml = tRegs.map(r => {
+              const pName = getProfileNameFromId(r.player_id);
+              return `<span class="player-link" style="font-size:12px; background:var(--bg-secondary); border:1px solid var(--border); padding:3px 8px; border-radius:12px; display:inline-block; margin:2px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
+            }).join("");
+          }
+          activeHtml += `<div style="margin: 10px 0 16px 0; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom: ${tRegs.length > 0 ? '10px' : '0'};">
+              <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">👥 ${tRegs.length} angemeldet</span>
+              ${regButtonHtml}
+            </div>
+            <div>${participantsHtml}</div>
           </div>`;
           activeHtml += '<p style="font-size: 13px; color: var(--text-secondary); font-style:italic;">Der Spielplan für diesen Cup wird in Kürze vom Admin ausgelost...</p>';
         } else {
