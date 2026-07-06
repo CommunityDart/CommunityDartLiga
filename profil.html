@@ -146,6 +146,22 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
+    let currentProfileData = null;
+
+    // Wandelt PLZ/Ort in Koordinaten um (für die Weltkarte im Mitgliederkarte-Tab).
+    // Nutzt die freie Nominatim (OpenStreetMap) Geocoding-API, kein API-Key nötig.
+    async function geocodeAddress(plz, ort) {
+      const query = `${plz || ''} ${ort || ''}`.trim();
+      if (!query) return null;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+        }
+      } catch (e) { console.error('Geocoding fehlgeschlagen:', e); }
+      return null;
+    }
 
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -160,6 +176,7 @@
 
       const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
       if(data) {
+          currentProfileData = data;
           // NEUE FELDER EINTRAGEN
           document.getElementById("display_name").value = data.display_name || data.username || "";
           document.getElementById("show_in_members").checked = data.show_in_members !== false; // standardmäßig true
@@ -206,6 +223,26 @@
 
     document.getElementById("profilForm").addEventListener("submit", async function(e) {
         e.preventDefault();
+
+        const saveBtn = document.getElementById("saveBtn");
+        const plzVal = document.getElementById("plz").value.trim();
+        const ortVal = document.getElementById("ort").value.trim();
+
+        // Nur neu geocoden wenn PLZ oder Ort sich geändert haben - spart unnötige Anfragen
+        let lat = currentProfileData ? currentProfileData.latitude : null;
+        let lon = currentProfileData ? currentProfileData.longitude : null;
+        const plzOrtChanged = !currentProfileData || currentProfileData.plz !== plzVal || currentProfileData.ort !== ortVal;
+
+        if (plzOrtChanged && (plzVal || ortVal)) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = "📍 Standort wird ermittelt...";
+            const geo = await geocodeAddress(plzVal, ortVal);
+            if (geo) { lat = geo.lat; lon = geo.lon; }
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Profil Speichern";
+        } else if (!plzVal && !ortVal) {
+            lat = null; lon = null;
+        }
         
         const updates = {
             id: currentUser.id,
@@ -213,8 +250,10 @@
             show_in_members: document.getElementById("show_in_members").checked,
             show_membership_card: document.getElementById("show_membership_card").checked,
             real_name: document.getElementById("real_name").value.trim() || null, 
-            plz: document.getElementById("plz").value.trim() || null,
-            ort: document.getElementById("ort").value.trim() || null, 
+            plz: plzVal || null,
+            ort: ortVal || null, 
+            latitude: lat,
+            longitude: lon,
             dart_setup: document.getElementById("dart_setup").value.trim() || null,
             autodarts_name: document.getElementById("autodarts_name").value.trim() || null, 
             autodarts_avg: document.getElementById("autodarts_avg").value.trim().replace(',', '.') || null, 
