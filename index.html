@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 12</title>
+  <title>CDL Dart Liga test 13</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -590,13 +592,13 @@
   <div class="platform-banner" id="platformBanner">
     <div class="banner-row">
       <div class="platform-selection">
-        <span class="banner-label"></span>
+        <span class="banner-label">:</span>
         <button class="p-btn active" data-p="Autodarts" onclick="switchPlatform('Autodarts')">⚫ Autodarts</button>
         <button class="p-btn" data-p="DartCounter" onclick="switchPlatform('DartCounter')">🟠 DartCounter</button>
         <button class="p-btn" data-p="Scolia" onclick="switchPlatform('Scolia')">🟢 Scolia</button>
       </div>
       <div class="league-selection">
-        <span class="banner-label"></span>
+        <span class="banner-label">Liga:</span>
         <div id="leagueBannerContainer" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;"></div>
       </div>
     </div>
@@ -740,6 +742,13 @@
 
   <div id="membercardView" class="view">
     <div class="full-width-layout">
+      <div class="card" style="border-color: #20b7ff;">
+        <div class="card-header" style="color: #20b7ff; font-weight: 800;">🗺️ Wo unsere Mitglieder herkommen</div>
+        <div class="card-body">
+          <div id="membercardMap" style="height: 400px; border-radius: 10px; overflow: hidden; background: var(--bg-tertiary);"></div>
+        </div>
+      </div>
+
       <div class="card" style="border-color: #20b7ff;">
         <div class="card-header" style="color: #20b7ff; font-weight: 800;">🪪 Mitgliederausweise</div>
         <div class="card-body">
@@ -956,7 +965,7 @@
       const name = state.currentUser.user_metadata?.full_name || state.currentUser.email || "Spieler";
       if (loginTitle) loginTitle.innerText = `Willkommen zurück, ${name}!`;
       if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten oder oben in der Navbar, um dein Spieler-Profil zu verwalten.";
-      if (loginBtn) { loginBtn.innerText = "⚙️ Zum Profil wechseln"; loginBtn.style.background = "#00d084"; }
+      if (loginBtn) { loginBtn.innerText = "⚙️ Zum Profil wechseln (profil.html)"; loginBtn.style.background = "#00d084"; }
       
       if (!navProfil) {
         navProfil = document.createElement('button'); navProfil.className = 'nav-btn'; navProfil.id = 'navProfil';
@@ -1005,7 +1014,10 @@
       document.getElementById('platformBanner').classList.remove('active');
       if (view === 'news') document.getElementById('navNews').classList.add('active');
       if (view === 'tournaments') document.getElementById('navTournaments').classList.add('active');
-      if (view === 'membercard') document.getElementById('navMembercard').classList.add('active');
+      if (view === 'membercard') {
+        document.getElementById('navMembercard').classList.add('active');
+        if (membercardMapInstance) { setTimeout(() => membercardMapInstance.invalidateSize(), 100); }
+      }
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
     }
     state.currentView = view;
@@ -1264,7 +1276,17 @@
   function renderMembercards() {
     const area = document.getElementById('membercardGridArea');
     if (!area) return;
-    const members = state.allProfilesCache.filter(p => p.show_membership_card === true);
+    // Debug-Ausgabe: in der Browser-Konsole (F12) siehst du für jedes Profil
+    // den rohen Wert von show_membership_card, damit man Speicher- von Anzeige-Fehlern unterscheiden kann.
+    console.log('Mitgliederkarte-Check:', state.allProfilesCache.map(p => ({
+      name: p.display_name || p.discord_name || p.username,
+      show_membership_card: p.show_membership_card
+    })));
+    // Bewusst locker geprüft (truthy statt strikt === true), falls der Wert
+    // z.B. als String "true" oder 1 zurückkommt statt als reines Boolean.
+    const members = state.allProfilesCache.filter(p => p.show_membership_card === true || p.show_membership_card === 'true' || p.show_membership_card === 1);
+
+    renderMembercardMap(members);
 
     if (members.length === 0) {
       area.innerHTML = '<div class="empty">Noch niemand hat seine Mitgliederkarte öffentlich sichtbar gemacht.</div>';
@@ -1298,6 +1320,46 @@
         </div>
       </div>`;
     }).join("") + '</div>';
+  }
+
+  // Leaflet-Weltkarte mit einem Pin pro Mitglied (Koordinaten kommen aus
+  // dem Geocoding, das profil.html beim Speichern von PLZ/Ort ausführt).
+  let membercardMapInstance = null;
+  let membercardMarkersLayer = null;
+
+  function renderMembercardMap(members) {
+    const mapEl = document.getElementById('membercardMap');
+    if (!mapEl || typeof L === 'undefined') return;
+
+    const withCoords = members.filter(p => p.latitude && p.longitude);
+
+    if (!membercardMapInstance) {
+      membercardMapInstance = L.map('membercardMap', { scrollWheelZoom: false }).setView([30, 10], 2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap Mitwirkende',
+        maxZoom: 18
+      }).addTo(membercardMapInstance);
+      membercardMarkersLayer = L.layerGroup().addTo(membercardMapInstance);
+    }
+
+    membercardMarkersLayer.clearLayers();
+
+    if (withCoords.length === 0) return;
+
+    const bounds = [];
+    withCoords.forEach(p => {
+      const name = p.display_name || p.discord_name || p.username || 'Spieler';
+      const plzOrt = [p.plz, p.ort].filter(Boolean).join(' ');
+      L.marker([p.latitude, p.longitude])
+        .bindPopup(`<strong>${htmlEscape(name)}</strong>${plzOrt ? `<br>📍 ${htmlEscape(plzOrt)}` : ''}`)
+        .addTo(membercardMarkersLayer);
+      bounds.push([p.latitude, p.longitude]);
+    });
+
+    membercardMapInstance.fitBounds(bounds, { padding: [30, 30], maxZoom: 10 });
+    // Leaflet braucht einen Größen-Refresh, falls die Karte beim ersten
+    // Rendern in einem unsichtbaren Tab (display:none) lag.
+    setTimeout(() => { if (membercardMapInstance) membercardMapInstance.invalidateSize(); }, 150);
   }
 
   async function toggleTournamentRegistration(tournamentId, isRegistered) {
