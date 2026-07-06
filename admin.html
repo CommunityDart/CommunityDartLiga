@@ -143,6 +143,16 @@
     <!-- TAB 2: LIGA SPIELPLÄNE & ERGEBNISSE -->
     <div id="tabSpielplaene" class="tab-content">
         <h2>Ergebnisse, Averages & Highlights eintragen</h2>
+
+        <div class="config-box" style="border-color: #ffd08a; background: rgba(255, 208, 138, 0.05);">
+            <h3>⏱️ Ergebnis-Bestätigungsfrist</h3>
+            <p class="meta-text" style="margin-bottom:8px;">Wenn ein Spieler ein Ergebnis einträgt, hat der Gegner diese Zeit (in Stunden), um es zu bestätigen oder abzulehnen. Läuft die Frist ab, gilt das gemeldete Ergebnis automatisch als final.</p>
+            <div class="config-row">
+                <label>Frist: <input type="number" id="resultConfirmationHoursInput" class="num-input" value="48" min="1" style="width:80px;"> Stunden</label>
+                <button class="card-btn yellow" onclick="saveResultConfirmationHours()">💾 Speichern</button>
+            </div>
+        </div>
+
         <div style="margin-bottom: 12px; display:flex; flex-direction:column; gap:8px;">
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 <select id="leagueSelector" class="league-select" onchange="loadMatchdayPlan()" style="max-width:300px;">
@@ -328,13 +338,24 @@
     async function loadCurrentSeason() {
         if(!supabaseClient) return;
         try {
-            const { data } = await supabaseClient.from('system_settings').select('current_season').eq('id', 1).single();
+            const { data } = await supabaseClient.from('system_settings').select('current_season, result_confirmation_hours').eq('id', 1).single();
             if(data && data.current_season) {
                 currentSeasonGlobal = data.current_season;
+            }
+            const hoursInput = document.getElementById("resultConfirmationHoursInput");
+            if (hoursInput && data && data.result_confirmation_hours) {
+                hoursInput.value = data.result_confirmation_hours;
             }
         } catch(e) {}
         document.getElementById("seasonIndicator").textContent = "📅 Saison: " + currentSeasonGlobal;
     }
+
+    window.saveResultConfirmationHours = async function() {
+        const hours = parseInt(document.getElementById("resultConfirmationHoursInput").value) || 48;
+        const { error } = await supabaseClient.from('system_settings').update({ result_confirmation_hours: hours }).eq('id', 1);
+        if(error) alert("❌ Fehler: " + error.message);
+        else alert(`✅ Bestätigungsfrist auf ${hours} Stunden gesetzt!`);
+    };
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -643,9 +664,10 @@
         let html = "";
         for (const [day, list] of Object.entries(grouped)) {
             html += `<h3 style="color:#20b7ff; margin-top:14px; border-bottom:1px solid #4b87a5; padding-bottom:4px;">Spieltag ${day}</h3><table><thead><tr>
-                        <th style="width:20%;">Heimspieler</th><th style="width:20%;">Auswärtsspieler</th><th style="width:10%; text-align:center;">Legs</th>
-                        <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th>
-                        ${context !== 'Turnier' ? '<th style="width:12%; text-align:center;">Karten</th>' : ''}
+                        <th style="width:18%;">Heimspieler</th><th style="width:18%;">Auswärtsspieler</th><th style="width:9%; text-align:center;">Legs</th>
+                        <th style="width:12%; text-align:center;">Averages</th><th style="width:14%; text-align:center;">Highlights</th>
+                        ${context !== 'Turnier' ? '<th style="width:10%; text-align:center;">Karten</th>' : ''}
+                        <th style="width:12%; text-align:center;">Status</th>
                         <th style="width:4%;">Aktion</th>
                     </tr></thead><tbody>`;
             list.forEach(m => {
@@ -664,6 +686,18 @@
                     kartenTd = `<td style="text-align:center; font-size:12px;"><div style="margin-bottom: 6px;">${k1}</div><div>${k2}</div></td>`;
                 }
 
+                const statusLabels = {
+                    'offen': '<span style="color:#90a9b7;">–</span>',
+                    'pending_confirmation': '<span style="color:#f7c948; font-weight:bold;">⏳ Wartet auf Bestätigung</span>',
+                    'confirmed': '<span style="color:#2ecc71; font-weight:bold;">✅ Bestätigt</span>',
+                    'auto_confirmed': '<span style="color:#20b7ff; font-weight:bold;">⏱️ Auto-bestätigt</span>',
+                    'admin_confirmed': '<span style="color:#3ddc97; font-weight:bold;">🛡️ Admin final</span>'
+                };
+                let statusTd = statusLabels[m.result_status] || statusLabels['offen'];
+                if (m.screenshot_url) {
+                    statusTd += `<br><a href="${m.screenshot_url}" target="_blank" style="font-size:11px; color:#20b7ff;">📷 Screenshot</a>`;
+                }
+
                 html += `<tr>
                         <td><div class="player-info-block"><strong style="color:#3ddc97;">${htmlEscape(p1Name)}</strong>${formatAllPlattformNames(p1)}</div></td>
                         <td><div class="player-info-block"><strong style="color:#3ddc97;">${htmlEscape(p2Name)}</strong>${formatAllPlattformNames(p2)}</div></td>
@@ -671,6 +705,7 @@
                         <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || m.avg_player1 || ''}" ${isFreilos?'disabled':''}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || m.avg_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
                         <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isFreilos?'disabled':''}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
                         ${kartenTd}
+                        <td style="text-align:center; font-size:12px;">${statusTd}</td>
                         <td><button class="assign-btn" style="padding:6px 8px;" onclick="${context === 'Turnier' ? 'saveTournamentMatchStats' : 'saveMatchFullStats'}('${m.id}')" ${isFreilos?'disabled':''}>💾</button></td>
                     </tr>`;
             });
@@ -874,6 +909,30 @@
         loadTournamentSchedule(); 
     };
 
+    // Admin trägt Ergebnis direkt für ein Liga-Match ein -> gilt sofort als final
+    // (result_status = admin_confirmed), unabhängig vom Spieler-Meldeworkflow.
+    window.saveMatchFullStats = async function(matchId) {
+        if(!supabaseClient) return;
+        const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
+        const a1 = document.getElementById(`avg1_${matchId}`)?.value, a2 = document.getElementById(`avg2_${matchId}`)?.value;
+        const h1 = document.getElementById(`hl1_${matchId}`)?.value, h2 = document.getElementById(`hl2_${matchId}`)?.value;
+
+        const updates = {
+            legs_player1: l1 !== "" ? parseInt(l1) : null,
+            legs_player2: l2 !== "" ? parseInt(l2) : null,
+            player1_avg: a1 && !isNaN(parseFloat(a1)) ? parseFloat(a1) : null,
+            player2_avg: a2 && !isNaN(parseFloat(a2)) ? parseFloat(a2) : null,
+            highlights_player1: h1 || null,
+            highlights_player2: h2 || null,
+            status: (l1 !== "" && l2 !== "") ? "fertig" : "offen",
+            result_status: (l1 !== "" && l2 !== "") ? "admin_confirmed" : "offen",
+            reported_by_id: null, reported_at: null, confirmation_deadline: null
+        };
+
+        const { error } = await supabaseClient.from('matches').update(updates).eq('id', matchId);
+        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Ergebnis gespeichert (als Admin final gesetzt)!"); loadMatchdayPlan(); }
+    };
+
     window.saveTournamentMatchStats = async function(matchId) {
         if(!supabaseClient) return;
         const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
@@ -887,11 +946,13 @@
             player2_avg: a2 && !isNaN(parseFloat(a2)) ? parseFloat(a2) : null,
             highlights_player1: h1 || null,
             highlights_player2: h2 || null,
-            status: (l1 !== "" && l2 !== "") ? "fertig" : "offen"
+            status: (l1 !== "" && l2 !== "") ? "fertig" : "offen",
+            result_status: (l1 !== "" && l2 !== "") ? "admin_confirmed" : "offen",
+            reported_by_id: null, reported_at: null, confirmation_deadline: null
         };
 
         const { error } = await supabaseClient.from('tournament_matches').update(updates).eq('id', matchId);
-        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Turnier-Ergebnis gespeichert!"); loadTournamentSchedule(); }
+        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Turnier-Ergebnis gespeichert (als Admin final gesetzt)!"); loadTournamentSchedule(); }
     };
 
     // Platzierungen werden manuell abgefragt, da es dafür (noch) kein
