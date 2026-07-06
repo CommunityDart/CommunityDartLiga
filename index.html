@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 20</title>
+  <title>CDL Dart Liga test 21</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -590,8 +590,7 @@
     <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
     <button class="nav-btn" id="navTournaments" onclick="switchView('tournaments')">🏆 Turniere</button>
     <button class="nav-btn" id="navMembercard" onclick="switchView('membercard')">🪪 Mitgliederkarte</button>
-    <button class="nav-btn" id="navMyGames" onclick="switchView('mygames')">🎮 Meine Spiele</button>
-    <button class="nav-btn" id="navBracket" onclick="switchView('bracket')">🌳 Turnierbaum</button>
+    <button class="nav-btn" id="navMyGames" onclick="switchView('mygames')" style="display:none;">🎮 Meine Spiele</button>
     <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
   </div>
@@ -720,6 +719,10 @@
 
   <div id="tournamentsView" class="view">
     <div class="full-width-layout">
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="btn small-action-btn" style="border-color:#3ddc97; color:#3ddc97;" onclick="switchView('bracket')">🌳 Turnierbaum ansehen</button>
+      </div>
+
       <div class="card" style="border-color: #ff6b35;">
         <div class="card-header" style="color: #ff6b35; font-weight: 800;">🏆 Aktive Cups & Live-Turniere</div>
         <div class="card-body">
@@ -801,6 +804,10 @@
 
   <div id="bracketView" class="view">
     <div class="full-width-layout">
+      <div style="display:flex; justify-content:flex-start;">
+        <button class="btn small-action-btn" onclick="switchView('tournaments')">← Zurück zu Turniere</button>
+      </div>
+
       <div class="card" style="border-color: #3ddc97;">
         <div class="card-header" style="color: #3ddc97; font-weight: 800;">🌳 Turnierbaum</div>
         <div class="card-body">
@@ -1068,7 +1075,7 @@
         if (membercardMapInstance) { setTimeout(() => membercardMapInstance.invalidateSize(), 100); }
       }
       if (view === 'mygames') { document.getElementById('navMyGames').classList.add('active'); renderMyGames(); }
-      if (view === 'bracket') { document.getElementById('navBracket').classList.add('active'); renderBracketSelector(); }
+      if (view === 'bracket') { document.getElementById('navTournaments').classList.add('active'); renderBracketSelector(); }
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
     }
     state.currentView = view;
@@ -1320,6 +1327,16 @@
     if (!state.currentUser) return null;
     const u = state.currentUser;
     return findProfile(u.user_metadata?.provider_id) || findProfile(u.user_metadata?.sub) || findProfile(u.id) || (u.email ? findProfile(u.email) : null) || null;
+  }
+
+  // "Meine Spiele" im Menü nur zeigen, wenn eingeloggt UND einer Liga zugeteilt
+  // (sonst gäbe es dort ohnehin nichts zu melden).
+  function updateMyGamesNavVisibility() {
+    const btn = document.getElementById('navMyGames');
+    if (!btn) return;
+    const profile = getCurrentPlayerProfile();
+    const inLeague = !!(profile && (profile.assigned_ad_league || profile.assigned_dc_league || profile.assigned_sc_league));
+    btn.style.display = (state.currentUser && inLeague) ? 'inline-block' : 'none';
   }
 
   // Zeigt alle Profile mit gesetztem "show_membership_card"-Haken als
@@ -1774,6 +1791,7 @@
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
       renderMembercards();
+      updateMyGamesNavVisibility();
 
       const { data: sysData } = await supabaseClient.from('system_settings').select('*');
       const sys = (sysData && sysData.length > 0) ? sysData[0] : null;
@@ -1893,6 +1911,7 @@
     updateAuthUI();
     loadTournamentsData();
     renderNews(state.newsCache);
+    updateMyGamesNavVisibility();
     if (state.currentView === 'mygames') renderMyGames();
   });
 
