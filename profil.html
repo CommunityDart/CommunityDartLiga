@@ -151,11 +151,24 @@
     // Wandelt PLZ/Ort in Koordinaten um (für die Weltkarte im Mitgliederkarte-Tab).
     // Nutzt die freie Nominatim (OpenStreetMap) Geocoding-API, kein API-Key nötig.
     async function geocodeAddress(plz, ort) {
-      const query = `${plz || ''} ${ort || ''}`.trim();
-      if (!query) return null;
+      if (!plz && !ort) return null;
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
-        const data = await res.json();
+        // 1. Versuch: strukturierte Suche (zuverlässiger für deutsche PLZ)
+        const params = new URLSearchParams({ format: 'json', limit: '1', country: 'Germany' });
+        if (plz) params.set('postalcode', plz);
+        if (ort) params.set('city', ort);
+        let res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+        let data = await res.json();
+
+        // 2. Fallback: einfache Freitextsuche, falls die strukturierte Suche nichts findet
+        if (!data || data.length === 0) {
+          const q = `${plz || ''} ${ort || ''}`.trim();
+          res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
+          data = await res.json();
+        }
+
+        console.log('Geocoding-Ergebnis für "' + plz + ' ' + ort + '":', data);
+
         if (data && data.length > 0) {
           return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
         }
@@ -237,7 +250,7 @@
             saveBtn.disabled = true;
             saveBtn.innerText = "📍 Standort wird ermittelt...";
             const geo = await geocodeAddress(plzVal, ortVal);
-            if (geo) { lat = geo.lat; lon = geo.lon; }
+            if (geo) { lat = geo.lat; lon = geo.lon; } else { lat = null; lon = null; }
             saveBtn.disabled = false;
             saveBtn.innerText = "Profil Speichern";
         } else if (!plzVal && !ortVal) {
@@ -270,6 +283,9 @@
         const { error } = await supabaseClient.from('profiles').upsert(updates);
         if (error) {
             alert("Fehler beim Speichern: " + error.message);
+        } else if (plzOrtChanged && (plzVal || ortVal) && lat === null) {
+            alert("Profil gespeichert! ⚠️ Dein Standort konnte aber nicht automatisch gefunden werden - dein Pin erscheint deshalb noch nicht auf der Karte. Prüfe PLZ/Ort auf Tippfehler und speichere nochmal.");
+            initProfile();
         } else {
             alert("Profil erfolgreich gespeichert!");
             initProfile();
