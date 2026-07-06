@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 14</title>
+  <title>CDL Dart Liga test 16</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -567,6 +567,11 @@
     .profile-avatar {
       width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--platform-color); object-fit: cover;
       box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .dart-marker-icon {
+      background: transparent !important;
+      border: none !important;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -1327,6 +1332,15 @@
   let membercardMapInstance = null;
   let membercardMarkersLayer = null;
 
+  // Dartpfeil statt Standard-Leaflet-Nadel
+  const dartMarkerIcon = L.divIcon({
+    html: '<div style="font-size:26px; line-height:1; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); transform: rotate(0deg);">🎯</div>',
+    className: 'dart-marker-icon',
+    iconSize: [30, 30],
+    iconAnchor: [15, 26],
+    popupAnchor: [0, -22]
+  });
+
   function renderMembercardMap(members) {
     const mapEl = document.getElementById('membercardMap');
     if (!mapEl || typeof L === 'undefined') return;
@@ -1356,8 +1370,9 @@
     withCoords.forEach(p => {
       const name = p.display_name || p.discord_name || p.username || 'Spieler';
       const plzOrt = [p.plz, p.ort].filter(Boolean).join(' ');
-      L.marker([p._lat, p._lon])
-        .bindPopup(`<strong>${htmlEscape(name)}</strong>${plzOrt ? `<br>📍 ${htmlEscape(plzOrt)}` : ''}`)
+      L.marker([p._lat, p._lon], { icon: dartMarkerIcon, riseOnHover: true })
+        .bindTooltip(`<strong>${htmlEscape(name)}</strong>${plzOrt ? `<br>📍 ${htmlEscape(plzOrt)}` : ''}`)
+        .on('click', () => openPlayerCard(p.id, name))
         .addTo(membercardMarkersLayer);
       bounds.push([p._lat, p._lon]);
     });
