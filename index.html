@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 13</title>
+  <title>CDL Dart Liga test 14</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1331,7 +1331,13 @@
     const mapEl = document.getElementById('membercardMap');
     if (!mapEl || typeof L === 'undefined') return;
 
-    const withCoords = members.filter(p => p.latitude && p.longitude);
+    // Supabase liefert "numeric"-Spalten teils als String statt Zahl zurück -
+    // deshalb hier explizit in echte Zahlen umwandeln und ungültige Werte rauswerfen.
+    const withCoords = members
+      .map(p => ({ ...p, _lat: parseFloat(p.latitude), _lon: parseFloat(p.longitude) }))
+      .filter(p => !isNaN(p._lat) && !isNaN(p._lon));
+
+    console.log('Mitglieder mit gültigen Koordinaten für die Karte:', withCoords.map(p => ({ name: p.display_name || p.discord_name, lat: p._lat, lon: p._lon })));
 
     if (!membercardMapInstance) {
       membercardMapInstance = L.map('membercardMap', { scrollWheelZoom: false }).setView([30, 10], 2);
@@ -1350,10 +1356,10 @@
     withCoords.forEach(p => {
       const name = p.display_name || p.discord_name || p.username || 'Spieler';
       const plzOrt = [p.plz, p.ort].filter(Boolean).join(' ');
-      L.marker([p.latitude, p.longitude])
+      L.marker([p._lat, p._lon])
         .bindPopup(`<strong>${htmlEscape(name)}</strong>${plzOrt ? `<br>📍 ${htmlEscape(plzOrt)}` : ''}`)
         .addTo(membercardMarkersLayer);
-      bounds.push([p.latitude, p.longitude]);
+      bounds.push([p._lat, p._lon]);
     });
 
     membercardMapInstance.fitBounds(bounds, { padding: [30, 30], maxZoom: 10 });
