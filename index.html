@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 17</title>
+  <title>CDL Dart Liga test 18</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -590,6 +590,8 @@
     <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
     <button class="nav-btn" id="navTournaments" onclick="switchView('tournaments')">🏆 Turniere</button>
     <button class="nav-btn" id="navMembercard" onclick="switchView('membercard')">🪪 Mitgliederkarte</button>
+    <button class="nav-btn" id="navMyGames" onclick="switchView('mygames')">🎮 Meine Spiele</button>
+    <button class="nav-btn" id="navBracket" onclick="switchView('bracket')">🌳 Turnierbaum</button>
     <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
   </div>
@@ -627,7 +629,7 @@
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
@@ -707,7 +709,7 @@
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
@@ -736,7 +738,7 @@
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
@@ -766,10 +768,48 @@
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mygamesView" class="view">
+    <div class="full-width-layout">
+      <div class="card" style="border-color: #0066ff;">
+        <div class="card-header" style="color: #0066ff; font-weight: 800;">🎮 Meine Spiele</div>
+        <div class="card-body">
+          <div id="mygamesArea"><div class="empty">Lade deine Spiele...</div></div>
+        </div>
+      </div>
+
+      <div class="card compact-footer-card">
+        <div class="card-header">ℹ️ Infos</div>
+        <div class="card-body">
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bracketView" class="view">
+    <div class="full-width-layout">
+      <div class="card" style="border-color: #3ddc97;">
+        <div class="card-header" style="color: #3ddc97; font-weight: 800;">🌳 Turnierbaum</div>
+        <div class="card-body">
+          <div style="margin-bottom: 16px;">
+            <select id="bracketTournamentSelect" class="league-select-placeholder" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); max-width: 350px; width: 100%;" onchange="renderBracket()">
+              <option value="">-- Turnier wählen --</option>
+            </select>
+          </div>
+          <div id="bracketArea"><div class="empty">Wähle ein Turnier aus, um den Turnierbaum zu sehen.</div></div>
         </div>
       </div>
     </div>
@@ -782,7 +822,7 @@
         <div class="card-body">
           <h3 style="margin-bottom: 12px;">Beitreten!</h3>
           <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten!</p>
-          <button class="btn discord" onclick="window.open('https://discord.gg/4RCESBVaSv', '_blank')" style="width: 100%;">💬 Discord Server beitreten</button>
+          <button class="btn discord" onclick="window.open('https://discord.gg/DEINLINK', '_blank')" style="width: 100%;">💬 Discord Server beitreten</button>
         </div>
       </div>
       
@@ -799,7 +839,7 @@
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com)">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
@@ -838,7 +878,11 @@
     penaltiesByLeague: {},
     playerHistoryCache: [],
     newsCache: [],
-    newsReactionsCache: []
+    newsReactionsCache: [],
+    allMatchesCache: [],
+    allTournamentMatchesCache: [],
+    allTournamentsCache: [],
+    resultConfirmationHours: 48
   };
 
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
@@ -1023,6 +1067,8 @@
         document.getElementById('navMembercard').classList.add('active');
         if (membercardMapInstance) { setTimeout(() => membercardMapInstance.invalidateSize(), 100); }
       }
+      if (view === 'mygames') { document.getElementById('navMyGames').classList.add('active'); renderMyGames(); }
+      if (view === 'bracket') { document.getElementById('navBracket').classList.add('active'); renderBracketSelector(); }
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
     }
     state.currentView = view;
@@ -1383,6 +1429,227 @@
     setTimeout(() => { if (membercardMapInstance) membercardMapInstance.invalidateSize(); }, 150);
   }
 
+  // ============================================================
+  // MEINE SPIELE: Spieler melden Ergebnisse selbst, Gegner bestätigt,
+  // nach Ablauf der Admin-Frist gilt es automatisch als final.
+  // ============================================================
+  function renderMyGames() {
+    const area = document.getElementById('mygamesArea');
+    if (!area) return;
+    const profile = getCurrentPlayerProfile();
+
+    if (!state.currentUser) {
+      area.innerHTML = '<div class="empty">Bitte melde dich mit Discord an, um deine Spiele zu sehen und Ergebnisse zu melden.</div>';
+      return;
+    }
+    if (!profile) {
+      area.innerHTML = '<div class="empty">Dein Spieler-Profil konnte nicht gefunden werden. Bitte kontaktiere einen Admin.</div>';
+      return;
+    }
+
+    const myLeagueMatches = state.allMatchesCache.filter(m => m.player1_id === profile.id || m.player2_id === profile.id);
+    const myTourMatches = state.allTournamentMatchesCache.filter(m => m.player1_id === profile.id || m.player2_id === profile.id);
+
+    let html = `<h3 style="margin-bottom:12px; color:var(--platform-color);">⚡ Liga-Spiele</h3>`;
+    html += myLeagueMatches.length > 0 ? myLeagueMatches.map(m => buildMyGameRow(m, profile, 'league')).join("") : '<div class="empty">Keine Liga-Spiele gefunden.</div>';
+    html += `<h3 style="margin:24px 0 12px 0; color:var(--platform-color);">🏆 Turnier-Spiele</h3>`;
+    html += myTourMatches.length > 0 ? myTourMatches.map(m => buildMyGameRow(m, profile, 'tournament')).join("") : '<div class="empty">Keine Turnier-Spiele gefunden.</div>';
+
+    area.innerHTML = html;
+  }
+
+  function buildMyGameRow(m, profile, context) {
+    const isP1 = m.player1_id === profile.id;
+    const myId = profile.id;
+    const oppId = isP1 ? m.player2_id : m.player1_id;
+    const oppName = getProfileNameFromId(oppId);
+    const myLegs = isP1 ? m.legs_player1 : m.legs_player2;
+    const oppLegs = isP1 ? m.legs_player2 : m.legs_player1;
+    const status = m.result_status || 'offen';
+
+    let bodyHtml = '';
+    if (status === 'offen') {
+      bodyHtml = `<button class="btn small-action-btn" onclick="openReportForm('${m.id}','${context}')">📝 Ergebnis eintragen</button>
+        <div id="report-form-${m.id}" style="display:none;"></div>`;
+    } else if (status === 'pending_confirmation') {
+      const deadlineStr = m.confirmation_deadline ? new Date(m.confirmation_deadline).toLocaleString('de-DE') : '-';
+      if (m.reported_by_id === myId) {
+        bodyHtml = `<div style="font-size:13px; color:var(--text-secondary);">⏳ Du hast <strong>${myLegs} : ${oppLegs}</strong> gemeldet. Warte auf Bestätigung von <strong>${htmlEscape(oppName)}</strong> (Frist bis ${deadlineStr}).</div>`;
+        if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank">📷 Dein Screenshot</a></div>`;
+      } else {
+        bodyHtml = `<div style="font-size:13px; margin-bottom:8px;"><strong>${htmlEscape(oppName)}</strong> hat gemeldet: du <strong>${myLegs}</strong> : <strong>${oppLegs}</strong> Gegner. Bitte bis <strong>${deadlineStr}</strong> bestätigen oder ablehnen.</div>`;
+        if (m.screenshot_url) bodyHtml += `<div style="margin-bottom:8px;"><a href="${m.screenshot_url}" target="_blank">📷 Screenshot ansehen</a></div>`;
+        bodyHtml += `<button class="btn small-action-btn" style="border-color:#00d084; color:#00d084;" onclick="confirmMatchResult('${m.id}','${context}')">✅ Bestätigen</button>
+          <button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35; margin-left:6px;" onclick="rejectMatchResult('${m.id}','${context}')">❌ Ablehnen</button>`;
+      }
+    } else {
+      const statusLabel = { confirmed: '✅ Bestätigt', auto_confirmed: '⏱️ Automatisch bestätigt (Frist abgelaufen)', admin_confirmed: '🛡️ Vom Admin final gesetzt' }[status] || '';
+      bodyHtml = `<div style="font-size:13px; color:var(--text-secondary);">Ergebnis: <strong>${myLegs ?? '-'} : ${oppLegs ?? '-'}</strong> &middot; ${statusLabel}</div>`;
+      if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank">📷 Screenshot</a></div>`;
+    }
+
+    return `<div class="matchday-card" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-weight:700;">vs ${htmlEscape(oppName)}</span>
+        ${context === 'tournament' ? '<span class="badge">Turnier</span>' : ''}
+      </div>
+      ${bodyHtml}
+    </div>`;
+  }
+
+  window.openReportForm = function(matchId, context) {
+    const container = document.getElementById(`report-form-${matchId}`);
+    if (!container) return;
+    const isOpen = container.style.display === 'block';
+    container.style.display = isOpen ? 'none' : 'block';
+    if (isOpen) return;
+    container.innerHTML = `
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; padding:10px; background:var(--bg-tertiary); border-radius:8px;">
+        <label style="font-size:12px;">Deine Legs<br><input type="number" id="myLegs-${matchId}" class="leg-input" min="0"></label>
+        <label style="font-size:12px;">Legs Gegner<br><input type="number" id="oppLegs-${matchId}" class="leg-input" min="0"></label>
+        <label style="font-size:12px;">📷 Screenshot (optional)<br><input type="file" id="screenshot-${matchId}" accept="image/*"></label>
+        <button class="btn small-action-btn" style="background:#00d084; color:white; border:none; align-self:flex-end;" onclick="submitMatchResult('${matchId}','${context}')">Absenden</button>
+      </div>`;
+  };
+
+  window.submitMatchResult = async function(matchId, context) {
+    const profile = getCurrentPlayerProfile();
+    if (!profile) return;
+    const myLegsEl = document.getElementById(`myLegs-${matchId}`);
+    const oppLegsEl = document.getElementById(`oppLegs-${matchId}`);
+    if (!myLegsEl.value || !oppLegsEl.value) { alert('Bitte beide Leg-Werte eintragen.'); return; }
+
+    const table = context === 'tournament' ? 'tournament_matches' : 'matches';
+    const cache = context === 'tournament' ? state.allTournamentMatchesCache : state.allMatchesCache;
+    const m = cache.find(x => x.id === matchId);
+    if (!m) return;
+    const isP1 = m.player1_id === profile.id;
+
+    let screenshotUrl = null;
+    const fileInput = document.getElementById(`screenshot-${matchId}`);
+    const file = fileInput && fileInput.files[0];
+    if (file) {
+      const path = `${matchId}_${Date.now()}_${file.name}`.replace(/\s+/g, '_');
+      const { error: uploadErr } = await supabaseClient.storage.from('match-screenshots').upload(path, file);
+      if (!uploadErr) {
+        const { data: pub } = supabaseClient.storage.from('match-screenshots').getPublicUrl(path);
+        screenshotUrl = pub.publicUrl;
+      } else {
+        console.error('Screenshot-Upload fehlgeschlagen:', uploadErr);
+      }
+    }
+
+    const legs_player1 = isP1 ? parseInt(myLegsEl.value) : parseInt(oppLegsEl.value);
+    const legs_player2 = isP1 ? parseInt(oppLegsEl.value) : parseInt(myLegsEl.value);
+    const deadline = new Date(Date.now() + (state.resultConfirmationHours * 3600 * 1000)).toISOString();
+
+    const { error } = await supabaseClient.from(table).update({
+      legs_player1, legs_player2,
+      result_status: 'pending_confirmation',
+      reported_by_id: profile.id,
+      reported_at: new Date().toISOString(),
+      confirmation_deadline: deadline,
+      screenshot_url: screenshotUrl,
+      status: 'offen'
+    }).eq('id', matchId);
+
+    if (error) { alert('Fehler beim Melden: ' + error.message); return; }
+    alert(`Ergebnis gemeldet! Dein Gegner hat jetzt ${state.resultConfirmationHours} Stunden Zeit zu bestätigen.`);
+    await loadData();
+    renderMyGames();
+  };
+
+  window.confirmMatchResult = async function(matchId, context) {
+    const table = context === 'tournament' ? 'tournament_matches' : 'matches';
+    const profile = getCurrentPlayerProfile();
+    if (!profile) return;
+    const { error } = await supabaseClient.from(table).update({
+      result_status: 'confirmed',
+      confirmed_by_id: profile.id,
+      confirmed_at: new Date().toISOString(),
+      status: 'fertig'
+    }).eq('id', matchId);
+    if (error) { alert('Fehler: ' + error.message); return; }
+    alert('Ergebnis bestätigt!');
+    await loadData();
+    renderMyGames();
+  };
+
+  window.rejectMatchResult = async function(matchId, context) {
+    if (!confirm('Ergebnis wirklich ablehnen? Es wird zurückgesetzt und muss neu gemeldet werden. Bei anhaltender Uneinigkeit bitte einen Admin kontaktieren.')) return;
+    const table = context === 'tournament' ? 'tournament_matches' : 'matches';
+    const { error } = await supabaseClient.from(table).update({
+      legs_player1: null, legs_player2: null,
+      result_status: 'offen',
+      reported_by_id: null, reported_at: null, confirmation_deadline: null,
+      screenshot_url: null,
+      status: 'offen'
+    }).eq('id', matchId);
+    if (error) { alert('Fehler: ' + error.message); return; }
+    alert('Ergebnis abgelehnt und zurückgesetzt.');
+    await loadData();
+    renderMyGames();
+  };
+
+  // ============================================================
+  // TURNIERBAUM: Auswahl eines Turniers, Runden als Spalten
+  // (basiert auf den generierten Runden aus dem Admin-Panel;
+  // da Turniere aktuell im Rundensystem statt K.O. laufen, ist
+  // dies eine Runden-Ansicht statt eines klassischen K.O.-Baums)
+  // ============================================================
+  function renderBracketSelector() {
+    const sel = document.getElementById('bracketTournamentSelect');
+    if (!sel) return;
+    const prevVal = sel.value;
+    sel.innerHTML = '<option value="">-- Turnier wählen --</option>' +
+      state.allTournamentsCache.map(t => `<option value="${htmlEscape(t.id)}">${htmlEscape(t.title)} (${t.status === 'completed' ? 'abgeschlossen' : 'aktiv'})</option>`).join("");
+    if (state.allTournamentsCache.some(t => t.id === prevVal)) sel.value = prevVal;
+    renderBracket();
+  }
+
+  window.renderBracket = function() {
+    const area = document.getElementById('bracketArea');
+    const sel = document.getElementById('bracketTournamentSelect');
+    if (!area || !sel) return;
+    const tid = sel.value;
+    if (!tid) { area.innerHTML = '<div class="empty">Wähle ein Turnier aus, um den Turnierbaum zu sehen.</div>'; return; }
+
+    const matches = state.allTournamentMatchesCache.filter(m => m.tournament_id === tid);
+    if (matches.length === 0) { area.innerHTML = '<div class="empty">Für dieses Turnier wurde noch kein Spielplan generiert.</div>'; return; }
+
+    let grouped = {};
+    matches.forEach(m => { const r = m.matchday || 1; if (!grouped[r]) grouped[r] = []; grouped[r].push(m); });
+    const rounds = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+
+    let html = '<div style="display:flex; gap:20px; overflow-x:auto; padding-bottom:10px;">';
+    rounds.forEach(r => {
+      html += `<div style="min-width:230px; flex-shrink:0;">
+        <div class="matchday-title" style="margin-bottom:10px;">Runde ${r}</div>
+        <div style="display:flex; flex-direction:column; gap:14px;">`;
+      grouped[r].forEach(m => {
+        const p1Name = getProfileNameFromId(m.player1_id);
+        const p2Name = getProfileNameFromId(m.player2_id);
+        const isDone = m.status === 'fertig';
+        const p1Win = isDone && m.legs_player1 > m.legs_player2;
+        const p2Win = isDone && m.legs_player2 > m.legs_player1;
+        html += `<div class="matchday-card" style="padding:10px;">
+          <div style="display:flex; justify-content:space-between; padding:4px 0; ${p1Win ? 'font-weight:800; color:#00d084;' : ''}">
+            <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player1_id || '')}','${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span>
+            <span>${m.legs_player1 ?? '-'}</span>
+          </div>
+          <div style="height:1px; background:var(--border); margin:2px 0;"></div>
+          <div style="display:flex; justify-content:space-between; padding:4px 0; ${p2Win ? 'font-weight:800; color:#00d084;' : ''}">
+            <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player2_id || '')}','${htmlEscape(p2Name)}')">${htmlEscape(p2Name)}</span>
+            <span>${m.legs_player2 ?? '-'}</span>
+          </div>
+        </div>`;
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+    area.innerHTML = html;
+  };
+
   async function toggleTournamentRegistration(tournamentId, isRegistered) {
     if (!state.currentUser) { alert('Bitte melde dich zuerst mit Discord an, um dich für Turniere anzumelden.'); switchView('discord'); return; }
     const profile = getCurrentPlayerProfile();
@@ -1501,6 +1768,7 @@
   async function loadData() {
     try {
       loadNews();
+      await autoConfirmExpiredResults();
 
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       state.allProfilesCache = profiles || [];
@@ -1510,6 +1778,7 @@
       const { data: sysData } = await supabaseClient.from('system_settings').select('*');
       const sys = (sysData && sysData.length > 0) ? sysData[0] : null;
       state.currentSeason = sys?.current_season || 'Saison 1';
+      state.resultConfirmationHours = sys?.result_confirmation_hours || 48;
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
       let rulesText = sys?.regelwerk_html || sys?.rules || sys?.regelwerk || sys?.rules_text || "";
@@ -1521,6 +1790,7 @@
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
       let matches = matchesData ? matchesData.filter(m => String(m.season || '').replace(/\D/g, "") === stateSeasonNum || String(m.season || '').trim().toLowerCase() === String(state.currentSeason).trim().toLowerCase()) : [];
       if (matches.length === 0 && matchesData) matches = matchesData;
+      state.allMatchesCache = matches;
       document.getElementById('statMatches').innerText = matches.length;
 
       // Karten/Strafen pro Liga laden - wichtig: Zuordnung bleibt strikt pro Liga,
@@ -1592,10 +1862,30 @@
   async function loadTournamentsData() {
     try {
       const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
-      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status');
+      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url');
       const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
+      state.allTournamentsCache = tournaments || [];
+      state.allTournamentMatchesCache = tourMatches || [];
       renderTournamentsData(tournaments || [], tourMatches || [], registrations || []);
+      if (state.currentView === 'mygames') renderMyGames();
+      if (state.currentView === 'bracket') renderBracketSelector();
     } catch(tErr) { console.error("Turnierdaten Ladefehler abgefangen:", tErr); }
+  }
+
+  // Setzt abgelaufene, noch unbestätigte Ergebnisse (Liga + Turnier) automatisch
+  // auf "final" - läuft bei jedem Seitenaufruf, da es keinen echten Server-Cron gibt.
+  async function autoConfirmExpiredResults() {
+    const nowIso = new Date().toISOString();
+    try {
+      await supabaseClient.from('matches')
+        .update({ result_status: 'auto_confirmed', status: 'fertig' })
+        .eq('result_status', 'pending_confirmation')
+        .lt('confirmation_deadline', nowIso);
+      await supabaseClient.from('tournament_matches')
+        .update({ result_status: 'auto_confirmed', status: 'fertig' })
+        .eq('result_status', 'pending_confirmation')
+        .lt('confirmation_deadline', nowIso);
+    } catch (e) { console.error('Auto-Bestätigung fehlgeschlagen:', e); }
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -1603,6 +1893,7 @@
     updateAuthUI();
     loadTournamentsData();
     renderNews(state.newsCache);
+    if (state.currentView === 'mygames') renderMyGames();
   });
 
   switchView('news'); updateTheme(); checkInitialSession(); loadData();
