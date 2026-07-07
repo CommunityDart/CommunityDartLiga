@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 26</title>
+  <title>CDL Dart Liga test 27</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -890,7 +890,9 @@
   // Apps Script verwendet (z.B. "Autodarts Liga 2" oder ein Turniertitel).
   // Gibt bei Erfolg die öffentliche Drive-Bild-URL zurück, sonst null.
   async function uploadScreenshotToDrive(file, folderName, matchId) {
+    console.log('[Drive-Upload] Funktion gestartet. Datei:', file?.name, '| Ordner:', folderName);
     if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes('HIER_DEINE_APPS_SCRIPT')) {
+      console.log('[Drive-Upload] Übersprungen - GOOGLE_APPS_SCRIPT_URL ist nicht konfiguriert.');
       return null; // Noch nicht konfiguriert - Aufrufer fällt auf Supabase Storage zurück
     }
     try {
@@ -898,6 +900,7 @@
       const ext = (file.name.split('.').pop() || 'png').toLowerCase();
       const safeFolder = String(folderName || 'Unbekannte Liga').replace(/\s+/g, '_');
       const fileName = `${safeFolder}_${matchId}_${Date.now()}.${ext}`;
+      console.log('[Drive-Upload] Sende Anfrage an Apps Script:', GOOGLE_APPS_SCRIPT_URL, '| Dateiname:', fileName);
 
       // WICHTIG: Content-Type "text/plain" statt "application/json", damit der
       // Browser keinen CORS-Preflight (OPTIONS-Request) schickt - Apps Script
@@ -907,12 +910,19 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ fileName, mimeType: file.type || 'image/png', base64Data, folderName })
       });
-      const data = await res.json();
-      if (data.success) return data.url;
-      console.error('Google-Drive-Upload fehlgeschlagen:', data.error);
+      console.log('[Drive-Upload] HTTP-Status der Antwort:', res.status);
+      const rawText = await res.text();
+      console.log('[Drive-Upload] Rohe Antwort vom Apps Script:', rawText);
+      let data;
+      try { data = JSON.parse(rawText); } catch (parseErr) {
+        console.error('[Drive-Upload] Antwort war kein gültiges JSON - vermutlich Google-Login/Fehlerseite statt Apps-Script-Antwort.');
+        return null;
+      }
+      if (data.success) { console.log('[Drive-Upload] Erfolgreich! URL:', data.url); return data.url; }
+      console.error('[Drive-Upload] Apps Script meldet Fehler:', data.error);
       return null;
     } catch (e) {
-      console.error('Google-Drive-Upload Fehler:', e);
+      console.error('[Drive-Upload] Unerwarteter Fehler (z.B. Netzwerk/CORS):', e);
       return null;
     }
   }
