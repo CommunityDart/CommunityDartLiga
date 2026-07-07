@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mein Profil - CDL</title>
+  <title>Mein Profil v1 - CDL</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -159,12 +159,23 @@
       const meta = user.user_metadata || {};
       const identity = (user.identities && user.identities[0]) || {};
       const identityData = identity.identity_data || {};
+      const custom = meta.custom_claims || identityData.custom_claims || {};
 
-      const discordName = meta.full_name || meta.global_name || meta.name || meta.custom_claims?.global_name || identityData.full_name || identityData.global_name || null;
-      const username = meta.custom_claims?.username || meta.preferred_username || meta.user_name || meta.username || identityData.custom_claims?.username || identityData.preferred_username || null;
+      // Discord liefert den "schönen" Anzeigenamen (z.B. "Kette") meistens unter
+      // custom_claims.global_name, während full_name/name oft der technische
+      // Discord-Benutzername (z.B. "sven_123") ist. Deshalb global_name zuerst.
+      const discordName = custom.global_name || meta.full_name || meta.name || identityData.full_name || identityData.name || null;
+      const username = meta.name || identityData.name || custom.username || meta.preferred_username || meta.user_name || identityData.preferred_username || null;
       const discordId = meta.provider_id || meta.sub || identity.id || identityData.provider_id || identityData.sub || null;
+      const avatarUrl = meta.avatar_url || meta.picture || identityData.avatar_url || identityData.picture || null;
 
-      return { discordName, username, discordId };
+      // Debug-Ausgabe: F12 -> Konsole öffnen, damit man sieht was Discord wirklich
+      // liefert, falls die Zuordnung bei einem Provider-Update mal nicht mehr passt.
+      console.log('[Discord-Sync] user_metadata (roh):', meta);
+      console.log('[Discord-Sync] identity_data (roh):', identityData);
+      console.log('[Discord-Sync] Ermittelt:', { discordName, username, discordId, avatarUrl });
+
+      return { discordName, username, discordId, avatarUrl };
     }
 
     // FIX: Vorher wurde der Discord-Name/Handle NIRGENDWO in die profiles-Tabelle
@@ -175,16 +186,22 @@
     // für bereits bestehende Profile) und wird zusätzlich beim Speichern erneut
     // mitgeschickt, damit die Felder nie wieder leer laufen.
     async function syncDiscordIdentity(user) {
-      const { discordName, username, discordId } = extractDiscordIdentity(user);
+      const { discordName, username, discordId, avatarUrl } = extractDiscordIdentity(user);
       try {
-        await supabaseClient.from('profiles').upsert({
+        const { data, error } = await supabaseClient.from('profiles').upsert({
           id: user.id,
           discord_name: discordName,
           username: username,
-          discord_id: discordId
-        }, { onConflict: 'id' });
+          discord_id: discordId,
+          avatar_url: avatarUrl
+        }, { onConflict: 'id' }).select();
+        if (error) {
+          console.error('[Discord-Sync] Fehler beim Speichern in profiles:', error);
+        } else {
+          console.log('[Discord-Sync] Erfolgreich in profiles geschrieben:', data);
+        }
       } catch (e) {
-        console.error('Discord-Identität konnte nicht synchronisiert werden:', e);
+        console.error('[Discord-Sync] Unerwarteter Fehler:', e);
       }
     }
 
@@ -234,6 +251,7 @@
       const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
       if(data) {
           currentProfileData = data;
+          if (data.avatar_url) document.getElementById("userAvatar").src = data.avatar_url;
           // NEUE FELDER EINTRAGEN
           document.getElementById("display_name").value = data.display_name || data.username || "";
           document.getElementById("show_in_members").checked = data.show_in_members !== false; // standardmäßig true
@@ -315,7 +333,7 @@
 
         // Discord-Identität erneut einlesen und mit abspeichern, damit discord_name/
         // username/discord_id auch bei einem expliziten Speichern nie verloren gehen.
-        const { discordName, username, discordId } = extractDiscordIdentity(currentUser);
+        const { discordName, username, discordId, avatarUrl } = extractDiscordIdentity(currentUser);
         
         const updates = {
             id: currentUser.id,
@@ -323,6 +341,7 @@
             discord_name: discordName,
             username: username,
             discord_id: discordId,
+            avatar_url: avatarUrl,
             show_in_members: document.getElementById("show_in_members").checked,
             show_membership_card: document.getElementById("show_membership_card").checked,
             real_name: realNameVal || null, 
