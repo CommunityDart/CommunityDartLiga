@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Google Drive Upload - Test</title>
+<style>
+  body { font-family: sans-serif; background:#1e293b; color:#f8fafc; padding:30px; max-width:700px; margin:0 auto; }
+  h1 { font-size:20px; }
+  input, button { padding:10px; margin:10px 0; font-size:14px; }
+  button { background:#2ecc71; color:white; border:none; border-radius:6px; cursor:pointer; }
+  #result { margin-top:20px; padding:15px; background:#111; border-radius:8px; white-space:pre-wrap; word-break:break-all; font-family:monospace; font-size:13px; min-height:60px; }
+  .ok { border-left:4px solid #2ecc71; }
+  .fail { border-left:4px solid #e74c3c; }
+</style>
+</head>
+<body>
+  <h1>🎯 Google Drive Upload - Test</h1>
+  <p>Wähle ein beliebiges kleines Bild aus und klick auf "Testen". Das Ergebnis erscheint unten direkt lesbar - kein F12 nötig.</p>
+  <input type="file" id="fileInput" accept="image/*">
+  <br>
+  <button onclick="runTest()">Testen</button>
+  <div id="result">Hier erscheint gleich das Ergebnis...</div>
+
+  <script>
+    const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwREm3bn0TRIeo8vuYBAESxH6Xmb2krldNeTZFVOcygwCitneX__L5q_Tu81npVWRUf/exec";
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function runTest() {
+      const resultBox = document.getElementById('result');
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      resultBox.className = '';
+      if (!file) { resultBox.innerText = 'Bitte zuerst eine Bild-Datei auswählen.'; return; }
+
+      resultBox.innerText = '⏳ Sende Testbild an: ' + GOOGLE_APPS_SCRIPT_URL + ' ...';
+
+      try {
+        const base64Data = await fileToBase64(file);
+        const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            fileName: 'TEST_' + Date.now() + '.png',
+            mimeType: file.type || 'image/png',
+            base64Data,
+            folderName: 'TEST_ORDNER'
+          })
+        });
+
+        const rawText = await res.text();
+
+        let output = '=== ERGEBNIS ===\n';
+        output += 'HTTP-Status: ' + res.status + '\n\n';
+        output += 'Rohe Antwort vom Server:\n' + rawText;
+
+        resultBox.innerText = output;
+        resultBox.className = rawText.includes('"success":true') ? 'ok' : 'fail';
+      } catch (e) {
+        resultBox.innerText = '=== FEHLER ===\n' + (e && e.message ? e.message : String(e)) + '\n\n(Das ist meistens ein CORS- oder Netzwerkfehler - genau der Text hier ist wichtig für die Fehlersuche.)';
+        resultBox.className = 'fail';
+      }
+    }
+  </script>
+</body>
+</html>
