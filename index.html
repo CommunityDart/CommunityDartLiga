@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 22</title>
+  <title>CDL Dart Liga test 23</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1450,6 +1450,25 @@
   // MEINE SPIELE: Spieler melden Ergebnisse selbst, Gegner bestätigt,
   // nach Ablauf der Admin-Frist gilt es automatisch als final.
   // ============================================================
+
+  // Baut das Plattform+Spieltag/Runde-Badge für eine Zeile in "Meine Spiele".
+  // Liga: Plattform+Nummer kommt direkt aus m.league_name (z.B. "Autodarts Liga 2").
+  // Turnier: Plattform kommt aus der zugehörigen tournaments-Zeile, Runde aus m.matchday.
+  function matchContextBadge(m, context) {
+    let platformSource = '';
+    let subLabel = '';
+    if (context === 'tournament') {
+      const t = state.allTournamentsCache.find(x => x.id === m.tournament_id);
+      platformSource = t ? t.platform : '';
+      subLabel = (t ? t.title : 'Turnier') + ' · Runde ' + (m.matchday || 1);
+    } else {
+      platformSource = m.league_name || '';
+      subLabel = (m.league_name || 'Liga') + ' · Spieltag ' + (m.matchday || 1);
+    }
+    const pb = platformBadge(platformSource);
+    return `<span style="font-size:11px; font-weight:700; background:${pb.color}1A; color:${pb.color}; padding:4px 10px; border-radius:10px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">${pb.icon} ${htmlEscape(subLabel)}</span>`;
+  }
+
   function renderMyGames() {
     const area = document.getElementById('mygamesArea');
     if (!area) return;
@@ -1482,7 +1501,22 @@
     const oppName = getProfileNameFromId(oppId);
     const myLegs = isP1 ? m.legs_player1 : m.legs_player2;
     const oppLegs = isP1 ? m.legs_player2 : m.legs_player1;
+    const myAvg = isP1 ? m.player1_avg : m.player2_avg;
+    const oppAvg = isP1 ? m.player2_avg : m.player1_avg;
+    const myHf = isP1 ? m.player1_highfinish : m.player2_highfinish;
+    const oppHf = isP1 ? m.player2_highfinish : m.player1_highfinish;
     const status = m.result_status || 'offen';
+
+    // Zeigt AVG (immer, wenn vorhanden) und Highfinish (nur wenn > 0 gemeldet) für
+    // beide Spieler unterhalb des Ergebnisses an.
+    function statsLine() {
+      let parts = [];
+      if (myAvg !== null && myAvg !== undefined) parts.push(`Dein AVG: <strong>${parseFloat(myAvg).toFixed(2)}</strong>`);
+      if (oppAvg !== null && oppAvg !== undefined) parts.push(`AVG Gegner: <strong>${parseFloat(oppAvg).toFixed(2)}</strong>`);
+      if (myHf) parts.push(`Dein Highfinish: <strong>${myHf}</strong>`);
+      if (oppHf) parts.push(`Highfinish Gegner: <strong>${oppHf}</strong>`);
+      return parts.length > 0 ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">${parts.join(' &middot; ')}</div>` : '';
+    }
 
     let bodyHtml = '';
     if (status === 'offen') {
@@ -1492,23 +1526,26 @@
       const deadlineStr = m.confirmation_deadline ? new Date(m.confirmation_deadline).toLocaleString('de-DE') : '-';
       if (m.reported_by_id === myId) {
         bodyHtml = `<div style="font-size:13px; color:var(--text-secondary);">⏳ Du hast <strong>${myLegs} : ${oppLegs}</strong> gemeldet. Warte auf Bestätigung von <strong>${htmlEscape(oppName)}</strong> (Frist bis ${deadlineStr}).</div>`;
+        bodyHtml += statsLine();
         if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank">📷 Dein Screenshot</a></div>`;
       } else {
         bodyHtml = `<div style="font-size:13px; margin-bottom:8px;"><strong>${htmlEscape(oppName)}</strong> hat gemeldet: du <strong>${myLegs}</strong> : <strong>${oppLegs}</strong> Gegner. Bitte bis <strong>${deadlineStr}</strong> bestätigen oder ablehnen.</div>`;
-        if (m.screenshot_url) bodyHtml += `<div style="margin-bottom:8px;"><a href="${m.screenshot_url}" target="_blank">📷 Screenshot ansehen</a></div>`;
+        bodyHtml += statsLine();
+        if (m.screenshot_url) bodyHtml += `<div style="margin:8px 0;"><a href="${m.screenshot_url}" target="_blank">📷 Screenshot ansehen</a></div>`;
         bodyHtml += `<button class="btn small-action-btn" style="border-color:#00d084; color:#00d084;" onclick="confirmMatchResult('${m.id}','${context}')">✅ Bestätigen</button>
           <button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35; margin-left:6px;" onclick="rejectMatchResult('${m.id}','${context}')">❌ Ablehnen</button>`;
       }
     } else {
       const statusLabel = { confirmed: '✅ Bestätigt', auto_confirmed: '⏱️ Automatisch bestätigt (Frist abgelaufen)', admin_confirmed: '🛡️ Vom Admin final gesetzt' }[status] || '';
       bodyHtml = `<div style="font-size:13px; color:var(--text-secondary);">Ergebnis: <strong>${myLegs ?? '-'} : ${oppLegs ?? '-'}</strong> &middot; ${statusLabel}</div>`;
+      bodyHtml += statsLine();
       if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank">📷 Screenshot</a></div>`;
     }
 
     return `<div class="matchday-card" style="margin-bottom:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
         <span style="font-weight:700;">vs ${htmlEscape(oppName)}</span>
-        ${context === 'tournament' ? '<span class="badge">Turnier</span>' : ''}
+        ${matchContextBadge(m, context)}
       </div>
       ${bodyHtml}
     </div>`;
@@ -1521,12 +1558,17 @@
     container.style.display = isOpen ? 'none' : 'block';
     if (isOpen) return;
     container.innerHTML = `
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; padding:10px; background:var(--bg-tertiary); border-radius:8px;">
+      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:10px; padding:10px; background:var(--bg-tertiary); border-radius:8px;">
         <label style="font-size:12px;">Deine Legs<br><input type="number" id="myLegs-${matchId}" class="leg-input" min="0"></label>
         <label style="font-size:12px;">Legs Gegner<br><input type="number" id="oppLegs-${matchId}" class="leg-input" min="0"></label>
+        <label style="font-size:12px;">Dein AVG *<br><input type="number" step="0.01" id="myAvg-${matchId}" class="leg-input" min="0" required></label>
+        <label style="font-size:12px;">AVG Gegner *<br><input type="number" step="0.01" id="oppAvg-${matchId}" class="leg-input" min="0" required></label>
+        <label style="font-size:12px;">Dein Highfinish<br><input type="number" id="myHf-${matchId}" class="leg-input" min="0" placeholder="optional"></label>
+        <label style="font-size:12px;">Highfinish Gegner<br><input type="number" id="oppHf-${matchId}" class="leg-input" min="0" placeholder="optional"></label>
         <label style="font-size:12px;">📷 Screenshot (optional)<br><input type="file" id="screenshot-${matchId}" accept="image/*"></label>
-        <button class="btn small-action-btn" style="background:#00d084; color:white; border:none; align-self:flex-end;" onclick="submitMatchResult('${matchId}','${context}')">Absenden</button>
-      </div>`;
+        <button class="btn small-action-btn" style="background:#00d084; color:white; border:none;" onclick="submitMatchResult('${matchId}','${context}')">Absenden</button>
+      </div>
+      <p style="font-size:11px; color:var(--text-secondary); margin-top:6px;">* AVG ist Pflicht für dich und deinen Gegner, Highfinish ist optional.</p>`;
   };
 
   window.submitMatchResult = async function(matchId, context) {
@@ -1534,7 +1576,12 @@
     if (!profile) return;
     const myLegsEl = document.getElementById(`myLegs-${matchId}`);
     const oppLegsEl = document.getElementById(`oppLegs-${matchId}`);
+    const myAvgEl = document.getElementById(`myAvg-${matchId}`);
+    const oppAvgEl = document.getElementById(`oppAvg-${matchId}`);
+    const myHfEl = document.getElementById(`myHf-${matchId}`);
+    const oppHfEl = document.getElementById(`oppHf-${matchId}`);
     if (!myLegsEl.value || !oppLegsEl.value) { alert('Bitte beide Leg-Werte eintragen.'); return; }
+    if (!myAvgEl.value || !oppAvgEl.value) { alert('Bitte den AVG für dich und deinen Gegner eintragen - dieses Feld ist Pflicht.'); return; }
 
     const table = context === 'tournament' ? 'tournament_matches' : 'matches';
     const cache = context === 'tournament' ? state.allTournamentMatchesCache : state.allMatchesCache;
@@ -1558,10 +1605,18 @@
 
     const legs_player1 = isP1 ? parseInt(myLegsEl.value) : parseInt(oppLegsEl.value);
     const legs_player2 = isP1 ? parseInt(oppLegsEl.value) : parseInt(myLegsEl.value);
+    const player1_avg = parseFloat((isP1 ? myAvgEl.value : oppAvgEl.value).replace(',', '.'));
+    const player2_avg = parseFloat((isP1 ? oppAvgEl.value : myAvgEl.value).replace(',', '.'));
+    const myHfVal = myHfEl.value ? parseInt(myHfEl.value) : null;
+    const oppHfVal = oppHfEl.value ? parseInt(oppHfEl.value) : null;
+    const player1_highfinish = isP1 ? myHfVal : oppHfVal;
+    const player2_highfinish = isP1 ? oppHfVal : myHfVal;
     const deadline = new Date(Date.now() + (state.resultConfirmationHours * 3600 * 1000)).toISOString();
 
     const { error } = await supabaseClient.from(table).update({
       legs_player1, legs_player2,
+      player1_avg, player2_avg,
+      player1_highfinish, player2_highfinish,
       result_status: 'pending_confirmation',
       reported_by_id: profile.id,
       reported_at: new Date().toISOString(),
