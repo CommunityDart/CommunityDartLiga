@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 23</title>
+  <title>CDL Dart Liga test 24</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -868,10 +868,60 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // Google Apps Script Web-App-URL für den Match-Screenshot-Upload nach Google
+  // Drive. Muss auf die /exec-URL deiner Bereitstellung zeigen (siehe
+  // google-apps-script-code.gs). Solange hier nur der Platzhalter steht, wird
+  // automatisch auf den bisherigen Supabase-Storage-Upload zurückgefallen.
+  const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwREm3bn0TRIeo8vuYBAESxH6Xmb2krldNeTZFVOcygwCitneX__L5q_Tu81npVWRUf/exec;
+
+  // Liest eine Datei als Base64-String ein (ohne den "data:...;base64,"-Präfix),
+  // damit sie per JSON an das Apps-Script-Web-App geschickt werden kann.
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Lädt einen Match-Screenshot in den zur Liga/zum Turnier passenden
+  // Unterordner in Google Drive hoch. folderName wird 1:1 als Ordnername im
+  // Apps Script verwendet (z.B. "Autodarts Liga 2" oder ein Turniertitel).
+  // Gibt bei Erfolg die öffentliche Drive-Bild-URL zurück, sonst null.
+  async function uploadScreenshotToDrive(file, folderName, matchId) {
+    if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes('HIER_DEINE_APPS_SCRIPT')) {
+      return null; // Noch nicht konfiguriert - Aufrufer fällt auf Supabase Storage zurück
+    }
+    try {
+      const base64Data = await fileToBase64(file);
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const safeFolder = String(folderName || 'Unbekannte Liga').replace(/\s+/g, '_');
+      const fileName = `${safeFolder}_${matchId}_${Date.now()}.${ext}`;
+
+      // WICHTIG: Content-Type "text/plain" statt "application/json", damit der
+      // Browser keinen CORS-Preflight (OPTIONS-Request) schickt - Apps Script
+      // Web Apps beantworten Preflights sonst oft nicht korrekt.
+      const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ fileName, mimeType: file.type || 'image/png', base64Data, folderName })
+      });
+      const data = await res.json();
+      if (data.success) return data.url;
+      console.error('Google-Drive-Upload fehlgeschlagen:', data.error);
+      return null;
+    } catch (e) {
+      console.error('Google-Drive-Upload Fehler:', e);
+      return null;
+    }
+  }
+
   const ALL_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6", "DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6", "Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
   const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
   const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
   const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
+
 
   const state = {
     leagueData: {},
@@ -1593,13 +1643,25 @@
     const fileInput = document.getElementById(`screenshot-${matchId}`);
     const file = fileInput && fileInput.files[0];
     if (file) {
-      const path = `${matchId}_${Date.now()}_${file.name}`.replace(/\s+/g, '_');
-      const { error: uploadErr } = await supabaseClient.storage.from('match-screenshots').upload(path, file);
-      if (!uploadErr) {
-        const { data: pub } = supabaseClient.storage.from('match-screenshots').getPublicUrl(path);
-        screenshotUrl = pub.publicUrl;
-      } else {
-        console.error('Screenshot-Upload fehlgeschlagen:', uploadErr);
+      // Ordnername = Liga (bei Liga-Spielen) bzw. Turniertitel (bei Turnier-Spielen),
+      // damit die Screenshots in Google Drive automatisch nach Liga/Turnier sortiert werden.
+      const folderName = context === 'tournament'
+        ? (state.allTournamentsCache.find(t => t.id === m.tournament_id)?.title || 'Turniere')
+        : (m.league_name || 'Unbekannte Liga');
+
+      screenshotUrl = await uploadScreenshotToDrive(file, folderName, matchId);
+
+      if (!screenshotUrl) {
+        // Fallback: Google Drive nicht konfiguriert oder gerade nicht erreichbar -
+        // dann wie bisher in Supabase Storage ablegen, damit der Screenshot nie verloren geht.
+        const path = `${matchId}_${Date.now()}_${file.name}`.replace(/\s+/g, '_');
+        const { error: uploadErr } = await supabaseClient.storage.from('match-screenshots').upload(path, file);
+        if (!uploadErr) {
+          const { data: pub } = supabaseClient.storage.from('match-screenshots').getPublicUrl(path);
+          screenshotUrl = pub.publicUrl;
+        } else {
+          console.error('Screenshot-Upload fehlgeschlagen:', uploadErr);
+        }
       }
     }
 
