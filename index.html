@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 21</title>
+  <title>CDL Dart Liga test 22</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1832,8 +1832,14 @@
         const stats = {};
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.assigned_ad_league, league) || matchLeagueName(p.assigned_dc_league, league) || matchLeagueName(p.assigned_sc_league, league)) {
-            const pName = p.discord_name || p.username;
-            stats[p.id] = { id: p.id, name: isIdString(pName) ? 'Spieler' : pName, wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
+            // FIX: Vorher wurde der Name NUR aus discord_name/username gelesen.
+            // Ist discord_name leer (bekannter Registrierungs-Bug) und es gibt
+            // kein username-Feld, war pName "undefined" -> isIdString() gab
+            // dann "true" zurück -> der eigentlich vorhandene display_name/real_name
+            // wurde komplett ignoriert und stattdessen "Spieler" angezeigt.
+            // Jetzt: gleiche vollständige Fallback-Kette wie in getProfileNameFromId().
+            const pName = p.display_name || p.username || p.discord_name || p.real_name || p.full_name;
+            stats[p.id] = { id: p.id, name: (pName && !isIdString(pName)) ? pName : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
           }
         });
 
