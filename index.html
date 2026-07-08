@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 29</title>
+  <title>CDL Dart Liga test 30</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -840,14 +840,14 @@
       </div>
 
       <div class="card" style="border-color: #3ddc97;">
-        <div class="card-header" style="color: #3ddc97; font-weight: 800;">🌳 Turnierbaum</div>
+        <div class="card-header" id="bracketCardHeader" style="color: #3ddc97; font-weight: 800;">🌳 Turnierbaum</div>
         <div class="card-body">
           <div style="margin-bottom: 16px;">
             <select id="bracketTournamentSelect" class="league-select-placeholder" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); max-width: 350px; width: 100%;" onchange="renderBracket()">
               <option value="">-- Turnier wählen --</option>
             </select>
           </div>
-          <div id="bracketArea"><div class="empty">Wähle ein Turnier aus, um den Turnierbaum zu sehen.</div></div>
+          <div id="bracketArea"><div class="empty">Wähle ein Turnier aus.</div></div>
         </div>
       </div>
     </div>
@@ -1501,8 +1501,12 @@
     if (context === 'tournament') {
       const t = state.allTournamentsCache.find(x => x.id === m.tournament_id);
       platformSource = t ? t.platform : '';
-      const totalR = t ? Math.max(1, ...state.allTournamentMatchesCache.filter(x => x.tournament_id === t.id).map(x => x.round_number || 1)) : 1;
-      subLabel = (t ? t.title : 'Turnier') + ' · ' + roundLabel(m.round_number || 1, totalR);
+      if (t && t.format === 'roundrobin') {
+        subLabel = (t ? t.title : 'Turnier') + ' · Spieltag ' + (m.matchday || m.round_number || 1);
+      } else {
+        const totalR = t ? Math.max(1, ...state.allTournamentMatchesCache.filter(x => x.tournament_id === t.id).map(x => x.round_number || 1)) : 1;
+        subLabel = (t ? t.title : 'Turnier') + ' · ' + roundLabel(m.round_number || 1, totalR);
+      }
     } else {
       platformSource = m.league_name || '';
       subLabel = (m.league_name || 'Liga') + ' · Spieltag ' + (m.matchday || 1);
@@ -1798,15 +1802,69 @@
   // exakt in Pixeln berechnet (rekursiv von Runde 1 aus), statt nur Spalten
   // nebeneinander zu stellen. Dadurch entstehen echte Baum-Linien wie bei
   // klassischen K.o.-Baum-Grafiken.
+  // Tabellenansicht für "Jeder gegen Jeden"-Turniere: Punkte/Legdifferenz wie
+  // bei den Ligen, plus die einzelnen Begegnungen darunter gruppiert nach Spieltag.
+  function renderRoundRobinView(matches, tournamentTitle) {
+    const stats = {};
+    matches.filter(m => !m.is_bye).forEach(m => {
+      [m.player1_id, m.player2_id].forEach(pid => {
+        if (pid && !stats[pid]) stats[pid] = { id: pid, name: getProfileNameFromId(pid), wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0 };
+      });
+      if (m.status === 'fertig' && m.legs_player1 !== null && m.legs_player2 !== null) {
+        const l1 = m.legs_player1, l2 = m.legs_player2;
+        if (stats[m.player1_id]) { stats[m.player1_id].gamesPlayed++; stats[m.player1_id].legDiff += l1 - l2; }
+        if (stats[m.player2_id]) { stats[m.player2_id].gamesPlayed++; stats[m.player2_id].legDiff += l2 - l1; }
+        if (l1 > l2) { if (stats[m.player1_id]) { stats[m.player1_id].wins++; stats[m.player1_id].points += 2; } if (stats[m.player2_id]) stats[m.player2_id].losses++; }
+        else if (l2 > l1) { if (stats[m.player2_id]) { stats[m.player2_id].wins++; stats[m.player2_id].points += 2; } if (stats[m.player1_id]) stats[m.player1_id].losses++; }
+      }
+    });
+    const standings = Object.values(stats).sort((a, b) => b.points - a.points || b.legDiff - a.legDiff);
+
+    let tableHtml = `<table><thead><tr><th style="width:45px; text-align:center;">P</th><th>Spieler</th><th style="width:45px; text-align:center;">Sp</th><th style="width:45px; text-align:center;">S</th><th style="width:45px; text-align:center;">N</th><th style="width:55px; text-align:center;">Diff</th><th style="width:55px; text-align:center;">Pkt</th></tr></thead><tbody>`;
+    standings.forEach((r, idx) => {
+      const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
+      tableHtml += `<tr><td style="text-align:center;"><span class="rank ${rankClass}">${idx + 1}</span></td><td><span class="player-link" onclick="openPlayerCard('${htmlEscape(r.id)}','${htmlEscape(r.name)}')">${htmlEscape(r.name)}</span></td><td class="stat">${r.gamesPlayed}</td><td class="stat" style="color:#00d084;">${r.wins}</td><td class="stat" style="color:#ff6b35;">${r.losses}</td><td class="stat">${r.legDiff > 0 ? '+' + r.legDiff : r.legDiff}</td><td class="stat score">${r.points}</td></tr>`;
+    });
+    tableHtml += '</tbody></table>';
+
+    let grouped = {};
+    matches.forEach(m => { const d = m.matchday || m.round_number || 1; if (!grouped[d]) grouped[d] = []; grouped[d].push(m); });
+
+    let matchesHtml = '<div class="matchdays-grid" style="margin-top:20px;">';
+    Object.keys(grouped).map(Number).sort((a, b) => a - b).forEach(d => {
+      matchesHtml += `<div class="matchday-card"><div class="matchday-title">⚡ Spieltag ${d}</div>`;
+      grouped[d].forEach(m => {
+        if (m.is_bye) return;
+        const p1Name = getProfileNameFromId(m.player1_id);
+        const p2Name = getProfileNameFromId(m.player2_id);
+        const status = m.status === 'fertig' ? 'done' : 'open';
+        matchesHtml += `<div class="match-row"><div class="match-players"><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player1_id||'')}','${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span><span style="color:var(--text-secondary); font-size:11px; font-weight:bold;">vs</span><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player2_id||'')}','${htmlEscape(p2Name)}')">${htmlEscape(p2Name)}</span></div><span class="match-score">${m.legs_player1 ?? '-'} : ${m.legs_player2 ?? '-'}</span><span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span></div>`;
+      });
+      matchesHtml += '</div>';
+    });
+    matchesHtml += '</div>';
+
+    return `<h3 style="color:var(--platform-color); margin-bottom:6px;">📊 Tabelle: ${htmlEscape(tournamentTitle)}</h3>${tableHtml}${matchesHtml}`;
+  }
+
   window.renderBracket = function() {
     const area = document.getElementById('bracketArea');
     const sel = document.getElementById('bracketTournamentSelect');
+    const headerEl = document.getElementById('bracketCardHeader');
     if (!area || !sel) return;
     const tid = sel.value;
-    if (!tid) { area.innerHTML = '<div class="empty">Wähle ein Turnier aus, um den Turnierbaum zu sehen.</div>'; return; }
+    if (!tid) { area.innerHTML = '<div class="empty">Wähle ein Turnier aus.</div>'; return; }
 
+    const tournament = state.allTournamentsCache.find(t => t.id === tid);
     const matches = state.allTournamentMatchesCache.filter(m => m.tournament_id === tid);
-    if (matches.length === 0) { area.innerHTML = '<div class="empty">Für dieses Turnier wurde noch kein Turnierbaum ausgelost.</div>'; return; }
+    if (matches.length === 0) { area.innerHTML = '<div class="empty">Für dieses Turnier wurde noch kein Spielplan erstellt.</div>'; return; }
+
+    if (tournament && tournament.format === 'roundrobin') {
+      if (headerEl) headerEl.innerHTML = '📊 Turniertabelle';
+      area.innerHTML = renderRoundRobinView(matches, tournament.title);
+      return;
+    }
+    if (headerEl) headerEl.innerHTML = '🌳 Turnierbaum';
 
     let byRound = {};
     matches.forEach(m => { const r = m.round_number || 1; if (!byRound[r]) byRound[r] = []; byRound[r].push(m); });
@@ -1931,10 +1989,6 @@
           </div>
           <p style="font-size: 13px; color: var(--text-secondary); font-style:italic; margin-top:10px;">Der Turnierbaum wird in Kürze vom Admin ausgelost...</p>`;
         } else {
-          const totalR = Math.max(1, ...currentTMatches.map(m => m.round_number || 1));
-          const openMatches = currentTMatches.filter(m => m.status !== 'fertig' && !m.is_bye);
-          const curR = openMatches.length > 0 ? Math.min(...openMatches.map(m => m.round_number || 1)) : totalR;
-
           let participantsHtml = '<span style="font-size:12px; color:var(--text-secondary); font-style:italic;">Keine Teilnehmer gefunden</span>';
           if (tRegs.length > 0) {
             participantsHtml = tRegs.map(r => {
@@ -1943,9 +1997,21 @@
             }).join("");
           }
 
+          let statusLineHtml = '';
+          if (t.format === 'roundrobin') {
+            const doneCount = currentTMatches.filter(m => m.status === 'fertig' && !m.is_bye).length;
+            const totalCount = currentTMatches.filter(m => !m.is_bye).length;
+            statusLineHtml = `<span style="font-size:13px; color:var(--text-secondary);">📍 Jeder gegen Jeden · ${doneCount}/${totalCount} Spiele fertig</span>`;
+          } else {
+            const totalR = Math.max(1, ...currentTMatches.map(m => m.round_number || 1));
+            const openMatches = currentTMatches.filter(m => m.status !== 'fertig' && !m.is_bye);
+            const curR = openMatches.length > 0 ? Math.min(...openMatches.map(m => m.round_number || 1)) : totalR;
+            statusLineHtml = `<span style="font-size:13px; color:var(--text-secondary);">📍 Aktuell: ${htmlEscape(roundLabel(curR, totalR))}</span>`;
+          }
+
           activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
-            <span style="font-size:13px; color:var(--text-secondary);">📍 Aktuell: ${htmlEscape(roundLabel(curR, totalR))}</span>
-            <button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="openBracketForTournament('${t.id}')">🌳 Turnierbaum ansehen</button>
+            ${statusLineHtml}
+            <button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="openBracketForTournament('${t.id}')">${t.format === 'roundrobin' ? '📊 Tabelle ansehen' : '🌳 Turnierbaum ansehen'}</button>
           </div>
           <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 8px;">
             <span style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">👥 ${tRegs.length} angemeldete Spieler</span>
@@ -2074,7 +2140,7 @@
 
   async function loadTournamentsData() {
     try {
-      const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
+      const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, format, status, first_place_name, second_place_name, third_place_name');
       const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, round_number, bracket_slot, is_bye, winner_id, next_match_id, next_match_slot, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url');
       const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
       state.allTournamentsCache = tournaments || [];
