@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 31</title>
+  <title>CDL Dart Liga test 32</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -899,7 +899,7 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9UBfWjUDw0hYBOQ6f_uo__AjsvOq3LTT5LW-O1NtGk-nICV_LqOqD8Mji7fn83B4Lpw/exec";
+  const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsyw6fIuppyNXBQowmNTvgkGxivk3zpnbf0PMO6DId6XrPWYnewbKIqYqFWsweax2taQ/exec";
 
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -927,13 +927,13 @@
     try {
       const base64Data = await fileToBase64(file);
       const ext = (file.name.split('.').pop() || 'png').toLowerCase();
-      const fileName = `${sanitizeForFilename(liga)}_${sanitizeForFilename(spieltagLabel)}_${sanitizeForFilename(player1Name)}_${sanitizeForFilename(player2Name)}.${ext}`;
-      console.log('[Drive-Upload] Sende Anfrage an Apps Script:', GOOGLE_APPS_SCRIPT_URL, '| Dateiname:', fileName);
+      const fileName = `${sanitizeForFilename(spieltagLabel)}_${sanitizeForFilename(player1Name)}_${sanitizeForFilename(player2Name)}.${ext}`;
+      console.log('[Drive-Upload] Sende Anfrage an Apps Script:', GOOGLE_APPS_SCRIPT_URL, '| Ordner:', liga, '| Dateiname:', fileName);
 
       const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ fileName, mimeType: file.type || 'image/png', base64Data })
+        body: JSON.stringify({ fileName, mimeType: file.type || 'image/png', base64Data, folderName: liga })
       });
       console.log('[Drive-Upload] HTTP-Status der Antwort:', res.status);
       const rawText = await res.text();
