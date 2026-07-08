@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kommandozentrale - Admin Dashboard v1</title>
+    <title>Kommandozentrale - Admin Dashboard</title>
     
     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -202,6 +202,10 @@
                     <option value="DartCounter">DartCounter</option>
                     <option value="Scolia">Scolia</option>
                 </select>
+                <select id="tournamentFormat" class="league-select">
+                    <option value="bracket">🌳 Klassischer Turnierbaum (K.o. mit Freilosen)</option>
+                    <option value="roundrobin">🔁 Jeder gegen Jeden</option>
+                </select>
                 <button class="generate-btn" onclick="createTournament()">➕ Turnier erstellen</button>
             </div>
         </div>
@@ -235,10 +239,10 @@
                     <ul id="tParticipantList" style="list-style: none; padding: 0; margin: 0; font-size: 13.5px; line-height: 1.8; color: #fff;"></ul>
                 </div>
                 <div style="flex: 2; min-width: 400px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                    <h4 style="color: #3ddc97; margin-top:0;">📅 Turnierbaum (Tabelle: tournament_matches)</h4>
+                    <h4 id="tScheduleHeading" style="color: #3ddc97; margin-top:0;">📅 Spielplan (Tabelle: tournament_matches)</h4>
                     <div id="tScheduleGenArea" style="margin-bottom: 15px;">
-                        <button class="generate-btn" onclick="generateTournamentSchedule()">⚙️ Turnierbaum auslosen</button>
-                        <button class="remove-btn-large" style="margin-left: 8px; display:none;" id="tDeleteScheduleBtn" onclick="deleteTournamentSchedule()">🗑️ Baum löschen</button>
+                        <button class="generate-btn" id="tGenerateBtn" onclick="generateTournamentSchedule()">⚙️ Spielplan generieren</button>
+                        <button class="remove-btn-large" style="margin-left: 8px; display:none;" id="tDeleteScheduleBtn" onclick="deleteTournamentSchedule()">🗑️ Spielplan löschen</button>
                     </div>
                     <div id="tScheduleArea" style="overflow-x: auto;">
                         Lade Daten...
@@ -306,6 +310,7 @@
 
     let currentManageTID = null;
     let currentManageTName = null;
+    let currentManageFormat = 'bracket';
     let currentManageParticipants = [];
 
     const quillToolbarOptions = [
@@ -793,12 +798,14 @@
     window.createTournament = async function() {
         const name = document.getElementById("tournamentName").value.trim();
         const platform = document.getElementById("tournamentPlatform").value;
+        const format = document.getElementById("tournamentFormat").value || 'bracket';
         
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
         
         const { error } = await supabaseClient.from('tournaments').insert([{
             title: name,
             platform: platform,
+            format: format,
             status: 'active'
         }]);
         
@@ -828,7 +835,7 @@
         try {
             const { data: tournaments, error } = await supabaseClient
                 .from('tournaments')
-                .select('id, title, platform, status, created_at, completed_at, first_place_name, second_place_name, third_place_name')
+                .select('id, title, platform, format, status, created_at, completed_at, first_place_name, second_place_name, third_place_name')
                 .order('created_at', { ascending: false });
             
             if(error) { activeBody.innerHTML = `<tr><td colspan="5" style="color:#e74c3c;">Fehler beim API-Laden: ${error.message}</td></tr>`; return; }
@@ -840,7 +847,7 @@
             else {
                 activeBody.innerHTML = activeTournaments.map(t => `
                     <tr>
-                        <td><strong style="color:#3ddc97;">${htmlEscape(t.title)}</strong></td>
+                        <td><strong style="color:#3ddc97;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:#90a9b7;">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span></td>
                         <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
                         <td id="count_${t.id}">0</td>
                         <td><span style="color: #f7c948; font-weight: bold;">🟡 Aktiv</span></td>
@@ -891,6 +898,19 @@
         document.getElementById('manageTournamentTitle').innerText = "Verwalte Turnier: " + currentManageTName;
         document.getElementById('tournamentManagerArea').style.display = 'block';
         document.getElementById('tScheduleArea').innerHTML = 'Lade Daten...';
+
+        const { data: tData } = await supabaseClient.from('tournaments').select('format').eq('id', id).single();
+        currentManageFormat = (tData && tData.format) || 'bracket';
+
+        const headingEl = document.getElementById('tScheduleHeading');
+        const genBtnEl = document.getElementById('tGenerateBtn');
+        if (currentManageFormat === 'roundrobin') {
+            if (headingEl) headingEl.innerText = "📅 Spielplan (Jeder gegen Jeden)";
+            if (genBtnEl) genBtnEl.innerText = "⚙️ Spielplan generieren";
+        } else {
+            if (headingEl) headingEl.innerText = "📅 Turnierbaum (Tabelle: tournament_matches)";
+            if (genBtnEl) genBtnEl.innerText = "⚙️ Turnierbaum auslosen";
+        }
         
         const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, player_id').eq('tournament_id', id);
         const { data: profilesData } = await supabaseClient.from('profiles').select('*');
@@ -937,11 +957,17 @@
         if(error) { area.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${error.message}</div>`; return; }
 
         if(!matches || matches.length === 0) {
-            area.innerHTML = '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Turnierbaum ausgelost. Klicke auf "Turnierbaum auslosen", sobald die Anmeldephase vorbei ist.</div>';
+            area.innerHTML = currentManageFormat === 'roundrobin'
+                ? '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Spielplan generiert. Klicke auf "Spielplan generieren", sobald die Anmeldephase vorbei ist.</div>'
+                : '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Turnierbaum ausgelost. Klicke auf "Turnierbaum auslosen", sobald die Anmeldephase vorbei ist.</div>';
             btnDelete.style.display = 'none';
         } else {
             btnDelete.style.display = 'inline-flex';
-            renderTournamentBracketAdmin(matches, localPlayersList, area);
+            if (currentManageFormat === 'roundrobin') {
+                renderMatchesPlan(matches, localPlayersList, area, 'Turnier');
+            } else {
+                renderTournamentBracketAdmin(matches, localPlayersList, area);
+            }
         }
     }
 
@@ -1002,11 +1028,49 @@
         area.innerHTML = html;
     }
 
+    // Jeder-gegen-Jeden: alle Teilnehmer spielen einmal gegeneinander (Circle-Method,
+    // gleiches Prinzip wie beim Liga-Spielplan, aber nur eine einzige Runde ohne Rückrunde).
+    function buildRoundRobinSchedule(tournamentId, playerIds) {
+        let ids = playerIds.slice();
+        if (ids.length % 2 !== 0) ids.push(null);
+        const numPlayers = ids.length;
+        let matchesToInsert = [];
+        let slotCounter = 0;
+
+        for (let round = 0; round < numPlayers - 1; round++) {
+            for (let i = 0; i < numPlayers / 2; i++) {
+                const home = ids[i], away = ids[numPlayers - 1 - i];
+                if (home !== null || away !== null) {
+                    matchesToInsert.push({
+                        id: crypto.randomUUID(), tournament_id: tournamentId,
+                        round_number: round + 1, matchday: round + 1, bracket_slot: slotCounter++,
+                        player1_id: home, player2_id: away,
+                        is_bye: (!home || !away), winner_id: null,
+                        status: 'offen', result_status: 'offen',
+                        next_match_id: null, next_match_slot: null
+                    });
+                }
+            }
+            ids.splice(1, 0, ids.pop());
+        }
+        return matchesToInsert;
+    }
+
     window.generateTournamentSchedule = async function() {
         if(currentManageParticipants.length < 2) return alert("❌ Abbruch: Mindestens 2 angemeldete Spieler benötigt!");
+        const playerIds = currentManageParticipants.map(p => p.player_id);
+
+        if (currentManageFormat === 'roundrobin') {
+            if(!confirm(`Spielplan (Jeder gegen Jeden) für "${currentManageTName}" jetzt generieren?`)) return;
+            const allMatches = buildRoundRobinSchedule(currentManageTID, playerIds);
+            const { error } = await supabaseClient.from('tournament_matches').insert(allMatches);
+            if(error) alert("❌ Fehler: " + error.message);
+            else { alert(`🎉 Spielplan erstellt! Jeder Teilnehmer spielt einmal gegen jeden.`); loadTournamentSchedule(); }
+            return;
+        }
+
         if(!confirm(`Turnierbaum für "${currentManageTName}" jetzt auslosen?\n\nBei einer Teilnehmerzahl, die keine 2er-Potenz ist, werden Freilose zufällig verlost.`)) return;
 
-        const playerIds = currentManageParticipants.map(p => p.player_id);
         const allMatches = buildSingleEliminationBracket(currentManageTID, playerIds);
 
         const { error } = await supabaseClient.from('tournament_matches').insert(allMatches);
