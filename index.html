@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 36</title>
+  <title>CDL Dart Liga test 37</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1377,6 +1377,16 @@
     html += `</tbody></table>`; document.getElementById('tableArea').innerHTML = html;
   }
 
+  function buildMatchRowHtml(m, statusKey) {
+    return `<div class="match-row"><div class="match-players"><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p1Id || m.p1Name)}', '${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name || 'Spieler 1')}</span><span style="color: var(--text-secondary); font-size: 11px; font-weight:bold;">vs</span><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p2Id || m.p2Name)}', '${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name || 'Spieler 2')}</span></div><span class="match-score">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</span><span class="badge ${statusKey}">${statusKey === 'done' ? '✓' : '⏳'}</span></div>`;
+  }
+
+  window.toggleDoneMatches = function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
   function renderMatches() {
     const data = state.leagueData[state.activeLeague] || { matchdays: [] }; const matchdays = data.matchdays || [];
     if (matchdays.length === 0) { document.getElementById('matchesHeaderTitle').innerText = `🎯 Spielpaarungen`; document.getElementById('matchesArea').innerHTML = '<div class="empty">Noch keine Spielpaarungen für diese Liga generiert</div>'; return; }
@@ -1385,12 +1395,28 @@
     document.getElementById('matchesHeaderTitle').innerText = `🎯 Spielplan-Übersicht (${state.activeLeague})`;
 
     let html = '<div class="matchdays-grid">';
-    matchdays.forEach(md => {
+    matchdays.forEach((md, mdIdx) => {
+      const openRows = md.rows.filter(m => !(m.status === 'done' || m.status === 'fertig'));
+      const doneRows = md.rows.filter(m => m.status === 'done' || m.status === 'fertig');
+      const toggleId = `done-matches-${state.activeLeague.replace(/[^a-zA-Z0-9]+/g, '_')}-${mdIdx}`;
+
       html += `<div class="matchday-card"><div class="matchday-title">⚡ ${htmlEscape(md.title)}</div>`;
-      md.rows.forEach(m => {
-        const status = m.status === 'done' || m.status === 'fertig' ? 'done' : 'open';
-        html += `<div class="match-row"><div class="match-players"><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p1Id || m.p1Name)}', '${htmlEscape(m.p1Name)}')">${htmlEscape(m.p1Name || 'Spieler 1')}</span><span style="color: var(--text-secondary); font-size: 11px; font-weight:bold;">vs</span><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.p2Id || m.p2Name)}', '${htmlEscape(m.p2Name)}')">${htmlEscape(m.p2Name || 'Spieler 2')}</span></div><span class="match-score">${m.legs1 !== null && m.legs1 !== undefined ? m.legs1 : '-'} : ${m.legs2 !== null && m.legs2 !== undefined ? m.legs2 : '-'}</span><span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span></div>`;
-      });
+
+      if (openRows.length > 0) {
+        openRows.forEach(m => { html += buildMatchRowHtml(m, 'open'); });
+      } else if (doneRows.length > 0) {
+        html += `<div style="text-align:center; padding:8px 0; color:var(--text-secondary); font-size:12px;">✓ Alle Spiele abgeschlossen</div>`;
+      } else {
+        html += `<div style="text-align:center; padding:8px 0; color:var(--text-secondary); font-size:12px; font-style:italic;">Noch keine Spiele</div>`;
+      }
+
+      if (doneRows.length > 0) {
+        html += `<div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border); text-align:center;">
+          <span class="player-link" style="font-size:11px; color:var(--text-secondary); font-weight:600;" onclick="toggleDoneMatches('${toggleId}')">✓ ${doneRows.length} abgeschlossen${doneRows.length === 1 ? 'es' : 'e'} Spiel${doneRows.length === 1 ? '' : 'e'} anzeigen</span>
+          <div id="${toggleId}" style="display:none; margin-top:6px; text-align:left;">${doneRows.map(m => buildMatchRowHtml(m, 'done')).join('')}</div>
+        </div>`;
+      }
+
       html += '</div>';
     });
     html += '</div>'; document.getElementById('matchesArea').innerHTML = html;
