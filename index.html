@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 32</title>
+  <title>CDL Dart Liga test 35</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -578,27 +578,32 @@
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid var(--border);
+      border-left: 4px solid var(--border);
       margin-bottom: 24px;
+      background: var(--bg-secondary);
     }
     .tournament-card-header {
-      color: white;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
       padding: 14px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 8px;
+      border-bottom: 1px solid var(--border);
     }
     .tournament-card-header .t-title {
       font-size: 17px;
       font-weight: 800;
     }
     .tournament-card-header .t-platform-tag {
-      font-size: 12px;
-      font-weight: 800;
-      background: rgba(255,255,255,0.25);
+      font-size: 11px;
+      font-weight: 700;
       padding: 4px 12px;
       border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .tournament-card-body {
       padding: 16px 18px;
@@ -750,19 +755,15 @@
 
   <div id="tournamentsView" class="view">
     <div class="full-width-layout">
-      <div style="display:flex; justify-content:flex-end;">
-        <button class="btn small-action-btn" style="border-color:#3ddc97; color:#3ddc97;" onclick="switchView('bracket')">🌳 Turnierbaum ansehen</button>
-      </div>
-
-      <div class="card" style="border-color: #ff6b35;">
-        <div class="card-header" style="color: #ff6b35; font-weight: 800;">🏆 Aktive Cups & Live-Turniere</div>
+      <div class="card">
+        <div class="card-header">🏆 Aktive Cups & Live-Turniere</div>
         <div class="card-body">
           <div id="mainActiveTournamentsArea">Lade laufende eSports Turniere...</div>
         </div>
       </div>
 
-      <div class="card" style="margin-top: 10px; border-color: #3ddc97;">
-        <div class="card-header" style="color: #3ddc97; font-weight: 800;">🏛️ Turnier Archiv & Ruhmeshalle</div>
+      <div class="card" style="margin-top: 10px;">
+        <div class="card-header">🏛️ Turnier Archiv & Ruhmeshalle</div>
         <div class="card-body">
           <div id="mainCompletedTournamentsArea">Lade Ruhmeshalle...</div>
         </div>
@@ -899,7 +900,7 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTrQ9PQ5DwPoHsfEvmzQduJlBzceXCymHy2myDcXmJEf_I8qRLSCEzFEWkvF5QU9i9fA/exec";
+  const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwREm3bn0TRIeo8vuYBAESxH6Xmb2krldNeTZFVOcygwCitneX__L5q_Tu81npVWRUf/exec";
 
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -1906,10 +1907,10 @@
     if (activeTs.length > 0) {
       activeTs.forEach(t => {
         const pb = platformBadge(t.platform);
-        activeHtml += `<div class="tournament-card">
-          <div class="tournament-card-header" style="background:${pb.color};">
+        activeHtml += `<div class="tournament-card" style="border-left-color:${pb.color};">
+          <div class="tournament-card-header">
             <span class="t-title">${pb.icon} ${htmlEscape(t.title)}</span>
-            <span class="t-platform-tag">${htmlEscape(pb.label)}</span>
+            <span class="t-platform-tag" style="background:${pb.color}1A; color:${pb.color};">${htmlEscape(pb.label)}</span>
           </div>
           <div class="tournament-card-body">`;
 
@@ -1920,13 +1921,13 @@
         if (currentTMatches.length === 0) {
           let regButtonHtml;
           if (!state.currentUser) {
-            regButtonHtml = `<button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="switchView('discord')">👤 Zum Anmelden einloggen</button>`;
+            regButtonHtml = `<button class="btn small-action-btn" style="border-color:${pb.color}; color:${pb.color}; font-weight:800;" onclick="switchView('discord')">👤 Zum Anmelden einloggen</button>`;
           } else if (!currentProfile) {
             regButtonHtml = `<span style="font-size:12px; color:var(--text-secondary);">Profil nicht gefunden - bitte Admin kontaktieren</span>`;
           } else if (isRegistered) {
             regButtonHtml = `<button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35; font-weight:800;" onclick="toggleTournamentRegistration('${t.id}', true)">✖️ Abmelden</button>`;
           } else {
-            regButtonHtml = `<button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="toggleTournamentRegistration('${t.id}', false)">✅ Anmelden</button>`;
+            regButtonHtml = `<button class="btn small-action-btn" style="border-color:${pb.color}; color:${pb.color}; font-weight:800;" onclick="toggleTournamentRegistration('${t.id}', false)">✅ Anmelden</button>`;
           }
           let participantsHtml = '<span style="font-size:12px; color:var(--text-secondary); font-style:italic;">Noch keine Anmeldungen</span>';
           if (tRegs.length > 0) {
@@ -1958,7 +1959,7 @@
 
           activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
             <span style="font-size:13px; color:var(--text-secondary);">📍 Aktuell: ${htmlEscape(roundLabel(curR, totalR))}</span>
-            <button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="openBracketForTournament('${t.id}')">🌳 Turnierbaum ansehen</button>
+            <button class="btn small-action-btn" style="border-color:${pb.color}; color:${pb.color}; font-weight:800;" onclick="openBracketForTournament('${t.id}')">🌳 Turnierbaum ansehen</button>
           </div>
           <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 8px;">
             <span style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">👥 ${tRegs.length} angemeldete Spieler</span>
