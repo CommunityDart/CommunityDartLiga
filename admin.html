@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kommandozentrale - Admin Dashboard</title>
+    <title>Kommandozentrale - Admin Dashboard v1</title>
     
     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,13 +13,10 @@
         .admin-container { max-width: 1500px; margin: 0 auto; background: #021622; border: 1px solid rgba(75, 135, 165, 0.2); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
         h1, h2, h3 { color: #3ddc97; margin: 0; }
-        
-        /* Buttons Allgemein */
         .back-home-btn { background: #021017; color: #20b7ff; border: 1px solid #20b7ff; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
         .back-home-btn:hover { background: #20b7ff; color: #000; }
         .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; }
         .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; margin-top: 4px; width: 100%; }
-        
         .generate-btn { background: #20b7ff; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
         .generate-btn:hover { opacity: 0.9; }
         .remove-btn-large { background: #e74c3c; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
@@ -27,29 +24,21 @@
         .card-btn { background: #021017; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .card-btn.yellow:hover { background: #f7c948; color: #000; }
         .card-btn.red:hover { background: #e74c3c; color: #fff; }
-        
-        /* Reiter Navigation */
         .tabs { display: flex; gap: 8px; border-bottom: 2px solid rgba(75, 135, 165, 0.2); padding-bottom: 8px; margin-bottom: 15px; flex-wrap: wrap; }
         .tab-btn { background: #021017; color: #90a9b7; border: 1px solid #4b87a5; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 13px; }
         .tab-btn.active { background: #3ddc97; color: #000; border-color: #3ddc97; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        
-        /* Tabellen Styling */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; font-size: 13.5px; }
         th { background: rgba(0,0,0,0.3); color: #90a9b7; font-size: 11.5px; text-transform: uppercase; }
-        
-        /* Eingabefelder */
         .league-select, .leg-input, .num-input, .stat-input { padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; }
         .num-input { width: 50px; text-align: center; }
         .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 14px; }
         .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
         .txt-input { padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; width: 100%; max-width: 160px; font-size: 12px; border-color: #ffd08a; box-sizing: border-box; }
         .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; font-size: 12px; box-sizing: border-box; }
-        
         .news-headline-field { width: 100%; padding: 10px; border-radius: 6px; background: #021017; color: #fff; border: 1px solid #4b87a5; outline: none; font-size: 16px; box-sizing: border-box; }
-
         .config-box { background: rgba(61, 220, 151, 0.05); border: 1px solid rgba(61, 220, 151, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 15px; }
         .config-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
         .meta-text { font-size: 12px; color: #90a9b7; margin-top: 2px; }
@@ -61,10 +50,8 @@
         .flex-row-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
         .flex-row-center input { width: 50px; text-align: center; }
         .flex-col-gap { display: flex; flex-direction: column; gap: 4px; }
-
         .gen-options-row { display: flex; align-items: center; gap: 8px; background: rgba(32, 183, 255, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(32, 183, 255, 0.2); margin-top: 6px; }
         .gen-options-row label { font-size: 13.5px; font-weight: bold; color: #20b7ff; cursor: pointer; }
-
         .season-indicator { background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); padding: 8px 12px; border-radius: 6px; color: #20b7ff; font-size: 12px; font-weight: bold; }
     </style>
 </head>
@@ -88,7 +75,6 @@
         <button class="tab-btn" onclick="switchTab('tabRegelwerk')">6. Regelwerk bearbeiten</button>
     </div>
 
-    <!-- TAB 1: LIGA ZUTEILUNG & GLOBAL SAISON MANAGER -->
     <div id="tabZuteilung" class="tab-content active">
         <div class="config-box">
             <h3>⚙️ Auf- / Abstiegseinstellungen pro Liga festlegen</h3>
@@ -140,7 +126,6 @@
         </div>
     </div>
 
-    <!-- TAB 2: LIGA SPIELPLÄNE & ERGEBNISSE -->
     <div id="tabSpielplaene" class="tab-content">
         <h2>Ergebnisse, Averages & Highlights eintragen</h2>
 
@@ -169,7 +154,6 @@
         </div>
     </div>
 
-    <!-- TAB 3: STRAFENKATALOG -->
     <div id="tabStrafen" class="tab-content">
         <h2>Karten & Strafen pro Liga verwalten</h2>
         <div style="margin-bottom: 12px;">
@@ -196,9 +180,17 @@
         </div>
     </div>
 
-    <!-- TAB 4: TURNIERE -->
     <div id="tabTournaments" class="tab-content">
         <h2>🏆 Turniere verwalten</h2>
+
+        <div class="config-box" style="border-color: #ffd08a; background: rgba(255, 208, 138, 0.05);">
+            <h3>⏱️ Turnier-Bestätigungsfrist</h3>
+            <p class="meta-text" style="margin-bottom:8px;">Eigene, kürzere Frist nur für Turnier-Ergebnisse (unabhängig von der Liga-Frist).</p>
+            <div class="config-row">
+                <label>Frist: <input type="number" id="tournamentConfirmationMinutesInput" class="num-input" value="5" min="1" style="width:80px;"> Minuten</label>
+                <button class="card-btn yellow" onclick="saveTournamentConfirmationMinutes()">💾 Speichern</button>
+            </div>
+        </div>
         
         <div class="config-box">
             <h3>✨ Neues Turnier erstellen</h3>
@@ -232,26 +224,21 @@
             </table>
         </div>
 
-        <!-- Turnier Verwaltungs-Bereich -->
         <div id="tournamentManagerArea" class="config-box" style="display:none; margin-top: 20px; border-color: #20b7ff; background: rgba(32, 183, 255, 0.05);">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(32, 183, 255, 0.2); padding-bottom: 10px; margin-bottom: 15px;">
                 <h3 id="manageTournamentTitle" style="color: #20b7ff;">Turnier Verwaltung</h3>
                 <button class="card-btn red" onclick="document.getElementById('tournamentManagerArea').style.display='none'">❌ Schließen</button>
             </div>
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                
-                <!-- Teilnehmerliste -->
                 <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
                     <h4 style="color: #3ddc97; margin-top:0;">👥 Angemeldete Spieler (<span id="tParticipantCount">0</span>)</h4>
                     <ul id="tParticipantList" style="list-style: none; padding: 0; margin: 0; font-size: 13.5px; line-height: 1.8; color: #fff;"></ul>
                 </div>
-                
-                <!-- Spielplan / Generator -->
                 <div style="flex: 2; min-width: 400px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                    <h4 style="color: #3ddc97; margin-top:0;">📅 Turnier-Spielplan (Tabelle: tournament_matches)</h4>
+                    <h4 style="color: #3ddc97; margin-top:0;">📅 Turnierbaum (Tabelle: tournament_matches)</h4>
                     <div id="tScheduleGenArea" style="margin-bottom: 15px;">
-                        <button class="generate-btn" onclick="generateTournamentSchedule()">⚙️ Spielplan generieren</button>
-                        <button class="remove-btn-large" style="margin-left: 8px; display:none;" id="tDeleteScheduleBtn" onclick="deleteTournamentSchedule()">🗑️ Plan löschen</button>
+                        <button class="generate-btn" onclick="generateTournamentSchedule()">⚙️ Turnierbaum auslosen</button>
+                        <button class="remove-btn-large" style="margin-left: 8px; display:none;" id="tDeleteScheduleBtn" onclick="deleteTournamentSchedule()">🗑️ Baum löschen</button>
                     </div>
                     <div id="tScheduleArea" style="overflow-x: auto;">
                         Lade Daten...
@@ -278,9 +265,7 @@
             </table>
         </div>
     </div>
-    <!-- TOURNAMENT TAB END -->
 
-    <!-- TAB 5: NEWS -->
     <div id="tabNews" class="tab-content">
         <h2>Neuigkeiten auf der Startseite veröffentlichen</h2>
         <div style="margin-bottom: 12px;">
@@ -292,7 +277,6 @@
         <div id="adminNewsContainer">Lade geschriebene Beiträge...</div>
     </div>
 
-    <!-- TAB 6: REGELWERK -->
     <div id="tabRegelwerk" class="tab-content">
         <h2>Globales Regelwerk anpassen</h2>
         <div id="ruleEditor" class="editor-container"></div>
@@ -338,13 +322,17 @@
     async function loadCurrentSeason() {
         if(!supabaseClient) return;
         try {
-            const { data } = await supabaseClient.from('system_settings').select('current_season, result_confirmation_hours').eq('id', 1).single();
+            const { data } = await supabaseClient.from('system_settings').select('current_season, result_confirmation_hours, tournament_confirmation_minutes').eq('id', 1).single();
             if(data && data.current_season) {
                 currentSeasonGlobal = data.current_season;
             }
             const hoursInput = document.getElementById("resultConfirmationHoursInput");
             if (hoursInput && data && data.result_confirmation_hours) {
                 hoursInput.value = data.result_confirmation_hours;
+            }
+            const minutesInput = document.getElementById("tournamentConfirmationMinutesInput");
+            if (minutesInput && data && data.tournament_confirmation_minutes) {
+                minutesInput.value = data.tournament_confirmation_minutes;
             }
         } catch(e) {}
         document.getElementById("seasonIndicator").textContent = "📅 Saison: " + currentSeasonGlobal;
@@ -355,6 +343,13 @@
         const { error } = await supabaseClient.from('system_settings').update({ result_confirmation_hours: hours }).eq('id', 1);
         if(error) alert("❌ Fehler: " + error.message);
         else alert(`✅ Bestätigungsfrist auf ${hours} Stunden gesetzt!`);
+    };
+
+    window.saveTournamentConfirmationMinutes = async function() {
+        const minutes = parseInt(document.getElementById("tournamentConfirmationMinutesInput").value) || 5;
+        const { error } = await supabaseClient.from('system_settings').update({ tournament_confirmation_minutes: minutes }).eq('id', 1);
+        if(error) alert("❌ Fehler: " + error.message);
+        else alert(`✅ Turnier-Bestätigungsfrist auf ${minutes} Minuten gesetzt!`);
     };
 
     function switchTab(tabId) {
@@ -714,6 +709,87 @@
         area.innerHTML = html;
     }
 
+    function shuffleArray(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    // Baut einen echten K.o.-Baum: bracketSize = nächste 2er-Potenz >= Teilnehmerzahl.
+    // Freilose werden auf zufällig gewählte, VERSCHIEDENE Runde-1-Partien verteilt
+    // (nie zwei Freilose in derselben Partie), Gewinner rücken automatisch nach.
+    function buildSingleEliminationBracket(tournamentId, playerIds) {
+        const n = playerIds.length;
+        let bracketSize = 1;
+        while (bracketSize < n) bracketSize *= 2;
+        const numMatches = bracketSize / 2;
+        const totalByes = bracketSize - n;
+
+        const shuffledPlayers = shuffleArray(playerIds);
+        const byeMatchSet = new Set(shuffleArray([...Array(numMatches).keys()]).slice(0, totalByes));
+
+        const numRounds = Math.log2(bracketSize);
+        const rounds = [];
+        let pointer = 0;
+        const round1 = [];
+        for (let i = 0; i < numMatches; i++) {
+            const isBye = byeMatchSet.has(i);
+            const p1 = shuffledPlayers[pointer++];
+            const p2 = isBye ? null : shuffledPlayers[pointer++];
+            round1.push({
+                id: crypto.randomUUID(), tournament_id: tournamentId, round_number: 1, bracket_slot: i,
+                player1_id: p1, player2_id: p2, is_bye: isBye,
+                winner_id: isBye ? p1 : null,
+                status: isBye ? 'fertig' : 'offen',
+                result_status: isBye ? 'admin_confirmed' : 'offen',
+                next_match_id: null, next_match_slot: null
+            });
+        }
+        rounds.push(round1);
+
+        for (let r = 2; r <= numRounds; r++) {
+            const prev = rounds[r - 2];
+            const cur = [];
+            for (let i = 0; i < prev.length / 2; i++) {
+                cur.push({
+                    id: crypto.randomUUID(), tournament_id: tournamentId, round_number: r, bracket_slot: i,
+                    player1_id: null, player2_id: null, is_bye: false, winner_id: null,
+                    status: 'offen', result_status: 'offen',
+                    next_match_id: null, next_match_slot: null
+                });
+            }
+            prev.forEach((m, idx) => {
+                const parent = cur[Math.floor(idx / 2)];
+                m.next_match_id = parent.id;
+                m.next_match_slot = (idx % 2) + 1;
+                if (m.is_bye) {
+                    if (m.next_match_slot === 1) parent.player1_id = m.winner_id;
+                    else parent.player2_id = m.winner_id;
+                }
+            });
+            rounds.push(cur);
+        }
+        return rounds.flat();
+    }
+
+    // Wird nach jedem final gesetzten Turnier-Ergebnis aufgerufen: ermittelt den
+    // Sieger und trägt ihn automatisch in die nächste Runde ein.
+    async function advanceTournamentWinner(matchId) {
+        const { data: m } = await supabaseClient.from('tournament_matches')
+            .select('player1_id, player2_id, legs_player1, legs_player2, next_match_id, next_match_slot')
+            .eq('id', matchId).single();
+        if (!m || m.legs_player1 === null || m.legs_player2 === null || m.legs_player1 === m.legs_player2) return;
+        const winnerId = m.legs_player1 > m.legs_player2 ? m.player1_id : m.player2_id;
+        await supabaseClient.from('tournament_matches').update({ winner_id: winnerId }).eq('id', matchId);
+        if (m.next_match_id) {
+            const field = m.next_match_slot === 1 ? 'player1_id' : 'player2_id';
+            await supabaseClient.from('tournament_matches').update({ [field]: winnerId }).eq('id', m.next_match_id);
+        }
+    }
+
     window.createTournament = async function() {
         const name = document.getElementById("tournamentName").value.trim();
         const platform = document.getElementById("tournamentPlatform").value;
@@ -734,8 +810,6 @@
         }
     };
 
-    // NEU: Turnier komplett löschen (inkl. aller Anmeldungen & Spielpaarungen
-    // durch ON DELETE CASCADE in der Datenbank).
     window.deleteTournament = async function(id, titleEscaped) {
         const title = unescape(titleEscaped);
         if(!confirm(`⚠️ Turnier "${title}" wirklich UNWIDERRUFLICH löschen?\n\nAlle Anmeldungen und Spielpaarungen dieses Turniers werden dabei ebenfalls entfernt.`)) return;
@@ -746,7 +820,6 @@
         loadActiveTournaments();
     };
 
-    // ✅ FEHLERSCHUTZ GEGEN HARD-CRASH: Komplett abgesicherter Datenbezug der Turniere
     async function loadActiveTournaments() {
         if(!supabaseClient) return;
         const activeBody = document.getElementById("activeTournamentsBody");
@@ -811,8 +884,6 @@
         }
     }
 
-    // Läd Teilnehmerliste aus tournament_registrations + verknüpft Namen
-    // aus profiles (die registrations-Tabelle speichert nur player_id).
     window.openTournamentManager = async function(id, nameEscaped) {
         currentManageTID = id;
         currentManageTName = unescape(nameEscaped);
@@ -846,8 +917,6 @@
         loadTournamentSchedule();
     };
 
-    // NEU: Admin kann eine einzelne Anmeldung manuell entfernen
-    // (z.B. wenn ein Spieler absagt, aber sich nicht selbst abmeldet).
     window.removeTournamentRegistration = async function(registrationId) {
         if(!confirm("Diese Anmeldung wirklich entfernen?")) return;
         const { error } = await supabaseClient.from('tournament_registrations').delete().eq('id', registrationId);
@@ -863,54 +932,99 @@
         const { data: profilesData } = await supabaseClient.from('profiles').select('*');
         const localPlayersList = profilesData || [];
         
-        const { data: matches, error } = await supabaseClient.from('tournament_matches').select('*').eq('tournament_id', currentManageTID).order('matchday', { ascending: true });
+        const { data: matches, error } = await supabaseClient.from('tournament_matches').select('*').eq('tournament_id', currentManageTID).order('round_number', { ascending: true });
         
         if(error) { area.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${error.message}</div>`; return; }
 
         if(!matches || matches.length === 0) {
-            area.innerHTML = '<div style="color:#90a9b7; margin-top: 10px;">Noch kein separater Turnier-Spielplan generiert. Klicke auf "Spielplan generieren", sobald die Anmeldephase vorbei ist.</div>';
+            area.innerHTML = '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Turnierbaum ausgelost. Klicke auf "Turnierbaum auslosen", sobald die Anmeldephase vorbei ist.</div>';
             btnDelete.style.display = 'none';
         } else {
             btnDelete.style.display = 'inline-flex';
-            renderMatchesPlan(matches, localPlayersList, area, 'Turnier', {}); 
+            renderTournamentBracketAdmin(matches, localPlayersList, area);
         }
+    }
+
+    function renderTournamentBracketAdmin(matches, playersList, area) {
+        const nameOf = (id) => {
+            if (!id) return null;
+            const p = playersList.find(x => x.id === id);
+            return p ? (p.discord_name || p.username || 'Spieler') : 'Spieler';
+        };
+        let grouped = {};
+        matches.forEach(m => { const r = m.round_number || 1; if(!grouped[r]) grouped[r] = []; grouped[r].push(m); });
+        const totalRounds = Math.max(...Object.keys(grouped).map(Number));
+        const roundName = (r) => {
+            const fromEnd = totalRounds - r;
+            if (fromEnd === 0) return '🏆 Finale';
+            if (fromEnd === 1) return '🥈 Halbfinale';
+            if (fromEnd === 2) return 'Viertelfinale';
+            if (fromEnd === 3) return 'Achtelfinale';
+            return `Runde ${r}`;
+        };
+
+        let html = "";
+        Object.keys(grouped).map(Number).sort((a,b)=>a-b).forEach(r => {
+            const list = grouped[r].sort((a,b)=>(a.bracket_slot||0)-(b.bracket_slot||0));
+            html += `<h3 style="color:#20b7ff; margin-top:14px; border-bottom:1px solid #4b87a5; padding-bottom:4px;">${roundName(r)}</h3><table><thead><tr>
+                        <th style="width:20%;">Spieler 1</th><th style="width:20%;">Spieler 2</th><th style="width:10%; text-align:center;">Legs</th>
+                        <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th>
+                        <th style="width:14%; text-align:center;">Status</th>
+                        <th style="width:6%;">Aktion</th>
+                    </tr></thead><tbody>`;
+            list.forEach(m => {
+                const p1Name = m.player1_id ? nameOf(m.player1_id) : (m.is_bye ? '—' : 'TBD');
+                const p2Name = m.player2_id ? nameOf(m.player2_id) : (m.is_bye ? 'Freilos' : 'TBD');
+                const isPlayable = !!(m.player1_id && m.player2_id) && !m.is_bye;
+
+                const statusLabels = {
+                    'offen': '<span style="color:#90a9b7;">–</span>',
+                    'pending_confirmation': '<span style="color:#f7c948; font-weight:bold;">⏳ Wartet auf Bestätigung</span>',
+                    'confirmed': '<span style="color:#2ecc71; font-weight:bold;">✅ Bestätigt</span>',
+                    'auto_confirmed': '<span style="color:#20b7ff; font-weight:bold;">⏱️ Auto-bestätigt</span>',
+                    'admin_confirmed': '<span style="color:#3ddc97; font-weight:bold;">🛡️ Admin final</span>'
+                };
+                let statusTd = m.is_bye ? '<span style="color:#90a9b7;">🎟️ Freilos</span>' : (statusLabels[m.result_status] || statusLabels['offen']);
+                if (m.screenshot_url) statusTd += `<br><a href="${m.screenshot_url}" target="_blank" style="font-size:11px; color:#20b7ff;">📷 Screenshot</a>`;
+
+                html += `<tr>
+                        <td><strong style="color:#3ddc97;">${htmlEscape(p1Name)}</strong></td>
+                        <td><strong style="color:#3ddc97;">${htmlEscape(p2Name)}</strong></td>
+                        <td><div class="flex-row-center"><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isPlayable?'':'disabled'}> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isPlayable?'':'disabled'}></div></td>
+                        <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || ''}" ${isPlayable?'':'disabled'}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || ''}" ${isPlayable?'':'disabled'}></div></td>
+                        <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isPlayable?'':'disabled'}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isPlayable?'':'disabled'}></div></td>
+                        <td style="text-align:center; font-size:12px;">${statusTd}</td>
+                        <td><button class="assign-btn" style="padding:6px 8px;" onclick="saveTournamentMatchStats('${m.id}')" ${isPlayable?'':'disabled'}>💾</button></td>
+                    </tr>`;
+            });
+            html += `</tbody></table>`;
+        });
+        area.innerHTML = html;
     }
 
     window.generateTournamentSchedule = async function() {
         if(currentManageParticipants.length < 2) return alert("❌ Abbruch: Mindestens 2 angemeldete Spieler benötigt!");
-        if(!confirm(`Möchtest du jetzt den Spielplan für das Turnier "${currentManageTName}" in der Tabelle 'tournament_matches' erzeugen?`)) return;
-        
-        let playerIds = currentManageParticipants.map(p => p.player_id);
-        if (playerIds.length % 2 !== 0) playerIds.push(null); 
-        
-        let numPlayers = playerIds.length;
-        let matchesToInsert = [];
+        if(!confirm(`Turnierbaum für "${currentManageTName}" jetzt auslosen?\n\nBei einer Teilnehmerzahl, die keine 2er-Potenz ist, werden Freilose zufällig verlost.`)) return;
 
-        for (let round = 0; round < numPlayers - 1; round++) {
-            for (let i = 0; i < numPlayers / 2; i++) {
-                let home = playerIds[i];
-                let away = playerIds[numPlayers - 1 - i];
-                if (home !== null || away !== null) {
-                    matchesToInsert.push({ id: crypto.randomUUID(), tournament_id: currentManageTID, matchday: round + 1, player1_id: home, player2_id: away, status: 'offen' });
-                }
-            }
-            playerIds.splice(1, 0, playerIds.pop());
-        }
-        
-        const { error } = await supabaseClient.from('tournament_matches').insert(matchesToInsert);
+        const playerIds = currentManageParticipants.map(p => p.player_id);
+        const allMatches = buildSingleEliminationBracket(currentManageTID, playerIds);
+
+        const { error } = await supabaseClient.from('tournament_matches').insert(allMatches);
         if(error) alert("❌ Fehler: " + error.message);
-        else { alert(`🎉 Turnier-Spielplan erfolgreich erstellt!`); loadTournamentSchedule(); }
+        else {
+            const byeCount = allMatches.filter(m => m.is_bye).length;
+            alert(`🎉 Turnierbaum ausgelost!${byeCount > 0 ? ` (${byeCount} Freilos${byeCount > 1 ? 'e' : ''} vergeben)` : ''}`);
+            loadTournamentSchedule();
+        }
     };
 
     window.deleteTournamentSchedule = async function() {
-        if(!confirm(`⚠️ Möchtest du alle Begegnungen dieses Turniers unwiderruflich löschen?`)) return;
+        if(!confirm(`⚠️ Möchtest du den kompletten Turnierbaum unwiderruflich löschen?`)) return;
         await supabaseClient.from('tournament_matches').delete().eq('tournament_id', currentManageTID);
-        alert("Turnier-Spielplan wurde gelöscht.");
+        alert("Turnierbaum wurde gelöscht.");
         loadTournamentSchedule(); 
     };
 
-    // Admin trägt Ergebnis direkt für ein Liga-Match ein -> gilt sofort als final
-    // (result_status = admin_confirmed), unabhängig vom Spieler-Meldeworkflow.
     window.saveMatchFullStats = async function(matchId) {
         if(!supabaseClient) return;
         const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
@@ -952,11 +1066,16 @@
         };
 
         const { error } = await supabaseClient.from('tournament_matches').update(updates).eq('id', matchId);
-        if(error) alert("❌ Fehler: " + error.message); else { alert("✅ Turnier-Ergebnis gespeichert (als Admin final gesetzt)!"); loadTournamentSchedule(); }
+        if(error) alert("❌ Fehler: " + error.message);
+        else {
+            if (updates.legs_player1 !== null && updates.legs_player2 !== null) {
+                await advanceTournamentWinner(matchId);
+            }
+            alert("✅ Turnier-Ergebnis gespeichert (als Admin final gesetzt)!");
+            loadTournamentSchedule();
+        }
     };
 
-    // Platzierungen werden manuell abgefragt, da es dafür (noch) kein
-    // eigenes UI-Feld in der Teilnehmerliste gibt.
     window.finishTournament = async function(tournamentId) {
         if(!confirm("Turnier abschließen? Du wirst im nächsten Schritt nach den Platzierungen 1-3 gefragt.")) return;
         
