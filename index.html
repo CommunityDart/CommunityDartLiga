@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 28</title>
+  <title>CDL Dart Liga test 29</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1771,6 +1771,33 @@
     renderBracket();
   }
 
+  // Feste Kartengröße pro Spiel im Baum, damit sich die Verbindungslinien
+  // exakt berechnen lassen (keine geschätzten CSS-Abstände).
+  function bracketCardHtml(m) {
+    if (!m) return '';
+    const p1Name = m.player1_id ? getProfileNameFromId(m.player1_id) : (m.is_bye ? '—' : 'TBD');
+    const p2Name = m.player2_id ? getProfileNameFromId(m.player2_id) : (m.is_bye ? 'Freilos' : 'TBD');
+    const isDone = m.status === 'fertig';
+    const p1Win = isDone && m.winner_id && m.winner_id === m.player1_id;
+    const p2Win = isDone && m.winner_id && m.winner_id === m.player2_id;
+    return `<div style="border:1px solid var(--border); border-left:4px solid ${m.is_bye ? '#90a9b7' : (isDone ? '#00d084' : 'var(--platform-color)')}; border-radius:8px; background:var(--bg-secondary); height:100%; box-sizing:border-box; font-size:12px; overflow:hidden; display:flex; flex-direction:column; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      ${m.is_bye ? '<div style="font-size:9px; color:#90a9b7; font-weight:800; padding:2px 8px 0 8px;">🎟️ FREILOS</div>' : ''}
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; gap:6px; ${p1Win ? 'font-weight:800; color:#00d084;' : ''}">
+        <span class="player-link" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" onclick="openPlayerCard('${htmlEscape(m.player1_id || '')}','${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span>
+        <span style="flex-shrink:0; font-weight:700;">${m.legs_player1 ?? '-'}</span>
+      </div>
+      <div style="height:1px; background:var(--border);"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; gap:6px; ${p2Win ? 'font-weight:800; color:#00d084;' : ''}">
+        <span class="player-link" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" onclick="openPlayerCard('${htmlEscape(m.player2_id || '')}','${htmlEscape(p2Name)}')">${htmlEscape(p2Name)}</span>
+        <span style="flex-shrink:0; font-weight:700;">${m.legs_player2 ?? '-'}</span>
+      </div>
+    </div>`;
+  }
+
+  // Echter klassischer Turnierbaum: Positionen und Verbindungslinien werden
+  // exakt in Pixeln berechnet (rekursiv von Runde 1 aus), statt nur Spalten
+  // nebeneinander zu stellen. Dadurch entstehen echte Baum-Linien wie bei
+  // klassischen K.o.-Baum-Grafiken.
   window.renderBracket = function() {
     const area = document.getElementById('bracketArea');
     const sel = document.getElementById('bracketTournamentSelect');
@@ -1781,39 +1808,59 @@
     const matches = state.allTournamentMatchesCache.filter(m => m.tournament_id === tid);
     if (matches.length === 0) { area.innerHTML = '<div class="empty">Für dieses Turnier wurde noch kein Turnierbaum ausgelost.</div>'; return; }
 
-    let grouped = {};
-    matches.forEach(m => { const r = m.round_number || 1; if (!grouped[r]) grouped[r] = []; grouped[r].push(m); });
-    const roundNumbers = Object.keys(grouped).map(Number).sort((a, b) => a - b);
-    const totalRounds = roundNumbers.length;
+    let byRound = {};
+    matches.forEach(m => { const r = m.round_number || 1; if (!byRound[r]) byRound[r] = []; byRound[r].push(m); });
+    Object.values(byRound).forEach(list => list.sort((a, b) => (a.bracket_slot || 0) - (b.bracket_slot || 0)));
+    const totalRounds = Math.max(...Object.keys(byRound).map(Number));
 
-    let html = '<div style="display:flex; gap:24px; overflow-x:auto; padding-bottom:10px; align-items:stretch;">';
-    roundNumbers.forEach(r => {
-      grouped[r].sort((a, b) => (a.bracket_slot || 0) - (b.bracket_slot || 0));
-      html += `<div style="min-width:230px; flex-shrink:0; display:flex; flex-direction:column; justify-content:space-around; gap:${Math.pow(2, r) * 10}px;">
-        <div class="matchday-title" style="margin-bottom:6px;">${roundLabel(r, totalRounds)}</div>`;
-      grouped[r].forEach(m => {
-        const p1Name = m.player1_id ? getProfileNameFromId(m.player1_id) : (m.is_bye ? '—' : 'TBD');
-        const p2Name = m.player2_id ? getProfileNameFromId(m.player2_id) : (m.is_bye ? 'Freilos' : 'TBD');
-        const isDone = m.status === 'fertig';
-        const p1Win = isDone && m.winner_id && m.winner_id === m.player1_id;
-        const p2Win = isDone && m.winner_id && m.winner_id === m.player2_id;
-        html += `<div class="matchday-card" style="padding:10px; border-left:3px solid ${m.is_bye ? '#90a9b7' : (isDone ? '#00d084' : 'var(--border)')};">
-          ${m.is_bye ? '<div style="font-size:10px; color:#90a9b7; font-weight:700; margin-bottom:4px;">🎟️ FREILOS</div>' : ''}
-          <div style="display:flex; justify-content:space-between; padding:4px 0; ${p1Win ? 'font-weight:800; color:#00d084;' : ''}">
-            <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player1_id || '')}','${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span>
-            <span>${m.legs_player1 ?? '-'}</span>
-          </div>
-          <div style="height:1px; background:var(--border); margin:2px 0;"></div>
-          <div style="display:flex; justify-content:space-between; padding:4px 0; ${p2Win ? 'font-weight:800; color:#00d084;' : ''}">
-            <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player2_id || '')}','${htmlEscape(p2Name)}')">${htmlEscape(p2Name)}</span>
-            <span>${m.legs_player2 ?? '-'}</span>
-          </div>
-        </div>`;
-      });
-      html += '</div>';
-    });
-    html += '</div>';
-    area.innerHTML = html;
+    const CARD_W = 210, CARD_H = 64, GAP = 18, CONNECTOR_W = 40, COL_W = CARD_W + CONNECTOR_W;
+    const LINE_COLOR = "var(--border)";
+    let elements = [];
+
+    function build(roundIdx, slotIdx, yOffset) {
+      const roundNum = roundIdx + 1;
+      const x = roundIdx * COL_W;
+      const list = byRound[roundNum] || [];
+      const m = list[slotIdx];
+
+      if (roundIdx === 0) {
+        elements.push(`<div style="position:absolute; left:${x}px; top:${yOffset}px; width:${CARD_W}px; height:${CARD_H}px;">${bracketCardHtml(m)}</div>`);
+        return { height: CARD_H, centerY: yOffset + CARD_H / 2 };
+      }
+
+      const child1 = build(roundIdx - 1, slotIdx * 2, yOffset);
+      const child2 = build(roundIdx - 1, slotIdx * 2 + 1, yOffset + child1.height + GAP);
+      const totalH = child1.height + GAP + child2.height;
+      const centerY = (child1.centerY + child2.centerY) / 2;
+      const matchY = centerY - CARD_H / 2;
+      const prevRightX = (roundIdx - 1) * COL_W + CARD_W;
+      const midX = prevRightX + CONNECTOR_W / 2;
+      const topY = Math.min(child1.centerY, child2.centerY);
+      const vLineH = Math.abs(child2.centerY - child1.centerY);
+
+      elements.push(`<div style="position:absolute; left:${prevRightX}px; top:${child1.centerY - 1}px; width:${CONNECTOR_W / 2}px; height:2px; background:${LINE_COLOR};"></div>`);
+      elements.push(`<div style="position:absolute; left:${prevRightX}px; top:${child2.centerY - 1}px; width:${CONNECTOR_W / 2}px; height:2px; background:${LINE_COLOR};"></div>`);
+      elements.push(`<div style="position:absolute; left:${midX - 1}px; top:${topY}px; width:2px; height:${vLineH}px; background:${LINE_COLOR};"></div>`);
+      elements.push(`<div style="position:absolute; left:${midX}px; top:${centerY - 1}px; width:${CONNECTOR_W / 2}px; height:2px; background:${LINE_COLOR};"></div>`);
+      elements.push(`<div style="position:absolute; left:${x}px; top:${matchY}px; width:${CARD_W}px; height:${CARD_H}px;">${bracketCardHtml(m)}</div>`);
+
+      return { height: totalH, centerY };
+    }
+
+    const root = build(totalRounds - 1, 0, 0);
+    const totalWidth = (totalRounds - 1) * COL_W + CARD_W;
+
+    let labelsHtml = '';
+    for (let r = 1; r <= totalRounds; r++) {
+      labelsHtml += `<div style="position:absolute; left:${(r - 1) * COL_W}px; top:-30px; width:${CARD_W}px; text-align:center; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--platform-color);">${roundLabel(r, totalRounds)}</div>`;
+    }
+
+    area.innerHTML = `<div style="overflow-x:auto; padding-top:38px; padding-bottom:16px;">
+      <div style="position:relative; width:${totalWidth}px; height:${root.height}px;">
+        ${labelsHtml}
+        ${elements.join('')}
+      </div>
+    </div>`;
   };
 
   async function toggleTournamentRegistration(tournamentId, isRegistered) {
@@ -1887,9 +1934,22 @@
           const totalR = Math.max(1, ...currentTMatches.map(m => m.round_number || 1));
           const openMatches = currentTMatches.filter(m => m.status !== 'fertig' && !m.is_bye);
           const curR = openMatches.length > 0 ? Math.min(...openMatches.map(m => m.round_number || 1)) : totalR;
-          activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+
+          let participantsHtml = '<span style="font-size:12px; color:var(--text-secondary); font-style:italic;">Keine Teilnehmer gefunden</span>';
+          if (tRegs.length > 0) {
+            participantsHtml = tRegs.map(r => {
+              const pName = getProfileNameFromId(r.player_id);
+              return `<span class="player-link" style="font-size:12px; background:var(--bg-tertiary); border:1px solid var(--border); padding:3px 8px; border-radius:12px; display:inline-block; margin:2px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
+            }).join("");
+          }
+
+          activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
             <span style="font-size:13px; color:var(--text-secondary);">📍 Aktuell: ${htmlEscape(roundLabel(curR, totalR))}</span>
             <button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="openBracketForTournament('${t.id}')">🌳 Turnierbaum ansehen</button>
+          </div>
+          <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 8px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">👥 ${tRegs.length} angemeldete Spieler</span>
+            <div>${participantsHtml}</div>
           </div>`;
         }
         activeHtml += '</div></div>';
