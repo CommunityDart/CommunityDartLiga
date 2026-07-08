@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 35</title>
+  <title>CDL Dart Liga test 36</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -317,6 +317,15 @@
     }
 
     .player-link:hover {
+      text-decoration: underline;
+    }
+
+    .screenshot-link, .screenshot-link:visited {
+      color: var(--platform-color);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .screenshot-link:hover {
       text-decoration: underline;
     }
 
@@ -1586,11 +1595,11 @@
       if (m.reported_by_id === myId) {
         bodyHtml = `<div style="font-size:13px; color:var(--text-secondary);">⏳ Du hast <strong>${myLegs} : ${oppLegs}</strong> gemeldet. Warte auf Bestätigung von <strong>${htmlEscape(oppName)}</strong> (Frist bis ${deadlineStr}).</div>`;
         bodyHtml += statsLine();
-        if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank">📷 Dein Screenshot</a></div>`;
+        if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank" class="screenshot-link">📷 Dein Screenshot</a></div>`;
       } else {
         bodyHtml = `<div style="font-size:13px; margin-bottom:8px;"><strong>${htmlEscape(oppName)}</strong> hat gemeldet: du <strong>${myLegs}</strong> : <strong>${oppLegs}</strong> Gegner. Bitte bis <strong>${deadlineStr}</strong> bestätigen oder ablehnen.</div>`;
         bodyHtml += statsLine();
-        if (m.screenshot_url) bodyHtml += `<div style="margin:8px 0;"><a href="${m.screenshot_url}" target="_blank">📷 Screenshot ansehen</a></div>`;
+        if (m.screenshot_url) bodyHtml += `<div style="margin:8px 0;"><a href="${m.screenshot_url}" target="_blank" class="screenshot-link">📷 Screenshot ansehen</a></div>`;
         bodyHtml += `<button class="btn small-action-btn" style="border-color:#00d084; color:#00d084;" onclick="confirmMatchResult('${m.id}','${context}')">✅ Bestätigen</button>
           <button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35; margin-left:6px;" onclick="rejectMatchResult('${m.id}','${context}')">❌ Ablehnen</button>`;
       }
@@ -1598,7 +1607,7 @@
       const statusLabel = { confirmed: '✅ Bestätigt', auto_confirmed: '⏱️ Automatisch bestätigt (Frist abgelaufen)', admin_confirmed: '🛡️ Vom Admin final gesetzt' }[status] || '';
       bodyHtml = `<div style="font-size:13px; color:var(--text-secondary);">Ergebnis: <strong>${myLegs ?? '-'} : ${oppLegs ?? '-'}</strong> &middot; ${statusLabel}</div>`;
       bodyHtml += statsLine();
-      if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank">📷 Screenshot</a></div>`;
+      if (m.screenshot_url) bodyHtml += `<div style="margin-top:6px;"><a href="${m.screenshot_url}" target="_blank" class="screenshot-link">📷 Screenshot</a></div>`;
     }
 
     return `<div class="matchday-card" style="margin-bottom:12px;">
@@ -1933,17 +1942,17 @@
           if (tRegs.length > 0) {
             participantsHtml = tRegs.map(r => {
               const pName = getProfileNameFromId(r.player_id);
-              return `<span class="player-link" style="font-size:12px; background:var(--bg-secondary); border:1px solid var(--border); padding:3px 8px; border-radius:12px; display:inline-block; margin:2px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
+              return `<span class="player-link" style="font-size:12px; background:var(--bg-tertiary); border:1px solid var(--border); padding:3px 10px; border-radius:12px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
             }).join("");
           }
-          activeHtml += `<div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom: ${tRegs.length > 0 ? '10px' : '0'};">
-              <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">👥 ${tRegs.length} angemeldet</span>
-              ${regButtonHtml}
-            </div>
-            <div>${participantsHtml}</div>
+          activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <span style="font-size:13px; font-weight:700; color:var(--text-secondary);">👥 ${tRegs.length} angemeldet</span>
+            ${regButtonHtml}
           </div>
-          <p style="font-size: 13px; color: var(--text-secondary); font-style:italic; margin-top:10px;">Der Turnierbaum wird in Kürze vom Admin ausgelost...</p>`;
+          <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">${participantsHtml}</div>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); font-style:italic; margin-top:10px; margin-bottom:0;">Der Turnierbaum wird in Kürze vom Admin ausgelost...</p>`;
         } else {
           const totalR = Math.max(1, ...currentTMatches.map(m => m.round_number || 1));
           const openMatches = currentTMatches.filter(m => m.status !== 'fertig' && !m.is_bye);
@@ -1953,17 +1962,17 @@
           if (tRegs.length > 0) {
             participantsHtml = tRegs.map(r => {
               const pName = getProfileNameFromId(r.player_id);
-              return `<span class="player-link" style="font-size:12px; background:var(--bg-tertiary); border:1px solid var(--border); padding:3px 8px; border-radius:12px; display:inline-block; margin:2px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
+              return `<span class="player-link" style="font-size:12px; background:var(--bg-secondary); border:1px solid var(--border); padding:3px 10px; border-radius:12px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
             }).join("");
           }
 
-          activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+          activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
             <span style="font-size:13px; color:var(--text-secondary);">📍 Aktuell: ${htmlEscape(roundLabel(curR, totalR))}</span>
             <button class="btn small-action-btn" style="border-color:${pb.color}; color:${pb.color}; font-weight:800;" onclick="openBracketForTournament('${t.id}')">🌳 Turnierbaum ansehen</button>
           </div>
-          <div style="padding: 10px 12px; background: var(--bg-tertiary); border-radius: 8px;">
-            <span style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">👥 ${tRegs.length} angemeldete Spieler</span>
-            <div>${participantsHtml}</div>
+          <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:8px;">👥 ${tRegs.length} angemeldete Spieler</span>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">${participantsHtml}</div>
           </div>`;
         }
         activeHtml += '</div></div>';
