@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 27</title>
+  <title>CDL Dart Liga test 28</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -573,6 +573,37 @@
       border: none !important;
       cursor: pointer;
     }
+
+    .tournament-card {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tournament-card-header {
+      color: white;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tournament-card-header .t-title {
+      font-size: 17px;
+      font-weight: 800;
+    }
+    .tournament-card-header .t-platform-tag {
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(255,255,255,0.25);
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+    .tournament-card-body {
+      padding: 16px 18px;
+      background: var(--bg-secondary);
+    }
   </style>
 </head>
 <body>
@@ -868,14 +899,8 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Google Apps Script Web-App-URL für den Match-Screenshot-Upload nach Google
-  // Drive. Muss auf die /exec-URL deiner Bereitstellung zeigen (siehe
-  // google-apps-script-code.gs). Solange hier nur der Platzhalter steht, wird
-  // automatisch auf den bisherigen Supabase-Storage-Upload zurückgefallen.
   const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwREm3bn0TRIeo8vuYBAESxH6Xmb2krldNeTZFVOcygwCitneX__L5q_Tu81npVWRUf/exec";
 
-  // Liest eine Datei als Base64-String ein (ohne den "data:...;base64,"-Präfix),
-  // damit sie per JSON an das Apps-Script-Web-App geschickt werden kann.
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -885,15 +910,11 @@
     });
   }
 
-  // Lädt einen Match-Screenshot in den zur Liga/zum Turnier passenden
-  // Unterordner in Google Drive hoch. folderName wird 1:1 als Ordnername im
-  // Apps Script verwendet (z.B. "Autodarts Liga 2" oder ein Turniertitel).
-  // Gibt bei Erfolg die öffentliche Drive-Bild-URL zurück, sonst null.
   async function uploadScreenshotToDrive(file, folderName, matchId) {
     console.log('[Drive-Upload] Funktion gestartet. Datei:', file?.name, '| Ordner:', folderName);
     if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes('HIER_DEINE_APPS_SCRIPT')) {
       console.log('[Drive-Upload] Übersprungen - GOOGLE_APPS_SCRIPT_URL ist nicht konfiguriert.');
-      return null; // Noch nicht konfiguriert - Aufrufer fällt auf Supabase Storage zurück
+      return null;
     }
     try {
       const base64Data = await fileToBase64(file);
@@ -902,9 +923,6 @@
       const fileName = `${safeFolder}_${matchId}_${Date.now()}.${ext}`;
       console.log('[Drive-Upload] Sende Anfrage an Apps Script:', GOOGLE_APPS_SCRIPT_URL, '| Dateiname:', fileName);
 
-      // WICHTIG: Content-Type "text/plain" statt "application/json", damit der
-      // Browser keinen CORS-Preflight (OPTIONS-Request) schickt - Apps Script
-      // Web Apps beantworten Preflights sonst oft nicht korrekt.
       const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -949,7 +967,8 @@
     allMatchesCache: [],
     allTournamentMatchesCache: [],
     allTournamentsCache: [],
-    resultConfirmationHours: 48
+    resultConfirmationHours: 48,
+    tournamentConfirmationMinutes: 5
   };
 
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
@@ -1105,9 +1124,6 @@
     }
   }
 
-  // FIX: Diese Funktion hat komplett gefehlt, wurde aber unten aufgerufen.
-  // Dadurch brach das Script mit einem ReferenceError ab, BEVOR loadData()
-  // ausgeführt wurde -> deshalb luden weder Spieler noch Turniere.
   async function checkInitialSession() {
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1203,7 +1219,6 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
-  // Lädt die News-Beiträge, die im Admin-Panel unter "News verfassen" erstellt wurden
   async function loadNews() {
     try {
       const { data: newsData, error } = await supabaseClient.from('news').select('*').order('created_at', { ascending: false });
@@ -1237,9 +1252,6 @@
     }).join("");
   }
 
-  // Reaktions-Leiste unter jedem News-Beitrag: fixe Emoji-Auswahl, Klick
-  // schaltet die eigene Reaktion an/aus. Nur eingeloggte Spieler mit
-  // gefundenem Profil können reagieren.
   function renderNewsReactionBar(newsId) {
     const currentProfile = getCurrentPlayerProfile();
     const reactionsForNews = state.newsReactionsCache.filter(r => r.news_id === newsId);
@@ -1276,7 +1288,6 @@
     }
   };
 
-  // Befüllt die Saison-/Liga-Auswahl im Liga-Archiv-Tab mit den Daten aus player_history
   function populateArchivSelectors() {
     const seasonSel = document.getElementById('archivSeasonSelect');
     const leagueSel = document.getElementById('archivLeagueSelect');
@@ -1337,9 +1348,6 @@
     let html = `<table><thead><tr><th style="width: 45px; text-align:center;">P</th><th>Spieler</th><th style="width: 45px; text-align:center;">Sp</th><th style="width: 45px; text-align:center;">S</th><th style="width: 45px; text-align:center;">N</th><th style="width: 65px; text-align:center;">AVG</th><th style="width: 55px; text-align:center;">Diff</th><th style="width: 55px; text-align:center;">Pkt</th></tr></thead><tbody>`;
     rows.forEach((r, idx) => {
       const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
-      // Karten gelten ausschließlich für die aktuell ausgewählte Liga - ein Spieler
-      // der z.B. in Autodarts Liga 1 UND Scolia Liga 1 spielt und in beiden je eine
-      // gelbe Karte hat, zeigt hier pro Liga nur die Karte(n) dieser einen Liga.
       const pen = (state.penaltiesByLeague[state.activeLeague] || {})[r.id];
       let cardDot = '';
       if (pen && (pen.yellow_cards > 0 || pen.red_cards > 0)) {
@@ -1371,8 +1379,6 @@
     html += '</div>'; document.getElementById('matchesArea').innerHTML = html;
   }
 
-  // Ordnet jeder Plattform eine feste Farbe + Icon zu, damit man auf einen
-  // Blick erkennt worum es sich handelt: Autodarts = blau, DartCounter = orange, Scolia = grün.
   function platformBadge(platform) {
     const p = String(platform || '').toLowerCase();
     if (p.includes('autodart')) return { color: '#0066ff', icon: '⚫', label: platform || 'Autodarts' };
@@ -1381,16 +1387,12 @@
     return { color: '#888', icon: '⚪', label: platform || '-' };
   }
 
-  // Findet das Spieler-Profil des aktuell eingeloggten Discord-Nutzers,
-  // damit wir wissen ob er für ein Turnier bereits angemeldet ist.
   function getCurrentPlayerProfile() {
     if (!state.currentUser) return null;
     const u = state.currentUser;
     return findProfile(u.user_metadata?.provider_id) || findProfile(u.user_metadata?.sub) || findProfile(u.id) || (u.email ? findProfile(u.email) : null) || null;
   }
 
-  // "Meine Spiele" im Menü nur zeigen, wenn eingeloggt UND einer Liga zugeteilt
-  // (sonst gäbe es dort ohnehin nichts zu melden).
   function updateMyGamesNavVisibility() {
     const btn = document.getElementById('navMyGames');
     if (!btn) return;
@@ -1399,19 +1401,13 @@
     btn.style.display = (state.currentUser && inLeague) ? 'inline-block' : 'none';
   }
 
-  // Zeigt alle Profile mit gesetztem "show_membership_card"-Haken als
-  // schlichte ID-Ausweis-Karten (Foto, Name, Mitglied seit, Wohnort, Plattformen).
   function renderMembercards() {
     const area = document.getElementById('membercardGridArea');
     if (!area) return;
-    // Debug-Ausgabe: in der Browser-Konsole (F12) siehst du für jedes Profil
-    // den rohen Wert von show_membership_card, damit man Speicher- von Anzeige-Fehlern unterscheiden kann.
     console.log('Mitgliederkarte-Check:', state.allProfilesCache.map(p => ({
       name: p.display_name || p.discord_name || p.username,
       show_membership_card: p.show_membership_card
     })));
-    // Bewusst locker geprüft (truthy statt strikt === true), falls der Wert
-    // z.B. als String "true" oder 1 zurückkommt statt als reines Boolean.
     const members = state.allProfilesCache.filter(p => p.show_membership_card === true || p.show_membership_card === 'true' || p.show_membership_card === 1);
 
     renderMembercardMap(members);
@@ -1450,12 +1446,9 @@
     }).join("") + '</div>';
   }
 
-  // Leaflet-Weltkarte mit einem Pin pro Mitglied (Koordinaten kommen aus
-  // dem Geocoding, das profil.html beim Speichern von PLZ/Ort ausführt).
   let membercardMapInstance = null;
   let membercardMarkersLayer = null;
 
-  // Dartpfeil statt Standard-Leaflet-Nadel
   const dartMarkerIcon = L.divIcon({
     html: '<div style="font-size:26px; line-height:1; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); transform: rotate(0deg);">🎯</div>',
     className: 'dart-marker-icon',
@@ -1468,8 +1461,6 @@
     const mapEl = document.getElementById('membercardMap');
     if (!mapEl || typeof L === 'undefined') return;
 
-    // Supabase liefert "numeric"-Spalten teils als String statt Zahl zurück -
-    // deshalb hier explizit in echte Zahlen umwandeln und ungültige Werte rauswerfen.
     const withCoords = members
       .map(p => ({ ...p, _lat: parseFloat(p.latitude), _lon: parseFloat(p.longitude) }))
       .filter(p => !isNaN(p._lat) && !isNaN(p._lon));
@@ -1501,26 +1492,17 @@
     });
 
     membercardMapInstance.fitBounds(bounds, { padding: [30, 30], maxZoom: 10 });
-    // Leaflet braucht einen Größen-Refresh, falls die Karte beim ersten
-    // Rendern in einem unsichtbaren Tab (display:none) lag.
     setTimeout(() => { if (membercardMapInstance) membercardMapInstance.invalidateSize(); }, 150);
   }
 
-  // ============================================================
-  // MEINE SPIELE: Spieler melden Ergebnisse selbst, Gegner bestätigt,
-  // nach Ablauf der Admin-Frist gilt es automatisch als final.
-  // ============================================================
-
-  // Baut das Plattform+Spieltag/Runde-Badge für eine Zeile in "Meine Spiele".
-  // Liga: Plattform+Nummer kommt direkt aus m.league_name (z.B. "Autodarts Liga 2").
-  // Turnier: Plattform kommt aus der zugehörigen tournaments-Zeile, Runde aus m.matchday.
   function matchContextBadge(m, context) {
     let platformSource = '';
     let subLabel = '';
     if (context === 'tournament') {
       const t = state.allTournamentsCache.find(x => x.id === m.tournament_id);
       platformSource = t ? t.platform : '';
-      subLabel = (t ? t.title : 'Turnier') + ' · Runde ' + (m.matchday || 1);
+      const totalR = t ? Math.max(1, ...state.allTournamentMatchesCache.filter(x => x.tournament_id === t.id).map(x => x.round_number || 1)) : 1;
+      subLabel = (t ? t.title : 'Turnier') + ' · ' + roundLabel(m.round_number || 1, totalR);
     } else {
       platformSource = m.league_name || '';
       subLabel = (m.league_name || 'Liga') + ' · Spieltag ' + (m.matchday || 1);
@@ -1544,7 +1526,7 @@
     }
 
     const myLeagueMatches = state.allMatchesCache.filter(m => m.player1_id === profile.id || m.player2_id === profile.id);
-    const myTourMatches = state.allTournamentMatchesCache.filter(m => m.player1_id === profile.id || m.player2_id === profile.id);
+    const myTourMatches = state.allTournamentMatchesCache.filter(m => (m.player1_id === profile.id || m.player2_id === profile.id) && !m.is_bye);
 
     let html = `<h3 style="margin-bottom:12px; color:var(--platform-color);">⚡ Liga-Spiele</h3>`;
     html += myLeagueMatches.length > 0 ? myLeagueMatches.map(m => buildMyGameRow(m, profile, 'league')).join("") : '<div class="empty">Keine Liga-Spiele gefunden.</div>';
@@ -1567,8 +1549,15 @@
     const oppHf = isP1 ? m.player2_highfinish : m.player1_highfinish;
     const status = m.result_status || 'offen';
 
-    // Zeigt AVG (immer, wenn vorhanden) und Highfinish (nur wenn > 0 gemeldet) für
-    // beide Spieler unterhalb des Ergebnisses an.
+    if (!oppId && context === 'tournament') {
+      return `<div class="matchday-card" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+          <span style="font-weight:700; color:var(--text-secondary);">Warte auf Gegner aus vorheriger Runde...</span>
+          ${matchContextBadge(m, context)}
+        </div>
+      </div>`;
+    }
+
     function statsLine() {
       let parts = [];
       if (myAvg !== null && myAvg !== undefined) parts.push(`Dein AVG: <strong>${parseFloat(myAvg).toFixed(2)}</strong>`);
@@ -1577,6 +1566,8 @@
       if (oppHf) parts.push(`Highfinish Gegner: <strong>${oppHf}</strong>`);
       return parts.length > 0 ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">${parts.join(' &middot; ')}</div>` : '';
     }
+
+    const confirmWindowLabel = context === 'tournament' ? `${state.tournamentConfirmationMinutes} Minuten` : `${state.resultConfirmationHours} Stunden`;
 
     let bodyHtml = '';
     if (status === 'offen') {
@@ -1607,6 +1598,7 @@
         <span style="font-weight:700;">vs ${htmlEscape(oppName)}</span>
         ${matchContextBadge(m, context)}
       </div>
+      ${status === 'offen' && context === 'tournament' ? `<div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">⏱️ Bestätigungsfrist bei Turnieren: ${confirmWindowLabel}</div>` : ''}
       ${bodyHtml}
     </div>`;
   }
@@ -1653,8 +1645,6 @@
     const fileInput = document.getElementById(`screenshot-${matchId}`);
     const file = fileInput && fileInput.files[0];
     if (file) {
-      // Ordnername = Liga (bei Liga-Spielen) bzw. Turniertitel (bei Turnier-Spielen),
-      // damit die Screenshots in Google Drive automatisch nach Liga/Turnier sortiert werden.
       const folderName = context === 'tournament'
         ? (state.allTournamentsCache.find(t => t.id === m.tournament_id)?.title || 'Turniere')
         : (m.league_name || 'Unbekannte Liga');
@@ -1662,8 +1652,6 @@
       screenshotUrl = await uploadScreenshotToDrive(file, folderName, matchId);
 
       if (!screenshotUrl) {
-        // Fallback: Google Drive nicht konfiguriert oder gerade nicht erreichbar -
-        // dann wie bisher in Supabase Storage ablegen, damit der Screenshot nie verloren geht.
         const path = `${matchId}_${Date.now()}_${file.name}`.replace(/\s+/g, '_');
         const { error: uploadErr } = await supabaseClient.storage.from('match-screenshots').upload(path, file);
         if (!uploadErr) {
@@ -1683,7 +1671,11 @@
     const oppHfVal = oppHfEl.value ? parseInt(oppHfEl.value) : null;
     const player1_highfinish = isP1 ? myHfVal : oppHfVal;
     const player2_highfinish = isP1 ? oppHfVal : myHfVal;
-    const deadline = new Date(Date.now() + (state.resultConfirmationHours * 3600 * 1000)).toISOString();
+
+    const deadlineMs = context === 'tournament'
+      ? state.tournamentConfirmationMinutes * 60 * 1000
+      : state.resultConfirmationHours * 3600 * 1000;
+    const deadline = new Date(Date.now() + deadlineMs).toISOString();
 
     const { error } = await supabaseClient.from(table).update({
       legs_player1, legs_player2,
@@ -1698,10 +1690,26 @@
     }).eq('id', matchId);
 
     if (error) { alert('Fehler beim Melden: ' + error.message); return; }
-    alert(`Ergebnis gemeldet! Dein Gegner hat jetzt ${state.resultConfirmationHours} Stunden Zeit zu bestätigen.`);
+    const windowLabel = context === 'tournament' ? `${state.tournamentConfirmationMinutes} Minuten` : `${state.resultConfirmationHours} Stunden`;
+    alert(`Ergebnis gemeldet! Dein Gegner hat jetzt ${windowLabel} Zeit zu bestätigen.`);
     await loadData();
     renderMyGames();
   };
+
+  // Wird nach jedem final gesetzten Turnier-Ergebnis aufgerufen: ermittelt den
+  // Sieger und trägt ihn automatisch in die nächste Runde ein.
+  async function advanceTournamentWinner(matchId) {
+    const { data: m } = await supabaseClient.from('tournament_matches')
+      .select('player1_id, player2_id, legs_player1, legs_player2, next_match_id, next_match_slot')
+      .eq('id', matchId).single();
+    if (!m || m.legs_player1 === null || m.legs_player2 === null || m.legs_player1 === m.legs_player2) return;
+    const winnerId = m.legs_player1 > m.legs_player2 ? m.player1_id : m.player2_id;
+    await supabaseClient.from('tournament_matches').update({ winner_id: winnerId }).eq('id', matchId);
+    if (m.next_match_id) {
+      const field = m.next_match_slot === 1 ? 'player1_id' : 'player2_id';
+      await supabaseClient.from('tournament_matches').update({ [field]: winnerId }).eq('id', m.next_match_id);
+    }
+  }
 
   window.confirmMatchResult = async function(matchId, context) {
     const table = context === 'tournament' ? 'tournament_matches' : 'matches';
@@ -1714,6 +1722,7 @@
       status: 'fertig'
     }).eq('id', matchId);
     if (error) { alert('Fehler: ' + error.message); return; }
+    if (context === 'tournament') await advanceTournamentWinner(matchId);
     alert('Ergebnis bestätigt!');
     await loadData();
     renderMyGames();
@@ -1735,12 +1744,23 @@
     renderMyGames();
   };
 
-  // ============================================================
-  // TURNIERBAUM: Auswahl eines Turniers, Runden als Spalten
-  // (basiert auf den generierten Runden aus dem Admin-Panel;
-  // da Turniere aktuell im Rundensystem statt K.O. laufen, ist
-  // dies eine Runden-Ansicht statt eines klassischen K.O.-Baums)
-  // ============================================================
+  function roundLabel(roundNumber, totalRounds) {
+    const fromEnd = totalRounds - roundNumber;
+    if (fromEnd === 0) return '🏆 Finale';
+    if (fromEnd === 1) return '🥈 Halbfinale';
+    if (fromEnd === 2) return 'Viertelfinale';
+    if (fromEnd === 3) return 'Achtelfinale';
+    return `Runde ${roundNumber}`;
+  }
+
+  function openBracketForTournament(tournamentId) {
+    switchView('bracket');
+    setTimeout(() => {
+      const sel = document.getElementById('bracketTournamentSelect');
+      if (sel) { sel.value = tournamentId; renderBracket(); }
+    }, 0);
+  }
+
   function renderBracketSelector() {
     const sel = document.getElementById('bracketTournamentSelect');
     if (!sel) return;
@@ -1759,24 +1779,26 @@
     if (!tid) { area.innerHTML = '<div class="empty">Wähle ein Turnier aus, um den Turnierbaum zu sehen.</div>'; return; }
 
     const matches = state.allTournamentMatchesCache.filter(m => m.tournament_id === tid);
-    if (matches.length === 0) { area.innerHTML = '<div class="empty">Für dieses Turnier wurde noch kein Spielplan generiert.</div>'; return; }
+    if (matches.length === 0) { area.innerHTML = '<div class="empty">Für dieses Turnier wurde noch kein Turnierbaum ausgelost.</div>'; return; }
 
     let grouped = {};
-    matches.forEach(m => { const r = m.matchday || 1; if (!grouped[r]) grouped[r] = []; grouped[r].push(m); });
-    const rounds = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+    matches.forEach(m => { const r = m.round_number || 1; if (!grouped[r]) grouped[r] = []; grouped[r].push(m); });
+    const roundNumbers = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+    const totalRounds = roundNumbers.length;
 
-    let html = '<div style="display:flex; gap:20px; overflow-x:auto; padding-bottom:10px;">';
-    rounds.forEach(r => {
-      html += `<div style="min-width:230px; flex-shrink:0;">
-        <div class="matchday-title" style="margin-bottom:10px;">Runde ${r}</div>
-        <div style="display:flex; flex-direction:column; gap:14px;">`;
+    let html = '<div style="display:flex; gap:24px; overflow-x:auto; padding-bottom:10px; align-items:stretch;">';
+    roundNumbers.forEach(r => {
+      grouped[r].sort((a, b) => (a.bracket_slot || 0) - (b.bracket_slot || 0));
+      html += `<div style="min-width:230px; flex-shrink:0; display:flex; flex-direction:column; justify-content:space-around; gap:${Math.pow(2, r) * 10}px;">
+        <div class="matchday-title" style="margin-bottom:6px;">${roundLabel(r, totalRounds)}</div>`;
       grouped[r].forEach(m => {
-        const p1Name = getProfileNameFromId(m.player1_id);
-        const p2Name = getProfileNameFromId(m.player2_id);
+        const p1Name = m.player1_id ? getProfileNameFromId(m.player1_id) : (m.is_bye ? '—' : 'TBD');
+        const p2Name = m.player2_id ? getProfileNameFromId(m.player2_id) : (m.is_bye ? 'Freilos' : 'TBD');
         const isDone = m.status === 'fertig';
-        const p1Win = isDone && m.legs_player1 > m.legs_player2;
-        const p2Win = isDone && m.legs_player2 > m.legs_player1;
-        html += `<div class="matchday-card" style="padding:10px;">
+        const p1Win = isDone && m.winner_id && m.winner_id === m.player1_id;
+        const p2Win = isDone && m.winner_id && m.winner_id === m.player2_id;
+        html += `<div class="matchday-card" style="padding:10px; border-left:3px solid ${m.is_bye ? '#90a9b7' : (isDone ? '#00d084' : 'var(--border)')};">
+          ${m.is_bye ? '<div style="font-size:10px; color:#90a9b7; font-weight:700; margin-bottom:4px;">🎟️ FREILOS</div>' : ''}
           <div style="display:flex; justify-content:space-between; padding:4px 0; ${p1Win ? 'font-weight:800; color:#00d084;' : ''}">
             <span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player1_id || '')}','${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span>
             <span>${m.legs_player1 ?? '-'}</span>
@@ -1788,7 +1810,7 @@
           </div>
         </div>`;
       });
-      html += '</div></div>';
+      html += '</div>';
     });
     html += '</div>';
     area.innerHTML = html;
@@ -1811,10 +1833,6 @@
     }
   }
 
-  // FIX: Turnier-Archiv (abgeschlossene Cups) wird jetzt NUR noch in der
-  // Turniere-Ansicht (mainCompletedArea) angezeigt, nicht mehr zusätzlich
-  // im Liga-Archiv-Tab. Die Karte "Turnier Archiv & Hall of Fame" wurde
-  // dafür aus dem Liga-Archiv-Tab entfernt (siehe HTML oben).
   function renderTournamentsData(tournaments, tourMatches, registrations) {
     registrations = registrations || [];
     const mainActiveArea = document.getElementById('mainActiveTournamentsArea');
@@ -1828,9 +1846,13 @@
     if (activeTs.length > 0) {
       activeTs.forEach(t => {
         const pb = platformBadge(t.platform);
-        activeHtml += `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); border-left: 4px solid ${pb.color}; padding-left: 12px;">
-          <h3 style="color: ${pb.color}; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">🏆 ${htmlEscape(t.title)} <span style="font-size:11px; font-weight:bold; background: ${pb.color}1A; color: ${pb.color}; padding: 3px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">${pb.icon} ${htmlEscape(pb.label)}</span></h3>`;
-        
+        activeHtml += `<div class="tournament-card">
+          <div class="tournament-card-header" style="background:${pb.color};">
+            <span class="t-title">${pb.icon} ${htmlEscape(t.title)}</span>
+            <span class="t-platform-tag">${htmlEscape(pb.label)}</span>
+          </div>
+          <div class="tournament-card-body">`;
+
         const currentTMatches = tourMatches.filter(m => m.tournament_id === t.id);
         const tRegs = registrations.filter(r => r.tournament_id === t.id);
         const isRegistered = !!(currentProfile && tRegs.some(r => r.player_id === currentProfile.id));
@@ -1838,13 +1860,13 @@
         if (currentTMatches.length === 0) {
           let regButtonHtml;
           if (!state.currentUser) {
-            regButtonHtml = `<button class="btn small-action-btn" onclick="switchView('discord')">👤 Zum Anmelden einloggen</button>`;
+            regButtonHtml = `<button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="switchView('discord')">👤 Zum Anmelden einloggen</button>`;
           } else if (!currentProfile) {
             regButtonHtml = `<span style="font-size:12px; color:var(--text-secondary);">Profil nicht gefunden - bitte Admin kontaktieren</span>`;
           } else if (isRegistered) {
-            regButtonHtml = `<button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35;" onclick="toggleTournamentRegistration('${t.id}', true)">✖️ Abmelden</button>`;
+            regButtonHtml = `<button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35; font-weight:800;" onclick="toggleTournamentRegistration('${t.id}', true)">✖️ Abmelden</button>`;
           } else {
-            regButtonHtml = `<button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none;" onclick="toggleTournamentRegistration('${t.id}', false)">✅ Anmelden</button>`;
+            regButtonHtml = `<button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="toggleTournamentRegistration('${t.id}', false)">✅ Anmelden</button>`;
           }
           let participantsHtml = '<span style="font-size:12px; color:var(--text-secondary); font-style:italic;">Noch keine Anmeldungen</span>';
           if (tRegs.length > 0) {
@@ -1853,35 +1875,24 @@
               return `<span class="player-link" style="font-size:12px; background:var(--bg-secondary); border:1px solid var(--border); padding:3px 8px; border-radius:12px; display:inline-block; margin:2px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
             }).join("");
           }
-          activeHtml += `<div style="margin: 10px 0 16px 0; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+          activeHtml += `<div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom: ${tRegs.length > 0 ? '10px' : '0'};">
               <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">👥 ${tRegs.length} angemeldet</span>
               ${regButtonHtml}
             </div>
             <div>${participantsHtml}</div>
-          </div>`;
-          activeHtml += '<p style="font-size: 13px; color: var(--text-secondary); font-style:italic;">Der Spielplan für diesen Cup wird in Kürze vom Admin ausgelost...</p>';
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); font-style:italic; margin-top:10px;">Der Turnierbaum wird in Kürze vom Admin ausgelost...</p>`;
         } else {
-          let grouped = {};
-          currentTMatches.forEach(m => {
-            const rKey = m.matchday ? `Runde ${m.matchday}` : 'Runde 1';
-            if (!grouped[rKey]) grouped[rKey] = []; grouped[rKey].push(m);
-          });
-
-          activeHtml += '<div class="matchdays-grid">';
-          Object.entries(grouped).forEach(([roundTitle, roundRows]) => {
-            activeHtml += `<div class="matchday-card" style="background: var(--bg-secondary);"><div class="matchday-title">⚡ ${htmlEscape(roundTitle)}</div>`;
-            roundRows.forEach(m => {
-              const p1Name = getProfileNameFromId(m.player1_id);
-              const p2Name = getProfileNameFromId(m.player2_id);
-              const status = m.status === 'done' || m.status === 'fertig' ? 'done' : 'open';
-              activeHtml += `<div class="match-row"><div class="match-players"><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player1_id)}', '${htmlEscape(p1Name)}')">${htmlEscape(p1Name)}</span><span style="color:var(--text-secondary); font-size:10px;">vs</span><span class="player-link" onclick="openPlayerCard('${htmlEscape(m.player2_id)}', '${htmlEscape(p2Name)}')">${htmlEscape(p2Name)}</span></div><span class="match-score" style="font-weight:700;">${m.legs_player1 ?? '-'} : ${m.legs_player2 ?? '-'}</span><span class="badge ${status}">${status === 'done' ? '✓' : '⏳'}</span></div>`;
-            });
-            activeHtml += '</div>';
-          });
-          activeHtml += '</div>';
+          const totalR = Math.max(1, ...currentTMatches.map(m => m.round_number || 1));
+          const openMatches = currentTMatches.filter(m => m.status !== 'fertig' && !m.is_bye);
+          const curR = openMatches.length > 0 ? Math.min(...openMatches.map(m => m.round_number || 1)) : totalR;
+          activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <span style="font-size:13px; color:var(--text-secondary);">📍 Aktuell: ${htmlEscape(roundLabel(curR, totalR))}</span>
+            <button class="btn small-action-btn" style="background:${pb.color}; color:white; border:none; font-weight:800;" onclick="openBracketForTournament('${t.id}')">🌳 Turnierbaum ansehen</button>
+          </div>`;
         }
-        activeHtml += '</div>';
+        activeHtml += '</div></div>';
       });
       
       if (mainActiveArea) mainActiveArea.innerHTML = activeHtml;
@@ -1899,6 +1910,7 @@
             <div style="padding: 4px 0; font-size: 13px; color: #c0c0c0; font-weight: 600;">🥈 2. Platz: ${htmlEscape(t.second_place_name || '-')}</div>
             <div style="padding: 4px 0; font-size: 13px; color: #cd7f32; font-weight: 600;">🥉 3. Platz: ${htmlEscape(t.third_place_name || '-')}</div>
             <div style="font-size: 11px; color: ${pb.color}; margin-top: 10px; text-transform: uppercase; font-weight: 700; display:flex; align-items:center; gap:4px;">${pb.icon} ${htmlEscape(pb.label)}</div>
+            <button class="btn small-action-btn" style="margin-top:10px; border-color:#3ddc97; color:#3ddc97;" onclick="openBracketForTournament('${t.id}')">🌳 Baum ansehen</button>
           </div>
         `; }).join("")}
       </div>`;
@@ -1924,6 +1936,7 @@
       const sys = (sysData && sysData.length > 0) ? sysData[0] : null;
       state.currentSeason = sys?.current_season || 'Saison 1';
       state.resultConfirmationHours = sys?.result_confirmation_hours || 48;
+      state.tournamentConfirmationMinutes = sys?.tournament_confirmation_minutes || 5;
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
       let rulesText = sys?.regelwerk_html || sys?.rules || sys?.regelwerk || sys?.rules_text || "";
@@ -1938,8 +1951,6 @@
       state.allMatchesCache = matches;
       document.getElementById('statMatches').innerText = matches.length;
 
-      // Karten/Strafen pro Liga laden - wichtig: Zuordnung bleibt strikt pro Liga,
-      // damit z.B. eine gelbe Karte in Scolia Liga 1 nicht auch in Autodarts Liga 1 auftaucht.
       const { data: penaltiesData } = await supabaseClient.from('league_penalties').select('*');
       state.penaltiesByLeague = {};
       (penaltiesData || []).forEach(p => {
@@ -1948,7 +1959,6 @@
         state.penaltiesByLeague[matchedLeague][p.player_id] = { yellow_cards: p.yellow_cards || 0, red_cards: p.red_cards || 0 };
       });
 
-      // Saison-Archiv (player_history) laden für den Archiv-Tab
       const { data: historyData } = await supabaseClient.from('player_history').select('*');
       state.playerHistoryCache = historyData || [];
       populateArchivSelectors();
@@ -1959,12 +1969,6 @@
         const stats = {};
         state.allProfilesCache.forEach(p => {
           if (matchLeagueName(p.assigned_ad_league, league) || matchLeagueName(p.assigned_dc_league, league) || matchLeagueName(p.assigned_sc_league, league)) {
-            // FIX: Vorher wurde der Name NUR aus discord_name/username gelesen.
-            // Ist discord_name leer (bekannter Registrierungs-Bug) und es gibt
-            // kein username-Feld, war pName "undefined" -> isIdString() gab
-            // dann "true" zurück -> der eigentlich vorhandene display_name/real_name
-            // wurde komplett ignoriert und stattdessen "Spieler" angezeigt.
-            // Jetzt: gleiche vollständige Fallback-Kette wie in getProfileNameFromId().
             const pName = p.display_name || p.username || p.discord_name || p.real_name || p.full_name;
             stats[p.id] = { id: p.id, name: (pName && !isIdString(pName)) ? pName : 'Spieler', wins: 0, losses: 0, legDiff: 0, points: 0, gamesPlayed: 0, avgSum: 0, avgCount: 0 };
           }
@@ -2008,12 +2012,10 @@
     } catch (error) { console.error("Fehler im Daten-Core:", error); }
   }
 
-  // Lädt Turniere, Turnier-Matches und Anmeldungen und rendert sie neu.
-  // Wird beim initialen Laden UND nach jeder An-/Abmeldung erneut aufgerufen.
   async function loadTournamentsData() {
     try {
       const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
-      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, matchday, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url');
+      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, round_number, bracket_slot, is_bye, winner_id, next_match_id, next_match_slot, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url');
       const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
       state.allTournamentsCache = tournaments || [];
       state.allTournamentMatchesCache = tourMatches || [];
@@ -2023,8 +2025,6 @@
     } catch(tErr) { console.error("Turnierdaten Ladefehler abgefangen:", tErr); }
   }
 
-  // Setzt abgelaufene, noch unbestätigte Ergebnisse (Liga + Turnier) automatisch
-  // auf "final" - läuft bei jedem Seitenaufruf, da es keinen echten Server-Cron gibt.
   async function autoConfirmExpiredResults() {
     const nowIso = new Date().toISOString();
     try {
@@ -2032,10 +2032,19 @@
         .update({ result_status: 'auto_confirmed', status: 'fertig' })
         .eq('result_status', 'pending_confirmation')
         .lt('confirmation_deadline', nowIso);
-      await supabaseClient.from('tournament_matches')
-        .update({ result_status: 'auto_confirmed', status: 'fertig' })
+
+      const { data: expiredT } = await supabaseClient.from('tournament_matches')
+        .select('id')
         .eq('result_status', 'pending_confirmation')
         .lt('confirmation_deadline', nowIso);
+
+      if (expiredT && expiredT.length > 0) {
+        const ids = expiredT.map(m => m.id);
+        await supabaseClient.from('tournament_matches')
+          .update({ result_status: 'auto_confirmed', status: 'fertig' })
+          .in('id', ids);
+        for (const m of expiredT) { await advanceTournamentWinner(m.id); }
+      }
     } catch (e) { console.error('Auto-Bestätigung fehlgeschlagen:', e); }
   }
 
