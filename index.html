@@ -1105,10 +1105,40 @@
     return xp;
   }
 
+  // Dart-thematische Rang-Stufen statt generischer Level-Zahlen. Farbe, Icon-
+  // Größe und Glow werden mit jedem Rang intensiver.
+  function getLevelTier(level) {
+    if (level >= 50) return { color: '#7f77dd', name: 'Nine-Darter', hexSize: 60 };
+    if (level >= 30) return { color: '#4fd8e0', name: '180-Werfer', hexSize: 56 };
+    if (level >= 20) return { color: '#ffd700', name: 'Checkout-Spezialist', hexSize: 52 };
+    if (level >= 10) return { color: '#c0c0c0', name: 'Scorer', hexSize: 48 };
+    return { color: '#cd7f32', name: 'Dart-Neuling', hexSize: 48 };
+  }
+
+  // Dartscheibe als Icon statt Stern - bei Nine-Darter (höchster Rang) trifft
+  // ein Pfeil zusätzlich das Bullseye.
+  function getLevelIconInner(tier, level) {
+    const color = tier.color;
+    let inner = `<circle cx="16" cy="16" r="10" fill="none" stroke="${color}" stroke-width="2"/><circle cx="16" cy="16" r="6" fill="none" stroke="${color}" stroke-width="2"/><circle cx="16" cy="16" r="2" fill="${color}"/>`;
+    if (level >= 50) inner += `<path d="M16 16 L24 4" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`;
+    return inner;
+  }
+
+  function renderLevelHexHtml(level) {
+    const tier = getLevelTier(level);
+    const size = tier.hexSize;
+    const iconSize = Math.round(size * 0.5);
+    return `<div title="${htmlEscape(tier.name)}" style="width:${size}px; height:${size}px; position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+      <div style="position:absolute; inset:0; clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%); background:${tier.color}26; box-shadow:0 0 ${Math.round(size / 4)}px ${tier.color}99;"></div>
+      <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 32 32" style="position:relative;">${getLevelIconInner(tier, level)}</svg>
+    </div>`;
+  }
+
   function renderLevelBadgeHtml(level, size) {
     size = size || 'normal';
     const big = size === 'big';
-    return `<span style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:${big ? '13px' : '11px'}; background:var(--platform-color); color:white; padding:${big ? '4px 10px' : '2px 8px'}; border-radius:12px;">⭐ Lvl ${level}</span>`;
+    const tier = getLevelTier(level);
+    return `<span style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:${big ? '13px' : '11px'}; background:${tier.color}; color:#1a1f36; padding:${big ? '4px 10px' : '2px 8px'}; border-radius:12px;">Lvl ${level}${big ? ` · ${htmlEscape(tier.name)}` : ''}</span>`;
   }
 
   function renderXpProgressBarHtml(progress) {
@@ -1255,7 +1285,10 @@
       const xp = computePlayerXp(p.id);
       const progress = levelProgress(xp);
       levelHtml = `<div style="text-align:center; margin-bottom:14px;">
-        ${renderLevelBadgeHtml(progress.level, 'big')}
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:8px;">
+          ${renderLevelHexHtml(progress.level)}
+          ${renderLevelBadgeHtml(progress.level, 'big')}
+        </div>
         ${renderXpProgressBarHtml(progress)}
       </div>`;
 
