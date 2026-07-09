@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kommandozentrale - Admin Dashboard v3</title>
+    <title>Kommandozentrale - Admin Dashboard v2</title>
     
     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -103,6 +103,7 @@
         <button class="tab-btn" onclick="switchTab('tabNews')">5. News verfassen</button>
         <button class="tab-btn" onclick="switchTab('tabRegelwerk')">6. Regelwerk bearbeiten</button>
         <button class="tab-btn" onclick="switchTab('tabBadges')">🏅 7. Badges</button>
+        <button class="tab-btn" onclick="switchTab('tabLevel')">⭐ 8. Level-System</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -364,6 +365,31 @@
             </table>
         </div>
     </div>
+
+    <div id="tabLevel" class="tab-content">
+        <h2>⭐ Level-System konfigurieren</h2>
+        <p class="meta-text" style="margin-bottom:12px;">XP werden nicht gespeichert, sondern live aus Matches, Turnier-Badges und News-Reaktionen berechnet. Hier stellst du nur ein, wie viele XP welche Aktion bringt. Level-Kurve: Level N → N+1 kostet 50×N XP (moderat steigend, kein Fix-Wert).</p>
+
+        <div class="config-box">
+            <h3>🎯 XP-Werte pro Aktion</h3>
+            <div class="config-row">
+                <label>Spiel abgeschlossen: <input type="number" id="xpMatchPlayed" class="num-input" value="10" min="0" style="width:70px;"> XP</label>
+                <label>Spiel gewonnen (zusätzlich): <input type="number" id="xpMatchWon" class="num-input" value="15" min="0" style="width:70px;"> XP</label>
+            </div>
+            <div class="config-row">
+                <label>Turnierteilnahme: <input type="number" id="xpTournamentParticipation" class="num-input" value="20" min="0" style="width:70px;"> XP</label>
+                <label>Turniersieg (1. Platz): <input type="number" id="xpTournamentWinner" class="num-input" value="100" min="0" style="width:70px;"> XP</label>
+            </div>
+            <div class="config-row">
+                <label>Turnier 2. Platz: <input type="number" id="xpTournamentSecond" class="num-input" value="50" min="0" style="width:70px;"> XP</label>
+                <label>Turnier 3. Platz: <input type="number" id="xpTournamentThird" class="num-input" value="25" min="0" style="width:70px;"> XP</label>
+            </div>
+            <div class="config-row">
+                <label>News-Reaktion: <input type="number" id="xpNewsReaction" class="num-input" value="2" min="0" style="width:70px;"> XP</label>
+                <button class="card-btn yellow" onclick="saveXpConfig()">💾 Speichern</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -499,6 +525,7 @@
         if (tabId === 'tabZuteilung') loadWaitingList();
         if (tabId === 'tabTournaments') document.getElementById('tournamentManagerArea').style.display='none';
         if (tabId === 'tabBadges') loadBadgesTab();
+        if (tabId === 'tabLevel') loadXpConfig();
     }
 
     function formatAllPlattformNames(prof) {
@@ -1588,6 +1615,36 @@
         const { error } = await supabaseClient.from('player_badges').delete().eq('id', badgeId);
         if (error) { alert("❌ Fehler: " + error.message); return; }
         loadBadgesTab();
+    };
+
+    async function loadXpConfig() {
+        if (!supabaseClient) return;
+        const { data } = await supabaseClient.from('system_settings').select('xp_match_played, xp_match_won, xp_tournament_participation, xp_tournament_winner, xp_tournament_second, xp_tournament_third, xp_news_reaction').eq('id', 1).single();
+        if (!data) return;
+        const set = (id, val, fallback) => { const el = document.getElementById(id); if (el && val !== null && val !== undefined) el.value = val; else if (el) el.value = fallback; };
+        set('xpMatchPlayed', data.xp_match_played, 10);
+        set('xpMatchWon', data.xp_match_won, 15);
+        set('xpTournamentParticipation', data.xp_tournament_participation, 20);
+        set('xpTournamentWinner', data.xp_tournament_winner, 100);
+        set('xpTournamentSecond', data.xp_tournament_second, 50);
+        set('xpTournamentThird', data.xp_tournament_third, 25);
+        set('xpNewsReaction', data.xp_news_reaction, 2);
+    }
+
+    window.saveXpConfig = async function() {
+        const val = (id) => parseInt(document.getElementById(id).value) || 0;
+        const updates = {
+            xp_match_played: val('xpMatchPlayed'),
+            xp_match_won: val('xpMatchWon'),
+            xp_tournament_participation: val('xpTournamentParticipation'),
+            xp_tournament_winner: val('xpTournamentWinner'),
+            xp_tournament_second: val('xpTournamentSecond'),
+            xp_tournament_third: val('xpTournamentThird'),
+            xp_news_reaction: val('xpNewsReaction')
+        };
+        const { error } = await supabaseClient.from('system_settings').update(updates).eq('id', 1);
+        if (error) alert("❌ Fehler: " + error.message);
+        else alert("✅ XP-Werte gespeichert! Gelten sofort für alle neu berechneten Level auf der Startseite.");
     };
 
     async function initAdmin() {
