@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kommandozentrale - Admin Dashboard v2</title>
+    <title>Kommandozentrale - Admin Dashboard v3</title>
     
     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -102,6 +102,7 @@
         <button class="tab-btn" onclick="switchTab('tabTournaments')">🏆 4. Turniere</button>
         <button class="tab-btn" onclick="switchTab('tabNews')">5. News verfassen</button>
         <button class="tab-btn" onclick="switchTab('tabRegelwerk')">6. Regelwerk bearbeiten</button>
+        <button class="tab-btn" onclick="switchTab('tabBadges')">🏅 7. Badges</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -315,6 +316,54 @@
         <div id="ruleEditor" class="editor-container"></div>
         <button class="save-banner-btn" onclick="saveRegelwerkHtml()" style="margin-top: 10px; background: #3ddc97; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">💾 Regelwerk live speichern</button>
     </div>
+
+    <div id="tabBadges" class="tab-content">
+        <h2>🏅 Abzeichen verwalten</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Turniersieger/Zweiter/Dritter werden beim Abschließen eines Turniers automatisch (inkl. Turnier-Plattform) vergeben, "Teilnehmer Saison X" automatisch beim Beenden einer Liga-Saison. Hier kannst du zusätzlich manuell Abzeichen vergeben (z.B. Website-Tester) oder Abzeichen wieder entfernen. Die Farbe des Abzeichens richtet sich nach der gewählten Plattform (Blau=Autodarts, Orange=DartCounter, Grün=Scolia); ohne Plattform ist es neutral lila.</p>
+
+        <div class="config-box">
+            <h3>➕ Abzeichen manuell vergeben</h3>
+            <div class="config-row">
+                <select id="badgePlayerSelect" class="league-select" style="min-width:220px;">
+                    <option value="">-- Spieler wählen --</option>
+                </select>
+                <select id="badgeTypeSelect" class="league-select">
+                    <option value="teilnehmer">Teilnehmer</option>
+                    <option value="turniersieger">Turniersieger</option>
+                    <option value="turnier_zweiter">Turnier-Zweiter</option>
+                    <option value="turnier_dritter">Turnier-Dritter</option>
+                    <option value="website_tester" selected>Website-Tester</option>
+                </select>
+                <select id="badgePlatformSelect" class="league-select">
+                    <option value="">-- Keine Plattform (neutral) --</option>
+                    <option value="Autodarts">Autodarts</option>
+                    <option value="DartCounter">DartCounter</option>
+                    <option value="Scolia">Scolia</option>
+                </select>
+                <input type="text" id="badgeDetailInput" class="txt-input" placeholder="Zusatz-Text (optional, z.B. Saison 2)" style="width:200px;">
+                <button class="generate-btn" onclick="awardBadgeManually()">Vergeben</button>
+            </div>
+        </div>
+
+        <h3>Vergebene Abzeichen</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:8%;">Icon</th>
+                        <th style="width:24%;">Spieler</th>
+                        <th style="width:20%;">Abzeichen</th>
+                        <th style="width:20%;">Zusatz</th>
+                        <th style="width:14%;">Vergeben am</th>
+                        <th style="width:14%;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="badgesListBody">
+                    <tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">Lade Abzeichen...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -342,6 +391,48 @@
     const AD_LEAGUES = ["Autodarts Liga 1", "Autodarts Liga 2", "Autodarts Liga 3", "Autodarts Liga 4", "Autodarts Liga 5", "Autodarts Liga 6"];
     const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
     const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
+
+    const BADGE_TYPES = {
+        teilnehmer: { label: 'Teilnehmer' },
+        turniersieger: { label: 'Turniersieger' },
+        turnier_zweiter: { label: 'Turnier-Zweiter' },
+        turnier_dritter: { label: 'Turnier-Dritter' },
+        website_tester: { label: 'Website-Tester' }
+    };
+
+    function getBadgeColor(b) {
+        if (b.platform === 'Autodarts') return '#0066ff';
+        if (b.platform === 'DartCounter') return '#ff6b35';
+        if (b.platform === 'Scolia') return '#00d084';
+        return '#7f77dd';
+    }
+
+    function getBadgeIconInner(badgeType, color) {
+        switch (badgeType) {
+            case 'turniersieger':
+                return `<path d="M9 4h14v5a7 7 0 0 1-14 0z" fill="none" stroke="${color}" stroke-width="2.5"/><rect x="14.5" y="15" width="3" height="4" fill="${color}"/><rect x="11" y="19" width="10" height="2" rx="1" fill="${color}"/>`;
+            case 'turnier_zweiter':
+                return `<circle cx="16" cy="12.5" r="7.5" fill="none" stroke="${color}" stroke-width="2.5"/><text x="16" y="17" font-size="14" font-weight="700" fill="${color}" text-anchor="middle">2</text><path d="M11 19L8 27L16 23L24 27L21 19" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+            case 'turnier_dritter':
+                return `<circle cx="16" cy="12.5" r="7.5" fill="none" stroke="${color}" stroke-width="2.5"/><text x="16" y="17" font-size="14" font-weight="700" fill="${color}" text-anchor="middle">3</text><path d="M11 19L8 27L16 23L24 27L21 19" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+            case 'teilnehmer':
+                return `<circle cx="16" cy="16" r="9" fill="none" stroke="${color}" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="${color}" stroke-width="2.5"/><circle cx="16" cy="16" r="2" fill="${color}"/>`;
+            case 'website_tester':
+                return `<path d="M13 4h6v6l5 12a2 2 0 0 1-2 3H10a2 2 0 0 1-2-3l5-12z" fill="none" stroke="${color}" stroke-width="2.5"/><path d="M11 16h10" stroke="${color}" stroke-width="2.5"/>`;
+            default:
+                return `<circle cx="16" cy="16" r="9" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+        }
+    }
+
+    function renderBadgeHex(b, size) {
+        size = size || 36;
+        const color = getBadgeColor(b);
+        const iconSize = Math.round(size * 0.5);
+        return `<div style="width:${size}px; height:${size}px; position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <div style="position:absolute; inset:0; clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%); background:${color}26; box-shadow:0 0 8px ${color}77;"></div>
+            <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 32 32" style="position:relative;">${getBadgeIconInner(b.badge_type, color)}</svg>
+        </div>`;
+    }
 
     let currentSeasonGlobal = "Saison 1";
     let newsQuill = null, ruleQuill = null, editingNewsId = null;
@@ -407,6 +498,7 @@
         if (tabId === 'tabNews') initNewsEditor();
         if (tabId === 'tabZuteilung') loadWaitingList();
         if (tabId === 'tabTournaments') document.getElementById('tournamentManagerArea').style.display='none';
+        if (tabId === 'tabBadges') loadBadgesTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -1239,14 +1331,59 @@
         if (first === null) return;
         const second = prompt("🥈 Name des 2. Platzes (optional, leer lassen wenn keiner):");
         const third = prompt("🥉 Name des 3. Platzes (optional, leer lassen wenn keiner):");
+
+        const { data: tournamentData } = await supabaseClient.from('tournaments').select('title, platform').eq('id', tournamentId).single();
+        const tournamentTitle = tournamentData ? tournamentData.title : null;
+        const tournamentPlatform = tournamentData ? tournamentData.platform : null;
         
         const { error } = await supabaseClient.from('tournaments').update({
                 status: 'completed', completed_at: new Date().toISOString(),
                 first_place_name: first || null, second_place_name: second || null, third_place_name: third || null
             }).eq('id', tournamentId);
         
-        if(error) alert("❌ Fehler: " + error.message);
-        else { alert("✅ Turnier beendet! News-Editor öffnet sich..."); editTournamentNews(tournamentId); loadActiveTournaments(); document.getElementById('tournamentManagerArea').style.display='none'; }
+        if(error) { alert("❌ Fehler: " + error.message); return; }
+
+        // Versucht, die eingegebenen Platzierungsnamen automatisch mit bestehenden
+        // Spielerprofilen abzugleichen und vergibt dann direkt die passenden Badges
+        // (inkl. der Turnier-Plattform, damit die Abzeichenfarbe stimmt). Namen ohne
+        // eindeutigen Treffer werden übersprungen - die lassen sich danach im
+        // "Badges"-Tab jederzeit manuell nachtragen.
+        const placements = [
+            { name: first, badgeType: 'turniersieger' },
+            { name: second, badgeType: 'turnier_zweiter' },
+            { name: third, badgeType: 'turnier_dritter' }
+        ].filter(p => p.name && p.name.trim() !== '');
+
+        let summaryMsg = "✅ Turnier beendet!";
+        if (placements.length > 0) {
+            const { data: allProfiles } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name, display_name');
+            const matchName = (name) => {
+                const clean = name.trim().toLowerCase();
+                return (allProfiles || []).find(p =>
+                    (p.discord_name && p.discord_name.trim().toLowerCase() === clean) ||
+                    (p.username && p.username.trim().toLowerCase() === clean) ||
+                    (p.display_name && p.display_name.trim().toLowerCase() === clean) ||
+                    (p.real_name && p.real_name.trim().toLowerCase() === clean)
+                );
+            };
+
+            const unmatched = [];
+            for (const placement of placements) {
+                const match = matchName(placement.name);
+                if (match) await awardBadge(match.id, placement.badgeType, tournamentTitle, tournamentPlatform);
+                else unmatched.push(placement.name);
+            }
+
+            summaryMsg += unmatched.length > 0
+                ? `\n🏅 Badges für gefundene Spieler automatisch vergeben.\n⚠️ Diese Namen konnten keinem Profil zugeordnet werden - bitte ggf. manuell im "Badges"-Tab vergeben:\n${unmatched.join(', ')}`
+                : `\n🏅 Turnier-Badges wurden automatisch vergeben.`;
+        }
+        summaryMsg += "\nNews-Editor öffnet sich...";
+
+        alert(summaryMsg);
+        editTournamentNews(tournamentId);
+        loadActiveTournaments();
+        document.getElementById('tournamentManagerArea').style.display='none';
     };
 
     window.editTournamentNews = async function(tournamentId) {
@@ -1290,6 +1427,13 @@
                 await supabaseClient.from('player_history').insert([{
                     player_id: player.id, season: currentSeasonGlobal, platform: platformLabel, league_name: leagueName, placement: platzierung
                 }]);
+
+                // Vergibt automatisch das "Teilnehmer <Saison>"-Badge, inkl. der
+                // jeweiligen Plattform (Autodarts/DartCounter/Scolia), damit die
+                // Abzeichenfarbe korrekt ist. Dank Upsert mit ignoreDuplicates
+                // passiert nichts, falls der Spieler dieses Badge (z.B. durch eine
+                // andere Liga derselben Plattform in derselben Saison) schon hat.
+                await awardBadge(player.id, 'teilnehmer', `${currentSeasonGlobal} (${platformLabel})`, platformLabel);
 
                 const updates = { status_neue_saison: 'waiting' };
                 if (leagueName.includes('Autodarts')) updates.assigned_ad_league = null;
@@ -1369,6 +1513,82 @@
         const sel = document.getElementById("leagueSelector"), cfgSel = document.getElementById("configLeagueSelect"), penSel = document.getElementById("penaltyLeagueSelector");
         if(sel && sel.options.length === 1) { ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`; if(penSel) penSel.innerHTML += `<option value="${l}">${l}</option>`; }); }
     }
+
+    // Vergibt ein Badge idempotent (überspringt still, falls Spieler es schon hat -
+    // verhindert doppelte Einträge dank unique-Constraint in der DB).
+    async function awardBadge(playerId, badgeType, detail, platform) {
+        if (!supabaseClient || !playerId || !badgeType) return { skipped: true };
+        const { error } = await supabaseClient.from('player_badges').upsert(
+            { player_id: playerId, badge_type: badgeType, detail: detail || null, platform: platform || null },
+            { onConflict: 'player_id,badge_type,detail', ignoreDuplicates: true }
+        );
+        if (error) { console.error('Fehler beim Vergeben des Badges:', error); return { error }; }
+        return { success: true };
+    }
+
+    function formatBadgeLabel(b) {
+        const type = BADGE_TYPES[b.badge_type] || { label: b.badge_type };
+        return b.detail ? `${type.label} – ${b.detail}` : type.label;
+    }
+
+    async function loadBadgesTab() {
+        if (!supabaseClient) return;
+        const playerSelect = document.getElementById('badgePlayerSelect');
+        const tbody = document.getElementById('badgesListBody');
+
+        const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name').order('discord_name');
+        if (playerSelect && playerSelect.options.length <= 1) {
+            (players || []).forEach(p => {
+                playerSelect.innerHTML += `<option value="${p.id}">${htmlEscape(p.discord_name || p.username || p.real_name || p.id)}</option>`;
+            });
+        }
+        const playersMap = {};
+        (players || []).forEach(p => { playersMap[p.id] = p; });
+
+        const { data: badges, error } = await supabaseClient.from('player_badges').select('*').order('created_at', { ascending: false });
+        if (error) { tbody.innerHTML = `<tr><td colspan="6" style="color:#e74c3c;">Fehler: ${error.message}</td></tr>`; return; }
+
+        if (!badges || badges.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">Noch keine Abzeichen vergeben</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = badges.map(b => {
+            const player = playersMap[b.player_id];
+            const playerName = player ? (player.discord_name || player.username || player.real_name) : 'Unbekannter Spieler';
+            const type = BADGE_TYPES[b.badge_type] || { label: b.badge_type };
+            const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString('de-DE') : '-';
+            return `<tr>
+                <td>${renderBadgeHex(b, 32)}</td>
+                <td><strong style="color:#20b7ff;">${htmlEscape(playerName)}</strong></td>
+                <td>${htmlEscape(type.label)}${b.platform ? `<br><span class="meta-text">${htmlEscape(b.platform)}</span>` : ''}</td>
+                <td>${htmlEscape(b.detail || '-')}</td>
+                <td style="font-size:12px; color:var(--text-secondary);">${dateStr}</td>
+                <td><button class="card-btn red" style="padding:4px 8px; font-size:11px;" onclick="removeBadge('${b.id}')">✖ Entfernen</button></td>
+            </tr>`;
+        }).join("");
+    }
+
+    window.awardBadgeManually = async function() {
+        const playerId = document.getElementById('badgePlayerSelect').value;
+        const badgeType = document.getElementById('badgeTypeSelect').value;
+        const platform = document.getElementById('badgePlatformSelect').value;
+        const detail = document.getElementById('badgeDetailInput').value.trim();
+        if (!playerId) return alert("❌ Bitte einen Spieler auswählen!");
+
+        const result = await awardBadge(playerId, badgeType, detail, platform);
+        if (result.error) { alert("❌ Fehler: " + result.error.message); return; }
+        alert("✅ Abzeichen vergeben!");
+        document.getElementById('badgeDetailInput').value = '';
+        loadBadgesTab();
+    };
+
+    window.removeBadge = async function(badgeId) {
+        if (!confirm("Dieses Abzeichen wirklich entfernen?")) return;
+        const { error } = await supabaseClient.from('player_badges').delete().eq('id', badgeId);
+        if (error) { alert("❌ Fehler: " + error.message); return; }
+        loadBadgesTab();
+    };
 
     async function initAdmin() {
         await loadCurrentSeason();
