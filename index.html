@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 38</title>
+  <title>CDL Dart Liga test 37</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1124,9 +1124,9 @@
     return inner;
   }
 
-  function renderLevelHexHtml(level) {
+  function renderLevelHexHtml(level, sizeOverride) {
     const tier = getLevelTier(level);
-    const size = tier.hexSize;
+    const size = sizeOverride || tier.hexSize;
     const iconSize = Math.round(size * 0.5);
     return `<div title="${htmlEscape(tier.name)}" style="width:${size}px; height:${size}px; position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
       <div style="position:absolute; inset:0; clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%); background:${tier.color}26; box-shadow:0 0 ${Math.round(size / 4)}px ${tier.color}99;"></div>
@@ -1703,7 +1703,10 @@
       return `<div class="matchday-card" style="cursor:pointer; padding:0; overflow:hidden;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
         <div style="background:var(--bg-primary); padding:6px 14px; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-secondary); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
           <span>🪪 CDL Mitgliedsausweis</span>
-          ${renderLevelBadgeHtml(playerLevel)}
+          <div style="display:flex; align-items:center; gap:6px;">
+            ${renderLevelHexHtml(playerLevel, 22)}
+            ${renderLevelBadgeHtml(playerLevel)}
+          </div>
         </div>
         <div style="display:flex; gap:14px; align-items:center; padding:14px;">
           <img src="${avatarUrl}" style="width:56px; height:56px; border-radius:10px; object-fit:cover; border:2px solid var(--border); flex-shrink:0;" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
@@ -1742,6 +1745,7 @@
       return `<div class="matchday-card" style="cursor:pointer; margin-bottom:10px; display:flex; align-items:center; gap:14px;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
         <span class="rank ${rankClass}" style="width:32px; flex-shrink:0;">${idx + 1}.</span>
         <img src="${avatarUrl}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--border); flex-shrink:0;" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+        ${renderLevelHexHtml(r.level, 36)}
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span class="player-link" style="font-weight:700;">${htmlEscape(name)}</span>
