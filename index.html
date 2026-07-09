@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 38</title>
+  <title>CDL Dart Liga test 37</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -635,6 +635,7 @@
     <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
     <button class="nav-btn" id="navTournaments" onclick="switchView('tournaments')">🏆 Turniere</button>
     <button class="nav-btn" id="navMembercard" onclick="switchView('membercard')">🪪 Mitgliederkarte</button>
+    <button class="nav-btn" id="navLeaderboard" onclick="switchView('leaderboard')">⭐ Rangliste</button>
     <button class="nav-btn" id="navMyGames" onclick="switchView('mygames')" style="display:none;">🎮 Meine Spiele</button>
     <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
@@ -805,6 +806,29 @@
         <div class="card-body">
           <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">Mitglieder, die ihre Karte in ihrem Profil öffentlich sichtbar geschaltet haben. Klick auf eine Karte für das volle Profil.</p>
           <div id="membercardGridArea"><div class="empty">Lade Mitgliederausweise...</div></div>
+        </div>
+      </div>
+
+      <div class="card compact-footer-card">
+        <div class="card-header">ℹ️ Infos</div>
+        <div class="card-body">
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
+            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="leaderboardView" class="view">
+    <div class="full-width-layout">
+      <div class="card">
+        <div class="card-header">⭐ Level-Rangliste</div>
+        <div class="card-body">
+          <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">XP gibt's für gespielte & gewonnene Matches, Turnierteilnahme & -platzierungen sowie News-Reaktionen. Level steigen mit wachsendem Aufwand - so bleibt auch Level 10+ eine echte Leistung.</p>
+          <div id="leaderboardArea"><div class="empty">Lade Rangliste...</div></div>
         </div>
       </div>
 
@@ -1020,6 +1044,85 @@
     </div>`;
   }
 
+  // --- Level-/XP-System -----------------------------------------------------
+  // XP werden NICHT als laufender Zähler gespeichert, sondern live aus den
+  // bestehenden Daten berechnet (gespielte/gewonnene Matches, Turnier-Badges,
+  // News-Reaktionen). Dadurch gibt es nie eine Abweichung zwischen "echten"
+  // Aktionen und dem angezeigten XP-Stand.
+  //
+  // Level-Kurve: moderat steigend statt hart exponentiell - Level N -> N+1
+  // kostet 50 * N zusätzliche XP. Level 1: 0 XP, Level 2: 50 XP, Level 3: 150 XP,
+  // Level 4: 300 XP, Level 5: 500 XP, usw. Damit sind frühe Level schnell
+  // erreichbar, höhere Level bleiben aber eine echte Leistung.
+  function xpForLevel(level) {
+    return 25 * level * (level - 1);
+  }
+
+  function computeLevelFromXp(xp) {
+    let level = 1;
+    while (xpForLevel(level + 1) <= xp) level++;
+    return level;
+  }
+
+  function levelProgress(xp) {
+    const level = computeLevelFromXp(xp);
+    const currentLevelXp = xpForLevel(level);
+    const nextLevelXp = xpForLevel(level + 1);
+    const xpIntoLevel = xp - currentLevelXp;
+    const xpNeededForNext = nextLevelXp - currentLevelXp;
+    const percent = xpNeededForNext > 0 ? Math.min(100, Math.round((xpIntoLevel / xpNeededForNext) * 100)) : 100;
+    return { level, xp, xpIntoLevel, xpNeededForNext, nextLevelXp, percent };
+  }
+
+  function computePlayerXp(playerId) {
+    const cfg = state.xpConfig;
+    let xp = 0;
+
+    const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
+    allMatches.forEach(m => {
+      if (m.is_bye) return;
+      if (m.player1_id !== playerId && m.player2_id !== playerId) return;
+      if (!(m.status === 'done' || m.status === 'fertig')) return;
+      xp += cfg.matchPlayed;
+      const isP1 = m.player1_id === playerId;
+      const myLegs = isP1 ? m.legs_player1 : m.legs_player2;
+      const oppLegs = isP1 ? m.legs_player2 : m.legs_player1;
+      if (myLegs !== null && myLegs !== undefined && oppLegs !== null && oppLegs !== undefined && myLegs > oppLegs) xp += cfg.matchWon;
+    });
+
+    const tourMatchesPlayed = (state.allTournamentMatchesCache || []).filter(m => !m.is_bye && (m.player1_id === playerId || m.player2_id === playerId));
+    const tournamentIdsPlayed = new Set(tourMatchesPlayed.map(m => m.tournament_id));
+    xp += tournamentIdsPlayed.size * cfg.tournamentParticipation;
+
+    (state.playerBadgesCache || []).filter(b => b.player_id === playerId).forEach(b => {
+      if (b.badge_type === 'turniersieger') xp += cfg.tournamentWinner;
+      else if (b.badge_type === 'turnier_zweiter') xp += cfg.tournamentSecond;
+      else if (b.badge_type === 'turnier_dritter') xp += cfg.tournamentThird;
+    });
+
+    xp += (state.newsReactionsCache || []).filter(r => r.player_id === playerId).length * cfg.newsReaction;
+
+    return xp;
+  }
+
+  function renderLevelBadgeHtml(level, size) {
+    size = size || 'normal';
+    const big = size === 'big';
+    return `<span style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:${big ? '13px' : '11px'}; background:var(--platform-color); color:white; padding:${big ? '4px 10px' : '2px 8px'}; border-radius:12px;">⭐ Lvl ${level}</span>`;
+  }
+
+  function renderXpProgressBarHtml(progress) {
+    return `<div style="margin-top:6px;">
+      <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-secondary); margin-bottom:3px;">
+        <span>${progress.xp} XP gesamt</span>
+        <span>${progress.xpIntoLevel} / ${progress.xpNeededForNext} XP bis Level ${progress.level + 1}</span>
+      </div>
+      <div style="background:var(--bg-tertiary); border-radius:6px; height:8px; overflow:hidden;">
+        <div style="background:var(--platform-color); height:100%; width:${progress.percent}%; border-radius:6px;"></div>
+      </div>
+    </div>`;
+  }
+
 
   const state = {
     leagueData: {},
@@ -1039,7 +1142,12 @@
     allTournamentsCache: [],
     resultConfirmationHours: 48,
     tournamentConfirmationMinutes: 5,
-    playerBadgesCache: []
+    playerBadgesCache: [],
+    allMatchesLifetimeCache: [],
+    xpConfig: {
+      matchPlayed: 10, matchWon: 15, tournamentParticipation: 20,
+      tournamentWinner: 100, tournamentSecond: 50, tournamentThird: 25, newsReaction: 2
+    }
   };
 
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
@@ -1142,7 +1250,15 @@
     }
 
     let badgesHtml = "";
+    let levelHtml = "";
     if (p) {
+      const xp = computePlayerXp(p.id);
+      const progress = levelProgress(xp);
+      levelHtml = `<div style="text-align:center; margin-bottom:14px;">
+        ${renderLevelBadgeHtml(progress.level, 'big')}
+        ${renderXpProgressBarHtml(progress)}
+      </div>`;
+
       const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
       if (myBadges.length > 0) {
         badgesHtml = `<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
@@ -1163,6 +1279,7 @@
         <img src="${avatarImgUrl}" class="profile-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
         <div class="player-card-title">${htmlEscape(dName)}</div>
       </div>
+      ${levelHtml}
       <div class="player-info-row"><span class="player-info-label">Echter Name:</span><span class="player-info-value" style="color: var(--platform-color); font-weight:bold;">${htmlEscape(realName)}</span></div>
       <div class="player-info-row"><span class="player-info-label">Discord Handle:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
       <div class="player-info-row"><span class="player-info-label">📍 Wohnort:</span><span class="player-info-value">${htmlEscape(wohnort)}</span></div>
@@ -1236,6 +1353,7 @@
         document.getElementById('navMembercard').classList.add('active');
         if (membercardMapInstance) { setTimeout(() => membercardMapInstance.invalidateSize(), 100); }
       }
+      if (view === 'leaderboard') { document.getElementById('navLeaderboard').classList.add('active'); renderLeaderboard(); }
       if (view === 'mygames') { document.getElementById('navMyGames').classList.add('active'); renderMyGames(); }
       if (view === 'bracket') { document.getElementById('navTournaments').classList.add('active'); renderBracketSelector(); }
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
@@ -1534,6 +1652,7 @@
       const avatarUrl = p.avatar_url || p.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
       const plzOrt = [p.plz, p.ort].filter(Boolean).join(' ');
       const joinDate = p.created_at ? new Date(p.created_at).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) : null;
+      const playerLevel = computeLevelFromXp(computePlayerXp(p.id));
 
       let platformChips = "";
       [['Autodarts', p.autodarts_name], ['DartCounter', p.dartcounter_name], ['Scolia', p.scolia_name]].forEach(([plat, val]) => {
@@ -1549,7 +1668,10 @@
         : "";
 
       return `<div class="matchday-card" style="cursor:pointer; padding:0; overflow:hidden;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
-        <div style="background:var(--bg-primary); padding:6px 14px; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-secondary); border-bottom:1px solid var(--border);">🪪 CDL Mitgliedsausweis</div>
+        <div style="background:var(--bg-primary); padding:6px 14px; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-secondary); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+          <span>🪪 CDL Mitgliedsausweis</span>
+          ${renderLevelBadgeHtml(playerLevel)}
+        </div>
         <div style="display:flex; gap:14px; align-items:center; padding:14px;">
           <img src="${avatarUrl}" style="width:56px; height:56px; border-radius:10px; object-fit:cover; border:2px solid var(--border); flex-shrink:0;" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
           <div style="flex:1; min-width:0;">
@@ -1562,6 +1684,40 @@
         </div>
       </div>`;
     }).join("") + '</div>';
+  }
+
+  function renderLeaderboard() {
+    const area = document.getElementById('leaderboardArea');
+    if (!area) return;
+
+    const ranked = state.allProfilesCache.map(p => {
+      const xp = computePlayerXp(p.id);
+      return { profile: p, ...levelProgress(xp) };
+    }).sort((a, b) => b.xp - a.xp);
+
+    const withActivity = ranked.filter(r => r.xp > 0);
+    if (withActivity.length === 0) {
+      area.innerHTML = '<div class="empty">Noch keine Aktivität erfasst - spiel ein paar Matches oder nimm an einem Turnier teil!</div>';
+      return;
+    }
+
+    area.innerHTML = withActivity.map((r, idx) => {
+      const p = r.profile;
+      const name = p.display_name || p.discord_name || p.username || 'Spieler';
+      const avatarUrl = p.avatar_url || p.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
+      const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
+      return `<div class="matchday-card" style="cursor:pointer; margin-bottom:10px; display:flex; align-items:center; gap:14px;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
+        <span class="rank ${rankClass}" style="width:32px; flex-shrink:0;">${idx + 1}.</span>
+        <img src="${avatarUrl}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--border); flex-shrink:0;" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="player-link" style="font-weight:700;">${htmlEscape(name)}</span>
+            ${renderLevelBadgeHtml(r.level)}
+          </div>
+          ${renderXpProgressBarHtml(r)}
+        </div>
+      </div>`;
+    }).join("");
   }
 
   let membercardMapInstance = null;
@@ -2125,6 +2281,15 @@
       state.currentSeason = sys?.current_season || 'Saison 1';
       state.resultConfirmationHours = sys?.result_confirmation_hours || 48;
       state.tournamentConfirmationMinutes = sys?.tournament_confirmation_minutes || 5;
+      state.xpConfig = {
+        matchPlayed: sys?.xp_match_played ?? 10,
+        matchWon: sys?.xp_match_won ?? 15,
+        tournamentParticipation: sys?.xp_tournament_participation ?? 20,
+        tournamentWinner: sys?.xp_tournament_winner ?? 100,
+        tournamentSecond: sys?.xp_tournament_second ?? 50,
+        tournamentThird: sys?.xp_tournament_third ?? 25,
+        newsReaction: sys?.xp_news_reaction ?? 2
+      };
       const stateSeasonNum = String(state.currentSeason).replace(/\D/g, "");
 
       let rulesText = sys?.regelwerk_html || sys?.rules || sys?.regelwerk || sys?.rules_text || "";
@@ -2134,6 +2299,7 @@
       }
 
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
+      state.allMatchesLifetimeCache = matchesData || [];
       let matches = matchesData ? matchesData.filter(m => String(m.season || '').replace(/\D/g, "") === stateSeasonNum || String(m.season || '').trim().toLowerCase() === String(state.currentSeason).trim().toLowerCase()) : [];
       if (matches.length === 0 && matchesData) matches = matchesData;
       state.allMatchesCache = matches;
@@ -2196,6 +2362,7 @@
       switchPlatform("Autodarts");
 
       await loadTournamentsData();
+      if (state.currentView === 'leaderboard') renderLeaderboard();
 
     } catch (error) { console.error("Fehler im Daten-Core:", error); }
   }
