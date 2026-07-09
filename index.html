@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 37</title>
+  <title>CDL Dart Liga test 39</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -827,7 +827,7 @@
       <div class="card">
         <div class="card-header">⭐ Level-Rangliste</div>
         <div class="card-body">
-          <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">XP gibt's für gespielte & gewonnene Matches, Turnierteilnahme & -platzierungen sowie News-Reaktionen. </p>
+          <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">XP gibt's für gespielte & gewonnene Matches, Turnierteilnahme & -platzierungen sowie News-Reaktionen. Level steigen mit wachsendem Aufwand - so bleibt auch Level 10+ eine echte Leistung.</p>
           <div id="leaderboardArea"><div class="empty">Lade Rangliste...</div></div>
         </div>
       </div>
@@ -1154,6 +1154,74 @@
     </div>`;
   }
 
+  // --- Sieges-Serien (Streaks) -----------------------------------------------
+  // Wird live berechnet (kein DB-Eintrag nötig): innerhalb jeder Liga+Saison
+  // nach Spieltag sortiert bzw. innerhalb jedes Turniers nach Runde sortiert,
+  // dann die längste Folge aufeinanderfolgender Siege gesucht. Das größte
+  // Ergebnis über alle Ligen/Turniere hinweg ist die "beste Serie" des Spielers.
+  function computeLongestWinStreak(playerId) {
+    let maxStreak = 0;
+
+    const evalList = (list) => {
+      let streak = 0;
+      list.forEach(m => {
+        const isP1 = m.player1_id === playerId;
+        const myLegs = isP1 ? m.legs_player1 : m.legs_player2;
+        const oppLegs = isP1 ? m.legs_player2 : m.legs_player1;
+        const won = myLegs !== null && myLegs !== undefined && oppLegs !== null && oppLegs !== undefined && myLegs > oppLegs;
+        if (won) { streak++; maxStreak = Math.max(maxStreak, streak); }
+        else streak = 0;
+      });
+    };
+
+    const leagueGroups = {};
+    (state.allMatchesLifetimeCache || []).forEach(m => {
+      if (!(m.status === 'done' || m.status === 'fertig')) return;
+      if (m.player1_id !== playerId && m.player2_id !== playerId) return;
+      const key = `${m.league_name}||${m.season}`;
+      if (!leagueGroups[key]) leagueGroups[key] = [];
+      leagueGroups[key].push(m);
+    });
+    Object.values(leagueGroups).forEach(list => {
+      list.sort((a, b) => (a.matchday || 0) - (b.matchday || 0));
+      evalList(list);
+    });
+
+    const tourGroups = {};
+    (state.allTournamentMatchesCache || []).forEach(m => {
+      if (m.is_bye) return;
+      if (!(m.status === 'done' || m.status === 'fertig')) return;
+      if (m.player1_id !== playerId && m.player2_id !== playerId) return;
+      const key = m.tournament_id;
+      if (!tourGroups[key]) tourGroups[key] = [];
+      tourGroups[key].push(m);
+    });
+    Object.values(tourGroups).forEach(list => {
+      list.sort((a, b) => (a.round_number || 0) - (b.round_number || 0));
+      evalList(list);
+    });
+
+    return maxStreak;
+  }
+
+  function getStreakTier(streak) {
+    if (streak >= 10) return { color: '#e0245e', name: `Unaufhaltsam (${streak}er-Serie)` };
+    if (streak >= 5) return { color: '#ff5e3a', name: `Heißer Lauf (${streak}er-Serie)` };
+    return { color: '#ff9d42', name: `Auf Erfolgskurs (${streak}er-Serie)` };
+  }
+
+  function renderStreakBadgeHex(streak, size) {
+    size = size || 40;
+    const tier = getStreakTier(streak);
+    const iconSize = Math.round(size * 0.5);
+    return `<div title="${htmlEscape(tier.name)}" style="width:${size}px; height:${size}px; position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+      <div style="position:absolute; inset:0; clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%); background:${tier.color}26; box-shadow:0 0 10px ${tier.color}99;"></div>
+      <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 32 32" style="position:relative;">
+        <path d="M16 3 C10 9 8 15 12 21 C11 17 14 14 16 12 C17 14 21 17 20 21 C24 15 22 9 16 3 Z" fill="${tier.color}"/>
+      </svg>
+    </div>`;
+  }
+
 
   const state = {
     leagueData: {},
@@ -1294,11 +1362,16 @@
       </div>`;
 
       const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
-      if (myBadges.length > 0) {
+      const bestStreak = computeLongestWinStreak(p.id);
+      const streakRow = bestStreak >= 3
+        ? `<div style="display:flex; align-items:center; gap:10px;">${renderStreakBadgeHex(bestStreak, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(getStreakTier(bestStreak).name)}</span></div>`
+        : "";
+      if (myBadges.length > 0 || streakRow) {
         badgesHtml = `<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
           <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:10px;">🏅 Abzeichen</div>
           <div style="display:flex; flex-direction:column; gap:8px;">
             ${myBadges.map(b => `<div style="display:flex; align-items:center; gap:10px;">${renderBadgeHex(b, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("")}
+            ${streakRow}
           </div>
         </div>`;
       }
@@ -1823,6 +1896,70 @@
     return `<span style="font-size:11px; font-weight:700; background:${pb.color}1A; color:${pb.color}; padding:4px 10px; border-radius:10px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">${pb.icon} ${htmlEscape(subLabel)}</span>`;
   }
 
+  // --- Persönliche Statistiken -----------------------------------------------
+  function computeMyStats(playerId) {
+    const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
+    const myFinished = allMatches.filter(m => !m.is_bye && (m.player1_id === playerId || m.player2_id === playerId) && (m.status === 'done' || m.status === 'fertig'));
+
+    let wins = 0;
+    const avgSeries = [];
+    myFinished.forEach(m => {
+      const isP1 = m.player1_id === playerId;
+      const myLegs = isP1 ? m.legs_player1 : m.legs_player2;
+      const oppLegs = isP1 ? m.legs_player2 : m.legs_player1;
+      if (myLegs !== null && myLegs !== undefined && oppLegs !== null && oppLegs !== undefined && myLegs > oppLegs) wins++;
+      const myAvg = isP1 ? m.player1_avg : m.player2_avg;
+      if (myAvg !== null && myAvg !== undefined && myAvg !== '') avgSeries.push(parseFloat(myAvg));
+    });
+
+    const played = myFinished.length;
+    const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
+    const avgOverall = avgSeries.length > 0 ? (avgSeries.reduce((a, b) => a + b, 0) / avgSeries.length) : null;
+    const bestStreak = computeLongestWinStreak(playerId);
+
+    return { played, wins, winRate, avgOverall, bestStreak, recentAvgs: avgSeries.slice(-12) };
+  }
+
+  function renderAvgSparkline(values) {
+    if (!values || values.length < 2) return '';
+    const w = 260, h = 50, pad = 4;
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max - min) || 1;
+    const points = values.map((v, i) => {
+      const x = pad + (i / (values.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((v - min) / range) * (h - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block; margin-top:4px;">
+      <polyline points="${points}" fill="none" stroke="var(--platform-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  function renderMyStatsSummary(stats) {
+    return `<div class="stat-grid" style="margin-bottom:20px;">
+      <div class="stat-box">
+        <div class="stat-box-label">Spiele gesamt</div>
+        <div class="stat-box-value">${stats.played}</div>
+      </div>
+      <div class="stat-box" style="background: rgba(0,208,132,0.06);">
+        <div class="stat-box-label" style="color:#00d084;">Siegquote</div>
+        <div class="stat-box-value" style="color:#00d084;">${stats.winRate}%</div>
+      </div>
+      <div class="stat-box" style="background: rgba(255,107,53,0.06);">
+        <div class="stat-box-label" style="color:#ff6b35;">Beste Serie</div>
+        <div class="stat-box-value" style="color:#ff6b35;">${stats.bestStreak}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Ø AVG</div>
+        <div class="stat-box-value">${stats.avgOverall !== null ? stats.avgOverall.toFixed(2) : '-'}</div>
+      </div>
+    </div>
+    ${stats.recentAvgs.length >= 2 ? `<div style="margin-bottom:20px;">
+      <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); margin-bottom:4px;">AVG-Verlauf (letzte ${stats.recentAvgs.length} erfasste Werte)</div>
+      ${renderAvgSparkline(stats.recentAvgs)}
+    </div>` : ''}`;
+  }
+
   function renderMyGames() {
     const area = document.getElementById('mygamesArea');
     if (!area) return;
@@ -1840,7 +1977,10 @@
     const myLeagueMatches = state.allMatchesCache.filter(m => m.player1_id === profile.id || m.player2_id === profile.id);
     const myTourMatches = state.allTournamentMatchesCache.filter(m => (m.player1_id === profile.id || m.player2_id === profile.id) && !m.is_bye);
 
-    let html = `<h3 style="margin-bottom:12px; color:var(--platform-color);">⚡ Liga-Spiele</h3>`;
+    const myStats = computeMyStats(profile.id);
+    let html = `<h3 style="margin-bottom:12px; color:var(--platform-color);">📊 Meine Statistiken</h3>`;
+    html += renderMyStatsSummary(myStats);
+    html += `<h3 style="margin-bottom:12px; color:var(--platform-color);">⚡ Liga-Spiele</h3>`;
     html += myLeagueMatches.length > 0 ? myLeagueMatches.map(m => buildMyGameRow(m, profile, 'league')).join("") : '<div class="empty">Keine Liga-Spiele gefunden.</div>';
     html += `<h3 style="margin:24px 0 12px 0; color:var(--platform-color);">🏆 Turnier-Spiele</h3>`;
     html += myTourMatches.length > 0 ? myTourMatches.map(m => buildMyGameRow(m, profile, 'tournament')).join("") : '<div class="empty">Keine Turnier-Spiele gefunden.</div>';
