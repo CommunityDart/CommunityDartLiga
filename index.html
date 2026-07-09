@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CDL Dart Liga test 37</title>
+  <title>CDL Dart Liga test 38</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -967,6 +967,59 @@
   const DC_LEAGUES = ["DartCounter Liga 1", "DartCounter Liga 2", "DartCounter Liga 3", "DartCounter Liga 4", "DartCounter Liga 5", "DartCounter Liga 6"];
   const SC_LEAGUES = ["Scolia Liga 1", "Scolia Liga 2", "Scolia Liga 3"];
 
+  const BADGE_TYPES = {
+    teilnehmer: { label: 'Teilnehmer' },
+    turniersieger: { label: 'Turniersieger' },
+    turnier_zweiter: { label: 'Turnier-Zweiter' },
+    turnier_dritter: { label: 'Turnier-Dritter' },
+    website_tester: { label: 'Website-Tester' }
+  };
+
+  function formatBadgeLabel(b) {
+    const type = BADGE_TYPES[b.badge_type] || { label: b.badge_type };
+    return b.detail ? `${type.label} – ${b.detail}` : type.label;
+  }
+
+  // Farbe richtet sich nach der Plattform (Autodarts blau, DartCounter orange,
+  // Scolia grün) - so ist auf einen Blick erkennbar, auf welcher Plattform das
+  // Abzeichen erspielt wurde. Plattformunabhängige Abzeichen (Website-Tester)
+  // bekommen eine neutrale lila Farbe.
+  function getBadgeColor(b) {
+    if (b.platform === 'Autodarts') return '#0066ff';
+    if (b.platform === 'DartCounter') return '#ff6b35';
+    if (b.platform === 'Scolia') return '#00d084';
+    return '#7f77dd';
+  }
+
+  function getBadgeIconInner(badgeType, color) {
+    switch (badgeType) {
+      case 'turniersieger':
+        return `<path d="M9 4h14v5a7 7 0 0 1-14 0z" fill="none" stroke="${color}" stroke-width="2.5"/><rect x="14.5" y="15" width="3" height="4" fill="${color}"/><rect x="11" y="19" width="10" height="2" rx="1" fill="${color}"/>`;
+      case 'turnier_zweiter':
+        return `<circle cx="16" cy="12.5" r="7.5" fill="none" stroke="${color}" stroke-width="2.5"/><text x="16" y="17" font-size="14" font-weight="700" fill="${color}" text-anchor="middle">2</text><path d="M11 19L8 27L16 23L24 27L21 19" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+      case 'turnier_dritter':
+        return `<circle cx="16" cy="12.5" r="7.5" fill="none" stroke="${color}" stroke-width="2.5"/><text x="16" y="17" font-size="14" font-weight="700" fill="${color}" text-anchor="middle">3</text><path d="M11 19L8 27L16 23L24 27L21 19" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+      case 'teilnehmer':
+        return `<circle cx="16" cy="16" r="9" fill="none" stroke="${color}" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="${color}" stroke-width="2.5"/><circle cx="16" cy="16" r="2" fill="${color}"/>`;
+      case 'website_tester':
+        return `<path d="M13 4h6v6l5 12a2 2 0 0 1-2 3H10a2 2 0 0 1-2-3l5-12z" fill="none" stroke="${color}" stroke-width="2.5"/><path d="M11 16h10" stroke="${color}" stroke-width="2.5"/>`;
+      default:
+        return `<circle cx="16" cy="16" r="9" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+    }
+  }
+
+  // Sechseckiges Abzeichen mit dezentem Glow in der Plattform-Farbe.
+  function renderBadgeHex(b, size) {
+    size = size || 44;
+    const color = getBadgeColor(b);
+    const label = htmlEscape(formatBadgeLabel(b));
+    const iconSize = Math.round(size * 0.5);
+    return `<div title="${label}" style="width:${size}px; height:${size}px; position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+      <div style="position:absolute; inset:0; clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%); background:${color}26; box-shadow:0 0 10px ${color}77;"></div>
+      <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 32 32" style="position:relative;">${getBadgeIconInner(b.badge_type, color)}</svg>
+    </div>`;
+  }
+
 
   const state = {
     leagueData: {},
@@ -985,7 +1038,8 @@
     allTournamentMatchesCache: [],
     allTournamentsCache: [],
     resultConfirmationHours: 48,
-    tournamentConfirmationMinutes: 5
+    tournamentConfirmationMinutes: 5,
+    playerBadgesCache: []
   };
 
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
@@ -1087,6 +1141,19 @@
       else if (p.discord_id && /^\d{17,21}$/.test(p.discord_id)) numericDiscordId = p.discord_id;
     }
 
+    let badgesHtml = "";
+    if (p) {
+      const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
+      if (myBadges.length > 0) {
+        badgesHtml = `<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+          <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:10px;">🏅 Abzeichen</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            ${myBadges.map(b => `<div style="display:flex; align-items:center; gap:10px;">${renderBadgeHex(b, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("")}
+          </div>
+        </div>`;
+      }
+    }
+
     let discordButtonHtml = numericDiscordId 
       ? `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="window.open('https://discord.com/users/${numericDiscordId}', '_blank')">💬 Nachricht per Discord</button>`
       : `<button class="btn discord" style="width:100%; margin-top:15px;" onclick="alert('Discord Name: ${discordHandle}')">💬 Discord Name: ${htmlEscape(discordHandle)}</button>`;
@@ -1100,7 +1167,9 @@
       <div class="player-info-row"><span class="player-info-label">Discord Handle:</span><span class="player-info-value">${htmlEscape(discordHandle)}</span></div>
       <div class="player-info-row"><span class="player-info-label">📍 Wohnort:</span><span class="player-info-value">${htmlEscape(wohnort)}</span></div>
       <div class="player-info-row"><span class="player-info-label">🎯 Spielsetup:</span><span class="player-info-value">${htmlEscape(setup)}</span></div>
-      ${adHtml} ${dcHtml} ${scHtml} ${discordButtonHtml}
+      ${adHtml} ${dcHtml} ${scHtml}
+      ${badgesHtml}
+      ${discordButtonHtml}
     `;
     modal.classList.add('active');
   }
@@ -1474,6 +1543,11 @@
         }
       });
 
+      const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
+      const badgeIconsHtml = myBadges.length > 0
+        ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">${myBadges.map(b => renderBadgeHex(b, 28)).join("")}</div>`
+        : "";
+
       return `<div class="matchday-card" style="cursor:pointer; padding:0; overflow:hidden;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
         <div style="background:var(--bg-primary); padding:6px 14px; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-secondary); border-bottom:1px solid var(--border);">🪪 CDL Mitgliedsausweis</div>
         <div style="display:flex; gap:14px; align-items:center; padding:14px;">
@@ -1483,6 +1557,7 @@
             ${plzOrt ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">📍 ${htmlEscape(plzOrt)}</div>` : ''}
             ${joinDate ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Mitglied seit ${htmlEscape(joinDate)}</div>` : ''}
             <div style="display:flex; gap:5px; margin-top:8px; flex-wrap:wrap;">${platformChips}</div>
+            ${badgeIconsHtml}
           </div>
         </div>
       </div>`;
@@ -2038,6 +2113,10 @@
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       state.allProfilesCache = profiles || [];
       document.getElementById('statPlayers').innerText = state.allProfilesCache.length;
+
+      const { data: badgesData } = await supabaseClient.from('player_badges').select('*');
+      state.playerBadgesCache = badgesData || [];
+
       renderMembercards();
       updateMyGamesNavVisibility();
 
