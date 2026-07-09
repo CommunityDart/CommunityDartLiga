@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mein Profil - CDL v3</title>
+  <title>Mein Profil - CDL v2</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -194,6 +194,7 @@
           <img id="userAvatar" class="avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>">
           <h2 style="margin:0; font-size:20px; font-weight:800;"><span id="statusText">Lade Profil...</span> <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
         </div>
+        <div id="levelBox" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
       </div>
     </div>
 
@@ -401,6 +402,101 @@
       area.innerHTML = html;
     }
 
+    // --- Level-/XP-System (gleiche Logik wie index.html, hier nur für den
+    // eigenen Spieler berechnet) - XP werden live aus Matches, Turnier-Badges
+    // und News-Reaktionen berechnet, nicht als laufender Zähler gespeichert.
+    function xpForLevel(level) { return 25 * level * (level - 1); }
+    function computeLevelFromXp(xp) {
+      let level = 1;
+      while (xpForLevel(level + 1) <= xp) level++;
+      return level;
+    }
+    function levelProgress(xp) {
+      const level = computeLevelFromXp(xp);
+      const currentLevelXp = xpForLevel(level);
+      const nextLevelXp = xpForLevel(level + 1);
+      const xpIntoLevel = xp - currentLevelXp;
+      const xpNeededForNext = nextLevelXp - currentLevelXp;
+      const percent = xpNeededForNext > 0 ? Math.min(100, Math.round((xpIntoLevel / xpNeededForNext) * 100)) : 100;
+      return { level, xp, xpIntoLevel, xpNeededForNext, percent };
+    }
+
+    function renderLevelBox(xp) {
+      const area = document.getElementById('levelBox');
+      if (!area) return;
+      const progress = levelProgress(xp);
+      area.innerHTML = `
+        <div style="text-align:center; margin-bottom:10px;">
+          <div style="display:inline-flex; align-items:center; gap:8px;">
+            <div style="width:36px; height:36px; position:relative; display:inline-flex; align-items:center; justify-content:center;">
+              <div style="position:absolute; inset:0; clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%); background:#ffd70026; box-shadow:0 0 10px #ffd70077;"></div>
+              <svg width="18" height="18" viewBox="0 0 32 32" style="position:relative">
+                <path d="M16 3 L19.5 12 L29 12.5 L21.5 18.5 L24 28 L16 22.5 L8 28 L10.5 18.5 L3 12.5 L12.5 12 Z" fill="#ffd700"/>
+              </svg>
+            </div>
+            <span style="font-weight:800; font-size:14px; background:var(--platform-color); color:white; padding:4px 12px; border-radius:12px;">⭐ Lvl ${progress.level}</span>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-secondary); margin-bottom:4px;">
+            <span>${progress.xp} XP gesamt</span>
+            <span>${progress.xpIntoLevel} / ${progress.xpNeededForNext} XP bis Level ${progress.level + 1}</span>
+          </div>
+          <div style="background:var(--bg-tertiary); border-radius:6px; height:8px; overflow:hidden;">
+            <div style="background:var(--platform-color); height:100%; width:${progress.percent}%; border-radius:6px;"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadLevelInfo(userId) {
+      try {
+        const [{ data: xpSettings }, { data: myMatches }, { data: myTourMatches }, { data: myBadges }, { data: myReactions }] = await Promise.all([
+          supabaseClient.from('system_settings').select('xp_match_played, xp_match_won, xp_tournament_participation, xp_tournament_winner, xp_tournament_second, xp_tournament_third, xp_news_reaction').eq('id', 1).single(),
+          supabaseClient.from('matches').select('player1_id, player2_id, legs_player1, legs_player2, status').or(`player1_id.eq.${userId},player2_id.eq.${userId}`),
+          supabaseClient.from('tournament_matches').select('player1_id, player2_id, legs_player1, legs_player2, status, is_bye, tournament_id').or(`player1_id.eq.${userId},player2_id.eq.${userId}`),
+          supabaseClient.from('player_badges').select('badge_type').eq('player_id', userId),
+          supabaseClient.from('news_reactions').select('id').eq('player_id', userId)
+        ]);
+
+        const cfg = {
+          matchPlayed: xpSettings?.xp_match_played ?? 10,
+          matchWon: xpSettings?.xp_match_won ?? 15,
+          tournamentParticipation: xpSettings?.xp_tournament_participation ?? 20,
+          tournamentWinner: xpSettings?.xp_tournament_winner ?? 100,
+          tournamentSecond: xpSettings?.xp_tournament_second ?? 50,
+          tournamentThird: xpSettings?.xp_tournament_third ?? 25,
+          newsReaction: xpSettings?.xp_news_reaction ?? 2
+        };
+
+        let xp = 0;
+        [...(myMatches || []), ...(myTourMatches || [])].forEach(m => {
+          if (m.is_bye) return;
+          if (!(m.status === 'done' || m.status === 'fertig')) return;
+          xp += cfg.matchPlayed;
+          const isP1 = m.player1_id === userId;
+          const myLegs = isP1 ? m.legs_player1 : m.legs_player2;
+          const oppLegs = isP1 ? m.legs_player2 : m.legs_player1;
+          if (myLegs !== null && myLegs !== undefined && oppLegs !== null && oppLegs !== undefined && myLegs > oppLegs) xp += cfg.matchWon;
+        });
+
+        const tournamentIdsPlayed = new Set((myTourMatches || []).filter(m => !m.is_bye).map(m => m.tournament_id));
+        xp += tournamentIdsPlayed.size * cfg.tournamentParticipation;
+
+        (myBadges || []).forEach(b => {
+          if (b.badge_type === 'turniersieger') xp += cfg.tournamentWinner;
+          else if (b.badge_type === 'turnier_zweiter') xp += cfg.tournamentSecond;
+          else if (b.badge_type === 'turnier_dritter') xp += cfg.tournamentThird;
+        });
+
+        xp += (myReactions || []).length * cfg.newsReaction;
+
+        renderLevelBox(xp);
+      } catch (e) {
+        console.error('Fehler beim Berechnen des Levels:', e);
+      }
+    }
+
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) { window.location.href = "index.html"; return; }
@@ -413,6 +509,7 @@
       // Discord-Identität (Name/Handle/ID) still im Hintergrund in die DB schreiben,
       // damit auch schon bestehende Profile ohne discord_name automatisch geheilt werden.
       syncDiscordIdentity(currentUser);
+      loadLevelInfo(currentUser.id);
       
       document.getElementById("profilForm").style.display = "block";
 
