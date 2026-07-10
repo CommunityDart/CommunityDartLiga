@@ -796,7 +796,7 @@
       <div class="tab-buttons">
         <button class="tab-btn active" id="memberTabMapBtn" onclick="switchMemberTab('map')">🗺️ Karte</button>
         <button class="tab-btn" id="memberTabCardsBtn" onclick="switchMemberTab('cards')">🪪 Mitgliederausweise</button>
-        <button class="tab-btn" id="memberTabLeaderboardBtn" onclick="switchMemberTab('leaderboard')">⭐ XP Rangliste</button>
+        <button class="tab-btn" id="memberTabLeaderboardBtn" onclick="switchMemberTab('leaderboard')">⭐ Rangliste</button>
       </div>
 
       <div id="memberMapTab">
@@ -812,7 +812,7 @@
         <div class="card" style="border-color: #20b7ff;">
           <div class="card-header" style="color: #20b7ff; font-weight: 800;">🪪 Mitgliederausweise</div>
           <div class="card-body">
-            <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;"></p>
+            <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">Mitglieder, die ihre Karte in ihrem Profil öffentlich sichtbar geschaltet haben. Klick auf eine Karte für das volle Profil.</p>
             <div id="membercardGridArea"><div class="empty">Lade Mitgliederausweise...</div></div>
           </div>
         </div>
@@ -1871,7 +1871,9 @@
     console.log('Mitglieder mit gültigen Koordinaten für die Karte:', withCoords.map(p => ({ name: p.display_name || p.discord_name, lat: p._lat, lon: p._lon })));
 
     if (!membercardMapInstance) {
-      membercardMapInstance = L.map('membercardMap', { scrollWheelZoom: false }).setView([30, 10], 2);
+      // Fixe Startansicht: ganz Deutschland auf einen Blick, unabhängig davon
+      // wo die eingetragenen Mitglieder tatsächlich wohnen.
+      membercardMapInstance = L.map('membercardMap', { scrollWheelZoom: false }).setView([51.1657, 10.4515], 6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap Mitwirkende',
         maxZoom: 18
@@ -1883,7 +1885,6 @@
 
     if (withCoords.length === 0) return;
 
-    const bounds = [];
     withCoords.forEach(p => {
       const name = p.display_name || p.discord_name || p.username || 'Spieler';
       const plzOrt = [p.plz, p.ort].filter(Boolean).join(' ');
@@ -1891,10 +1892,8 @@
         .bindTooltip(`<strong>${htmlEscape(name)}</strong>${plzOrt ? `<br>📍 ${htmlEscape(plzOrt)}` : ''}`)
         .on('click', () => openPlayerCard(p.id, name))
         .addTo(membercardMarkersLayer);
-      bounds.push([p._lat, p._lon]);
     });
 
-    membercardMapInstance.fitBounds(bounds, { padding: [30, 30], maxZoom: 10 });
     setTimeout(() => { if (membercardMapInstance) membercardMapInstance.invalidateSize(); }, 150);
   }
 
