@@ -794,18 +794,21 @@
   <div id="membercardView" class="view">
     <div class="full-width-layout">
       <div class="tab-buttons">
-        <button class="tab-btn active" id="memberTabCardsBtn" onclick="switchMemberTab('cards')">🪪 Mitgliederausweise</button>
+        <button class="tab-btn active" id="memberTabMapBtn" onclick="switchMemberTab('map')">🗺️ Karte</button>
+        <button class="tab-btn" id="memberTabCardsBtn" onclick="switchMemberTab('cards')">🪪 Mitgliederausweise</button>
         <button class="tab-btn" id="memberTabLeaderboardBtn" onclick="switchMemberTab('leaderboard')">⭐ Rangliste</button>
       </div>
 
-      <div id="memberCardsTab">
-        <div class="card" style="border-color: #20b7ff; margin-bottom: 24px;">
+      <div id="memberMapTab">
+        <div class="card" style="border-color: #20b7ff;">
           <div class="card-header" style="color: #20b7ff; font-weight: 800;">🗺️ Wo unsere Mitglieder herkommen</div>
           <div class="card-body">
             <div id="membercardMap" style="height: 400px; border-radius: 10px; overflow: hidden; background: var(--bg-tertiary);"></div>
           </div>
         </div>
+      </div>
 
+      <div id="memberCardsTab" style="display:none;">
         <div class="card" style="border-color: #20b7ff;">
           <div class="card-header" style="color: #20b7ff; font-weight: 800;">🪪 Mitgliederausweise</div>
           <div class="card-body">
@@ -1243,7 +1246,7 @@
   };
 
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
-  let activeMemberTab = 'cards';
+  let activeMemberTab = 'map';
 
   function isIdString(str) {
     if (!str) return true;
@@ -1463,18 +1466,22 @@
 
   function switchMemberTab(tab) {
     activeMemberTab = tab;
+    const mapTab = document.getElementById('memberMapTab');
     const cardsTab = document.getElementById('memberCardsTab');
     const leaderboardTab = document.getElementById('memberLeaderboardTab');
+    const mapBtn = document.getElementById('memberTabMapBtn');
     const cardsBtn = document.getElementById('memberTabCardsBtn');
     const leaderboardBtn = document.getElementById('memberTabLeaderboardBtn');
-    if (!cardsTab || !leaderboardTab) return;
+    if (!mapTab || !cardsTab || !leaderboardTab) return;
+    mapTab.style.display = tab === 'map' ? 'block' : 'none';
     cardsTab.style.display = tab === 'cards' ? 'block' : 'none';
     leaderboardTab.style.display = tab === 'leaderboard' ? 'block' : 'none';
+    if (mapBtn) mapBtn.classList.toggle('active', tab === 'map');
     if (cardsBtn) cardsBtn.classList.toggle('active', tab === 'cards');
     if (leaderboardBtn) leaderboardBtn.classList.toggle('active', tab === 'leaderboard');
     if (tab === 'leaderboard') {
       renderLeaderboard();
-    } else if (membercardMapInstance) {
+    } else if (tab === 'map' && membercardMapInstance) {
       setTimeout(() => membercardMapInstance.invalidateSize(), 100);
     }
   }
