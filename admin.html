@@ -15,40 +15,51 @@
             --bg-tertiary: #eef0f5;
             --text-primary: #2c3e50;
             --text-secondary: #666;
-            --border: #d8dee8;
-            --input-bg: #ffffff;
-            --input-border: #4b87a5;
+            --border: #e8ecf1;
+            --hover: #f0f6ff;
+            --platform-color: #0066ff;
+            --input-bg: var(--bg-secondary);
+            --input-border: var(--border);
         }
         html.dark {
-            --bg-primary: #010a0f;
-            --bg-secondary: #021622;
-            --bg-tertiary: rgba(255,255,255,0.03);
-            --text-primary: #fff;
-            --text-secondary: #90a9b7;
-            --border: rgba(75, 135, 165, 0.2);
-            --input-bg: #021017;
-            --input-border: #4b87a5;
+            --bg-primary: #1a1f36;
+            --bg-secondary: #24293f;
+            --bg-tertiary: #2c3555;
+            --text-primary: #e8ecf1;
+            --text-secondary: #b0c4ff;
+            --border: #3a4558;
+            --hover: #1f2741;
+            --input-bg: var(--bg-secondary);
+            --input-border: var(--border);
         }
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg-primary); color: var(--text-primary); margin: 0; padding: 20px; transition: background 0.3s ease, color 0.3s ease; }
-        .admin-container { max-width: 1500px; margin: 0 auto; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); margin: 0; padding: 20px; transition: background 0.3s ease, color 0.3s ease; }
+        .admin-container { max-width: 1500px; margin: 0 auto; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
-        h1, h2, h3 { color: #3ddc97; margin: 0; }
+        h1, h2, h3 { color: #00d084; margin: 0; }
+        .header-row h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0066ff 0%, #ff6b35 50%, #00d084 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
         .theme-toggle { width: 40px; height: 40px; border: 1px solid var(--border); background: var(--bg-tertiary); border-radius: 8px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
-        .theme-toggle:hover { border-color: #20b7ff; }
-        .back-home-btn { background: var(--input-bg); color: #20b7ff; border: 1px solid #20b7ff; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-        .back-home-btn:hover { background: #20b7ff; color: #000; }
-        .assign-btn { background: #3ddc97; color: #000; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; }
+        .theme-toggle:hover { border-color: #0066ff; background: var(--hover); }
+        .back-home-btn { background: var(--input-bg); color: #0066ff; border: 1px solid #0066ff; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .back-home-btn:hover { background: #0066ff; color: #fff; }
+        .assign-btn { background: #00d084; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; }
         .remove-btn { background: #e74c3c; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; margin-top: 4px; width: 100%; }
-        .generate-btn { background: #20b7ff; color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+        .generate-btn { background: #0066ff; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
         .generate-btn:hover { opacity: 0.9; }
         .remove-btn-large { background: #e74c3c; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
         .remove-btn-large:hover { opacity: 0.9; }
         .card-btn { background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .card-btn.yellow:hover { background: #f7c948; color: #000; }
+        .card-btn.yellow:hover { background: #ffd700; color: #000; }
         .card-btn.red:hover { background: #e74c3c; color: #fff; }
         .tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--border); padding-bottom: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .tab-btn { background: var(--input-bg); color: var(--text-secondary); border: 1px solid var(--input-border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 13px; }
-        .tab-btn.active { background: #3ddc97; color: #000; border-color: #3ddc97; }
+        .tab-btn { background: var(--input-bg); color: var(--text-secondary); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 13px; }
+        .tab-btn.active { background: #00d084; color: #fff; border-color: #00d084; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -57,24 +68,24 @@
         .league-select, .leg-input, .num-input, .stat-input { padding: 6px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); outline: none; }
         .num-input { width: 50px; text-align: center; }
         .leg-input { width: 45px; text-align: center; font-weight: bold; font-size: 14px; }
-        .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #20b7ff; }
-        .txt-input { padding: 6px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid #ffd08a; outline: none; width: 100%; max-width: 160px; font-size: 12px; box-sizing: border-box; }
+        .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #0066ff; }
+        .txt-input { padding: 6px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid #ff6b35; outline: none; width: 100%; max-width: 160px; font-size: 12px; box-sizing: border-box; }
         .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); font-size: 12px; box-sizing: border-box; }
         .news-headline-field { width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); outline: none; font-size: 16px; box-sizing: border-box; }
-        .config-box { background: rgba(61, 220, 151, 0.06); border: 1px solid rgba(61, 220, 151, 0.25); padding: 12px; border-radius: 10px; margin-bottom: 15px; }
+        .config-box { background: rgba(0, 208, 132, 0.06); border: 1px solid rgba(0, 208, 132, 0.25); padding: 12px; border-radius: 10px; margin-bottom: 15px; }
         .config-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
         .meta-text { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
         .player-info-block { font-size: 13px; line-height: 1.35; }
         .badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
-        .badge-up { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .badge-up { background: rgba(0, 208, 132, 0.2); color: #00d084; }
         .badge-down { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-        .badge-rel { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+        .badge-rel { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
         .flex-row-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
         .flex-row-center input { width: 50px; text-align: center; }
         .flex-col-gap { display: flex; flex-direction: column; gap: 4px; }
-        .gen-options-row { display: flex; align-items: center; gap: 8px; background: rgba(32, 183, 255, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(32, 183, 255, 0.25); margin-top: 6px; }
-        .gen-options-row label { font-size: 13.5px; font-weight: bold; color: #20b7ff; cursor: pointer; }
-        .season-indicator { background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.25); padding: 8px 12px; border-radius: 6px; color: #20b7ff; font-size: 12px; font-weight: bold; }
+        .gen-options-row { display: flex; align-items: center; gap: 8px; background: rgba(0, 102, 255, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(0, 102, 255, 0.25); margin-top: 6px; }
+        .gen-options-row label { font-size: 13.5px; font-weight: bold; color: #0066ff; cursor: pointer; }
+        .season-indicator { background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.25); padding: 8px 12px; border-radius: 6px; color: #0066ff; font-size: 12px; font-weight: bold; }
         .editor-container { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
         .editor-container .ql-toolbar.ql-snow { background: var(--bg-tertiary); border: none; border-bottom: 1px solid var(--border); }
         .editor-container .ql-container.ql-snow { border: none; min-height: 220px; background: var(--input-bg); color: var(--text-primary); font-size: 14px; }
@@ -133,7 +144,7 @@
                     </tr>
                 </thead>
                 <tbody id="rulesTableBody">
-                    <tr><td colspan="4" style="text-align:center; color:#90a9b7;">Werden geladen...</td></tr>
+                    <tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">Werden geladen...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -161,7 +172,7 @@
     <div id="tabSpielplaene" class="tab-content">
         <h2>Ergebnisse, Averages & Highlights eintragen</h2>
 
-        <div class="config-box" style="border-color: #ffd08a; background: rgba(255, 208, 138, 0.05);">
+        <div class="config-box" style="border-color: #ff6b35; background: rgba(255, 107, 53, 0.05);">
             <h3>⏱️ Ergebnis-Bestätigungsfrist</h3>
             <p class="meta-text" style="margin-bottom:8px;">Wenn ein Spieler ein Ergebnis einträgt, hat der Gegner diese Zeit (in Stunden), um es zu bestätigen oder abzulehnen. Läuft die Frist ab, gilt das gemeldete Ergebnis automatisch als final.</p>
             <div class="config-row">
@@ -177,7 +188,7 @@
                 </select>
                 <button id="endSeasonMatchdayBtn" class="remove-btn-large" style="display:none;" onclick="endSeasonForLeague(document.getElementById('leagueSelector').value)">🏁 Saison für diese Liga beenden</button>
             </div>
-            <div id="matchdayLigaInfo" style="display:none; padding: 12px; background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); border-radius: 6px; font-size: 13px; color: #20b7ff; font-weight: bold; max-width: 500px;">
+            <div id="matchdayLigaInfo" style="display:none; padding: 12px; background: rgba(32, 183, 255, 0.1); border: 1px solid rgba(32, 183, 255, 0.2); border-radius: 6px; font-size: 13px; color: #0066ff; font-weight: bold; max-width: 500px;">
             </div>
             <div id="generatePlanArea" style="display:none; flex-direction:column; gap: 8px; align-items:flex-start;"></div>
         </div>
@@ -215,7 +226,7 @@
     <div id="tabTournaments" class="tab-content">
         <h2>🏆 Turniere verwalten</h2>
 
-        <div class="config-box" style="border-color: #ffd08a; background: rgba(255, 208, 138, 0.05);">
+        <div class="config-box" style="border-color: #ff6b35; background: rgba(255, 107, 53, 0.05);">
             <h3>⏱️ Turnier-Bestätigungsfrist</h3>
             <p class="meta-text" style="margin-bottom:8px;">Eigene, kürzere Frist nur für Turnier-Ergebnisse (unabhängig von der Liga-Frist).</p>
             <div class="config-row">
@@ -255,23 +266,23 @@
                     </tr>
                 </thead>
                 <tbody id="activeTournamentsBody">
-                    <tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine aktiven Turniere</td></tr>
+                    <tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Keine aktiven Turniere</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <div id="tournamentManagerArea" class="config-box" style="display:none; margin-top: 20px; border-color: #20b7ff; background: rgba(32, 183, 255, 0.05);">
+        <div id="tournamentManagerArea" class="config-box" style="display:none; margin-top: 20px; border-color: #0066ff; background: rgba(32, 183, 255, 0.05);">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(32, 183, 255, 0.2); padding-bottom: 10px; margin-bottom: 15px;">
-                <h3 id="manageTournamentTitle" style="color: #20b7ff;">Turnier Verwaltung</h3>
+                <h3 id="manageTournamentTitle" style="color: #0066ff;">Turnier Verwaltung</h3>
                 <button class="card-btn red" onclick="document.getElementById('tournamentManagerArea').style.display='none'">❌ Schließen</button>
             </div>
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                    <h4 style="color: #3ddc97; margin-top:0;">👥 Angemeldete Spieler (<span id="tParticipantCount">0</span>)</h4>
+                    <h4 style="color: #00d084; margin-top:0;">👥 Angemeldete Spieler (<span id="tParticipantCount">0</span>)</h4>
                     <ul id="tParticipantList" style="list-style: none; padding: 0; margin: 0; font-size: 13.5px; line-height: 1.8; color: #fff;"></ul>
                 </div>
                 <div style="flex: 2; min-width: 400px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                    <h4 id="tScheduleHeading" style="color: #3ddc97; margin-top:0;">📅 Spielplan (Tabelle: tournament_matches)</h4>
+                    <h4 id="tScheduleHeading" style="color: #00d084; margin-top:0;">📅 Spielplan (Tabelle: tournament_matches)</h4>
                     <div id="tScheduleGenArea" style="margin-bottom: 15px;">
                         <button class="generate-btn" id="tGenerateBtn" onclick="generateTournamentSchedule()">⚙️ Spielplan generieren</button>
                         <button class="remove-btn-large" style="margin-left: 8px; display:none;" id="tDeleteScheduleBtn" onclick="deleteTournamentSchedule()">🗑️ Spielplan löschen</button>
@@ -296,7 +307,7 @@
                     </tr>
                 </thead>
                 <tbody id="completedTournamentsBody">
-                    <tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine abgeschlossenen Turniere</td></tr>
+                    <tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Keine abgeschlossenen Turniere</td></tr>
                 </tbody>
             </table>
         </div>
@@ -308,7 +319,7 @@
             <input type="text" id="newsTitleInput" class="news-headline-field" placeholder="Überschrift der News...">
         </div>
         <div id="newsEditor" class="editor-container"></div>
-        <button class="save-banner-btn" onclick="publishNews()" style="margin-top: 10px; background: #3ddc97; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">📢 News veröffentlichen</button>
+        <button class="save-banner-btn" onclick="publishNews()" style="margin-top: 10px; background: #00d084; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">📢 News veröffentlichen</button>
         <h3 style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">Bestehende News verwalten</h3>
         <div id="adminNewsContainer">Lade geschriebene Beiträge...</div>
     </div>
@@ -316,7 +327,7 @@
     <div id="tabRegelwerk" class="tab-content">
         <h2>Globales Regelwerk anpassen</h2>
         <div id="ruleEditor" class="editor-container"></div>
-        <button class="save-banner-btn" onclick="saveRegelwerkHtml()" style="margin-top: 10px; background: #3ddc97; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">💾 Regelwerk live speichern</button>
+        <button class="save-banner-btn" onclick="saveRegelwerkHtml()" style="margin-top: 10px; background: #00d084; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">💾 Regelwerk live speichern</button>
     </div>
 
     <div id="tabBadges" class="tab-content">
@@ -397,9 +408,9 @@
         <p class="meta-text" style="margin-bottom:12px;">Nur hier im Admin-Bereich sichtbar. Zeigt für die aktuelle Saison (<strong id="feesSeasonLabel">-</strong>), wer das Startgeld bereits bezahlt hat. Klick auf den Button, um den Status umzuschalten.</p>
 
         <div class="config-box" style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
-            <div><strong style="color:#3ddc97; font-size:22px;" id="feesPaidCount">0</strong> <span class="meta-text">bezahlt</span></div>
+            <div><strong style="color:#00d084; font-size:22px;" id="feesPaidCount">0</strong> <span class="meta-text">bezahlt</span></div>
             <div><strong style="color:#e74c3c; font-size:22px;" id="feesOpenCount">0</strong> <span class="meta-text">offen</span></div>
-            <div><strong style="color:#20b7ff; font-size:22px;" id="feesTotalCount">0</strong> <span class="meta-text">gesamt</span></div>
+            <div><strong style="color:#0066ff; font-size:22px;" id="feesTotalCount">0</strong> <span class="meta-text">gesamt</span></div>
         </div>
 
         <div style="overflow-x: auto;">
@@ -413,7 +424,7 @@
                     </tr>
                 </thead>
                 <tbody id="feesListBody">
-                    <tr><td colspan="4" style="text-align:center; color:#90a9b7;">Lade Spieler...</td></tr>
+                    <tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">Lade Spieler...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -562,9 +573,9 @@
         const fmtAvg = (v) => (v !== null && v !== undefined && v !== '') ? parseFloat(v).toFixed(2) : '-';
         return `
             <div style="margin-top:4px; font-size:11.5px; line-height:1.3; color:var(--text-secondary); background:var(--bg-tertiary); padding:4px; border-radius:6px; border:1px solid var(--border);">
-                <div>⚫ AD: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span> <span style="color:#90a9b7;">[AVG ${fmtAvg(prof.autodarts_avg)}]</span></div>
-                <div>🟠 DC: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span> <span style="color:#90a9b7;">[AVG ${fmtAvg(prof.dartcounter_avg)}]</span></div>
-                <div>🟢 SC: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span> <span style="color:#90a9b7;">[AVG ${fmtAvg(prof.scolia_avg)}]</span></div>
+                <div>⚫ AD: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span> <span style="color:var(--text-secondary);">[AVG ${fmtAvg(prof.autodarts_avg)}]</span></div>
+                <div>🟠 DC: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span> <span style="color:var(--text-secondary);">[AVG ${fmtAvg(prof.dartcounter_avg)}]</span></div>
+                <div>🟢 SC: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span> <span style="color:var(--text-secondary);">[AVG ${fmtAvg(prof.scolia_avg)}]</span></div>
             </div>
         `;
     }
@@ -572,7 +583,7 @@
     function formatWantedPlatforms(prof) {
         if (!prof) return "";
         const chip = (wanted, label, icon) => `<span style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:4px; display:inline-flex; align-items:center; gap:3px; ${wanted
-            ? 'background:rgba(61,220,151,0.15); color:#3ddc97; border:1px solid rgba(61,220,151,0.4);'
+            ? 'background:rgba(61,220,151,0.15); color:#00d084; border:1px solid rgba(61,220,151,0.4);'
             : 'background:rgba(255,255,255,0.04); color:var(--text-secondary); border:1px solid var(--border); text-decoration:line-through; opacity:0.55;'}">${icon} ${label}</span>`;
         return `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">
             ${chip(prof.want_autodarts, 'Autodarts', '⚫')}
@@ -637,7 +648,7 @@
         const tbody = document.getElementById("rulesTableBody");
         if(!tbody) return;
         if(!globalLeagueRules || Object.keys(globalLeagueRules).length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
             return;
         }
         const allRules = Object.values(globalLeagueRules).map(r => ({
@@ -649,15 +660,15 @@
         
         const activeRules = allRules.filter(r => r.aufsteiger > 0 || r.absteiger > 0 || r.relegation > 0);
         if(activeRules.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">Noch keine Auf-/Absteiger Einstellungen gespeichert</td></tr>`;
             return;
         }
         tbody.innerHTML = activeRules.map(rule => `
             <tr>
-                <td><strong style="color:#20b7ff;">${htmlEscape(rule.league)}</strong></td>
-                <td style="text-align:center; color:#3ddc97;"><strong>${rule.aufsteiger}</strong></td>
+                <td><strong style="color:#0066ff;">${htmlEscape(rule.league)}</strong></td>
+                <td style="text-align:center; color:#00d084;"><strong>${rule.aufsteiger}</strong></td>
                 <td style="text-align:center; color:#e74c3c;"><strong>${rule.absteiger}</strong></td>
-                <td style="text-align:center; color:#ffd08a;"><strong>${rule.relegation}</strong></td>
+                <td style="text-align:center; color:#ff6b35;"><strong>${rule.relegation}</strong></td>
             </tr>
         `).join("");
     }
@@ -697,7 +708,7 @@
         optionsArr.forEach(l => { html += `<option value="${l}" ${effectiveVal === l ? 'selected' : ''}>${l}</option>`; });
         html += `</select>`;
         if (!currentVal && suggestedVal) {
-            html += `<div style="font-size:10.5px; color:#20b7ff; margin-top:3px; font-weight:bold;">💡 Vorschlag automatisch gewählt</div>`;
+            html += `<div style="font-size:10.5px; color:#0066ff; margin-top:3px; font-weight:bold;">💡 Vorschlag automatisch gewählt</div>`;
         }
         return html;
     }
@@ -761,11 +772,11 @@
                             const suggestion = suggestTargetLeague(h.league_name, statusKey);
                             if (suggestion) {
                                 suggestions[plat] = suggestion;
-                                suggestionText = ` <span style="color:#20b7ff; font-weight:bold;">→ Vorschlag: ${htmlEscape(suggestion)}</span>`;
+                                suggestionText = ` <span style="color:#0066ff; font-weight:bold;">→ Vorschlag: ${htmlEscape(suggestion)}</span>`;
                             }
                         }
                         herkunftHtml += `<div style="margin-top: 4px; padding: 2px 6px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size:11.5px;">
-                            <span style="color:#20b7ff; font-weight:bold;">${plat}:</span> <strong>${htmlEscape(h.league_name)}</strong> (Platz ${h.placement}) ${statusBadge}${suggestionText}
+                            <span style="color:#0066ff; font-weight:bold;">${plat}:</span> <strong>${htmlEscape(h.league_name)}</strong> (Platz ${h.placement}) ${statusBadge}${suggestionText}
                         </div>`;
                     }
                 });
@@ -777,14 +788,14 @@
                 return `
                     <tr id="row_${p.id}">
                         <td>
-                            <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br>
+                            <strong style="color:#0066ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br>
                             <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
                             <div style="margin-top:6px;">
-                                <small style="color:#90a9b7; font-weight:bold; display:block; margin-bottom:2px;">🎯 Angemeldet für:</small>
+                                <small style="color:var(--text-secondary); font-weight:bold; display:block; margin-bottom:2px;">🎯 Angemeldet für:</small>
                                 ${formatWantedPlatforms(p)}
                             </div>
                             <div style="margin-top: 6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:4px;">
-                                <small style="color:#90a9b7; font-weight:bold; display:block; margin-bottom:2px;">Verlauf Vor-Saison:</small>
+                                <small style="color:var(--text-secondary); font-weight:bold; display:block; margin-bottom:2px;">Verlauf Vor-Saison:</small>
                                 ${herkunftHtml}
                             </div>
                         </td>
@@ -794,7 +805,7 @@
                         <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league, suggestions.Scolia)}${!p.want_scolia ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
                         <td>
                             <button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button>
-                            ${isEingeteilt ? '<br><span style="color:#3ddc97; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
+                            ${isEingeteilt ? '<br><span style="color:#00d084; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
                         </td>
                     </tr>`;
             }).join("");
@@ -866,9 +877,9 @@
                     area.innerHTML = `<div style="padding:12px; background:rgba(231, 76, 60, 0.1); border:1px solid #e74c3c; border-radius:10px;">Es sind noch keine Spieler zugewiesen!</div>`;
                 } else {
                     let previewHtml = `<div style="padding:12px; background:rgba(32, 183, 255, 0.05); border:1px solid rgba(32, 183, 255, 0.2); border-radius:10px;">
-                        <h3 style="color:#20b7ff; margin-bottom:8px;">📋 Vorschau der zugewiesenen Spieler (${assignedPlayers.length})</h3>
+                        <h3 style="color:#0066ff; margin-bottom:8px;">📋 Vorschau der zugewiesenen Spieler (${assignedPlayers.length})</h3>
                         <table><thead><tr><th>Spieler</th><th>Plattform-Namen</th></tr></thead><tbody>
-                        ${assignedPlayers.map(p => `<tr><td><strong style="color:#3ddc97;">${htmlEscape(p.discord_name || p.username)}</strong></td><td>${formatAllPlattformNames(p)}</td></tr>`).join("")}
+                        ${assignedPlayers.map(p => `<tr><td><strong style="color:#00d084;">${htmlEscape(p.discord_name || p.username)}</strong></td><td>${formatAllPlattformNames(p)}</td></tr>`).join("")}
                         </tbody></table></div>`;
                     area.innerHTML = previewHtml;
                 }
@@ -919,7 +930,7 @@
 
         let html = "";
         for (const [day, list] of Object.entries(grouped)) {
-            html += `<h3 style="color:#20b7ff; margin-top:14px; border-bottom:1px solid #4b87a5; padding-bottom:4px;">Spieltag ${day}</h3><table><thead><tr>
+            html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">Spieltag ${day}</h3><table><thead><tr>
                         <th style="width:18%;">Heimspieler</th><th style="width:18%;">Auswärtsspieler</th><th style="width:9%; text-align:center;">Legs</th>
                         <th style="width:12%; text-align:center;">Averages</th><th style="width:14%; text-align:center;">Highlights</th>
                         ${context !== 'Turnier' ? '<th style="width:10%; text-align:center;">Karten</th>' : ''}
@@ -937,26 +948,26 @@
                 if(context !== 'Turnier') {
                     const pen1 = penaltiesMap[m.player1_id] || { yellow_cards: 0, red_cards: 0 };
                     const pen2 = penaltiesMap[m.player2_id] || { yellow_cards: 0, red_cards: 0 };
-                    const k1 = (pen1.yellow_cards > 0 || pen1.red_cards > 0) ? `<span style="color: ${pen1.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen1.yellow_cards} 🟥${pen1.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
-                    const k2 = (pen2.yellow_cards > 0 || pen2.red_cards > 0) ? `<span style="color: ${pen2.red_cards > 0 ? '#e74c3c' : '#ffd08a'};">🟨${pen2.yellow_cards} 🟥${pen2.red_cards}</span>` : '<span style="color: #3ddc97;">✓</span>';
+                    const k1 = (pen1.yellow_cards > 0 || pen1.red_cards > 0) ? `<span style="color: ${pen1.red_cards > 0 ? '#e74c3c' : '#ff6b35'};">🟨${pen1.yellow_cards} 🟥${pen1.red_cards}</span>` : '<span style="color: #00d084;">✓</span>';
+                    const k2 = (pen2.yellow_cards > 0 || pen2.red_cards > 0) ? `<span style="color: ${pen2.red_cards > 0 ? '#e74c3c' : '#ff6b35'};">🟨${pen2.yellow_cards} 🟥${pen2.red_cards}</span>` : '<span style="color: #00d084;">✓</span>';
                     kartenTd = `<td style="text-align:center; font-size:12px;"><div style="margin-bottom: 6px;">${k1}</div><div>${k2}</div></td>`;
                 }
 
                 const statusLabels = {
-                    'offen': '<span style="color:#90a9b7;">–</span>',
-                    'pending_confirmation': '<span style="color:#f7c948; font-weight:bold;">⏳ Wartet auf Bestätigung</span>',
+                    'offen': '<span style="color:var(--text-secondary);">–</span>',
+                    'pending_confirmation': '<span style="color:#ffd700; font-weight:bold;">⏳ Wartet auf Bestätigung</span>',
                     'confirmed': '<span style="color:#2ecc71; font-weight:bold;">✅ Bestätigt</span>',
-                    'auto_confirmed': '<span style="color:#20b7ff; font-weight:bold;">⏱️ Auto-bestätigt</span>',
-                    'admin_confirmed': '<span style="color:#3ddc97; font-weight:bold;">🛡️ Admin final</span>'
+                    'auto_confirmed': '<span style="color:#0066ff; font-weight:bold;">⏱️ Auto-bestätigt</span>',
+                    'admin_confirmed': '<span style="color:#00d084; font-weight:bold;">🛡️ Admin final</span>'
                 };
                 let statusTd = statusLabels[m.result_status] || statusLabels['offen'];
                 if (m.screenshot_url) {
-                    statusTd += `<br><a href="${m.screenshot_url}" target="_blank" style="font-size:11px; color:#20b7ff;">📷 Screenshot</a>`;
+                    statusTd += `<br><a href="${m.screenshot_url}" target="_blank" style="font-size:11px; color:#0066ff;">📷 Screenshot</a>`;
                 }
 
                 html += `<tr>
-                        <td><div class="player-info-block"><strong style="color:#3ddc97;">${htmlEscape(p1Name)}</strong>${formatAllPlattformNames(p1)}</div></td>
-                        <td><div class="player-info-block"><strong style="color:#3ddc97;">${htmlEscape(p2Name)}</strong>${formatAllPlattformNames(p2)}</div></td>
+                        <td><div class="player-info-block"><strong style="color:#00d084;">${htmlEscape(p1Name)}</strong>${formatAllPlattformNames(p1)}</div></td>
+                        <td><div class="player-info-block"><strong style="color:#00d084;">${htmlEscape(p2Name)}</strong>${formatAllPlattformNames(p2)}</div></td>
                         <td><div class="flex-row-center"><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}></div></td>
                         <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || m.avg_player1 || ''}" ${isFreilos?'disabled':''}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || m.avg_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
                         <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isFreilos?'disabled':''}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
@@ -1099,18 +1110,18 @@
             const activeTournaments = tournaments ? tournaments.filter(t => t.status === 'active') : [];
             const completedTournaments = tournaments ? tournaments.filter(t => t.status === 'completed') : [];
             
-            if(activeTournaments.length === 0) activeBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine aktiven Turniere</td></tr>`;
+            if(activeTournaments.length === 0) activeBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Keine aktiven Turniere</td></tr>`;
             else {
                 activeBody.innerHTML = activeTournaments.map(t => `
                     <tr>
-                        <td><strong style="color:#3ddc97;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:#90a9b7;">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span></td>
+                        <td><strong style="color:#00d084;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:var(--text-secondary);">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span></td>
                         <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
                         <td id="count_${t.id}">0</td>
-                        <td><span style="color: #f7c948; font-weight: bold;">🟡 Aktiv</span></td>
+                        <td><span style="color: #ffd700; font-weight: bold;">🟡 Aktiv</span></td>
                         <td>
                             <div style="display:flex; gap: 8px; flex-wrap: wrap;">
                                 <button class="generate-btn" style="padding: 6px 12px; font-size: 11px;" onclick="openTournamentManager('${t.id}', '${escape(t.title)}')">⚙️ Verwalten</button>
-                                <button class="remove-btn-large" style="background: #f7c948; color: #000; padding: 6px 12px; font-size: 11px;" onclick="finishTournament('${t.id}')">🏁 Beenden</button>
+                                <button class="remove-btn-large" style="background: #ffd700; color: #000; padding: 6px 12px; font-size: 11px;" onclick="finishTournament('${t.id}')">🏁 Beenden</button>
                                 <button class="remove-btn-large" style="padding: 6px 12px; font-size: 11px;" onclick="deleteTournament('${t.id}', '${escape(t.title)}')">🗑️ Löschen</button>
                             </div>
                         </td>
@@ -1124,17 +1135,17 @@
                 }
             }
             
-            if(completedTournaments.length === 0) completedBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#90a9b7;">Keine abgeschlossenen Turniere</td></tr>`;
+            if(completedTournaments.length === 0) completedBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Keine abgeschlossenen Turniere</td></tr>`;
             else {
                 completedBody.innerHTML = completedTournaments.map(t => `
                     <tr>
-                        <td><strong style="color:#3ddc97;">${htmlEscape(t.title)}</strong></td>
+                        <td><strong style="color:#00d084;">${htmlEscape(t.title)}</strong></td>
                         <td style="color: #2ecc71;">🥇 ${htmlEscape(t.first_place_name || '-')}</td>
                         <td style="color: #c0c0c0;">🥈 ${htmlEscape(t.second_place_name || '-')}</td>
                         <td style="color: #cd7f32;">🥉 ${htmlEscape(t.third_place_name || '-')}</td>
                         <td>
                             <div style="display:flex; gap: 8px; flex-wrap: wrap;">
-                                <button class="card-btn" style="background: #20b7ff; color: #000; font-weight: bold; padding: 4px 8px; font-size: 11px;" onclick="editTournamentNews('${t.id}')">📰 News</button>
+                                <button class="card-btn" style="background: #0066ff; color: #000; font-weight: bold; padding: 4px 8px; font-size: 11px;" onclick="editTournamentNews('${t.id}')">📰 News</button>
                                 <button class="remove-btn-large" style="padding: 6px 12px; font-size: 11px;" onclick="deleteTournament('${t.id}', '${escape(t.title)}')">🗑️ Löschen</button>
                             </div>
                         </td>
@@ -1181,11 +1192,11 @@
         document.getElementById('tParticipantCount').innerText = currentManageParticipants.length;
         const listEl = document.getElementById('tParticipantList');
         if(currentManageParticipants.length === 0) {
-            listEl.innerHTML = '<li style="color:#90a9b7;">Noch keine Anmeldungen erhalten.</li>';
+            listEl.innerHTML = '<li style="color:var(--text-secondary);">Noch keine Anmeldungen erhalten.</li>';
         } else {
             listEl.innerHTML = currentManageParticipants.map(r => `
                 <li style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                    <span>🎯 <strong style="color:#ffd08a;">${htmlEscape(r.player_name)}</strong></span>
+                    <span>🎯 <strong style="color:#ff6b35;">${htmlEscape(r.player_name)}</strong></span>
                     <button class="card-btn red" style="padding:2px 8px; font-size:11px;" onclick="removeTournamentRegistration('${r.id}')">✖ entfernen</button>
                 </li>`).join("");
         }
@@ -1214,8 +1225,8 @@
 
         if(!matches || matches.length === 0) {
             area.innerHTML = currentManageFormat === 'roundrobin'
-                ? '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Spielplan generiert. Klicke auf "Spielplan generieren", sobald die Anmeldephase vorbei ist.</div>'
-                : '<div style="color:#90a9b7; margin-top: 10px;">Noch kein Turnierbaum ausgelost. Klicke auf "Turnierbaum auslosen", sobald die Anmeldephase vorbei ist.</div>';
+                ? '<div style="color:var(--text-secondary); margin-top: 10px;">Noch kein Spielplan generiert. Klicke auf "Spielplan generieren", sobald die Anmeldephase vorbei ist.</div>'
+                : '<div style="color:var(--text-secondary); margin-top: 10px;">Noch kein Turnierbaum ausgelost. Klicke auf "Turnierbaum auslosen", sobald die Anmeldephase vorbei ist.</div>';
             btnDelete.style.display = 'none';
         } else {
             btnDelete.style.display = 'inline-flex';
@@ -1248,7 +1259,7 @@
         let html = "";
         Object.keys(grouped).map(Number).sort((a,b)=>a-b).forEach(r => {
             const list = grouped[r].sort((a,b)=>(a.bracket_slot||0)-(b.bracket_slot||0));
-            html += `<h3 style="color:#20b7ff; margin-top:14px; border-bottom:1px solid #4b87a5; padding-bottom:4px;">${roundName(r)}</h3><table><thead><tr>
+            html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">${roundName(r)}</h3><table><thead><tr>
                         <th style="width:20%;">Spieler 1</th><th style="width:20%;">Spieler 2</th><th style="width:10%; text-align:center;">Legs</th>
                         <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th>
                         <th style="width:14%; text-align:center;">Status</th>
@@ -1260,18 +1271,18 @@
                 const isPlayable = !!(m.player1_id && m.player2_id) && !m.is_bye;
 
                 const statusLabels = {
-                    'offen': '<span style="color:#90a9b7;">–</span>',
-                    'pending_confirmation': '<span style="color:#f7c948; font-weight:bold;">⏳ Wartet auf Bestätigung</span>',
+                    'offen': '<span style="color:var(--text-secondary);">–</span>',
+                    'pending_confirmation': '<span style="color:#ffd700; font-weight:bold;">⏳ Wartet auf Bestätigung</span>',
                     'confirmed': '<span style="color:#2ecc71; font-weight:bold;">✅ Bestätigt</span>',
-                    'auto_confirmed': '<span style="color:#20b7ff; font-weight:bold;">⏱️ Auto-bestätigt</span>',
-                    'admin_confirmed': '<span style="color:#3ddc97; font-weight:bold;">🛡️ Admin final</span>'
+                    'auto_confirmed': '<span style="color:#0066ff; font-weight:bold;">⏱️ Auto-bestätigt</span>',
+                    'admin_confirmed': '<span style="color:#00d084; font-weight:bold;">🛡️ Admin final</span>'
                 };
-                let statusTd = m.is_bye ? '<span style="color:#90a9b7;">🎟️ Freilos</span>' : (statusLabels[m.result_status] || statusLabels['offen']);
-                if (m.screenshot_url) statusTd += `<br><a href="${m.screenshot_url}" target="_blank" style="font-size:11px; color:#20b7ff;">📷 Screenshot</a>`;
+                let statusTd = m.is_bye ? '<span style="color:var(--text-secondary);">🎟️ Freilos</span>' : (statusLabels[m.result_status] || statusLabels['offen']);
+                if (m.screenshot_url) statusTd += `<br><a href="${m.screenshot_url}" target="_blank" style="font-size:11px; color:#0066ff;">📷 Screenshot</a>`;
 
                 html += `<tr>
-                        <td><strong style="color:#3ddc97;">${htmlEscape(p1Name)}</strong></td>
-                        <td><strong style="color:#3ddc97;">${htmlEscape(p2Name)}</strong></td>
+                        <td><strong style="color:#00d084;">${htmlEscape(p1Name)}</strong></td>
+                        <td><strong style="color:#00d084;">${htmlEscape(p2Name)}</strong></td>
                         <td><div class="flex-row-center"><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isPlayable?'':'disabled'}> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isPlayable?'':'disabled'}></div></td>
                         <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || ''}" ${isPlayable?'':'disabled'}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || ''}" ${isPlayable?'':'disabled'}></div></td>
                         <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isPlayable?'':'disabled'}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isPlayable?'':'disabled'}></div></td>
@@ -1533,7 +1544,7 @@
 
             tbody.innerHTML = leaguePlayers.map(p => {
                 const pen = penaltiesMap[p.id] || { yellow_cards: 0, red_cards: 0, bemerkung: '' };
-                return `<tr><td><strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br><span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span></td><td>${formatAllPlattformNames(p)}</td><td><input type="number" id="yellow_${p.id}" class="leg-input" value="${pen.yellow_cards}"> 🟨</td><td><input type="number" id="red_${p.id}" class="leg-input" value="${pen.red_cards}"> 🟥</td><td><input type="text" id="note_${p.id}" class="comment-input" placeholder="Grund..." value="${pen.bemerkung ? htmlEscape(pen.bemerkung) : ''}"></td><td><button class="assign-btn" style="padding:6px 8px;" onclick="savePlayerCards('${p.id}', '${league}')">💾</button></td></tr>`;
+                return `<tr><td><strong style="color:#0066ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br><span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span></td><td>${formatAllPlattformNames(p)}</td><td><input type="number" id="yellow_${p.id}" class="leg-input" value="${pen.yellow_cards}"> 🟨</td><td><input type="number" id="red_${p.id}" class="leg-input" value="${pen.red_cards}"> 🟥</td><td><input type="text" id="note_${p.id}" class="comment-input" placeholder="Grund..." value="${pen.bemerkung ? htmlEscape(pen.bemerkung) : ''}"></td><td><button class="assign-btn" style="padding:6px 8px;" onclick="savePlayerCards('${p.id}', '${league}')">💾</button></td></tr>`;
             }).join("");
         } catch(e) { tbody.innerHTML = `<tr><td colspan="6">Fehler beim Laden.</td></tr>`; }
     }
@@ -1575,9 +1586,9 @@
         const box = document.createElement("div");
         box.id = "globalSeasonConfigBox";
         box.className = "config-box";
-        box.style.borderColor = "#ffd08a";
-        box.style.background = "rgba(255, 208, 138, 0.05)";
-        box.innerHTML = `<h3>📅 Globale Saison-Verwaltung</h3><p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird archiviert.</p><div class="config-row"><input type="text" id="newSeasonNameInput" class="txt-input" placeholder="z.B. Saison 2" style="width: 250px; max-width:100%;"><button class="generate-btn" style="background: #ffd08a; color:#000;" onclick="updateGlobalSeasonName()">🔄 Neue Saison starten & wechseln</button></div>`;
+        box.style.borderColor = "#ff6b35";
+        box.style.background = "rgba(255, 107, 53, 0.05)";
+        box.innerHTML = `<h3>📅 Globale Saison-Verwaltung</h3><p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird archiviert.</p><div class="config-row"><input type="text" id="newSeasonNameInput" class="txt-input" placeholder="z.B. Saison 2" style="width: 250px; max-width:100%;"><button class="generate-btn" style="background: #ff6b35; color:#000;" onclick="updateGlobalSeasonName()">🔄 Neue Saison starten & wechseln</button></div>`;
         targetTab.insertBefore(box, targetTab.firstChild);
     }
 
@@ -1632,7 +1643,7 @@
             const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString('de-DE') : '-';
             return `<tr>
                 <td>${renderBadgeHex(b, 32)}</td>
-                <td><strong style="color:#20b7ff;">${htmlEscape(playerName)}</strong></td>
+                <td><strong style="color:#0066ff;">${htmlEscape(playerName)}</strong></td>
                 <td>${htmlEscape(type.label)}${b.platform ? `<br><span class="meta-text">${htmlEscape(b.platform)}</span>` : ''}</td>
                 <td>${htmlEscape(b.detail || '-')}</td>
                 <td style="font-size:12px; color:var(--text-secondary);">${dateStr}</td>
@@ -1713,7 +1724,7 @@
             (fees || []).forEach(f => { feesMap[f.player_id] = f; });
 
             if (!players || players.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Keine Spieler gefunden.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">Keine Spieler gefunden.</td></tr>`;
                 updateFeesSummary(0, 0);
                 return;
             }
@@ -1723,11 +1734,11 @@
                 const paid = !!(feesMap[p.id] && feesMap[p.id].paid);
                 if (paid) paidCount++;
                 return `<tr id="feeRow_${p.id}">
-                    <td><strong style="color:#20b7ff;">${htmlEscape(p.discord_name || p.username)}</strong></td>
+                    <td><strong style="color:#0066ff;">${htmlEscape(p.discord_name || p.username)}</strong></td>
                     <td>${htmlEscape(p.real_name)}</td>
-                    <td style="text-align:center;">${paid ? '<span style="color:#3ddc97; font-weight:bold;">✅ Bezahlt</span>' : '<span style="color:#e74c3c; font-weight:bold;">❌ Offen</span>'}</td>
+                    <td style="text-align:center;">${paid ? '<span style="color:#00d084; font-weight:bold;">✅ Bezahlt</span>' : '<span style="color:#e74c3c; font-weight:bold;">❌ Offen</span>'}</td>
                     <td style="text-align:center;">
-                        <button class="card-btn" style="${paid ? 'border-color:#e74c3c; color:#e74c3c;' : 'border-color:#3ddc97; color:#3ddc97;'}" onclick="toggleFeePaid('${p.id}', ${!paid})">
+                        <button class="card-btn" style="${paid ? 'border-color:#e74c3c; color:#e74c3c;' : 'border-color:#00d084; color:#00d084;'}" onclick="toggleFeePaid('${p.id}', ${!paid})">
                             ${paid ? '❌ Als offen markieren' : '✅ Als bezahlt markieren'}
                         </button>
                     </td>
