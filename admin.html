@@ -104,6 +104,7 @@
         <button class="tab-btn" onclick="switchTab('tabRegelwerk')">6. Regelwerk bearbeiten</button>
         <button class="tab-btn" onclick="switchTab('tabBadges')">🏅 7. Badges</button>
         <button class="tab-btn" onclick="switchTab('tabLevel')">⭐ 8. Level-System</button>
+        <button class="tab-btn" onclick="switchTab('tabStartgeld')">💰 9. Startgeld</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -390,6 +391,33 @@
             </div>
         </div>
     </div>
+
+    <div id="tabStartgeld" class="tab-content">
+        <h2>💰 Startgeld verwalten</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Nur hier im Admin-Bereich sichtbar. Zeigt für die aktuelle Saison (<strong id="feesSeasonLabel">-</strong>), wer das Startgeld bereits bezahlt hat. Klick auf den Button, um den Status umzuschalten.</p>
+
+        <div class="config-box" style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
+            <div><strong style="color:#3ddc97; font-size:22px;" id="feesPaidCount">0</strong> <span class="meta-text">bezahlt</span></div>
+            <div><strong style="color:#e74c3c; font-size:22px;" id="feesOpenCount">0</strong> <span class="meta-text">offen</span></div>
+            <div><strong style="color:#20b7ff; font-size:22px;" id="feesTotalCount">0</strong> <span class="meta-text">gesamt</span></div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:32%;">Discord Name</th>
+                        <th style="width:32%;">Echtname</th>
+                        <th style="width:16%; text-align:center;">Status</th>
+                        <th style="width:20%; text-align:center;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="feesListBody">
+                    <tr><td colspan="4" style="text-align:center; color:#90a9b7;">Lade Spieler...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -526,6 +554,7 @@
         if (tabId === 'tabTournaments') document.getElementById('tournamentManagerArea').style.display='none';
         if (tabId === 'tabBadges') loadBadgesTab();
         if (tabId === 'tabLevel') loadXpConfig();
+        if (tabId === 'tabStartgeld') loadFeesTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -1661,6 +1690,77 @@
         const { error } = await supabaseClient.from('system_settings').update(updates).eq('id', 1);
         if (error) alert("❌ Fehler: " + error.message);
         else alert("✅ XP-Werte gespeichert! Gelten sofort für alle neu berechneten Level auf der Startseite.");
+    };
+
+    // --- Startgeld-Verwaltung ---------------------------------------------
+    // Nutzt eine eigene Tabelle 'season_fees' (player_id, season, paid,
+    // paid_at) statt eines Felds in 'profiles', damit der Bezahlstatus pro
+    // Saison separat erhalten bleibt (z.B. für spätere Archiv-Auswertungen).
+    async function loadFeesTab() {
+        if (!supabaseClient) return;
+        const tbody = document.getElementById('feesListBody');
+        const seasonLabel = document.getElementById('feesSeasonLabel');
+        if (seasonLabel) seasonLabel.textContent = currentSeasonGlobal;
+
+        try {
+            const { data: players, error } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name').order('discord_name');
+            if (error) { tbody.innerHTML = `<tr><td colspan="4" style="color:#e74c3c;">Fehler: ${error.message}</td></tr>`; return; }
+
+            const { data: fees, error: feesError } = await supabaseClient.from('season_fees').select('*').eq('season', currentSeasonGlobal);
+            if (feesError) { tbody.innerHTML = `<tr><td colspan="4" style="color:#e74c3c;">Fehler beim Laden der Startgeld-Daten: ${feesError.message}<br><span style="font-weight:normal; color:var(--text-secondary);">Existiert die Tabelle 'season_fees' bereits in Supabase?</span></td></tr>`; return; }
+
+            const feesMap = {};
+            (fees || []).forEach(f => { feesMap[f.player_id] = f; });
+
+            if (!players || players.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#90a9b7;">Keine Spieler gefunden.</td></tr>`;
+                updateFeesSummary(0, 0);
+                return;
+            }
+
+            let paidCount = 0;
+            tbody.innerHTML = players.map(p => {
+                const paid = !!(feesMap[p.id] && feesMap[p.id].paid);
+                if (paid) paidCount++;
+                return `<tr id="feeRow_${p.id}">
+                    <td><strong style="color:#20b7ff;">${htmlEscape(p.discord_name || p.username)}</strong></td>
+                    <td>${htmlEscape(p.real_name)}</td>
+                    <td style="text-align:center;">${paid ? '<span style="color:#3ddc97; font-weight:bold;">✅ Bezahlt</span>' : '<span style="color:#e74c3c; font-weight:bold;">❌ Offen</span>'}</td>
+                    <td style="text-align:center;">
+                        <button class="card-btn" style="${paid ? 'border-color:#e74c3c; color:#e74c3c;' : 'border-color:#3ddc97; color:#3ddc97;'}" onclick="toggleFeePaid('${p.id}', ${!paid})">
+                            ${paid ? '❌ Als offen markieren' : '✅ Als bezahlt markieren'}
+                        </button>
+                    </td>
+                </tr>`;
+            }).join("");
+
+            updateFeesSummary(paidCount, players.length);
+        } catch (e) {
+            console.error("Fehler beim Laden der Startgeld-Liste:", e);
+            tbody.innerHTML = `<tr><td colspan="4" style="color:#e74c3c;">Interner Fehler beim Laden.</td></tr>`;
+        }
+    }
+
+    function updateFeesSummary(paid, total) {
+        const paidEl = document.getElementById('feesPaidCount');
+        const openEl = document.getElementById('feesOpenCount');
+        const totalEl = document.getElementById('feesTotalCount');
+        if (paidEl) paidEl.textContent = paid;
+        if (openEl) openEl.textContent = total - paid;
+        if (totalEl) totalEl.textContent = total;
+    }
+
+    window.toggleFeePaid = async function(playerId, newPaidState) {
+        if (!supabaseClient) return;
+        const payload = {
+            player_id: playerId,
+            season: currentSeasonGlobal,
+            paid: newPaidState,
+            paid_at: newPaidState ? new Date().toISOString() : null
+        };
+        const { error } = await supabaseClient.from('season_fees').upsert([payload], { onConflict: 'player_id,season' });
+        if (error) { alert("❌ Fehler: " + error.message); return; }
+        loadFeesTab();
     };
 
     async function initAdmin() {
