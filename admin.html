@@ -540,6 +540,18 @@
         `;
     }
 
+    function formatWantedPlatforms(prof) {
+        if (!prof) return "";
+        const chip = (wanted, label, icon) => `<span style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:4px; display:inline-flex; align-items:center; gap:3px; ${wanted
+            ? 'background:rgba(61,220,151,0.15); color:#3ddc97; border:1px solid rgba(61,220,151,0.4);'
+            : 'background:rgba(255,255,255,0.04); color:var(--text-secondary); border:1px solid var(--border); text-decoration:line-through; opacity:0.55;'}">${icon} ${label}</span>`;
+        return `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">
+            ${chip(prof.want_autodarts, 'Autodarts', '⚫')}
+            ${chip(prof.want_dartcounter, 'DartCounter', '🟠')}
+            ${chip(prof.want_scolia, 'Scolia', '🟢')}
+        </div>`;
+    }
+
     function getPlayersForLeague(players, leagueName) {
         if (!leagueName) return [];
         const target = leagueName.toLowerCase().replace(/\s+/g, '');
@@ -738,15 +750,19 @@
                         <td>
                             <strong style="color:#20b7ff; font-size:14px;">${htmlEscape(p.discord_name || p.username)}</strong><br>
                             <span class="meta-text">Echtname: ${htmlEscape(p.real_name)}</span>
+                            <div style="margin-top:6px;">
+                                <small style="color:#90a9b7; font-weight:bold; display:block; margin-bottom:2px;">🎯 Angemeldet für:</small>
+                                ${formatWantedPlatforms(p)}
+                            </div>
                             <div style="margin-top: 6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:4px;">
                                 <small style="color:#90a9b7; font-weight:bold; display:block; margin-bottom:2px;">Verlauf Vor-Saison:</small>
                                 ${herkunftHtml}
                             </div>
                         </td>
                         <td>${formatAllPlattformNames(p)}</td>
-                        <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.assigned_ad_league, suggestions.Autodarts)}</td>
-                        <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.assigned_dc_league, suggestions.DartCounter)}</td>
-                        <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league, suggestions.Scolia)}</td>
+                        <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.assigned_ad_league, suggestions.Autodarts)}${!p.want_autodarts ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
+                        <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.assigned_dc_league, suggestions.DartCounter)}${!p.want_dartcounter ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
+                        <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league, suggestions.Scolia)}${!p.want_scolia ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
                         <td>
                             <button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button>
                             ${isEingeteilt ? '<br><span style="color:#3ddc97; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
