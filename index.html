@@ -644,13 +644,13 @@
   <div class="platform-banner" id="platformBanner">
     <div class="banner-row">
       <div class="platform-selection">
-        <span class="banner-label">:</span>
+        <span class="banner-label"></span>
         <button class="p-btn active" data-p="Autodarts" onclick="switchPlatform('Autodarts')">⚫ Autodarts</button>
         <button class="p-btn" data-p="DartCounter" onclick="switchPlatform('DartCounter')">🟠 DartCounter</button>
         <button class="p-btn" data-p="Scolia" onclick="switchPlatform('Scolia')">🟢 Scolia</button>
       </div>
       <div class="league-selection">
-        <span class="banner-label">Liga:</span>
+        <span class="banner-label"></span>
         <div id="leagueBannerContainer" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;"></div>
       </div>
     </div>
@@ -739,7 +739,7 @@
               <div class="stat-box-value" id="statPlayers">0</div>
             </div>
             <div class="stat-box" style="background: rgba(255,107,53,0.06);">
-              <div class="stat-box-label" style="color: #ff6b35;">Aktive Ligen (mit Inhalt)</div>
+              <div class="stat-box-label" style="color: #ff6b35;">Aktive Ligen</div>
               <div class="stat-box-value" style="color: #ff6b35;" id="statLeagues">0</div>
             </div>
             <div class="stat-box" style="background: rgba(0,208,132,0.06);">
@@ -1410,7 +1410,7 @@
       const name = state.currentUser.user_metadata?.full_name || state.currentUser.email || "Spieler";
       if (loginTitle) loginTitle.innerText = `Willkommen zurück, ${name}!`;
       if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten oder oben in der Navbar, um dein Spieler-Profil zu verwalten.";
-      if (loginBtn) { loginBtn.innerText = "⚙️ Zum Profil wechseln (profil.html)"; loginBtn.style.background = "#00d084"; }
+      if (loginBtn) { loginBtn.innerText = "⚙️ Zum Profil wechseln"; loginBtn.style.background = "#00d084"; }
       
       if (!navProfil) {
         navProfil = document.createElement('button'); navProfil.className = 'nav-btn'; navProfil.id = 'navProfil';
@@ -1718,7 +1718,7 @@
 
   function platformBadge(platform) {
     const p = String(platform || '').toLowerCase();
-    if (p.includes('autodart')) return { color: '#0066ff', icon: '⚫', label: platform || 'Autodarts' };
+    if (p.includes('autodart')) return { color: '#4169E1', icon: '⚫', label: platform || 'Autodarts' };
     if (p.includes('dartcounter')) return { color: '#ff6b35', icon: '🟠', label: platform || 'DartCounter' };
     if (p.includes('scolia')) return { color: '#00d084', icon: '🟢', label: platform || 'Scolia' };
     return { color: '#888', icon: '⚪', label: platform || '-' };
