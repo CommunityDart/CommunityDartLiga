@@ -635,7 +635,6 @@
     <button class="nav-btn" id="navLigen" onclick="switchView('ligen')">⚡ Ligen & Regelwerk</button>
     <button class="nav-btn" id="navTournaments" onclick="switchView('tournaments')">🏆 Turniere</button>
     <button class="nav-btn" id="navMembercard" onclick="switchView('membercard')">🪪 Mitgliederkarte</button>
-    <button class="nav-btn" id="navLeaderboard" onclick="switchView('leaderboard')">⭐ Rangliste</button>
     <button class="nav-btn" id="navMyGames" onclick="switchView('mygames')" style="display:none;">🎮 Meine Spiele</button>
     <button class="nav-btn active" id="navNews" onclick="switchView('news')">📰 Neuigkeiten</button>
     <button class="nav-btn" id="navDiscord" onclick="switchView('discord')">💬 Discord</button>
@@ -645,7 +644,7 @@
     <div class="banner-row">
       <div class="platform-selection">
         <span class="banner-label"></span>
-        <button class="p-btn active" data-p="Autodarts" onclick="switchPlatform('Autodarts')">🔵  Autodarts</button>
+        <button class="p-btn active" data-p="Autodarts" onclick="switchPlatform('Autodarts')">⚫ Autodarts</button>
         <button class="p-btn" data-p="DartCounter" onclick="switchPlatform('DartCounter')">🟠 DartCounter</button>
         <button class="p-btn" data-p="Scolia" onclick="switchPlatform('Scolia')">🟢 Scolia</button>
       </div>
@@ -794,41 +793,35 @@
 
   <div id="membercardView" class="view">
     <div class="full-width-layout">
-      <div class="card" style="border-color: #20b7ff;">
-        <div class="card-header" style="color: #20b7ff; font-weight: 800;">🗺️ Wo unsere Mitglieder herkommen</div>
-        <div class="card-body">
-          <div id="membercardMap" style="height: 400px; border-radius: 10px; overflow: hidden; background: var(--bg-tertiary);"></div>
-        </div>
+      <div class="tab-buttons">
+        <button class="tab-btn active" id="memberTabCardsBtn" onclick="switchMemberTab('cards')">🪪 Mitgliederausweise</button>
+        <button class="tab-btn" id="memberTabLeaderboardBtn" onclick="switchMemberTab('leaderboard')">⭐ Rangliste</button>
       </div>
 
-      <div class="card" style="border-color: #20b7ff;">
-        <div class="card-header" style="color: #20b7ff; font-weight: 800;">🪪 Mitgliederausweise</div>
-        <div class="card-body">
-          <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">Mitglieder, die ihre Karte in ihrem Profil öffentlich sichtbar geschaltet haben. Klick auf eine Karte für das volle Profil.</p>
-          <div id="membercardGridArea"><div class="empty">Lade Mitgliederausweise...</div></div>
+      <div id="memberCardsTab">
+        <div class="card" style="border-color: #20b7ff; margin-bottom: 24px;">
+          <div class="card-header" style="color: #20b7ff; font-weight: 800;">🗺️ Wo unsere Mitglieder herkommen</div>
+          <div class="card-body">
+            <div id="membercardMap" style="height: 400px; border-radius: 10px; overflow: hidden; background: var(--bg-tertiary);"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="card compact-footer-card">
-        <div class="card-header">ℹ️ Infos</div>
-        <div class="card-body">
-          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn small-action-btn" onclick="alert('Kontakt: info@cdl-dartliga.de')">📧 Kontakt</button>
-            <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
-            <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
+        <div class="card" style="border-color: #20b7ff;">
+          <div class="card-header" style="color: #20b7ff; font-weight: 800;">🪪 Mitgliederausweise</div>
+          <div class="card-body">
+            <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">Mitglieder, die ihre Karte in ihrem Profil öffentlich sichtbar geschaltet haben. Klick auf eine Karte für das volle Profil.</p>
+            <div id="membercardGridArea"><div class="empty">Lade Mitgliederausweise...</div></div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <div id="leaderboardView" class="view">
-    <div class="full-width-layout">
-      <div class="card">
-        <div class="card-header">⭐ Level-Rangliste</div>
-        <div class="card-body">
-          <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">XP gibt's für gespielte & gewonnene Matches, Turnierteilnahme & -platzierungen sowie News-Reaktionen.</p>
-          <div id="leaderboardArea"><div class="empty">Lade Rangliste...</div></div>
+      <div id="memberLeaderboardTab" style="display:none;">
+        <div class="card" style="border-color: #ffd700;">
+          <div class="card-header" style="color: #ffd700; font-weight: 800;">⭐ Level-Rangliste</div>
+          <div class="card-body">
+            <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">XP gibt's für gespielte & gewonnene Matches, Turnierteilnahme & -platzierungen sowie News-Reaktionen.</p>
+            <div id="leaderboardArea"><div class="empty">Lade Rangliste...</div></div>
+          </div>
         </div>
       </div>
 
@@ -1250,6 +1243,7 @@
   };
 
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
+  let activeMemberTab = 'cards';
 
   function isIdString(str) {
     if (!str) return true;
@@ -1331,7 +1325,7 @@
 
     let adHtml = "";
     if (p && p.autodarts_name && p.autodarts_name.trim() !== "" && p.autodarts_name !== "-") {
-      adHtml = `<div class="player-info-row"><span class="player-info-label">🔵  Autodarts:</span><span class="player-info-value">${htmlEscape(p.autodarts_name)} [AVG: ${parseFloat(p.autodarts_avg || 0).toFixed(2)}]</span></div>`;
+      adHtml = `<div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(p.autodarts_name)} [AVG: ${parseFloat(p.autodarts_avg || 0).toFixed(2)}]</span></div>`;
     }
     let dcHtml = "";
     if (p && p.dartcounter_name && p.dartcounter_name.trim() !== "" && p.dartcounter_name !== "-") {
@@ -1458,14 +1452,31 @@
       if (view === 'tournaments') document.getElementById('navTournaments').classList.add('active');
       if (view === 'membercard') {
         document.getElementById('navMembercard').classList.add('active');
-        if (membercardMapInstance) { setTimeout(() => membercardMapInstance.invalidateSize(), 100); }
+        switchMemberTab(activeMemberTab);
       }
-      if (view === 'leaderboard') { document.getElementById('navLeaderboard').classList.add('active'); renderLeaderboard(); }
       if (view === 'mygames') { document.getElementById('navMyGames').classList.add('active'); renderMyGames(); }
       if (view === 'bracket') { document.getElementById('navTournaments').classList.add('active'); renderBracketSelector(); }
       if (view === 'discord') document.getElementById('navDiscord').classList.add('active');
     }
     state.currentView = view;
+  }
+
+  function switchMemberTab(tab) {
+    activeMemberTab = tab;
+    const cardsTab = document.getElementById('memberCardsTab');
+    const leaderboardTab = document.getElementById('memberLeaderboardTab');
+    const cardsBtn = document.getElementById('memberTabCardsBtn');
+    const leaderboardBtn = document.getElementById('memberTabLeaderboardBtn');
+    if (!cardsTab || !leaderboardTab) return;
+    cardsTab.style.display = tab === 'cards' ? 'block' : 'none';
+    leaderboardTab.style.display = tab === 'leaderboard' ? 'block' : 'none';
+    if (cardsBtn) cardsBtn.classList.toggle('active', tab === 'cards');
+    if (leaderboardBtn) leaderboardBtn.classList.toggle('active', tab === 'leaderboard');
+    if (tab === 'leaderboard') {
+      renderLeaderboard();
+    } else if (membercardMapInstance) {
+      setTimeout(() => membercardMapInstance.invalidateSize(), 100);
+    }
   }
 
   function switchPlatform(platform) {
@@ -2542,7 +2553,7 @@
       switchPlatform("Autodarts");
 
       await loadTournamentsData();
-      if (state.currentView === 'leaderboard') renderLeaderboard();
+      if (state.currentView === 'membercard' && activeMemberTab === 'leaderboard') renderLeaderboard();
 
     } catch (error) { console.error("Fehler im Daten-Core:", error); }
   }
