@@ -1718,7 +1718,7 @@
 
   function platformBadge(platform) {
     const p = String(platform || '').toLowerCase();
-    if (p.includes('autodart')) return { color: '#4169E1', icon: '⚫', label: platform || 'Autodarts' };
+    if (p.includes('autodart')) return { color: '#0066ff', icon: '🔵', label: platform || 'Autodarts' };
     if (p.includes('dartcounter')) return { color: '#ff6b35', icon: '🟠', label: platform || 'DartCounter' };
     if (p.includes('scolia')) return { color: '#00d084', icon: '🟢', label: platform || 'Scolia' };
     return { color: '#888', icon: '⚪', label: platform || '-' };
@@ -2423,12 +2423,14 @@
       completedHtml = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
         ${completedTs.map(t => { const pb = platformBadge(t.platform); return `
           <div class="matchday-card" style="background: var(--bg-secondary); border-left: 4px solid ${pb.color};">
-            <div class="matchday-title" style="color: var(--text-primary); font-size: 14px; text-align: left; border-color: var(--border);">${htmlEscape(t.title)}</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom: 2px solid var(--border); padding-bottom:8px; margin-bottom:10px;">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">${htmlEscape(t.title)}</div>
+              <span style="font-size:10px; font-weight:800; padding:4px 10px; border-radius:12px; text-transform:uppercase; letter-spacing:0.4px; white-space:nowrap; background:${pb.color}1A; color:${pb.color}; display:inline-flex; align-items:center; gap:4px;">${pb.icon} ${htmlEscape(pb.label)}</span>
+            </div>
             <div style="padding: 6px 0; font-size: 13.5px; color: #ffd700; font-weight: bold;">🥇 1. Platz: ${htmlEscape(t.first_place_name || '-')}</div>
             <div style="padding: 4px 0; font-size: 13px; color: #c0c0c0; font-weight: 600;">🥈 2. Platz: ${htmlEscape(t.second_place_name || '-')}</div>
             <div style="padding: 4px 0; font-size: 13px; color: #cd7f32; font-weight: 600;">🥉 3. Platz: ${htmlEscape(t.third_place_name || '-')}</div>
-            <div style="font-size: 11px; color: ${pb.color}; margin-top: 10px; text-transform: uppercase; font-weight: 700; display:flex; align-items:center; gap:4px;">${pb.icon} ${htmlEscape(pb.label)}</div>
-            <button class="btn small-action-btn" style="margin-top:10px; border-color:#3ddc97; color:#3ddc97;" onclick="openBracketForTournament('${t.id}')">🌳 Baum ansehen</button>
+            <button class="btn small-action-btn" style="margin-top:10px; border-color:#3ddc97; color:#3ddc97;" onclick="openBracketForTournament('${t.id}')">📊 Baum ansehen</button>
           </div>
         `; }).join("")}
       </div>`;
