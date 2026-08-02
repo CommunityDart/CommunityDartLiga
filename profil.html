@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mein Profil - CDL v2</title>
+  <title>Mein Profil - CDL v1</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -349,21 +349,41 @@
 
     // Wandelt PLZ/Ort in Koordinaten um (für die Weltkarte im Mitgliederkarte-Tab).
     // Nutzt die freie Nominatim (OpenStreetMap) Geocoding-API, kein API-Key nötig.
+    //
+    // FIX: Vorher war die strukturierte Suche fest auf country: 'Germany'
+    // eingeschränkt. Dadurch wurden Mitglieder aus Österreich, der Schweiz etc.
+    // entweder gar nicht gefunden, oder - schlimmer - Nominatim hat versucht,
+    // die PLZ/Ort-Kombination innerhalb Deutschlands zu erzwingen und dabei einen
+    // falschen Ort zurückgegeben. Jetzt wird OHNE Länder-Einschränkung gesucht,
+    // damit z.B. "1010 Wien" korrekt in Österreich landet. Zusätzlich wird das
+    // Ergebnis grob validiert (Koordinaten müssen überhaupt in Europa liegen),
+    // um offensichtliche Fehltreffer abzufangen.
     async function geocodeAddress(plz, ort) {
       if (!plz && !ort) return null;
+
+      function isPlausibleCoord(lat, lon) {
+        // Grober Rahmen um Mitteleuropa (DACH + Nachbarländer) - reicht aus, um
+        // krasse Fehltreffer (z.B. anderer Kontinent) zu erkennen, ohne legitime
+        // Standorte fälschlich abzulehnen.
+        return lat >= 40 && lat <= 60 && lon >= 0 && lon <= 25;
+      }
+
       try {
-        // 1. Versuch: strukturierte Suche (zuverlässiger für deutsche PLZ)
-        const params = new URLSearchParams({ format: 'json', limit: '1', country: 'Germany' });
+        // 1. Versuch: strukturierte Suche OHNE Länder-Einschränkung, damit PLZ
+        // aus Deutschland, Österreich, der Schweiz usw. korrekt gefunden werden.
+        const params = new URLSearchParams({ format: 'json', limit: '1' });
         if (plz) params.set('postalcode', plz);
         if (ort) params.set('city', ort);
         let res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
         let data = await res.json();
 
-        // 2. Fallback: einfache Freitextsuche, falls die strukturierte Suche nichts findet
-        if (!data || data.length === 0) {
+        // 2. Fallback: einfache Freitextsuche, falls die strukturierte Suche nichts
+        // Plausibles findet (z.B. weil Nominatim die PLZ nicht strukturiert kennt).
+        if (!data || data.length === 0 || !isPlausibleCoord(parseFloat(data[0].lat), parseFloat(data[0].lon))) {
           const q = `${plz || ''} ${ort || ''}`.trim();
           res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
-          data = await res.json();
+          const fallbackData = await res.json();
+          if (fallbackData && fallbackData.length > 0) data = fallbackData;
         }
 
         console.log('Geocoding-Ergebnis für "' + plz + ' ' + ort + '":', data);
