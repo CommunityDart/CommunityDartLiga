@@ -2076,6 +2076,7 @@
         <span style="font-weight:700;">vs ${htmlEscape(oppName)}</span>
         ${matchContextBadge(m, context)}
       </div>
+      ${context === 'tournament' && m.match_format ? `<div style="font-size:11px; color:var(--platform-color); font-weight:700; margin-bottom:6px;">🎯 Format: ${matchFormatLabel(m.match_format)}</div>` : ''}
       ${status === 'offen' && context === 'tournament' ? `<div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">⏱️ Bestätigungsfrist bei Turnieren: ${confirmWindowLabel}</div>` : ''}
       ${bodyHtml}
     </div>`;
@@ -2336,10 +2337,14 @@
 
     let labelsHtml = '';
     for (let r = 1; r <= totalRounds; r++) {
-      labelsHtml += `<div style="position:absolute; left:${(r - 1) * COL_W}px; top:-30px; width:${CARD_W}px; text-align:center; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--platform-color);">${roundLabel(r, totalRounds)}</div>`;
+      const roundFormat = byRound[r] && byRound[r][0] && byRound[r][0].match_format ? matchFormatLabel(byRound[r][0].match_format) : null;
+      labelsHtml += `<div style="position:absolute; left:${(r - 1) * COL_W}px; top:-42px; width:${CARD_W}px; text-align:center;">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--platform-color);">${roundLabel(r, totalRounds)}</div>
+        ${roundFormat ? `<div style="font-size:10px; font-weight:600; color:var(--text-secondary); margin-top:2px;">${roundFormat}</div>` : ''}
+      </div>`;
     }
 
-    area.innerHTML = `<div style="overflow-x:auto; padding-top:38px; padding-bottom:16px;">
+    area.innerHTML = `<div style="overflow-x:auto; padding-top:50px; padding-bottom:16px;">
       <div style="position:relative; width:${totalWidth}px; height:${root.height}px;">
         ${labelsHtml}
         ${elements.join('')}
@@ -2598,8 +2603,8 @@
 
   async function loadTournamentsData() {
     try {
-      const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name, start_date, min_participants, checkout_mode, match_format, avg_limit');
-      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, round_number, bracket_slot, is_bye, winner_id, next_match_id, next_match_slot, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url');
+      const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name, start_date, min_participants, checkout_mode, match_format, avg_limit, final_match_format');
+      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, round_number, bracket_slot, is_bye, winner_id, next_match_id, next_match_slot, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url, match_format');
       const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
       state.allTournamentsCache = tournaments || [];
       state.allTournamentMatchesCache = tourMatches || [];
@@ -2647,7 +2652,8 @@
     return a;
   }
 
-  function buildSingleEliminationBracketLocal(tournamentId, playerIds) {
+  function buildSingleEliminationBracketLocal(tournamentId, playerIds, matchFormat, finalMatchFormat) {
+    matchFormat = matchFormat || 'bo5legs';
     const n = playerIds.length;
     let bracketSize = 1;
     while (bracketSize < n) bracketSize *= 2;
@@ -2658,6 +2664,7 @@
     const byeMatchSet = new Set(shuffleArrayLocal([...Array(numMatches).keys()]).slice(0, totalByes));
 
     const numRounds = Math.log2(bracketSize);
+    const formatForRound = (r) => (r === numRounds && finalMatchFormat) ? finalMatchFormat : matchFormat;
     const rounds = [];
     let pointer = 0;
     const round1 = [];
@@ -2671,6 +2678,7 @@
         winner_id: isBye ? p1 : null,
         status: isBye ? 'fertig' : 'offen',
         result_status: isBye ? 'admin_confirmed' : 'offen',
+        match_format: formatForRound(1),
         next_match_id: null, next_match_slot: null
       });
     }
@@ -2684,6 +2692,7 @@
           id: crypto.randomUUID(), tournament_id: tournamentId, round_number: r, bracket_slot: i,
           player1_id: null, player2_id: null, is_bye: false, winner_id: null,
           status: 'offen', result_status: 'offen',
+          match_format: formatForRound(r),
           next_match_id: null, next_match_slot: null
         });
       }
@@ -2701,7 +2710,8 @@
     return rounds.flat();
   }
 
-  function buildRoundRobinScheduleLocal(tournamentId, playerIds) {
+  function buildRoundRobinScheduleLocal(tournamentId, playerIds, matchFormat) {
+    matchFormat = matchFormat || 'bo5legs';
     let ids = playerIds.slice();
     if (ids.length % 2 !== 0) ids.push(null);
     const numPlayers = ids.length;
@@ -2718,6 +2728,7 @@
             player1_id: home, player2_id: away,
             is_bye: (!home || !away), winner_id: null,
             status: 'offen', result_status: 'offen',
+            match_format: matchFormat,
             next_match_id: null, next_match_slot: null
           });
         }
@@ -2733,7 +2744,7 @@
       const nowIso = new Date().toISOString();
       const { data: candidates } = await supabaseClient
         .from('tournaments')
-        .select('id, title, platform, format, start_date, min_participants, schedule_generated_at, start_extended')
+        .select('id, title, platform, format, start_date, min_participants, schedule_generated_at, start_extended, match_format, final_match_format')
         .eq('status', 'active')
         .not('start_date', 'is', null)
         .is('schedule_generated_at', null)
@@ -2759,8 +2770,8 @@
           if (!claimed || claimed.length === 0) continue;
 
           const allMatches = t.format === 'roundrobin'
-            ? buildRoundRobinScheduleLocal(t.id, playerIds)
-            : buildSingleEliminationBracketLocal(t.id, playerIds);
+            ? buildRoundRobinScheduleLocal(t.id, playerIds, t.match_format)
+            : buildSingleEliminationBracketLocal(t.id, playerIds, t.match_format, t.final_match_format);
           const { error: insertErr } = await supabaseClient.from('tournament_matches').insert(allMatches);
           if (insertErr) {
             console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
