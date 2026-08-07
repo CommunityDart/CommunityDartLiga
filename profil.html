@@ -267,6 +267,14 @@
       </div>
     </div>
 
+    <div class="card" id="myBadgesCard">
+      <div class="card-header">🏅 Meine Abzeichen</div>
+      <div class="card-body">
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Steuere hier, welche deiner Abzeichen für andere sichtbar sind. Ausgeblendete Abzeichen siehst nur du hier - für alle anderen verschwinden sie komplett (Profil-Ansicht, Mitgliederkarte).</p>
+        <div id="myBadgesList" style="display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto; padding-right:4px;">Lade Abzeichen...</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -535,6 +543,92 @@
       }
     }
 
+    // --- Abzeichen-Verwaltung ---------------------------------------------
+    // Gleiche Darstellung (Sechseck-Icon in Plattformfarbe) wie auf index.html,
+    // hier für die eigene Verwaltungsseite dupliziert.
+    const BADGE_TYPES = {
+      teilnehmer: { label: 'Teilnehmer' },
+      turniersieger: { label: 'Turniersieger' },
+      turnier_zweiter: { label: 'Turnier-Zweiter' },
+      turnier_dritter: { label: 'Turnier-Dritter' },
+      website_tester: { label: 'Website-Tester' }
+    };
+
+    function formatBadgeLabel(b) {
+      const type = BADGE_TYPES[b.badge_type] || { label: b.badge_type };
+      return b.detail ? `${type.label} – ${b.detail}` : type.label;
+    }
+
+    function getBadgeColor(b) {
+      if (b.platform === 'Autodarts') return '#0066ff';
+      if (b.platform === 'DartCounter') return '#ff6b35';
+      if (b.platform === 'Scolia') return '#00d084';
+      return '#7f77dd';
+    }
+
+    function getBadgeIconInner(badgeType, color) {
+      switch (badgeType) {
+        case 'turniersieger':
+          return `<path d="M9 4h14v5a7 7 0 0 1-14 0z" fill="none" stroke="${color}" stroke-width="2.5"/><rect x="14.5" y="15" width="3" height="4" fill="${color}"/><rect x="11" y="19" width="10" height="2" rx="1" fill="${color}"/>`;
+        case 'turnier_zweiter':
+          return `<circle cx="16" cy="12.5" r="7.5" fill="none" stroke="${color}" stroke-width="2.5"/><text x="16" y="17" font-size="14" font-weight="700" fill="${color}" text-anchor="middle">2</text><path d="M11 19L8 27L16 23L24 27L21 19" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+        case 'turnier_dritter':
+          return `<circle cx="16" cy="12.5" r="7.5" fill="none" stroke="${color}" stroke-width="2.5"/><text x="16" y="17" font-size="14" font-weight="700" fill="${color}" text-anchor="middle">3</text><path d="M11 19L8 27L16 23L24 27L21 19" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+        case 'teilnehmer':
+          return `<circle cx="16" cy="16" r="9" fill="none" stroke="${color}" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="${color}" stroke-width="2.5"/><circle cx="16" cy="16" r="2" fill="${color}"/>`;
+        case 'website_tester':
+          return `<path d="M13 4h6v6l5 12a2 2 0 0 1-2 3H10a2 2 0 0 1-2-3l5-12z" fill="none" stroke="${color}" stroke-width="2.5"/><path d="M11 16h10" stroke="${color}" stroke-width="2.5"/>`;
+        default:
+          return `<circle cx="16" cy="16" r="9" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+      }
+    }
+
+    function renderBadgeHex(b, size) {
+      size = size || 36;
+      const color = getBadgeColor(b);
+      const iconSize = Math.round(size * 0.5);
+      return `<div style="width:${size}px; height:${size}px; position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <div style="position:absolute; inset:0; clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%); background:${color}26; box-shadow:0 0 8px ${color}77;"></div>
+        <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 32 32" style="position:relative;">${getBadgeIconInner(b.badge_type, color)}</svg>
+      </div>`;
+    }
+
+    async function loadMyBadges(userId) {
+      const listArea = document.getElementById('myBadgesList');
+      if (!listArea) return;
+      const { data: badges, error } = await supabaseClient.from('player_badges').select('*').eq('player_id', userId).order('created_at', { ascending: false });
+      if (error) { listArea.innerHTML = `<div style="color:var(--red); font-size:13px;">Fehler beim Laden: ${htmlEscape(error.message)}</div>`; return; }
+
+      if (!badges || badges.length === 0) {
+        listArea.innerHTML = `<div style="font-size:13px; color:var(--text-secondary); font-style:italic;">Du hast noch keine Abzeichen.</div>`;
+        return;
+      }
+
+      listArea.innerHTML = badges.map(b => {
+        const dimStyle = b.hidden ? 'opacity:0.5;' : '';
+        const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString('de-DE') : '';
+        return `<div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg-tertiary); border-radius:8px; border:1px solid var(--border); ${dimStyle}">
+          ${renderBadgeHex(b, 36)}
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</div>
+            <div style="font-size:11px; color:var(--text-secondary);">${b.platform ? htmlEscape(b.platform) + ' · ' : ''}${dateStr}</div>
+          </div>
+          <button type="button" onclick="toggleBadgeVisibility('${b.id}', ${!!b.hidden})" title="${b.hidden ? 'Wieder einblenden' : 'Für andere ausblenden'}" style="background:none; border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; color:var(--text-primary);">
+            ${b.hidden ? '🙈 Ausgeblendet' : '👁️ Sichtbar'}
+          </button>
+        </div>`;
+      }).join('');
+    }
+
+    // Nur bei den EIGENEN Abzeichen möglich - serverseitig zusätzlich per RLS +
+    // Trigger abgesichert (siehe SQL-Migration), damit hier kein anderes Feld
+    // als "hidden" verändert werden kann.
+    window.toggleBadgeVisibility = async function(badgeId, currentlyHidden) {
+      const { error } = await supabaseClient.from('player_badges').update({ hidden: !currentlyHidden }).eq('id', badgeId);
+      if (error) { alert('❌ Fehler beim Ändern der Sichtbarkeit: ' + error.message); return; }
+      loadMyBadges(currentUser.id);
+    };
+
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) { window.location.href = "index.html"; return; }
@@ -548,6 +642,7 @@
       // damit auch schon bestehende Profile ohne discord_name automatisch geheilt werden.
       syncDiscordIdentity(currentUser);
       loadLevelInfo(currentUser.id);
+      loadMyBadges(currentUser.id);
       
       document.getElementById("profilForm").style.display = "block";
 
