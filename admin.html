@@ -349,6 +349,23 @@
                 </tbody>
             </table>
         </div>
+
+        <h3 style="margin-top: 30px;">❌ Abgesagte Turniere (zu wenig Spieler)</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 28%;">Turniername</th>
+                        <th style="width: 16%;">Plattform</th>
+                        <th style="width: 26%;">Abgesagt am</th>
+                        <th style="width: 30%;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="cancelledTournamentsBody">
+                    <tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">Keine abgesagten Turniere</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div id="tabNews" class="tab-content">
@@ -1223,17 +1240,19 @@
         if(!supabaseClient) return;
         const activeBody = document.getElementById("activeTournamentsBody");
         const completedBody = document.getElementById("completedTournamentsBody");
+        const cancelledBody = document.getElementById("cancelledTournamentsBody");
         
         try {
             const { data: tournaments, error } = await supabaseClient
                 .from('tournaments')
-                .select('id, title, platform, format, status, created_at, completed_at, first_place_name, second_place_name, third_place_name, start_date, min_participants, schedule_generated_at')
+                .select('id, title, platform, format, status, created_at, completed_at, cancelled_at, first_place_name, second_place_name, third_place_name, start_date, min_participants, schedule_generated_at')
                 .order('created_at', { ascending: false });
             
             if(error) { activeBody.innerHTML = `<tr><td colspan="5" style="color:#e74c3c;">Fehler beim API-Laden: ${error.message}</td></tr>`; return; }
             
             const activeTournaments = tournaments ? tournaments.filter(t => t.status === 'active') : [];
             const completedTournaments = tournaments ? tournaments.filter(t => t.status === 'completed') : [];
+            const cancelledTournaments = tournaments ? tournaments.filter(t => t.status === 'cancelled') : [];
             
             if(activeTournaments.length === 0) activeBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Keine aktiven Turniere</td></tr>`;
             else {
@@ -1286,11 +1305,51 @@
                     </tr>
                 `).join("");
             }
+
+            if(cancelledTournaments.length === 0) cancelledBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary);">Keine abgesagten Turniere</td></tr>`;
+            else {
+                cancelledBody.innerHTML = cancelledTournaments.map(t => {
+                    const dateStr = t.cancelled_at ? new Date(t.cancelled_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+                    return `
+                    <tr>
+                        <td><strong style="color:#e74c3c;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:var(--text-secondary);">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span></td>
+                        <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
+                        <td style="font-size:12.5px; color:var(--text-secondary);">${dateStr}</td>
+                        <td>
+                            <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="card-btn yellow" style="padding: 6px 12px; font-size: 11px;" onclick="reactivateTournament('${t.id}')">🔄 Neu ansetzen</button>
+                                <button class="remove-btn-large" style="padding: 6px 12px; font-size: 11px;" onclick="deleteTournament('${t.id}', '${escape(t.title)}')">🗑️ Löschen</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;}).join("");
+            }
         } catch(e) {
             console.error("Fehler im Turnier-Ladevorgang:", e);
             activeBody.innerHTML = `<tr><td colspan="5" style="color:#e74c3c;">Interner Skriptfehler beim Darstellen.</td></tr>`;
         }
     }
+
+    // Setzt ein abgesagtes Turnier zurück in den Anmeldemodus: fragt nach einem
+    // neuen Startdatum, setzt status wieder auf 'active' und den Verlängerungs-
+    // Zähler zurück (start_extended = false), damit die Auto-Start-Logik erneut
+    // von vorne beginnt (einmalige Verlängerung, dann ggf. wieder Absage).
+    window.reactivateTournament = async function(id) {
+        const newStartRaw = prompt("Neues Startdatum/-uhrzeit (Format: JJJJ-MM-TT HH:MM), z.B. 2026-08-20 19:00:");
+        if (!newStartRaw) return;
+        const newStartDate = new Date(newStartRaw.replace(' ', 'T'));
+        if (isNaN(newStartDate.getTime())) { alert("❌ Ungültiges Datumsformat!"); return; }
+
+        const { error } = await supabaseClient.from('tournaments').update({
+            status: 'active',
+            start_date: newStartDate.toISOString(),
+            start_extended: false,
+            cancelled_at: null
+        }).eq('id', id);
+        if (error) { alert("❌ Fehler: " + error.message); return; }
+        alert("✅ Turnier wurde neu angesetzt!");
+        loadActiveTournaments();
+    };
 
     window.openTournamentManager = async function(id, nameEscaped) {
         currentManageTID = id;
@@ -1930,7 +1989,7 @@
             const nowIso = new Date().toISOString();
             const { data: candidates } = await supabaseClient
                 .from('tournaments')
-                .select('id, title, platform, format, start_date, min_participants, schedule_generated_at')
+                .select('id, title, platform, format, start_date, min_participants, schedule_generated_at, start_extended')
                 .eq('status', 'active')
                 .not('start_date', 'is', null)
                 .is('schedule_generated_at', null)
@@ -1963,24 +2022,38 @@
                     const { error: insertErr } = await supabaseClient.from('tournament_matches').insert(allMatches);
                     if (insertErr) console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
                     else console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
-                } else {
-                    // Zu wenig Spieler: Start um 10 Minuten verschieben + Discord-Hinweis.
+                } else if (!t.start_extended) {
+                    // Erste Verzögerung: Start EINMALIG um 10 Minuten verschieben + Discord-Aufruf.
                     const newStartDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
                     const { data: claimed } = await supabaseClient
                         .from('tournaments')
-                        .update({ start_date: newStartDate })
+                        .update({ start_date: newStartDate, start_extended: true })
                         .eq('id', t.id)
+                        .eq('start_extended', false)
                         .lte('start_date', nowIso)
                         .select('id');
                     if (!claimed || claimed.length === 0) continue; // ein anderer Tab hat den Delay schon gesetzt
 
-                    // Postet @everyone-Hinweis in den dafür eingerichteten Discord-Kanal
-                    // (eigene Edge Function + eigener Webhook, getrennt vom News-Feed).
                     const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
-                        body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin }
+                        body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin, type: 'recruit' }
                     });
                     if (fnError) console.error('Discord-Spielersuche-Post fehlgeschlagen:', fnError);
-                    console.log(`⏳ Auto-Start: Turnier "${t.title}" verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
+                    console.log(`⏳ Auto-Start: Turnier "${t.title}" einmalig verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
+                } else {
+                    // Bereits einmal verlängert und immer noch zu wenig Spieler: Turnier absagen.
+                    const { data: claimed } = await supabaseClient
+                        .from('tournaments')
+                        .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+                        .eq('id', t.id)
+                        .eq('status', 'active')
+                        .select('id');
+                    if (!claimed || claimed.length === 0) continue; // ein anderer Tab war schneller
+
+                    const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
+                        body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin, type: 'cancelled' }
+                    });
+                    if (fnError) console.error('Discord-Absage-Post fehlgeschlagen:', fnError);
+                    console.log(`❌ Auto-Start: Turnier "${t.title}" automatisch abgesagt (${playerIds.length}/${effectiveMin} Spieler).`);
                 }
             }
             loadActiveTournaments();
