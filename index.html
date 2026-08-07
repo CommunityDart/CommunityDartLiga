@@ -2584,7 +2584,12 @@
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
       state.allMatchesLifetimeCache = matchesData || [];
       let matches = matchesData ? matchesData.filter(m => String(m.season || '').replace(/\D/g, "") === stateSeasonNum || String(m.season || '').trim().toLowerCase() === String(state.currentSeason).trim().toLowerCase()) : [];
-      if (matches.length === 0 && matchesData) matches = matchesData;
+      // Nur auf ALLE Matches zurückfallen, wenn wirklich noch nie ein Match ein
+      // season-Feld gesetzt hatte (reine Alt-Daten). Sonst würde eine frisch
+      // geleerte/beendete Saison (noch 0 Matches) fälschlich wieder Matches aus
+      // längst beendeten, alten Saisons anzeigen.
+      const anyMatchHasSeason = (matchesData || []).some(m => m.season);
+      if (matches.length === 0 && matchesData && !anyMatchHasSeason) matches = matchesData;
       state.allMatchesCache = matches;
       document.getElementById('statMatches').innerText = matches.length;
 
