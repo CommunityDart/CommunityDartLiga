@@ -71,6 +71,14 @@
         .stat-input { width: 65px; text-align: center; font-size: 13px; border-color: #0066ff; }
         .txt-input { padding: 6px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid #ff6b35; outline: none; width: 100%; max-width: 160px; font-size: 12px; box-sizing: border-box; }
         .comment-input { width: 100%; min-width: 180px; padding: 6px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); font-size: 12px; box-sizing: border-box; }
+        .combo-wrap { position: relative; display: inline-flex; align-items: center; width: 100%; max-width: 220px; }
+        .combo-input { width: 100%; padding: 6px 26px 6px 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); outline: none; font-size: 13px; box-sizing: border-box; }
+        .combo-input:focus { border-color: #0066ff; }
+        .combo-clear-btn { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 13px; padding: 3px 5px; line-height: 1; border-radius: 4px; }
+        .combo-clear-btn:hover { color: #fff; background: #e74c3c; }
+        .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .filter-bar label { font-size: 12.5px; font-weight: bold; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px; }
+        .filter-count-text { font-size: 12.5px; color: var(--text-secondary); font-weight: bold; margin-left: auto; }
         .news-headline-field { width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); outline: none; font-size: 16px; box-sizing: border-box; }
         .config-box { background: rgba(0, 208, 132, 0.06); border: 1px solid rgba(0, 208, 132, 0.25); padding: 12px; border-radius: 10px; margin-bottom: 15px; }
         .config-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
@@ -150,6 +158,27 @@
         </div>
 
         <h2>Spieler für die neue Saison einteilen</h2>
+        <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
+            <h3>🔍 Spielerliste filtern</h3>
+            <div class="filter-bar">
+                <label>Plattform
+                    <select id="filterPlatform" class="league-select" onchange="loadWaitingList()">
+                        <option value="">Alle Plattformen</option>
+                        <option value="Autodarts">⚫ Autodarts</option>
+                        <option value="DartCounter">🟠 DartCounter</option>
+                        <option value="Scolia">🟢 Scolia</option>
+                    </select>
+                </label>
+                <label>Status
+                    <select id="filterStatus" class="league-select" onchange="loadWaitingList()">
+                        <option value="">Alle Status</option>
+                        <option value="assigned">✓ Bereits zugeteilt</option>
+                        <option value="open">Noch offen</option>
+                    </select>
+                </label>
+                <span id="filterResultCount" class="filter-count-text"></span>
+            </div>
+        </div>
         <div style="overflow-x: auto;">
             <table>
                 <thead>
@@ -700,22 +729,55 @@
         loadWaitingList();
     };
 
-    function buildSelectHtml(idPrefix, playerId, optionsArr, currentVal, suggestedVal) {
+    // Escaped einen Wert sicher für die Verwendung in einem HTML-Attribut
+    // (im Unterschied zu htmlEscape() OHNE "-"-Fallback, da leere Inputs
+    // hier wirklich leer bleiben sollen statt "-" anzuzeigen).
+    function escAttr(str) {
+        if (!str) return "";
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Legt die drei <datalist>-Elemente (eine pro Plattform) EINMALIG global im
+    // Dokument an. Jede Zeile referenziert per list="..." dieselbe Datalist,
+    // statt pro Spieler eine eigene Liste zu erzeugen - das hält den generierten
+    // HTML-Code schlank und macht jedes Zuteilungs-Feld durchsuchbar (tippen
+    // filtert die Vorschläge automatisch über den nativen Browser-Mechanismus).
+    function ensureLeagueDatalists() {
+        if (document.getElementById('datalist_ad_leagues')) return;
+        const holder = document.createElement('div');
+        holder.style.display = 'none';
+        holder.innerHTML = `
+            <datalist id="datalist_ad_leagues">${AD_LEAGUES.map(l => `<option value="${escAttr(l)}">`).join('')}</datalist>
+            <datalist id="datalist_dc_leagues">${DC_LEAGUES.map(l => `<option value="${escAttr(l)}">`).join('')}</datalist>
+            <datalist id="datalist_sc_leagues">${SC_LEAGUES.map(l => `<option value="${escAttr(l)}">`).join('')}</datalist>
+        `;
+        document.body.appendChild(holder);
+    }
+
+    // Baut ein durchsuchbares Zuteilungs-Feld: ein Text-Input mit Datalist-Anbindung
+    // (Tippen filtert live), plus kleinem ✕-Button zum schnellen Leeren.
+    function buildLeagueComboHtml(idPrefix, playerId, datalistId, currentVal, suggestedVal) {
         const effectiveVal = currentVal || suggestedVal || "";
-        let html = `<select id="${idPrefix}_${playerId}" class="league-select">`;
-        html += `<option value="" ${!effectiveVal ? 'selected' : ''}>-- Keine --</option>`;
-        html += `<option value="REMOVE">❌  Entfernen</option>`;
-        optionsArr.forEach(l => { html += `<option value="${l}" ${effectiveVal === l ? 'selected' : ''}>${l}</option>`; });
-        html += `</select>`;
+        const inputId = `${idPrefix}_${playerId}`;
+        let html = `<div class="combo-wrap">
+            <input type="text" id="${inputId}" class="combo-input" list="${datalistId}" value="${escAttr(effectiveVal)}" placeholder="-- Keine (tippen zum Suchen) --" autocomplete="off">
+            <button type="button" class="combo-clear-btn" title="Leeren" onclick="clearComboInput('${inputId}')">✕</button>
+        </div>`;
         if (!currentVal && suggestedVal) {
             html += `<div style="font-size:10.5px; color:#0066ff; margin-top:3px; font-weight:bold;">💡 Vorschlag automatisch gewählt</div>`;
         }
         return html;
     }
 
+    window.clearComboInput = function(inputId) {
+        const el = document.getElementById(inputId);
+        if (el) { el.value = ''; el.focus(); }
+    };
+
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingListBody");
         if (!tbody || !supabaseClient) return;
+        ensureLeagueDatalists();
 
         try {
             const { data: players, error } = await supabaseClient.from('profiles').select('*');
@@ -723,6 +785,41 @@
 
             const activePlayers = players || [];
             if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Spieler in der Datenbank gefunden.</td></tr>'; return; }
+
+            // --- Filterung der anzuzeigenden Spieler ---------------------------
+            // Plattform-Filter: zeigt nur Spieler, die sich für diese Plattform
+            // angemeldet haben (want_autodarts/want_dartcounter/want_scolia).
+            // Status-Filter: "zugeteilt"/"offen" bezieht sich - falls eine
+            // Plattform gewählt ist - genau auf DIESE Plattform-Zuteilung,
+            // sonst (bei "Alle Plattformen") auf jegliche Zuteilung.
+            const platformFilter = document.getElementById('filterPlatform') ? document.getElementById('filterPlatform').value : '';
+            const statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
+
+            let displayPlayers = activePlayers;
+            if (platformFilter) {
+                const wantField = platformFilter === 'Autodarts' ? 'want_autodarts' : platformFilter === 'DartCounter' ? 'want_dartcounter' : 'want_scolia';
+                displayPlayers = displayPlayers.filter(p => !!p[wantField]);
+            }
+            if (statusFilter) {
+                displayPlayers = displayPlayers.filter(p => {
+                    let assignedField;
+                    if (platformFilter === 'Autodarts') assignedField = p.assigned_ad_league;
+                    else if (platformFilter === 'DartCounter') assignedField = p.assigned_dc_league;
+                    else if (platformFilter === 'Scolia') assignedField = p.assigned_sc_league;
+                    else assignedField = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
+                    const isAssigned = !!assignedField;
+                    return statusFilter === 'assigned' ? isAssigned : !isAssigned;
+                });
+            }
+            const countEl = document.getElementById('filterResultCount');
+            if (countEl) countEl.textContent = `${displayPlayers.length} von ${activePlayers.length} Spielern`;
+
+            if (displayPlayers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">Keine Spieler entsprechen den gewählten Filtern.</td></tr>';
+                allLoadedProfilesMap = {};
+                activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
+                return;
+            }
 
             const { data: historyRows } = await supabaseClient.from('player_history').select('player_id, platform, league_name, placement, season').order('created_at', { ascending: false });
             
@@ -746,7 +843,7 @@
             allLoadedProfilesMap = {};
             activePlayers.forEach(p => { allLoadedProfilesMap[p.id] = p; });
 
-            tbody.innerHTML = activePlayers.map(p => {
+            tbody.innerHTML = displayPlayers.map(p => {
                 const isEingeteilt = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
                 
                 let herkunftHtml = "";
@@ -800,9 +897,9 @@
                             </div>
                         </td>
                         <td>${formatAllPlattformNames(p)}</td>
-                        <td>${buildSelectHtml('ad', p.id, AD_LEAGUES, p.assigned_ad_league, suggestions.Autodarts)}${!p.want_autodarts ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
-                        <td>${buildSelectHtml('dc', p.id, DC_LEAGUES, p.assigned_dc_league, suggestions.DartCounter)}${!p.want_dartcounter ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
-                        <td>${buildSelectHtml('sc', p.id, SC_LEAGUES, p.assigned_sc_league, suggestions.Scolia)}${!p.want_scolia ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
+                        <td>${buildLeagueComboHtml('ad', p.id, 'datalist_ad_leagues', p.assigned_ad_league, suggestions.Autodarts)}${!p.want_autodarts ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
+                        <td>${buildLeagueComboHtml('dc', p.id, 'datalist_dc_leagues', p.assigned_dc_league, suggestions.DartCounter)}${!p.want_dartcounter ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
+                        <td>${buildLeagueComboHtml('sc', p.id, 'datalist_sc_leagues', p.assigned_sc_league, suggestions.Scolia)}${!p.want_scolia ? '<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:3px;">⚠️ Nicht angemeldet</div>' : ''}</td>
                         <td>
                             <button class="assign-btn" onclick="saveSingleAssignment('${p.id}')">💾 Speichern</button>
                             ${isEingeteilt ? '<br><span style="color:#00d084; font-size:11px; font-weight:bold; display:block; margin-top:4px; text-align:center;">✓ Gespeichert</span>' : ''}
@@ -820,19 +917,27 @@
         const playerProfile = allLoadedProfilesMap[playerId];
 
         if(!playerProfile) return alert("❌ Spieler nicht gefunden!");
-        const updates = { id: playerId, status_neue_saison: 'assigned' };
 
-        const adVal = adEl ? adEl.value : "";
-        if (adVal === 'REMOVE' || adVal === '') updates.assigned_ad_league = null;
-        else { updates.assigned_ad_league = adVal.trim(); }
+        const adVal = adEl ? adEl.value.trim() : "";
+        const dcVal = dcEl ? dcEl.value.trim() : "";
+        const scVal = scEl ? scEl.value.trim() : "";
 
-        const dcVal = dcEl ? dcEl.value : "";
-        if (dcVal === 'REMOVE' || dcVal === '') updates.assigned_dc_league = null;
-        else { updates.assigned_dc_league = dcVal.trim(); }
+        // Da die Zuteilungsfelder jetzt frei durchsuchbare Text-Inputs (mit
+        // Datalist-Vorschlägen) statt starrer <select>-Felder sind, muss hier
+        // validiert werden, dass ein eingegebener Wert auch wirklich einer
+        // existierenden Liga entspricht - sonst könnten Tippfehler versehentlich
+        // ungültige Liga-Namen speichern.
+        if (adVal && !AD_LEAGUES.includes(adVal)) return alert(`❌ "${adVal}" ist keine gültige Autodarts-Liga!\nBitte einen Vorschlag aus der Liste wählen oder das Feld leeren.`);
+        if (dcVal && !DC_LEAGUES.includes(dcVal)) return alert(`❌ "${dcVal}" ist keine gültige DartCounter-Liga!\nBitte einen Vorschlag aus der Liste wählen oder das Feld leeren.`);
+        if (scVal && !SC_LEAGUES.includes(scVal)) return alert(`❌ "${scVal}" ist keine gültige Scolia-Liga!\nBitte einen Vorschlag aus der Liste wählen oder das Feld leeren.`);
 
-        const scVal = scEl ? scEl.value : "";
-        if (scVal === 'REMOVE' || scVal === '') updates.assigned_sc_league = null;
-        else { updates.assigned_sc_league = scVal.trim(); }
+        const updates = {
+            id: playerId,
+            status_neue_saison: 'assigned',
+            assigned_ad_league: adVal || null,
+            assigned_dc_league: dcVal || null,
+            assigned_sc_league: scVal || null
+        };
 
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
         if(error) alert("❌ Fehler beim Abspeichern: " + error.message);
