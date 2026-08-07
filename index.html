@@ -1359,12 +1359,15 @@
     if (p) {
       const xp = computePlayerXp(p.id);
       const progress = levelProgress(xp);
+      const modalHighlights = computePlayerHighlights(p.id);
+      const modalHighlightButtonsHtml = renderHighlightButtonsHtml(modalHighlights);
       levelHtml = `<div style="text-align:center; margin-bottom:14px;">
         <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:8px;">
           ${renderLevelHexHtml(progress.level)}
           ${renderLevelBadgeHtml(progress.level, 'big')}
         </div>
         ${renderXpProgressBarHtml(progress)}
+        ${modalHighlightButtonsHtml ? `<div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:10px;">${modalHighlightButtonsHtml}</div>` : ''}
       </div>`;
 
       const allMyBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
@@ -1850,6 +1853,9 @@
         ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center;">${shownBadges.map(b => renderBadgeHex(b, 28)).join("")}${extraBadgeCount > 0 ? `<span style="font-size:11px; font-weight:700; color:var(--text-secondary);">+${extraBadgeCount}</span>` : ''}</div>`
         : "";
 
+      const highlights = computePlayerHighlights(p.id);
+      const highlightButtonsHtml = renderHighlightButtonsHtml(highlights);
+
       return `<div class="matchday-card" style="cursor:pointer; padding:0; overflow:hidden;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
         <div style="background:var(--bg-primary); padding:6px 14px; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-secondary); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
           <span>🪪 CDL Mitgliedsausweis</span>
@@ -1865,6 +1871,7 @@
             ${plzOrt ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">📍 ${htmlEscape(plzOrt)}</div>` : ''}
             ${joinDate ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Mitglied seit ${htmlEscape(joinDate)}</div>` : ''}
             <div style="display:flex; gap:5px; margin-top:8px; flex-wrap:wrap;">${platformChips}</div>
+            ${highlightButtonsHtml ? `<div style="display:flex; gap:5px; margin-top:6px; flex-wrap:wrap;">${highlightButtonsHtml}</div>` : ''}
             ${badgeIconsHtml}
           </div>
         </div>
@@ -1972,6 +1979,43 @@
   }
 
   // --- Persönliche Statistiken -----------------------------------------------
+  // Zählt Lebenszeit-Highlights eines Spielers zusammen: Anzahl geworfener 180er
+  // (über alle Liga- UND Turnier-Spiele summiert) sowie Anzahl gemeldeter
+  // Highfinishes plus der beste (höchste) davon. Funktioniert für JEDEN Spieler
+  // (nicht nur den eingeloggten), damit es in der Mitgliederübersicht für alle
+  // angezeigt werden kann.
+  function computePlayerHighlights(playerId) {
+    const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
+    let total180s = 0, highfinishCount = 0, bestHighfinish = 0;
+    allMatches.forEach(m => {
+      if (m.is_bye) return;
+      if (m.player1_id !== playerId && m.player2_id !== playerId) return;
+      const isP1 = m.player1_id === playerId;
+      const my180 = isP1 ? m.player1_oneeighties : m.player2_oneeighties;
+      if (my180) total180s += parseInt(my180) || 0;
+      const myHf = isP1 ? m.player1_highfinish : m.player2_highfinish;
+      if (myHf) {
+        highfinishCount++;
+        const hfNum = parseInt(myHf) || 0;
+        if (hfNum > bestHighfinish) bestHighfinish = hfNum;
+      }
+    });
+    return { total180s, highfinishCount, bestHighfinish };
+  }
+
+  // Baut die kleinen Highlight-"Buttons" (180er / Highfinishes), die sowohl in
+  // der Mitgliederkarten-Vorschau als auch im vollen Profil verwendet werden.
+  function renderHighlightButtonsHtml(highlights) {
+    let html = "";
+    if (highlights.total180s > 0) {
+      html += `<span style="font-size:10.5px; font-weight:700; background:rgba(255,107,53,0.12); color:#ff6b35; padding:3px 9px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;">🎯 ${highlights.total180s}× 180</span>`;
+    }
+    if (highlights.highfinishCount > 0) {
+      html += `<span style="font-size:10.5px; font-weight:700; background:rgba(0,208,132,0.12); color:#00d084; padding:3px 9px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;">🏹 Highfinish ${highlights.bestHighfinish}${highlights.highfinishCount > 1 ? ` (${highlights.highfinishCount}×)` : ''}</span>`;
+    }
+    return html;
+  }
+
   function computeMyStats(playerId) {
     const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
     const myFinished = allMatches.filter(m => !m.is_bye && (m.player1_id === playerId || m.player2_id === playerId) && (m.status === 'done' || m.status === 'fertig'));
@@ -1991,8 +2035,9 @@
     const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
     const avgOverall = avgSeries.length > 0 ? (avgSeries.reduce((a, b) => a + b, 0) / avgSeries.length) : null;
     const bestStreak = computeLongestWinStreak(playerId);
+    const highlights = computePlayerHighlights(playerId);
 
-    return { played, wins, winRate, avgOverall, bestStreak, recentAvgs: avgSeries.slice(-12) };
+    return { played, wins, winRate, avgOverall, bestStreak, recentAvgs: avgSeries.slice(-12), ...highlights };
   }
 
   function renderAvgSparkline(values) {
@@ -2027,6 +2072,14 @@
       <div class="stat-box">
         <div class="stat-box-label">Ø AVG</div>
         <div class="stat-box-value">${stats.avgOverall !== null ? stats.avgOverall.toFixed(2) : '-'}</div>
+      </div>
+      <div class="stat-box" style="background: rgba(255,107,53,0.06);">
+        <div class="stat-box-label" style="color:#ff6b35;">180er (gesamt)</div>
+        <div class="stat-box-value" style="color:#ff6b35;">${stats.total180s}</div>
+      </div>
+      <div class="stat-box" style="background: rgba(0,208,132,0.06);">
+        <div class="stat-box-label" style="color:#00d084;">Bester Highfinish</div>
+        <div class="stat-box-value" style="color:#00d084;">${stats.bestHighfinish > 0 ? stats.bestHighfinish : '-'}</div>
       </div>
     </div>
     ${stats.recentAvgs.length >= 2 ? `<div style="margin-bottom:20px;">
@@ -2074,6 +2127,8 @@
     const oppAvg = isP1 ? m.player2_avg : m.player1_avg;
     const myHf = isP1 ? m.player1_highfinish : m.player2_highfinish;
     const oppHf = isP1 ? m.player2_highfinish : m.player1_highfinish;
+    const my180 = isP1 ? m.player1_oneeighties : m.player2_oneeighties;
+    const opp180 = isP1 ? m.player2_oneeighties : m.player1_oneeighties;
     const status = m.result_status || 'offen';
 
     if (!oppId && context === 'tournament') {
@@ -2091,6 +2146,8 @@
       if (oppAvg !== null && oppAvg !== undefined) parts.push(`AVG Gegner: <strong>${parseFloat(oppAvg).toFixed(2)}</strong>`);
       if (myHf) parts.push(`Dein Highfinish: <strong>${myHf}</strong>`);
       if (oppHf) parts.push(`Highfinish Gegner: <strong>${oppHf}</strong>`);
+      if (my180) parts.push(`Deine 180er: <strong>${my180}</strong>`);
+      if (opp180) parts.push(`180er Gegner: <strong>${opp180}</strong>`);
       return parts.length > 0 ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">${parts.join(' &middot; ')}</div>` : '';
     }
 
@@ -2145,10 +2202,12 @@
         <label style="font-size:12px;">AVG Gegner *<br><input type="number" step="0.01" id="oppAvg-${matchId}" class="leg-input" min="0" required></label>
         <label style="font-size:12px;">Dein Highfinish<br><input type="number" id="myHf-${matchId}" class="leg-input" min="0" placeholder="optional"></label>
         <label style="font-size:12px;">Highfinish Gegner<br><input type="number" id="oppHf-${matchId}" class="leg-input" min="0" placeholder="optional"></label>
+        <label style="font-size:12px;">Deine 180er<br><input type="number" id="my180-${matchId}" class="leg-input" min="0" placeholder="optional"></label>
+        <label style="font-size:12px;">180er Gegner<br><input type="number" id="opp180-${matchId}" class="leg-input" min="0" placeholder="optional"></label>
         <label style="font-size:12px;">📷 Screenshot (optional)<br><input type="file" id="screenshot-${matchId}" accept="image/*"></label>
         <button class="btn small-action-btn" style="background:#00d084; color:white; border:none;" onclick="submitMatchResult('${matchId}','${context}')">Absenden</button>
       </div>
-      <p style="font-size:11px; color:var(--text-secondary); margin-top:6px;">* AVG ist Pflicht für dich und deinen Gegner, Highfinish ist optional.</p>`;
+      <p style="font-size:11px; color:var(--text-secondary); margin-top:6px;">* AVG ist Pflicht für dich und deinen Gegner, Highfinish und 180er sind optional.</p>`;
   };
 
   window.submitMatchResult = async function(matchId, context) {
@@ -2160,6 +2219,8 @@
     const oppAvgEl = document.getElementById(`oppAvg-${matchId}`);
     const myHfEl = document.getElementById(`myHf-${matchId}`);
     const oppHfEl = document.getElementById(`oppHf-${matchId}`);
+    const my180El = document.getElementById(`my180-${matchId}`);
+    const opp180El = document.getElementById(`opp180-${matchId}`);
     if (!myLegsEl.value || !oppLegsEl.value) { alert('Bitte beide Leg-Werte eintragen.'); return; }
     if (!myAvgEl.value || !oppAvgEl.value) { alert('Bitte den AVG für dich und deinen Gegner eintragen - dieses Feld ist Pflicht.'); return; }
 
@@ -2205,6 +2266,10 @@
     const oppHfVal = oppHfEl.value ? parseInt(oppHfEl.value) : null;
     const player1_highfinish = isP1 ? myHfVal : oppHfVal;
     const player2_highfinish = isP1 ? oppHfVal : myHfVal;
+    const my180Val = my180El && my180El.value ? parseInt(my180El.value) : null;
+    const opp180Val = opp180El && opp180El.value ? parseInt(opp180El.value) : null;
+    const player1_oneeighties = isP1 ? my180Val : opp180Val;
+    const player2_oneeighties = isP1 ? opp180Val : my180Val;
 
     const deadlineMs = context === 'tournament'
       ? state.tournamentConfirmationMinutes * 60 * 1000
@@ -2215,6 +2280,7 @@
       legs_player1, legs_player2,
       player1_avg, player2_avg,
       player1_highfinish, player2_highfinish,
+      player1_oneeighties, player2_oneeighties,
       result_status: 'pending_confirmation',
       reported_by_id: profile.id,
       reported_at: new Date().toISOString(),
@@ -2658,7 +2724,7 @@
   async function loadTournamentsData() {
     try {
       const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name, start_date, min_participants, checkout_mode, match_format, avg_limit, final_match_format');
-      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, round_number, bracket_slot, is_bye, winner_id, next_match_id, next_match_slot, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url, match_format');
+      const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, round_number, bracket_slot, is_bye, winner_id, next_match_id, next_match_slot, player1_id, player2_id, legs_player1, legs_player2, player1_avg, player2_avg, player1_highfinish, player2_highfinish, player1_oneeighties, player2_oneeighties, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url, match_format');
       const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
       state.allTournamentsCache = tournaments || [];
       state.allTournamentMatchesCache = tourMatches || [];
