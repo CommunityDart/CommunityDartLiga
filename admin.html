@@ -309,7 +309,17 @@
                 <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">📊 AVG-Obergrenze (optional)
                     <input type="number" id="tournamentAvgLimit" class="num-input" step="0.01" min="0" placeholder="z.B. 45" style="display:block; margin-top:4px; width:100px;">
                 </label>
-                <p class="meta-text" style="margin-top:16px; max-width:260px;">Mit AVG-Obergrenze können nur Spieler teilnehmen, deren eingetragener Plattform-AVG darunter liegt (z.B. für Anfänger-Turniere). Leer lassen = keine Begrenzung.</p>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">🏆 Format im Finale (optional)
+                    <select id="tournamentFinalMatchFormat" class="league-select" style="display:block; margin-top:4px;">
+                        <option value="" selected>-- Gleich wie oben --</option>
+                        <option value="bo3legs">Best of 3 Legs</option>
+                        <option value="bo5legs">Best of 5 Legs</option>
+                        <option value="bo7legs">Best of 7 Legs</option>
+                        <option value="bo3sets">Best of 3 Sets</option>
+                        <option value="bo5sets">Best of 5 Sets</option>
+                    </select>
+                </label>
+                <p class="meta-text" style="margin-top:16px; max-width:260px;">Mit AVG-Obergrenze können nur Spieler teilnehmen, deren eingetragener Plattform-AVG darunter liegt (z.B. für Anfänger-Turniere). Leer lassen = keine Begrenzung. Das Finale-Format wirkt nur beim Turnierbaum (K.o.), nicht bei "Jeder gegen Jeden".</p>
             </div>
         </div>
 
@@ -585,6 +595,8 @@
     let currentManageTName = null;
     let currentManageFormat = 'bracket';
     let currentManagePlatform = null;
+    let currentManageMatchFormat = 'bo5legs';
+    let currentManageFinalMatchFormat = null;
     let currentManageParticipants = [];
 
     const quillToolbarOptions = [
@@ -1093,7 +1105,8 @@
 
         let html = "";
         for (const [day, list] of Object.entries(grouped)) {
-            html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">Spieltag ${day}</h3><table><thead><tr>
+            const dayFormat = (context === 'Turnier' && list[0] && list[0].match_format) ? matchFormatLabel(list[0].match_format) : null;
+            html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">Spieltag ${day}${dayFormat ? ` <span style="font-size:11.5px; font-weight:normal; color:var(--text-secondary);">(${dayFormat})</span>` : ''}</h3><table><thead><tr>
                         <th style="width:18%;">Heimspieler</th><th style="width:18%;">Auswärtsspieler</th><th style="width:9%; text-align:center;">Legs</th>
                         <th style="width:12%; text-align:center;">Averages</th><th style="width:14%; text-align:center;">Highlights</th>
                         ${context !== 'Turnier' ? '<th style="width:10%; text-align:center;">Karten</th>' : ''}
@@ -1156,7 +1169,8 @@
     // Baut einen echten K.o.-Baum: bracketSize = nächste 2er-Potenz >= Teilnehmerzahl.
     // Freilose werden auf zufällig gewählte, VERSCHIEDENE Runde-1-Partien verteilt
     // (nie zwei Freilose in derselben Partie), Gewinner rücken automatisch nach.
-    function buildSingleEliminationBracket(tournamentId, playerIds) {
+    function buildSingleEliminationBracket(tournamentId, playerIds, matchFormat, finalMatchFormat) {
+        matchFormat = matchFormat || 'bo5legs';
         const n = playerIds.length;
         let bracketSize = 1;
         while (bracketSize < n) bracketSize *= 2;
@@ -1167,6 +1181,9 @@
         const byeMatchSet = new Set(shuffleArray([...Array(numMatches).keys()]).slice(0, totalByes));
 
         const numRounds = Math.log2(bracketSize);
+        // Das Finale (letzte Runde) bekommt sein eigenes Format, falls gesetzt -
+        // sonst gilt für jede Runde einheitlich das normale Turnier-Format.
+        const formatForRound = (r) => (r === numRounds && finalMatchFormat) ? finalMatchFormat : matchFormat;
         const rounds = [];
         let pointer = 0;
         const round1 = [];
@@ -1180,6 +1197,7 @@
                 winner_id: isBye ? p1 : null,
                 status: isBye ? 'fertig' : 'offen',
                 result_status: isBye ? 'admin_confirmed' : 'offen',
+                match_format: formatForRound(1),
                 next_match_id: null, next_match_slot: null
             });
         }
@@ -1193,6 +1211,7 @@
                     id: crypto.randomUUID(), tournament_id: tournamentId, round_number: r, bracket_slot: i,
                     player1_id: null, player2_id: null, is_bye: false, winner_id: null,
                     status: 'offen', result_status: 'offen',
+                    match_format: formatForRound(r),
                     next_match_id: null, next_match_slot: null
                 });
             }
@@ -1234,6 +1253,7 @@
         const checkoutMode = document.getElementById("tournamentCheckoutMode") ? document.getElementById("tournamentCheckoutMode").value : "501";
         const matchFormat = document.getElementById("tournamentMatchFormat") ? document.getElementById("tournamentMatchFormat").value : "bo5legs";
         const avgLimitRaw = document.getElementById("tournamentAvgLimit") ? document.getElementById("tournamentAvgLimit").value.trim() : "";
+        const finalMatchFormatRaw = document.getElementById("tournamentFinalMatchFormat") ? document.getElementById("tournamentFinalMatchFormat").value : "";
 
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
 
@@ -1242,6 +1262,7 @@
         const minParticipants = Math.max(4, parseInt(minParticipantsRaw) || 4);
         const startDateIso = startDateRaw ? new Date(startDateRaw).toISOString() : null;
         const avgLimit = avgLimitRaw !== "" ? parseFloat(avgLimitRaw.replace(',', '.')) : null;
+        const finalMatchFormat = finalMatchFormatRaw !== "" ? finalMatchFormatRaw : null;
 
         const { error } = await supabaseClient.from('tournaments').insert([{
             title: name,
@@ -1252,7 +1273,8 @@
             min_participants: minParticipants,
             checkout_mode: checkoutMode,
             match_format: matchFormat,
-            avg_limit: avgLimit
+            avg_limit: avgLimit,
+            final_match_format: finalMatchFormat
         }]);
         
         if(error) alert("❌ Fehler: " + error.message);
@@ -1262,10 +1284,11 @@
             if (document.getElementById("tournamentStartDate")) document.getElementById("tournamentStartDate").value = "";
             if (document.getElementById("tournamentMinParticipants")) document.getElementById("tournamentMinParticipants").value = "4";
             if (document.getElementById("tournamentAvgLimit")) document.getElementById("tournamentAvgLimit").value = "";
+            if (document.getElementById("tournamentFinalMatchFormat")) document.getElementById("tournamentFinalMatchFormat").value = "";
 
             // Discord-Ankündigung, dass ein neues Turnier eröffnet wurde.
             supabaseClient.functions.invoke('discord-tournament-recruit', {
-                body: { type: 'created', tournamentTitle: name, platform, format, startDate: startDateIso, minParticipants, checkoutMode, matchFormat, avgLimit }
+                body: { type: 'created', tournamentTitle: name, platform, format, startDate: startDateIso, minParticipants, checkoutMode, matchFormat, avgLimit, finalMatchFormat }
             }).then(({ error: fnError }) => { if (fnError) console.error('Discord-Eröffnungs-Post fehlgeschlagen:', fnError); });
 
             loadActiveTournaments();
@@ -1406,9 +1429,11 @@
         document.getElementById('tournamentManagerArea').style.display = 'block';
         document.getElementById('tScheduleArea').innerHTML = 'Lade Daten...';
 
-        const { data: tData } = await supabaseClient.from('tournaments').select('format, platform').eq('id', id).single();
+        const { data: tData } = await supabaseClient.from('tournaments').select('format, platform, match_format, final_match_format').eq('id', id).single();
         currentManageFormat = (tData && tData.format) || 'bracket';
         currentManagePlatform = (tData && tData.platform) || null;
+        currentManageMatchFormat = (tData && tData.match_format) || 'bo5legs';
+        currentManageFinalMatchFormat = (tData && tData.final_match_format) || null;
 
         const headingEl = document.getElementById('tScheduleHeading');
         const genBtnEl = document.getElementById('tGenerateBtn');
@@ -1500,7 +1525,8 @@
         let html = "";
         Object.keys(grouped).map(Number).sort((a,b)=>a-b).forEach(r => {
             const list = grouped[r].sort((a,b)=>(a.bracket_slot||0)-(b.bracket_slot||0));
-            html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">${roundName(r)}</h3><table><thead><tr>
+            const roundFormat = list[0] && list[0].match_format ? matchFormatLabel(list[0].match_format) : null;
+            html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">${roundName(r)}${roundFormat ? ` <span style="font-size:11.5px; font-weight:normal; color:var(--text-secondary);">(${roundFormat})</span>` : ''}</h3><table><thead><tr>
                         <th style="width:20%;">Spieler 1</th><th style="width:20%;">Spieler 2</th><th style="width:10%; text-align:center;">Legs</th>
                         <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th>
                         <th style="width:14%; text-align:center;">Status</th>
@@ -1538,7 +1564,8 @@
 
     // Jeder-gegen-Jeden: alle Teilnehmer spielen einmal gegeneinander (Circle-Method,
     // gleiches Prinzip wie beim Liga-Spielplan, aber nur eine einzige Runde ohne Rückrunde).
-    function buildRoundRobinSchedule(tournamentId, playerIds) {
+    function buildRoundRobinSchedule(tournamentId, playerIds, matchFormat) {
+        matchFormat = matchFormat || 'bo5legs';
         let ids = playerIds.slice();
         if (ids.length % 2 !== 0) ids.push(null);
         const numPlayers = ids.length;
@@ -1555,6 +1582,7 @@
                         player1_id: home, player2_id: away,
                         is_bye: (!home || !away), winner_id: null,
                         status: 'offen', result_status: 'offen',
+                        match_format: matchFormat,
                         next_match_id: null, next_match_slot: null
                     });
                 }
@@ -1590,7 +1618,7 @@
 
         if (currentManageFormat === 'roundrobin') {
             if(!confirm(`Spielplan (Jeder gegen Jeden) für "${currentManageTName}" jetzt generieren?`)) return;
-            const allMatches = buildRoundRobinSchedule(currentManageTID, playerIds);
+            const allMatches = buildRoundRobinSchedule(currentManageTID, playerIds, currentManageMatchFormat);
             const { error } = await supabaseClient.from('tournament_matches').insert(allMatches);
             if(error) alert("❌ Fehler: " + error.message);
             else {
@@ -1603,7 +1631,7 @@
 
         if(!confirm(`Turnierbaum für "${currentManageTName}" jetzt auslosen?\n\nBei einer Teilnehmerzahl, die keine 2er-Potenz ist, werden Freilose zufällig verlost.`)) return;
 
-        const allMatches = buildSingleEliminationBracket(currentManageTID, playerIds);
+        const allMatches = buildSingleEliminationBracket(currentManageTID, playerIds, currentManageMatchFormat, currentManageFinalMatchFormat);
 
         const { error } = await supabaseClient.from('tournament_matches').insert(allMatches);
         if(error) alert("❌ Fehler: " + error.message);
@@ -2062,7 +2090,7 @@
             const nowIso = new Date().toISOString();
             const { data: candidates } = await supabaseClient
                 .from('tournaments')
-                .select('id, title, platform, format, start_date, min_participants, schedule_generated_at, start_extended')
+                .select('id, title, platform, format, start_date, min_participants, schedule_generated_at, start_extended, match_format, final_match_format')
                 .eq('status', 'active')
                 .not('start_date', 'is', null)
                 .is('schedule_generated_at', null)
@@ -2090,8 +2118,8 @@
                     if (!claimed || claimed.length === 0) continue; // ein anderer Tab war schneller
 
                     const allMatches = t.format === 'roundrobin'
-                        ? buildRoundRobinSchedule(t.id, playerIds)
-                        : buildSingleEliminationBracket(t.id, playerIds);
+                        ? buildRoundRobinSchedule(t.id, playerIds, t.match_format)
+                        : buildSingleEliminationBracket(t.id, playerIds, t.match_format, t.final_match_format);
                     const { error: insertErr } = await supabaseClient.from('tournament_matches').insert(allMatches);
                     if (insertErr) {
                         console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
