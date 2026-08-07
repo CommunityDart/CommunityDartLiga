@@ -1118,8 +1118,8 @@
         for (const [day, list] of Object.entries(grouped)) {
             const dayFormat = (context === 'Turnier' && list[0] && list[0].match_format) ? matchFormatLabel(list[0].match_format) : null;
             html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">Spieltag ${day}${dayFormat ? ` <span style="font-size:11.5px; font-weight:normal; color:var(--text-secondary);">(${dayFormat})</span>` : ''}</h3><table><thead><tr>
-                        <th style="width:18%;">Heimspieler</th><th style="width:18%;">Auswärtsspieler</th><th style="width:9%; text-align:center;">Legs</th>
-                        <th style="width:12%; text-align:center;">Averages</th><th style="width:14%; text-align:center;">Highlights</th>
+                        <th style="width:16%;">Heimspieler</th><th style="width:16%;">Auswärtsspieler</th><th style="width:8%; text-align:center;">Legs</th>
+                        <th style="width:11%; text-align:center;">Averages</th><th style="width:11%; text-align:center;">HF / 180er</th><th style="width:12%; text-align:center;">Highlights</th>
                         ${context !== 'Turnier' ? '<th style="width:10%; text-align:center;">Karten</th>' : ''}
                         <th style="width:12%; text-align:center;">Status</th>
                         <th style="width:4%;">Aktion</th>
@@ -1157,6 +1157,10 @@
                         <td><div class="player-info-block"><strong style="color:#00d084;">${htmlEscape(p2Name)}</strong>${formatAllPlattformNames(p2)}</div></td>
                         <td><div class="flex-row-center"><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isFreilos?'disabled':''}> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isFreilos?'disabled':''}></div></td>
                         <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || m.avg_player1 || ''}" ${isFreilos?'disabled':''}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || m.avg_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
+                        <td><div class="flex-col-gap">
+                            <div class="flex-row-center"><input type="number" id="hf1_${m.id}" class="leg-input" style="width:36px;" title="Highfinish Heimspieler" placeholder="HF" value="${m.player1_highfinish ?? ''}" ${isFreilos?'disabled':''}><input type="number" id="one80_1_${m.id}" class="leg-input" style="width:32px;" title="180er Heimspieler" placeholder="180" value="${m.player1_oneeighties ?? ''}" ${isFreilos?'disabled':''}></div>
+                            <div class="flex-row-center"><input type="number" id="hf2_${m.id}" class="leg-input" style="width:36px;" title="Highfinish Auswärtsspieler" placeholder="HF" value="${m.player2_highfinish ?? ''}" ${isFreilos?'disabled':''}><input type="number" id="one80_2_${m.id}" class="leg-input" style="width:32px;" title="180er Auswärtsspieler" placeholder="180" value="${m.player2_oneeighties ?? ''}" ${isFreilos?'disabled':''}></div>
+                        </div></td>
                         <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isFreilos?'disabled':''}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isFreilos?'disabled':''}></div></td>
                         ${kartenTd}
                         <td style="text-align:center; font-size:12px;">${statusTd}</td>
@@ -1538,8 +1542,8 @@
             const list = grouped[r].sort((a,b)=>(a.bracket_slot||0)-(b.bracket_slot||0));
             const roundFormat = list[0] && list[0].match_format ? matchFormatLabel(list[0].match_format) : null;
             html += `<h3 style="color:#0066ff; margin-top:14px; border-bottom:1px solid var(--border); padding-bottom:4px;">${roundName(r)}${roundFormat ? ` <span style="font-size:11.5px; font-weight:normal; color:var(--text-secondary);">(${roundFormat})</span>` : ''}</h3><table><thead><tr>
-                        <th style="width:20%;">Spieler 1</th><th style="width:20%;">Spieler 2</th><th style="width:10%; text-align:center;">Legs</th>
-                        <th style="width:14%; text-align:center;">Averages</th><th style="width:16%; text-align:center;">Highlights</th>
+                        <th style="width:17%;">Spieler 1</th><th style="width:17%;">Spieler 2</th><th style="width:9%; text-align:center;">Legs</th>
+                        <th style="width:12%; text-align:center;">Averages</th><th style="width:12%; text-align:center;">HF / 180er</th><th style="width:13%; text-align:center;">Highlights</th>
                         <th style="width:14%; text-align:center;">Status</th>
                         <th style="width:6%;">Aktion</th>
                     </tr></thead><tbody>`;
@@ -1563,6 +1567,10 @@
                         <td><strong style="color:#00d084;">${htmlEscape(p2Name)}</strong></td>
                         <td><div class="flex-row-center"><input type="number" id="l1_${m.id}" class="leg-input" value="${m.legs_player1 ?? ''}" ${isPlayable?'':'disabled'}> : <input type="number" id="l2_${m.id}" class="leg-input" value="${m.legs_player2 ?? ''}" ${isPlayable?'':'disabled'}></div></td>
                         <td><div class="flex-row-center"><input type="text" id="avg1_${m.id}" class="stat-input" value="${m.player1_avg || ''}" ${isPlayable?'':'disabled'}> : <input type="text" id="avg2_${m.id}" class="stat-input" value="${m.player2_avg || ''}" ${isPlayable?'':'disabled'}></div></td>
+                        <td><div class="flex-col-gap">
+                            <div class="flex-row-center"><input type="number" id="hf1_${m.id}" class="leg-input" style="width:36px;" title="Highfinish Spieler 1" placeholder="HF" value="${m.player1_highfinish ?? ''}" ${isPlayable?'':'disabled'}><input type="number" id="one80_1_${m.id}" class="leg-input" style="width:32px;" title="180er Spieler 1" placeholder="180" value="${m.player1_oneeighties ?? ''}" ${isPlayable?'':'disabled'}></div>
+                            <div class="flex-row-center"><input type="number" id="hf2_${m.id}" class="leg-input" style="width:36px;" title="Highfinish Spieler 2" placeholder="HF" value="${m.player2_highfinish ?? ''}" ${isPlayable?'':'disabled'}><input type="number" id="one80_2_${m.id}" class="leg-input" style="width:32px;" title="180er Spieler 2" placeholder="180" value="${m.player2_oneeighties ?? ''}" ${isPlayable?'':'disabled'}></div>
+                        </div></td>
                         <td><div class="flex-col-gap"><input type="text" id="hl1_${m.id}" class="txt-input" value="${m.highlights_player1 || ''}" ${isPlayable?'':'disabled'}><input type="text" id="hl2_${m.id}" class="txt-input" value="${m.highlights_player2 || ''}" ${isPlayable?'':'disabled'}></div></td>
                         <td style="text-align:center; font-size:12px;">${statusTd}</td>
                         <td><button class="assign-btn" style="padding:6px 8px;" onclick="saveTournamentMatchStats('${m.id}')" ${isPlayable?'':'disabled'}>💾</button></td>
@@ -1666,12 +1674,18 @@
         const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
         const a1 = document.getElementById(`avg1_${matchId}`)?.value, a2 = document.getElementById(`avg2_${matchId}`)?.value;
         const h1 = document.getElementById(`hl1_${matchId}`)?.value, h2 = document.getElementById(`hl2_${matchId}`)?.value;
+        const hf1 = document.getElementById(`hf1_${matchId}`)?.value, hf2 = document.getElementById(`hf2_${matchId}`)?.value;
+        const one80_1 = document.getElementById(`one80_1_${matchId}`)?.value, one80_2 = document.getElementById(`one80_2_${matchId}`)?.value;
 
         const updates = {
             legs_player1: l1 !== "" ? parseInt(l1) : null,
             legs_player2: l2 !== "" ? parseInt(l2) : null,
             player1_avg: a1 && !isNaN(parseFloat(a1)) ? parseFloat(a1) : null,
             player2_avg: a2 && !isNaN(parseFloat(a2)) ? parseFloat(a2) : null,
+            player1_highfinish: hf1 !== "" && hf1 !== undefined ? parseInt(hf1) : null,
+            player2_highfinish: hf2 !== "" && hf2 !== undefined ? parseInt(hf2) : null,
+            player1_oneeighties: one80_1 !== "" && one80_1 !== undefined ? parseInt(one80_1) : null,
+            player2_oneeighties: one80_2 !== "" && one80_2 !== undefined ? parseInt(one80_2) : null,
             highlights_player1: h1 || null,
             highlights_player2: h2 || null,
             status: (l1 !== "" && l2 !== "") ? "fertig" : "offen",
@@ -1688,12 +1702,18 @@
         const l1 = document.getElementById(`l1_${matchId}`).value, l2 = document.getElementById(`l2_${matchId}`).value;
         const a1 = document.getElementById(`avg1_${matchId}`)?.value, a2 = document.getElementById(`avg2_${matchId}`)?.value;
         const h1 = document.getElementById(`hl1_${matchId}`)?.value, h2 = document.getElementById(`hl2_${matchId}`)?.value;
+        const hf1 = document.getElementById(`hf1_${matchId}`)?.value, hf2 = document.getElementById(`hf2_${matchId}`)?.value;
+        const one80_1 = document.getElementById(`one80_1_${matchId}`)?.value, one80_2 = document.getElementById(`one80_2_${matchId}`)?.value;
         
         const updates = {
             legs_player1: l1 !== "" ? parseInt(l1) : null,
             legs_player2: l2 !== "" ? parseInt(l2) : null,
             player1_avg: a1 && !isNaN(parseFloat(a1)) ? parseFloat(a1) : null,
             player2_avg: a2 && !isNaN(parseFloat(a2)) ? parseFloat(a2) : null,
+            player1_highfinish: hf1 !== "" && hf1 !== undefined ? parseInt(hf1) : null,
+            player2_highfinish: hf2 !== "" && hf2 !== undefined ? parseInt(hf2) : null,
+            player1_oneeighties: one80_1 !== "" && one80_1 !== undefined ? parseInt(one80_1) : null,
+            player2_oneeighties: one80_2 !== "" && one80_2 !== undefined ? parseInt(one80_2) : null,
             highlights_player1: h1 || null,
             highlights_player2: h2 || null,
             status: (l1 !== "" && l2 !== "") ? "fertig" : "offen",
