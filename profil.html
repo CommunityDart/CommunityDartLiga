@@ -270,7 +270,7 @@
     <div class="card" id="myBadgesCard">
       <div class="card-header">🏅 Meine Abzeichen</div>
       <div class="card-body">
-        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Steuere hier, welche deiner Abzeichen für andere sichtbar sind. Ausgeblendete Abzeichen siehst nur du hier - für alle anderen verschwinden sie komplett (Profil-Ansicht, Mitgliederkarte).</p>
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">📍 <strong>Anheften</strong> legt fest, welche deiner Abzeichen auf deinem Profil direkt oben angezeigt werden (max. 6) - der Rest landet in einem einklappbaren Dropdown. 👁️ <strong>Sichtbarkeit</strong> blendet ein Abzeichen komplett für alle anderen aus (nur du siehst es hier).</p>
         <div id="myBadgesList" style="display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto; padding-right:4px;">Lade Abzeichen...</div>
       </div>
     </div>
@@ -604,28 +604,52 @@
         return;
       }
 
+      const pinnedCount = badges.filter(b => b.pinned).length;
+
       listArea.innerHTML = badges.map(b => {
         const dimStyle = b.hidden ? 'opacity:0.5;' : '';
         const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString('de-DE') : '';
+        const pinDisabled = !b.pinned && pinnedCount >= 6;
+        const pinBtn = b.hidden ? '' : `
+          <button type="button" onclick="toggleBadgePinned('${b.id}', ${!!b.pinned})" title="${b.pinned ? 'Von \'Oben angezeigt\' entfernen' : (pinDisabled ? 'Maximal 6 angeheftete Abzeichen erlaubt' : 'Oben anheften (max. 6)')}" ${pinDisabled ? 'disabled' : ''} style="background:none; border:1px solid ${b.pinned ? 'var(--platform-color)' : 'var(--border)'}; border-radius:6px; padding:6px 10px; cursor:${pinDisabled ? 'not-allowed' : 'pointer'}; font-size:13px; color:${b.pinned ? 'var(--platform-color)' : 'var(--text-primary)'}; opacity:${pinDisabled ? '0.5' : '1'};">
+            ${b.pinned ? '📌 Oben angezeigt' : '📍 Anheften'}
+          </button>`;
         return `<div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg-tertiary); border-radius:8px; border:1px solid var(--border); ${dimStyle}">
           ${renderBadgeHex(b, 36)}
           <div style="flex:1; min-width:0;">
             <div style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</div>
             <div style="font-size:11px; color:var(--text-secondary);">${b.platform ? htmlEscape(b.platform) + ' · ' : ''}${dateStr}</div>
           </div>
-          <button type="button" onclick="toggleBadgeVisibility('${b.id}', ${!!b.hidden})" title="${b.hidden ? 'Wieder einblenden' : 'Für andere ausblenden'}" style="background:none; border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; color:var(--text-primary);">
-            ${b.hidden ? '🙈 Ausgeblendet' : '👁️ Sichtbar'}
-          </button>
+          <div style="display:flex; gap:6px; flex-shrink:0;">
+            ${pinBtn}
+            <button type="button" onclick="toggleBadgeVisibility('${b.id}', ${!!b.hidden})" title="${b.hidden ? 'Wieder einblenden' : 'Für andere ausblenden'}" style="background:none; border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; color:var(--text-primary);">
+              ${b.hidden ? '🙈 Ausgeblendet' : '👁️ Sichtbar'}
+            </button>
+          </div>
         </div>`;
       }).join('');
     }
 
     // Nur bei den EIGENEN Abzeichen möglich - serverseitig zusätzlich per RLS +
     // Trigger abgesichert (siehe SQL-Migration), damit hier kein anderes Feld
-    // als "hidden" verändert werden kann.
+    // als "hidden"/"pinned" verändert werden kann.
     window.toggleBadgeVisibility = async function(badgeId, currentlyHidden) {
       const { error } = await supabaseClient.from('player_badges').update({ hidden: !currentlyHidden }).eq('id', badgeId);
       if (error) { alert('❌ Fehler beim Ändern der Sichtbarkeit: ' + error.message); return; }
+      loadMyBadges(currentUser.id);
+    };
+
+    // Bestimmt, welche Abzeichen auf index.html "oben" (max. 6) statt im
+    // eingeklappten "Weitere Abzeichen"-Dropdown erscheinen. Die 6er-Grenze
+    // wird zusätzlich serverseitig per Trigger durchgesetzt.
+    window.toggleBadgePinned = async function(badgeId, currentlyPinned) {
+      if (!currentlyPinned) {
+        const { data: badges } = await supabaseClient.from('player_badges').select('id, pinned').eq('player_id', currentUser.id);
+        const pinnedCount = (badges || []).filter(b => b.pinned).length;
+        if (pinnedCount >= 6) { alert('❌ Du kannst maximal 6 Abzeichen oben anzeigen lassen. Entferne zuerst eins.'); return; }
+      }
+      const { error } = await supabaseClient.from('player_badges').update({ pinned: !currentlyPinned }).eq('id', badgeId);
+      if (error) { alert('❌ Fehler: ' + error.message); return; }
       loadMyBadges(currentUser.id);
     };
 
