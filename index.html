@@ -1825,9 +1825,10 @@
   function updateMyGamesNavVisibility() {
     const btn = document.getElementById('navMyGames');
     if (!btn) return;
-    const profile = getCurrentPlayerProfile();
-    const inLeague = !!(profile && (profile.assigned_ad_league || profile.assigned_dc_league || profile.assigned_sc_league));
-    btn.style.display = (state.currentUser && inLeague) ? 'inline-block' : 'none';
+    // Zeigt "Meine Spiele" dauerhaft für jeden eingeloggten Spieler, unabhängig
+    // davon, ob er einer Liga zugeteilt ist oder schon Spiele/Turniere hat -
+    // renderMyGames() zeigt in dem Fall passende Hinweistexte statt leerer Seite.
+    btn.style.display = state.currentUser ? 'inline-block' : 'none';
   }
 
   function renderMembercards() {
