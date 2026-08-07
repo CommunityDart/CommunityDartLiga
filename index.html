@@ -1248,6 +1248,7 @@
     tournamentConfirmationMinutes: 5,
     playerBadgesCache: [],
     allMatchesLifetimeCache: [],
+    collapsedBadgeTypes: ['teilnehmer'],
     xpConfig: {
       matchPlayed: 10, matchWon: 15, tournamentParticipation: 20,
       tournamentWinner: 100, tournamentSecond: 50, tournamentThird: 25, newsReaction: 2
@@ -1372,8 +1373,8 @@
       // die Karte sonst beliebig lang machen - deshalb eigener, eingeklappter
       // Unterpunkt. Echte Erfolge (Sieger/Platzierungen/Website-Tester) bleiben
       // wie gehabt direkt sichtbar, da davon i.d.R. nur wenige anfallen.
-      const achievementBadges = myBadges.filter(b => b.badge_type !== 'teilnehmer');
-      const participationBadges = myBadges.filter(b => b.badge_type === 'teilnehmer');
+      const achievementBadges = myBadges.filter(b => !state.collapsedBadgeTypes.includes(b.badge_type));
+      const participationBadges = myBadges.filter(b => state.collapsedBadgeTypes.includes(b.badge_type));
       const bestStreak = computeLongestWinStreak(p.id);
       const streakRow = bestStreak >= 3
         ? `<div style="display:flex; align-items:center; gap:10px;">${renderStreakBadgeHex(bestStreak, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(getStreakTier(bestStreak).name)}</span></div>`
@@ -1387,7 +1388,7 @@
             const listHtml = participationBadges.map(b => `<div style="display:flex; align-items:center; gap:10px; padding:4px 0;">${renderBadgeHex(b, 30)}<span style="font-size:12.5px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("");
             participationHtml = `<div>
                 <div class="player-link" style="font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:6px;" onclick="toggleParticipationBadges('${toggleId}', this)">
-                    <span class="chev">▸</span> 🎖️ Teilnahmen (${participationBadges.length})
+                    <span class="chev">▸</span> 🔽 Weitere Abzeichen (${participationBadges.length})
                 </div>
                 <div id="${toggleId}" style="display:none; max-height:180px; overflow-y:auto; margin-top:6px; padding-left:6px; border-left:2px solid var(--border);">
                     ${listHtml}
@@ -1830,7 +1831,15 @@
 
       const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
       const MAX_PREVIEW_BADGES = 6;
-      const shownBadges = myBadges.slice(0, MAX_PREVIEW_BADGES);
+      // Immer-sichtbare Typen (laut Admin-Einstellung) zuerst zeigen, bevor
+      // gekappt wird - damit z.B. Turniersieger-Abzeichen nicht durch viele
+      // Teilnehmer-Abzeichen aus der Vorschau verdrängt werden.
+      const sortedBadgesForPreview = [...myBadges].sort((a, b) => {
+        const aCollapsed = state.collapsedBadgeTypes.includes(a.badge_type) ? 1 : 0;
+        const bCollapsed = state.collapsedBadgeTypes.includes(b.badge_type) ? 1 : 0;
+        return aCollapsed - bCollapsed;
+      });
+      const shownBadges = sortedBadgesForPreview.slice(0, MAX_PREVIEW_BADGES);
       const extraBadgeCount = myBadges.length - shownBadges.length;
       const badgeIconsHtml = myBadges.length > 0
         ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center;">${shownBadges.map(b => renderBadgeHex(b, 28)).join("")}${extraBadgeCount > 0 ? `<span style="font-size:11px; font-weight:700; color:var(--text-secondary);">+${extraBadgeCount}</span>` : ''}</div>`
@@ -2550,6 +2559,9 @@
       state.currentSeason = sys?.current_season || 'Saison 1';
       state.resultConfirmationHours = sys?.result_confirmation_hours || 48;
       state.tournamentConfirmationMinutes = sys?.tournament_confirmation_minutes || 5;
+      state.collapsedBadgeTypes = sys?.collapsed_badge_types
+        ? sys.collapsed_badge_types.split(',').map(s => s.trim()).filter(Boolean)
+        : ['teilnehmer'];
       state.xpConfig = {
         matchPlayed: sys?.xp_match_played ?? 10,
         matchWon: sys?.xp_match_won ?? 15,
