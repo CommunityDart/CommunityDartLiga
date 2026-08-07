@@ -2745,10 +2745,12 @@
             .select('id');
           if (!claimed || claimed.length === 0) continue;
 
-          await supabaseClient.from('news').insert([{
-            title: `⏳ Turnierstart verzögert: ${t.title}`,
-            content: `<p>Das Turnier <strong>${htmlEscape(t.title)}</strong> sollte gerade starten, aber es sind erst <strong>${playerIds.length}</strong> von mindestens <strong>${effectiveMin}</strong> benötigten Spielern angemeldet.</p><p>Der Start wurde automatisch um 10 Minuten verschoben - meldet euch jetzt an, um dabei zu sein! 🎯</p>`
-          }]);
+          // Postet @everyone-Hinweis in den dafür eingerichteten Discord-Kanal
+          // (eigene Edge Function + eigener Webhook, getrennt vom News-Feed).
+          const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
+            body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin }
+          });
+          if (fnError) console.error('Discord-Spielersuche-Post fehlgeschlagen:', fnError);
           console.log(`⏳ Auto-Start: Turnier "${t.title}" verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
         }
       }
