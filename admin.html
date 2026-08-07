@@ -280,6 +280,15 @@
                 </select>
                 <button class="generate-btn" onclick="createTournament()">➕ Turnier erstellen</button>
             </div>
+            <div class="config-row">
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">🗓️ Startdatum (optional)
+                    <input type="datetime-local" id="tournamentStartDate" class="league-select" style="display:block; margin-top:4px;">
+                </label>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">👥 Mindestspieler zum Auto-Start
+                    <input type="number" id="tournamentMinParticipants" class="num-input" value="4" min="4" style="display:block; margin-top:4px; width:80px;">
+                </label>
+                <p class="meta-text" style="margin-top:16px; max-width:260px;">Wird ein Startdatum gesetzt: sind zu diesem Zeitpunkt genug Spieler angemeldet, startet das Turnier automatisch. Sonst verschiebt sich der Start um 10 Min. und es gibt einen Discord-Hinweis.</p>
+            </div>
         </div>
 
         <h3>🎮 Aktive Turniere</h3>
@@ -1171,20 +1180,31 @@
         const name = document.getElementById("tournamentName").value.trim();
         const platform = document.getElementById("tournamentPlatform").value;
         const format = document.getElementById("tournamentFormat").value || 'bracket';
-        
+        const startDateRaw = document.getElementById("tournamentStartDate") ? document.getElementById("tournamentStartDate").value : "";
+        const minParticipantsRaw = document.getElementById("tournamentMinParticipants") ? document.getElementById("tournamentMinParticipants").value : "4";
+
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
-        
+
+        // Mindestens 4 Spieler sind Pflicht, damit ein Turnier automatisch starten kann -
+        // wird hier zusätzlich zur DB-Check-Constraint auch clientseitig erzwungen.
+        const minParticipants = Math.max(4, parseInt(minParticipantsRaw) || 4);
+        const startDateIso = startDateRaw ? new Date(startDateRaw).toISOString() : null;
+
         const { error } = await supabaseClient.from('tournaments').insert([{
             title: name,
             platform: platform,
             format: format,
-            status: 'active'
+            status: 'active',
+            start_date: startDateIso,
+            min_participants: minParticipants
         }]);
         
         if(error) alert("❌ Fehler: " + error.message);
         else {
             alert("✅ Turnier erfolgreich erstellt!");
             document.getElementById("tournamentName").value = "";
+            if (document.getElementById("tournamentStartDate")) document.getElementById("tournamentStartDate").value = "";
+            if (document.getElementById("tournamentMinParticipants")) document.getElementById("tournamentMinParticipants").value = "4";
             loadActiveTournaments();
         }
     };
@@ -1207,7 +1227,7 @@
         try {
             const { data: tournaments, error } = await supabaseClient
                 .from('tournaments')
-                .select('id, title, platform, format, status, created_at, completed_at, first_place_name, second_place_name, third_place_name')
+                .select('id, title, platform, format, status, created_at, completed_at, first_place_name, second_place_name, third_place_name, start_date, min_participants, schedule_generated_at')
                 .order('created_at', { ascending: false });
             
             if(error) { activeBody.innerHTML = `<tr><td colspan="5" style="color:#e74c3c;">Fehler beim API-Laden: ${error.message}</td></tr>`; return; }
@@ -1217,9 +1237,18 @@
             
             if(activeTournaments.length === 0) activeBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Keine aktiven Turniere</td></tr>`;
             else {
-                activeBody.innerHTML = activeTournaments.map(t => `
+                activeBody.innerHTML = activeTournaments.map(t => {
+                    const hasSchedule = !!t.schedule_generated_at;
+                    let startInfoHtml = "";
+                    if (t.start_date && !hasSchedule) {
+                        const dateStr = new Date(t.start_date).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        startInfoHtml = `<br><span style="font-size:10.5px; color:#0066ff; font-weight:bold;">🕒 Auto-Start: ${dateStr} (mind. ${t.min_participants || 4} Spieler)</span>`;
+                    } else if (hasSchedule) {
+                        startInfoHtml = `<br><span style="font-size:10.5px; color:#00d084; font-weight:bold;">✓ Gestartet</span>`;
+                    }
+                    return `
                     <tr>
-                        <td><strong style="color:#00d084;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:var(--text-secondary);">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span></td>
+                        <td><strong style="color:#00d084;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:var(--text-secondary);">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span>${startInfoHtml}</td>
                         <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
                         <td id="count_${t.id}">0</td>
                         <td><span style="color: #ffd700; font-weight: bold;">🟡 Aktiv</span></td>
@@ -1231,7 +1260,7 @@
                             </div>
                         </td>
                     </tr>
-                `).join("");
+                `;}).join("");
                 
                 for(let t of activeTournaments) {
                     const { data: regs } = await supabaseClient.from('tournament_registrations').select('id').eq('tournament_id', t.id);
@@ -1879,11 +1908,90 @@
         loadFeesTab();
     };
 
+    // --- Automatischer Turnierstart ---------------------------------------
+    // Läuft beim Laden der Seite (und danach alle 60s, solange die Seite offen
+    // ist). Für jedes aktive Turnier mit gesetztem start_date, das noch keinen
+    // Spielplan hat: ist der Zeitpunkt erreicht UND genug Spieler (>= Minimum,
+    // mind. 4) angemeldet, wird der Spielplan/Turnierbaum automatisch generiert
+    // (gleiche Logik wie der manuelle "Generieren"-Knopf). Sind noch nicht genug
+    // Spieler da, wird der Start um 10 Minuten verschoben und ein News-Eintrag
+    // erstellt, der automatisch als Discord-Post rausgeht (bestehende
+    // discord-news-notify Edge Function reagiert auf INSERT in 'news').
+    //
+    // Race-Safety: Da mehrere Browser-Tabs (Admin + Spieler-Startseite) diesen
+    // Check gleichzeitig ausführen können, wird jede Aktion als bedingtes
+    // UPDATE...WHERE...RETURNING abgesetzt. Nur der Tab, dessen UPDATE
+    // tatsächlich eine Zeile trifft, führt die Folgeaktion aus - alle anderen
+    // sehen 0 betroffene Zeilen und überspringen still. Das verhindert doppelt
+    // generierte Turnierbäume oder doppelte Discord-Posts.
+    async function checkAutoStartTournaments() {
+        if (!supabaseClient) return;
+        try {
+            const nowIso = new Date().toISOString();
+            const { data: candidates } = await supabaseClient
+                .from('tournaments')
+                .select('id, title, platform, format, start_date, min_participants, schedule_generated_at')
+                .eq('status', 'active')
+                .not('start_date', 'is', null)
+                .is('schedule_generated_at', null)
+                .lte('start_date', nowIso);
+
+            if (!candidates || candidates.length === 0) return;
+
+            for (const t of candidates) {
+                // Falls bereits (manuell) ein Spielplan existiert, überspringen.
+                const { data: existingMatches } = await supabaseClient.from('tournament_matches').select('id').eq('tournament_id', t.id).limit(1);
+                if (existingMatches && existingMatches.length > 0) continue;
+
+                const { data: regs } = await supabaseClient.from('tournament_registrations').select('player_id').eq('tournament_id', t.id);
+                const playerIds = (regs || []).map(r => r.player_id);
+                const effectiveMin = Math.max(4, t.min_participants || 4);
+
+                if (playerIds.length >= effectiveMin) {
+                    // Genug Spieler: Lock holen und Spielplan automatisch generieren.
+                    const { data: claimed } = await supabaseClient
+                        .from('tournaments')
+                        .update({ schedule_generated_at: new Date().toISOString() })
+                        .eq('id', t.id)
+                        .is('schedule_generated_at', null)
+                        .select('id');
+                    if (!claimed || claimed.length === 0) continue; // ein anderer Tab war schneller
+
+                    const allMatches = t.format === 'roundrobin'
+                        ? buildRoundRobinSchedule(t.id, playerIds)
+                        : buildSingleEliminationBracket(t.id, playerIds);
+                    const { error: insertErr } = await supabaseClient.from('tournament_matches').insert(allMatches);
+                    if (insertErr) console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
+                    else console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
+                } else {
+                    // Zu wenig Spieler: Start um 10 Minuten verschieben + Discord-Hinweis.
+                    const newStartDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+                    const { data: claimed } = await supabaseClient
+                        .from('tournaments')
+                        .update({ start_date: newStartDate })
+                        .eq('id', t.id)
+                        .lte('start_date', nowIso)
+                        .select('id');
+                    if (!claimed || claimed.length === 0) continue; // ein anderer Tab hat den Delay schon gesetzt
+
+                    await supabaseClient.from('news').insert([{
+                        title: `⏳ Turnierstart verzögert: ${t.title}`,
+                        content: `<p>Das Turnier <strong>${htmlEscape(t.title)}</strong> sollte gerade starten, aber es sind erst <strong>${playerIds.length}</strong> von mindestens <strong>${effectiveMin}</strong> benötigten Spielern angemeldet.</p><p>Der Start wurde automatisch um 10 Minuten verschoben - meldet euch jetzt an, um dabei zu sein! 🎯</p>`
+                    }]);
+                    console.log(`⏳ Auto-Start: Turnier "${t.title}" verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
+                }
+            }
+            loadActiveTournaments();
+        } catch (e) { console.error('Fehler beim Auto-Start-Check:', e); }
+    }
+
     async function initAdmin() {
         await loadCurrentSeason();
         setTimeout(async () => { await loadAllLeagueRules(); }, 50);
         setTimeout(() => { initLeagueSelector(); injectSeasonManagerUI(); loadWaitingList(); }, 100);
         setTimeout(() => { loadActiveTournaments(); }, 200);
+        setTimeout(() => { checkAutoStartTournaments(); }, 800);
+        setInterval(checkAutoStartTournaments, 60 * 1000);
     }
     initAdmin();
 </script>
