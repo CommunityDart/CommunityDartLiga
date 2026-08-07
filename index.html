@@ -1328,6 +1328,12 @@
     
     let dName = p?.display_name || altName || idOrName;
     if (isIdString(dName) && altName && !isIdString(altName)) { dName = altName; }
+
+    // Eigenes Profil erkennen: nur dann darf man Abzeichen ein-/ausblenden,
+    // und nur dann werden bereits ausgeblendete Abzeichen überhaupt angezeigt
+    // (mit Umschalt-Symbol) - bei fremden Profilen bleiben sie unsichtbar.
+    const currentProfileForVisibility = getCurrentPlayerProfile();
+    const isOwnProfile = !!(p && currentProfileForVisibility && p.id === currentProfileForVisibility.id);
     
     const realName = p?.real_name || p?.full_name || p?.echter_name || p?.name || "Nicht angegeben";
     const discordHandle = p?.discord_name || p?.username || "-";
@@ -1368,7 +1374,11 @@
         ${renderXpProgressBarHtml(progress)}
       </div>`;
 
-      const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
+      const allMyBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
+      // Für fremde Profile werden vom Spieler ausgeblendete Abzeichen komplett
+      // weggelassen. Nur auf dem eigenen Profil sieht man ALLE (inkl.
+      // ausgeblendeter) mit einem Umschalt-Symbol zur Verwaltung.
+      const myBadges = isOwnProfile ? allMyBadges : allMyBadges.filter(b => !b.hidden);
       // "Teilnehmer"-Abzeichen sammeln sich mit jeder Saison/Plattform an und würden
       // die Karte sonst beliebig lang machen - deshalb eigener, eingeklappter
       // Unterpunkt. Echte Erfolge (Sieger/Platzierungen/Website-Tester) bleiben
@@ -1379,13 +1389,23 @@
       const streakRow = bestStreak >= 3
         ? `<div style="display:flex; align-items:center; gap:10px;">${renderStreakBadgeHex(bestStreak, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(getStreakTier(bestStreak).name)}</span></div>`
         : "";
+      // Baut eine einzelne Abzeichen-Zeile inkl. optionalem Sichtbarkeits-Toggle
+      // (nur auf dem eigenen Profil). Ausgeblendete Abzeichen werden dort
+      // zusätzlich abgedunkelt dargestellt, damit klar ist: "nur du siehst das".
+      const buildBadgeRow = (b, size) => {
+        const dimStyle = (isOwnProfile && b.hidden) ? 'opacity:0.45;' : '';
+        const toggleBtn = isOwnProfile
+          ? `<button onclick="toggleBadgeVisibility('${b.id}', ${!!b.hidden}, '${htmlEscape(p.id)}', '${htmlEscape(dName)}')" title="${b.hidden ? 'Wieder einblenden' : 'Für andere ausblenden'}" style="margin-left:auto; background:none; border:none; cursor:pointer; font-size:15px; padding:2px 4px; opacity:0.75;">${b.hidden ? '🙈' : '👁️'}</button>`
+          : '';
+        return `<div style="display:flex; align-items:center; gap:10px; ${dimStyle}"><div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">${renderBadgeHex(b, size)}<span style="font-size:${size >= 40 ? '13px' : '12.5px'}; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>${toggleBtn}</div>`;
+      };
       if (myBadges.length > 0 || streakRow) {
-        const achievementsHtml = achievementBadges.map(b => `<div style="display:flex; align-items:center; gap:10px;">${renderBadgeHex(b, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("");
+        const achievementsHtml = achievementBadges.map(b => buildBadgeRow(b, 40)).join("");
 
         let participationHtml = "";
         if (participationBadges.length > 0) {
             const toggleId = `participation-badges-${p.id}`;
-            const listHtml = participationBadges.map(b => `<div style="display:flex; align-items:center; gap:10px; padding:4px 0;">${renderBadgeHex(b, 30)}<span style="font-size:12.5px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("");
+            const listHtml = participationBadges.map(b => `<div style="padding:4px 0;">${buildBadgeRow(b, 30)}</div>`).join("");
             participationHtml = `<div>
                 <div class="player-link" style="font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:6px;" onclick="toggleParticipationBadges('${toggleId}', this)">
                     <span class="chev">▸</span> 🔽 Weitere Abzeichen (${participationBadges.length})
@@ -1437,6 +1457,18 @@
     el.style.display = isOpen ? 'none' : 'block';
     const chev = headerEl.querySelector('.chev');
     if (chev) chev.textContent = isOpen ? '▸' : '▾';
+  };
+
+  // Spieler können nur bei ihrem EIGENEN Profil das "hidden"-Flag ihrer
+  // Abzeichen umschalten (serverseitig zusätzlich per RLS + Trigger
+  // abgesichert - siehe SQL-Migration). Nach dem Speichern wird das Popup
+  // mit aktuellem Cache neu aufgebaut.
+  window.toggleBadgeVisibility = async function(badgeId, currentlyHidden, ownerId, ownerName) {
+    const { error } = await supabaseClient.from('player_badges').update({ hidden: !currentlyHidden }).eq('id', badgeId);
+    if (error) { alert('❌ Fehler beim Ändern der Sichtbarkeit: ' + error.message); return; }
+    const { data: badgesData } = await supabaseClient.from('player_badges').select('*');
+    state.playerBadgesCache = badgesData || [];
+    openPlayerCard(ownerId, ownerName);
   };
 
   function updateAuthUI() {
@@ -1829,7 +1861,7 @@
         }
       });
 
-      const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
+      const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id && !b.hidden);
       const MAX_PREVIEW_BADGES = 6;
       // Immer-sichtbare Typen (laut Admin-Einstellung) zuerst zeigen, bevor
       // gekappt wird - damit z.B. Turniersieger-Abzeichen nicht durch viele
