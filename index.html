@@ -1368,15 +1368,38 @@
       </div>`;
 
       const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
+      // "Teilnehmer"-Abzeichen sammeln sich mit jeder Saison/Plattform an und würden
+      // die Karte sonst beliebig lang machen - deshalb eigener, eingeklappter
+      // Unterpunkt. Echte Erfolge (Sieger/Platzierungen/Website-Tester) bleiben
+      // wie gehabt direkt sichtbar, da davon i.d.R. nur wenige anfallen.
+      const achievementBadges = myBadges.filter(b => b.badge_type !== 'teilnehmer');
+      const participationBadges = myBadges.filter(b => b.badge_type === 'teilnehmer');
       const bestStreak = computeLongestWinStreak(p.id);
       const streakRow = bestStreak >= 3
         ? `<div style="display:flex; align-items:center; gap:10px;">${renderStreakBadgeHex(bestStreak, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(getStreakTier(bestStreak).name)}</span></div>`
         : "";
       if (myBadges.length > 0 || streakRow) {
+        const achievementsHtml = achievementBadges.map(b => `<div style="display:flex; align-items:center; gap:10px;">${renderBadgeHex(b, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("");
+
+        let participationHtml = "";
+        if (participationBadges.length > 0) {
+            const toggleId = `participation-badges-${p.id}`;
+            const listHtml = participationBadges.map(b => `<div style="display:flex; align-items:center; gap:10px; padding:4px 0;">${renderBadgeHex(b, 30)}<span style="font-size:12.5px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("");
+            participationHtml = `<div>
+                <div class="player-link" style="font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:6px;" onclick="toggleParticipationBadges('${toggleId}', this)">
+                    <span class="chev">▸</span> 🎖️ Teilnahmen (${participationBadges.length})
+                </div>
+                <div id="${toggleId}" style="display:none; max-height:180px; overflow-y:auto; margin-top:6px; padding-left:6px; border-left:2px solid var(--border);">
+                    ${listHtml}
+                </div>
+            </div>`;
+        }
+
         badgesHtml = `<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
           <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:10px;">🏅 Abzeichen</div>
           <div style="display:flex; flex-direction:column; gap:8px;">
-            ${myBadges.map(b => `<div style="display:flex; align-items:center; gap:10px;">${renderBadgeHex(b, 40)}<span style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</span></div>`).join("")}
+            ${achievementsHtml}
+            ${participationHtml}
             ${streakRow}
           </div>
         </div>`;
@@ -1405,6 +1428,15 @@
   }
 
   function closePlayerModal(e) { document.getElementById('playerModal').classList.remove('active'); }
+
+  window.toggleParticipationBadges = function(toggleId, headerEl) {
+    const el = document.getElementById(toggleId);
+    if (!el) return;
+    const isOpen = el.style.display === 'block';
+    el.style.display = isOpen ? 'none' : 'block';
+    const chev = headerEl.querySelector('.chev');
+    if (chev) chev.textContent = isOpen ? '▸' : '▾';
+  };
 
   function updateAuthUI() {
     const loginTitle = document.getElementById('loginTitle');
@@ -1797,8 +1829,11 @@
       });
 
       const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
+      const MAX_PREVIEW_BADGES = 6;
+      const shownBadges = myBadges.slice(0, MAX_PREVIEW_BADGES);
+      const extraBadgeCount = myBadges.length - shownBadges.length;
       const badgeIconsHtml = myBadges.length > 0
-        ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">${myBadges.map(b => renderBadgeHex(b, 28)).join("")}</div>`
+        ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center;">${shownBadges.map(b => renderBadgeHex(b, 28)).join("")}${extraBadgeCount > 0 ? `<span style="font-size:11px; font-weight:700; color:var(--text-secondary);">+${extraBadgeCount}</span>` : ''}</div>`
         : "";
 
       return `<div class="matchday-card" style="cursor:pointer; padding:0; overflow:hidden;" onclick="openPlayerCard('${htmlEscape(p.id)}', '${htmlEscape(name)}')">
