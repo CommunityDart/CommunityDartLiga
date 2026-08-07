@@ -826,18 +826,29 @@
 
     // Baut ein durchsuchbares Zuteilungs-Feld: ein Text-Input mit Datalist-Anbindung
     // (Tippen filtert live), plus kleinem ✕-Button zum schnellen Leeren.
+    //
+    // WICHTIG: Der Vorschlag (aus Auf-/Absteiger-Berechnung) wird bewusst NICHT
+    // automatisch ins Eingabefeld eingetragen - sonst würde ein Admin, der beim
+    // Speichern nur eine ANDERE Plattform-Zeile ändern wollte, versehentlich
+    // auch den Vorschlag für diese Plattform mit abspeichern und den Spieler so
+    // ungewollt (wieder) einer Liga zuteilen. Der Vorschlag erscheint stattdessen
+    // als klickbarer Hinweis, der erst per Klick ins Feld übernommen wird.
     function buildLeagueComboHtml(idPrefix, playerId, datalistId, currentVal, suggestedVal) {
-        const effectiveVal = currentVal || suggestedVal || "";
         const inputId = `${idPrefix}_${playerId}`;
         let html = `<div class="combo-wrap">
-            <input type="text" id="${inputId}" class="combo-input" list="${datalistId}" value="${escAttr(effectiveVal)}" placeholder="-- Keine (tippen zum Suchen) --" autocomplete="off">
+            <input type="text" id="${inputId}" class="combo-input" list="${datalistId}" value="${escAttr(currentVal || "")}" placeholder="-- Keine (tippen zum Suchen) --" autocomplete="off">
             <button type="button" class="combo-clear-btn" title="Leeren" onclick="clearComboInput('${inputId}')">✕</button>
         </div>`;
         if (!currentVal && suggestedVal) {
-            html += `<div style="font-size:10.5px; color:#0066ff; margin-top:3px; font-weight:bold;">💡 Vorschlag automatisch gewählt</div>`;
+            html += `<div class="player-link" style="font-size:10.5px; color:#0066ff; margin-top:3px; font-weight:bold;" onclick="applyComboSuggestion('${inputId}', '${escAttr(suggestedVal)}')">💡 Vorschlag: ${htmlEscape(suggestedVal)} (klicken zum Übernehmen)</div>`;
         }
         return html;
     }
+
+    window.applyComboSuggestion = function(inputId, suggestedVal) {
+        const el = document.getElementById(inputId);
+        if (el) { el.value = suggestedVal; el.focus(); }
+    };
 
     window.clearComboInput = function(inputId) {
         const el = document.getElementById(inputId);
@@ -1786,7 +1797,7 @@
 
     window.endSeasonForLeague = async function(leagueName) {
         if(!supabaseClient) return;
-        if(!confirm(`⚠️ Saison für "${leagueName}" beenden?\n\nDies archiviert den Endstand aller Spieler in der neuen 'player_history'-Tabelle und setzt die Zuteilungen zurück.`)) return;
+        if(!confirm(`⚠️ Saison für "${leagueName}" beenden?\n\nDies archiviert den Endstand aller Spieler in der neuen 'player_history'-Tabelle, setzt die Zuteilungen zurück UND löscht den generierten Spielplan dieser Liga für die aktuelle Saison (Tabelle/Spielplan auf der Website werden dadurch wieder leer).`)) return;
         try {
             alert("⏳ Verarbeite Saison-Ende...");
             const { data: players } = await supabaseClient.from('profiles').select('*');
@@ -1820,7 +1831,14 @@
                 const { error: uErr } = await supabaseClient.from('profiles').update(updates).eq('id', player.id);
                 if(!uErr) successCount++;
             }
-            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler in 'player_history' archiviert.`); loadWaitingList();
+
+            // Generierten Spielplan dieser Liga+Saison entfernen - die Endplatzierung
+            // ist bereits über player_history archiviert, die einzelnen Match-Zeilen
+            // werden nicht mehr gebraucht und würden sonst auf der Website weiter als
+            // "aktuelle" Tabelle/Spieltage erscheinen.
+            await supabaseClient.from('matches').delete().eq('league_name', leagueName).eq('season', currentSeasonGlobal);
+
+            alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler in 'player_history' archiviert.\n🗑️ Spielplan dieser Liga wurde geleert.`); loadWaitingList();
         } catch(e) { alert("❌ Fehler:\n" + e.message); }
     };
 
