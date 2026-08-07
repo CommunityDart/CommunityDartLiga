@@ -2704,7 +2704,7 @@
       const nowIso = new Date().toISOString();
       const { data: candidates } = await supabaseClient
         .from('tournaments')
-        .select('id, title, platform, format, start_date, min_participants, schedule_generated_at')
+        .select('id, title, platform, format, start_date, min_participants, schedule_generated_at, start_extended')
         .eq('status', 'active')
         .not('start_date', 'is', null)
         .is('schedule_generated_at', null)
@@ -2735,23 +2735,38 @@
           const { error: insertErr } = await supabaseClient.from('tournament_matches').insert(allMatches);
           if (insertErr) console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
           else console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
-        } else {
+        } else if (!t.start_extended) {
+          // Erste Verzögerung: Start EINMALIG um 10 Minuten verschieben + Discord-Aufruf.
           const newStartDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
           const { data: claimed } = await supabaseClient
             .from('tournaments')
-            .update({ start_date: newStartDate })
+            .update({ start_date: newStartDate, start_extended: true })
             .eq('id', t.id)
+            .eq('start_extended', false)
             .lte('start_date', nowIso)
             .select('id');
           if (!claimed || claimed.length === 0) continue;
 
-          // Postet @everyone-Hinweis in den dafür eingerichteten Discord-Kanal
-          // (eigene Edge Function + eigener Webhook, getrennt vom News-Feed).
           const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
-            body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin }
+            body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin, type: 'recruit' }
           });
           if (fnError) console.error('Discord-Spielersuche-Post fehlgeschlagen:', fnError);
-          console.log(`⏳ Auto-Start: Turnier "${t.title}" verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
+          console.log(`⏳ Auto-Start: Turnier "${t.title}" einmalig verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
+        } else {
+          // Bereits einmal verlängert und immer noch zu wenig Spieler: Turnier absagen.
+          const { data: claimed } = await supabaseClient
+            .from('tournaments')
+            .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+            .eq('id', t.id)
+            .eq('status', 'active')
+            .select('id');
+          if (!claimed || claimed.length === 0) continue;
+
+          const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
+            body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin, type: 'cancelled' }
+          });
+          if (fnError) console.error('Discord-Absage-Post fehlgeschlagen:', fnError);
+          console.log(`❌ Auto-Start: Turnier "${t.title}" automatisch abgesagt (${playerIds.length}/${effectiveMin} Spieler).`);
         }
       }
       await loadTournamentsData();
