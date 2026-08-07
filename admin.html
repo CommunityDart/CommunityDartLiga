@@ -562,6 +562,7 @@
     let currentManageTID = null;
     let currentManageTName = null;
     let currentManageFormat = 'bracket';
+    let currentManagePlatform = null;
     let currentManageParticipants = [];
 
     const quillToolbarOptions = [
@@ -1222,6 +1223,12 @@
             document.getElementById("tournamentName").value = "";
             if (document.getElementById("tournamentStartDate")) document.getElementById("tournamentStartDate").value = "";
             if (document.getElementById("tournamentMinParticipants")) document.getElementById("tournamentMinParticipants").value = "4";
+
+            // Discord-Ankündigung, dass ein neues Turnier eröffnet wurde.
+            supabaseClient.functions.invoke('discord-tournament-recruit', {
+                body: { type: 'created', tournamentTitle: name, platform, format, startDate: startDateIso, minParticipants }
+            }).then(({ error: fnError }) => { if (fnError) console.error('Discord-Eröffnungs-Post fehlgeschlagen:', fnError); });
+
             loadActiveTournaments();
         }
     };
@@ -1359,8 +1366,9 @@
         document.getElementById('tournamentManagerArea').style.display = 'block';
         document.getElementById('tScheduleArea').innerHTML = 'Lade Daten...';
 
-        const { data: tData } = await supabaseClient.from('tournaments').select('format').eq('id', id).single();
+        const { data: tData } = await supabaseClient.from('tournaments').select('format, platform').eq('id', id).single();
         currentManageFormat = (tData && tData.format) || 'bracket';
+        currentManagePlatform = (tData && tData.platform) || null;
 
         const headingEl = document.getElementById('tScheduleHeading');
         const genBtnEl = document.getElementById('tGenerateBtn');
@@ -1516,16 +1524,40 @@
         return matchesToInsert;
     }
 
+    // Postet die "Turnier gestartet"-Nachricht mit den Paarungen der ersten Runde
+    // (round_number === 1) an Discord. nameOfFn löst eine Spieler-ID zu einem
+    // Anzeigenamen auf - je nach Aufrufkontext leicht unterschiedlich implementiert.
+    async function postTournamentStartedAnnouncement(title, platform, format, allMatches, nameOfFn) {
+        const round1 = allMatches.filter(m => (m.round_number || 1) === 1);
+        const pairings = round1.map(m => ({
+            player1: nameOfFn(m.player1_id),
+            player2: m.is_bye ? null : nameOfFn(m.player2_id),
+            isBye: !!m.is_bye
+        }));
+        const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
+            body: { type: 'started', tournamentTitle: title, platform, format, pairings }
+        });
+        if (fnError) console.error('Discord-Start-Post fehlgeschlagen:', fnError);
+    }
+
     window.generateTournamentSchedule = async function() {
         if(currentManageParticipants.length < 2) return alert("❌ Abbruch: Mindestens 2 angemeldete Spieler benötigt!");
         const playerIds = currentManageParticipants.map(p => p.player_id);
+        const nameOf = (id) => {
+            const p = currentManageParticipants.find(x => x.player_id === id);
+            return p ? p.player_name : 'Spieler';
+        };
 
         if (currentManageFormat === 'roundrobin') {
             if(!confirm(`Spielplan (Jeder gegen Jeden) für "${currentManageTName}" jetzt generieren?`)) return;
             const allMatches = buildRoundRobinSchedule(currentManageTID, playerIds);
             const { error } = await supabaseClient.from('tournament_matches').insert(allMatches);
             if(error) alert("❌ Fehler: " + error.message);
-            else { alert(`🎉 Spielplan erstellt! Jeder Teilnehmer spielt einmal gegen jeden.`); loadTournamentSchedule(); }
+            else {
+                alert(`🎉 Spielplan erstellt! Jeder Teilnehmer spielt einmal gegen jeden.`);
+                postTournamentStartedAnnouncement(currentManageTName, currentManagePlatform, currentManageFormat, allMatches, nameOf);
+                loadTournamentSchedule();
+            }
             return;
         }
 
@@ -1538,6 +1570,7 @@
         else {
             const byeCount = allMatches.filter(m => m.is_bye).length;
             alert(`🎉 Turnierbaum ausgelost!${byeCount > 0 ? ` (${byeCount} Freilos${byeCount > 1 ? 'e' : ''} vergeben)` : ''}`);
+            postTournamentStartedAnnouncement(currentManageTName, currentManagePlatform, currentManageFormat, allMatches, nameOf);
             loadTournamentSchedule();
         }
     };
@@ -2020,8 +2053,16 @@
                         ? buildRoundRobinSchedule(t.id, playerIds)
                         : buildSingleEliminationBracket(t.id, playerIds);
                     const { error: insertErr } = await supabaseClient.from('tournament_matches').insert(allMatches);
-                    if (insertErr) console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
-                    else console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
+                    if (insertErr) {
+                        console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
+                    } else {
+                        console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
+                        // Namen für die Paarungs-Nachricht auflösen.
+                        const { data: playerProfiles } = await supabaseClient.from('profiles').select('id, discord_name, username, display_name, real_name').in('id', playerIds);
+                        const nameMap = {};
+                        (playerProfiles || []).forEach(p => { nameMap[p.id] = p.display_name || p.username || p.discord_name || p.real_name || 'Spieler'; });
+                        await postTournamentStartedAnnouncement(t.title, t.platform, t.format, allMatches, (id) => nameMap[id] || 'Spieler');
+                    }
                 } else if (!t.start_extended) {
                     // Erste Verzögerung: Start EINMALIG um 10 Minuten verschieben + Discord-Aufruf.
                     const newStartDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -2035,7 +2076,7 @@
                     if (!claimed || claimed.length === 0) continue; // ein anderer Tab hat den Delay schon gesetzt
 
                     const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
-                        body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin, type: 'recruit' }
+                        body: { tournamentTitle: t.title, platform: t.platform, currentCount: playerIds.length, minCount: effectiveMin, type: 'recruit' }
                     });
                     if (fnError) console.error('Discord-Spielersuche-Post fehlgeschlagen:', fnError);
                     console.log(`⏳ Auto-Start: Turnier "${t.title}" einmalig verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
@@ -2050,7 +2091,7 @@
                     if (!claimed || claimed.length === 0) continue; // ein anderer Tab war schneller
 
                     const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
-                        body: { tournamentTitle: t.title, currentCount: playerIds.length, minCount: effectiveMin, type: 'cancelled' }
+                        body: { tournamentTitle: t.title, platform: t.platform, currentCount: playerIds.length, minCount: effectiveMin, type: 'cancelled' }
                     });
                     if (fnError) console.error('Discord-Absage-Post fehlgeschlagen:', fnError);
                     console.log(`❌ Auto-Start: Turnier "${t.title}" automatisch abgesagt (${playerIds.length}/${effectiveMin} Spieler).`);
