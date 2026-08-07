@@ -419,16 +419,7 @@
 
     <div id="tabBadges" class="tab-content">
         <h2>🏅 Abzeichen verwalten</h2>
-        <p class="meta-text" style="margin-bottom:12px;">Turniersieger/Zweiter/Dritter werden beim Abschließen eines Turniers automatisch (inkl. Turnier-Plattform) vergeben, "Teilnehmer Saison X" automatisch beim Beenden einer Liga-Saison. Hier kannst du zusätzlich manuell Abzeichen vergeben (z.B. Website-Tester) oder Abzeichen wieder entfernen. Die Farbe des Abzeichens richtet sich nach der gewählten Plattform (Blau=Autodarts, Orange=DartCounter, Grün=Scolia); ohne Plattform ist es neutral lila.</p>
-
-        <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
-            <h3>👁️ Anzeige im Spielerprofil (Website)</h3>
-            <p class="meta-text" style="margin-bottom:8px;">Angehakte Typen werden im Profil unter "Weitere Abzeichen" eingeklappt statt direkt angezeigt - praktisch für Typen, die sich schnell ansammeln (z.B. Teilnehmer-Abzeichen pro Saison). Nicht angehakte Typen bleiben immer direkt sichtbar.</p>
-            <div class="config-row" id="badgeVisibilityCheckboxes" style="flex-wrap:wrap;"></div>
-            <div class="config-row">
-                <button class="card-btn yellow" onclick="saveBadgeVisibilityConfig()">💾 Speichern</button>
-            </div>
-        </div>
+        <p class="meta-text" style="margin-bottom:12px;">Turniersieger/Zweiter/Dritter werden beim Abschließen eines Turniers automatisch (inkl. Turnier-Plattform) vergeben, "Teilnehmer Saison X" automatisch beim Beenden einer Liga-Saison. Hier kannst du zusätzlich manuell Abzeichen vergeben (z.B. Website-Tester) oder Abzeichen wieder entfernen. Die Farbe des Abzeichens richtet sich nach der gewählten Plattform (Blau=Autodarts, Orange=DartCounter, Grün=Scolia); ohne Plattform ist es neutral lila. Welche Abzeichen auf ihrem Profil oben angezeigt werden (max. 6) bzw. im Dropdown landen, wählt jeder Spieler selbst auf seiner Profilseite.</p>
 
         <div class="config-box">
             <h3>➕ Abzeichen manuell vergeben</h3>
@@ -671,7 +662,7 @@
         if (tabId === 'tabNews') initNewsEditor();
         if (tabId === 'tabZuteilung') loadWaitingList();
         if (tabId === 'tabTournaments') document.getElementById('tournamentManagerArea').style.display='none';
-        if (tabId === 'tabBadges') { loadBadgesTab(); loadBadgeVisibilityConfig(); }
+        if (tabId === 'tabBadges') { loadBadgesTab(); }
         if (tabId === 'tabLevel') loadXpConfig();
         if (tabId === 'tabStartgeld') loadFeesTab();
     }
@@ -1954,32 +1945,6 @@
             </tr>`;
         }).join("");
     }
-
-    // --- Abzeichen-Sichtbarkeit (welche Typen werden im Spielerprofil auf der
-    // Website eingeklappt statt direkt gezeigt) -----------------------------
-    async function loadBadgeVisibilityConfig() {
-        const container = document.getElementById('badgeVisibilityCheckboxes');
-        if (!container || !supabaseClient) return;
-        const { data } = await supabaseClient.from('system_settings').select('collapsed_badge_types').eq('id', 1).single();
-        const collapsedList = (data && data.collapsed_badge_types)
-            ? data.collapsed_badge_types.split(',').map(s => s.trim()).filter(Boolean)
-            : ['teilnehmer'];
-        container.innerHTML = Object.entries(BADGE_TYPES).map(([key, meta]) => `
-            <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer; background:var(--bg-tertiary); padding:6px 12px; border-radius:6px; border:1px solid var(--border);">
-                <input type="checkbox" id="badgeCollapse_${key}" ${collapsedList.includes(key) ? 'checked' : ''}> ${htmlEscape(meta.label)}
-            </label>
-        `).join('');
-    }
-
-    window.saveBadgeVisibilityConfig = async function() {
-        const collapsedList = Object.keys(BADGE_TYPES).filter(key => {
-            const el = document.getElementById(`badgeCollapse_${key}`);
-            return el && el.checked;
-        });
-        const { error } = await supabaseClient.from('system_settings').update({ collapsed_badge_types: collapsedList.join(',') }).eq('id', 1);
-        if (error) alert("❌ Fehler: " + error.message);
-        else alert("✅ Anzeige-Einstellungen gespeichert! Gilt sofort für alle Spielerprofile auf der Website.");
-    };
 
     window.awardBadgeManually = async function() {
         const playerId = document.getElementById('badgePlayerSelect').value;
