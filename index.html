@@ -2397,6 +2397,9 @@
               return `<span class="player-link" style="font-size:12px; background:var(--bg-tertiary); border:1px solid var(--border); padding:3px 10px; border-radius:12px;" onclick="openPlayerCard('${htmlEscape(r.player_id)}', '${htmlEscape(pName)}')">🎯 ${htmlEscape(pName)}</span>`;
             }).join("");
           }
+          const startInfoHtml = t.start_date
+            ? `<p style="font-size: 12.5px; color: var(--platform-color); font-weight:700; margin-top:10px; margin-bottom:0;">🕒 Geplanter Start: ${new Date(t.start_date).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} (mind. ${t.min_participants || 4} Spieler)</p>`
+            : `<p style="font-size: 13px; color: var(--text-secondary); font-style:italic; margin-top:10px; margin-bottom:0;">Der Turnierbaum wird in Kürze vom Admin ausgelost...</p>`;
           activeHtml += `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
             <span style="font-size:13px; font-weight:700; color:var(--text-secondary);">👥 ${tRegs.length} angemeldet</span>
             ${regButtonHtml}
@@ -2404,7 +2407,7 @@
           <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
             <div style="display:flex; flex-wrap:wrap; gap:6px;">${participantsHtml}</div>
           </div>
-          <p style="font-size: 13px; color: var(--text-secondary); font-style:italic; margin-top:10px; margin-bottom:0;">Der Turnierbaum wird in Kürze vom Admin ausgelost...</p>`;
+          ${startInfoHtml}`;
         } else {
           const totalR = Math.max(1, ...currentTMatches.map(m => m.round_number || 1));
           const openMatches = currentTMatches.filter(m => m.status !== 'fertig' && !m.is_bye);
@@ -2566,7 +2569,7 @@
 
   async function loadTournamentsData() {
     try {
-      const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name');
+      const { data: tournaments } = await supabaseClient.from('tournaments').select('id, title, platform, status, first_place_name, second_place_name, third_place_name, start_date, min_participants');
       const { data: tourMatches } = await supabaseClient.from('tournament_matches').select('id, tournament_id, round_number, bracket_slot, is_bye, winner_id, next_match_id, next_match_slot, player1_id, player2_id, legs_player1, legs_player2, status, result_status, reported_by_id, reported_at, confirmation_deadline, confirmed_by_id, confirmed_at, screenshot_url');
       const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
       state.allTournamentsCache = tournaments || [];
@@ -2600,6 +2603,159 @@
     } catch (e) { console.error('Auto-Bestätigung fehlgeschlagen:', e); }
   }
 
+  // --- Automatischer Turnierstart (Spieler-Seite) ----------------------------
+  // Identische Logik wie im Admin-Dashboard: läuft beim Laden dieser Seite und
+  // danach alle 60s, solange sie geöffnet bleibt. Da Spieler die Startseite
+  // deutlich häufiger besuchen als das Admin-Dashboard, ist dies der
+  // zuverlässigste Ort für den Check. Race-Safety über bedingte
+  // UPDATE...WHERE...RETURNING-Aufrufe - siehe Kommentar in admin.html.
+  function shuffleArrayLocal(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildSingleEliminationBracketLocal(tournamentId, playerIds) {
+    const n = playerIds.length;
+    let bracketSize = 1;
+    while (bracketSize < n) bracketSize *= 2;
+    const numMatches = bracketSize / 2;
+    const totalByes = bracketSize - n;
+
+    const shuffledPlayers = shuffleArrayLocal(playerIds);
+    const byeMatchSet = new Set(shuffleArrayLocal([...Array(numMatches).keys()]).slice(0, totalByes));
+
+    const numRounds = Math.log2(bracketSize);
+    const rounds = [];
+    let pointer = 0;
+    const round1 = [];
+    for (let i = 0; i < numMatches; i++) {
+      const isBye = byeMatchSet.has(i);
+      const p1 = shuffledPlayers[pointer++];
+      const p2 = isBye ? null : shuffledPlayers[pointer++];
+      round1.push({
+        id: crypto.randomUUID(), tournament_id: tournamentId, round_number: 1, bracket_slot: i,
+        player1_id: p1, player2_id: p2, is_bye: isBye,
+        winner_id: isBye ? p1 : null,
+        status: isBye ? 'fertig' : 'offen',
+        result_status: isBye ? 'admin_confirmed' : 'offen',
+        next_match_id: null, next_match_slot: null
+      });
+    }
+    rounds.push(round1);
+
+    for (let r = 2; r <= numRounds; r++) {
+      const prev = rounds[r - 2];
+      const cur = [];
+      for (let i = 0; i < prev.length / 2; i++) {
+        cur.push({
+          id: crypto.randomUUID(), tournament_id: tournamentId, round_number: r, bracket_slot: i,
+          player1_id: null, player2_id: null, is_bye: false, winner_id: null,
+          status: 'offen', result_status: 'offen',
+          next_match_id: null, next_match_slot: null
+        });
+      }
+      prev.forEach((m, idx) => {
+        const parent = cur[Math.floor(idx / 2)];
+        m.next_match_id = parent.id;
+        m.next_match_slot = (idx % 2) + 1;
+        if (m.is_bye) {
+          if (m.next_match_slot === 1) parent.player1_id = m.winner_id;
+          else parent.player2_id = m.winner_id;
+        }
+      });
+      rounds.push(cur);
+    }
+    return rounds.flat();
+  }
+
+  function buildRoundRobinScheduleLocal(tournamentId, playerIds) {
+    let ids = playerIds.slice();
+    if (ids.length % 2 !== 0) ids.push(null);
+    const numPlayers = ids.length;
+    let matchesToInsert = [];
+    let slotCounter = 0;
+
+    for (let round = 0; round < numPlayers - 1; round++) {
+      for (let i = 0; i < numPlayers / 2; i++) {
+        const home = ids[i], away = ids[numPlayers - 1 - i];
+        if (home !== null || away !== null) {
+          matchesToInsert.push({
+            id: crypto.randomUUID(), tournament_id: tournamentId,
+            round_number: round + 1, matchday: round + 1, bracket_slot: slotCounter++,
+            player1_id: home, player2_id: away,
+            is_bye: (!home || !away), winner_id: null,
+            status: 'offen', result_status: 'offen',
+            next_match_id: null, next_match_slot: null
+          });
+        }
+      }
+      ids.splice(1, 0, ids.pop());
+    }
+    return matchesToInsert;
+  }
+
+  async function checkAutoStartTournaments() {
+    if (!supabaseClient) return;
+    try {
+      const nowIso = new Date().toISOString();
+      const { data: candidates } = await supabaseClient
+        .from('tournaments')
+        .select('id, title, platform, format, start_date, min_participants, schedule_generated_at')
+        .eq('status', 'active')
+        .not('start_date', 'is', null)
+        .is('schedule_generated_at', null)
+        .lte('start_date', nowIso);
+
+      if (!candidates || candidates.length === 0) return;
+
+      for (const t of candidates) {
+        const { data: existingMatches } = await supabaseClient.from('tournament_matches').select('id').eq('tournament_id', t.id).limit(1);
+        if (existingMatches && existingMatches.length > 0) continue;
+
+        const { data: regs } = await supabaseClient.from('tournament_registrations').select('player_id').eq('tournament_id', t.id);
+        const playerIds = (regs || []).map(r => r.player_id);
+        const effectiveMin = Math.max(4, t.min_participants || 4);
+
+        if (playerIds.length >= effectiveMin) {
+          const { data: claimed } = await supabaseClient
+            .from('tournaments')
+            .update({ schedule_generated_at: new Date().toISOString() })
+            .eq('id', t.id)
+            .is('schedule_generated_at', null)
+            .select('id');
+          if (!claimed || claimed.length === 0) continue;
+
+          const allMatches = t.format === 'roundrobin'
+            ? buildRoundRobinScheduleLocal(t.id, playerIds)
+            : buildSingleEliminationBracketLocal(t.id, playerIds);
+          const { error: insertErr } = await supabaseClient.from('tournament_matches').insert(allMatches);
+          if (insertErr) console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
+          else console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
+        } else {
+          const newStartDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+          const { data: claimed } = await supabaseClient
+            .from('tournaments')
+            .update({ start_date: newStartDate })
+            .eq('id', t.id)
+            .lte('start_date', nowIso)
+            .select('id');
+          if (!claimed || claimed.length === 0) continue;
+
+          await supabaseClient.from('news').insert([{
+            title: `⏳ Turnierstart verzögert: ${t.title}`,
+            content: `<p>Das Turnier <strong>${htmlEscape(t.title)}</strong> sollte gerade starten, aber es sind erst <strong>${playerIds.length}</strong> von mindestens <strong>${effectiveMin}</strong> benötigten Spielern angemeldet.</p><p>Der Start wurde automatisch um 10 Minuten verschoben - meldet euch jetzt an, um dabei zu sein! 🎯</p>`
+          }]);
+          console.log(`⏳ Auto-Start: Turnier "${t.title}" verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
+        }
+      }
+      await loadTournamentsData();
+    } catch (e) { console.error('Fehler beim Auto-Start-Check:', e); }
+  }
+
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
     updateAuthUI();
@@ -2610,6 +2766,8 @@
   });
 
   switchView('news'); updateTheme(); checkInitialSession(); loadData();
+  setTimeout(() => { checkAutoStartTournaments(); }, 2000);
+  setInterval(checkAutoStartTournaments, 60 * 1000);
 </script>
 </body>
 </html>
