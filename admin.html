@@ -289,6 +289,28 @@
                 </label>
                 <p class="meta-text" style="margin-top:16px; max-width:260px;">Wird ein Startdatum gesetzt: sind zu diesem Zeitpunkt genug Spieler angemeldet, startet das Turnier automatisch. Sonst verschiebt sich der Start um 10 Min. und es gibt einen Discord-Hinweis.</p>
             </div>
+            <div class="config-row">
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">🎯 Spielmodus
+                    <select id="tournamentCheckoutMode" class="league-select" style="display:block; margin-top:4px;">
+                        <option value="501" selected>501</option>
+                        <option value="301">301</option>
+                        <option value="170">170</option>
+                    </select>
+                </label>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">🏁 Format
+                    <select id="tournamentMatchFormat" class="league-select" style="display:block; margin-top:4px;">
+                        <option value="bo3legs">Best of 3 Legs</option>
+                        <option value="bo5legs" selected>Best of 5 Legs</option>
+                        <option value="bo7legs">Best of 7 Legs</option>
+                        <option value="bo3sets">Best of 3 Sets</option>
+                        <option value="bo5sets">Best of 5 Sets</option>
+                    </select>
+                </label>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">📊 AVG-Obergrenze (optional)
+                    <input type="number" id="tournamentAvgLimit" class="num-input" step="0.01" min="0" placeholder="z.B. 45" style="display:block; margin-top:4px; width:100px;">
+                </label>
+                <p class="meta-text" style="margin-top:16px; max-width:260px;">Mit AVG-Obergrenze können nur Spieler teilnehmen, deren eingetragener Plattform-AVG darunter liegt (z.B. für Anfänger-Turniere). Leer lassen = keine Begrenzung.</p>
+            </div>
         </div>
 
         <h3>🎮 Aktive Turniere</h3>
@@ -574,6 +596,15 @@
     function htmlEscape(str) {
         if (!str) return "-";
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Übersetzt den gespeicherten Format-Code (z.B. "bo5legs") in einen lesbaren Text.
+    function matchFormatLabel(mf) {
+        const map = {
+            bo3legs: "Best of 3 Legs", bo5legs: "Best of 5 Legs", bo7legs: "Best of 7 Legs",
+            bo3sets: "Best of 3 Sets", bo5sets: "Best of 5 Sets"
+        };
+        return map[mf] || mf || "-";
     }
 
     async function loadCurrentSeason() {
@@ -1200,6 +1231,9 @@
         const format = document.getElementById("tournamentFormat").value || 'bracket';
         const startDateRaw = document.getElementById("tournamentStartDate") ? document.getElementById("tournamentStartDate").value : "";
         const minParticipantsRaw = document.getElementById("tournamentMinParticipants") ? document.getElementById("tournamentMinParticipants").value : "4";
+        const checkoutMode = document.getElementById("tournamentCheckoutMode") ? document.getElementById("tournamentCheckoutMode").value : "501";
+        const matchFormat = document.getElementById("tournamentMatchFormat") ? document.getElementById("tournamentMatchFormat").value : "bo5legs";
+        const avgLimitRaw = document.getElementById("tournamentAvgLimit") ? document.getElementById("tournamentAvgLimit").value.trim() : "";
 
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
 
@@ -1207,6 +1241,7 @@
         // wird hier zusätzlich zur DB-Check-Constraint auch clientseitig erzwungen.
         const minParticipants = Math.max(4, parseInt(minParticipantsRaw) || 4);
         const startDateIso = startDateRaw ? new Date(startDateRaw).toISOString() : null;
+        const avgLimit = avgLimitRaw !== "" ? parseFloat(avgLimitRaw.replace(',', '.')) : null;
 
         const { error } = await supabaseClient.from('tournaments').insert([{
             title: name,
@@ -1214,7 +1249,10 @@
             format: format,
             status: 'active',
             start_date: startDateIso,
-            min_participants: minParticipants
+            min_participants: minParticipants,
+            checkout_mode: checkoutMode,
+            match_format: matchFormat,
+            avg_limit: avgLimit
         }]);
         
         if(error) alert("❌ Fehler: " + error.message);
@@ -1223,10 +1261,11 @@
             document.getElementById("tournamentName").value = "";
             if (document.getElementById("tournamentStartDate")) document.getElementById("tournamentStartDate").value = "";
             if (document.getElementById("tournamentMinParticipants")) document.getElementById("tournamentMinParticipants").value = "4";
+            if (document.getElementById("tournamentAvgLimit")) document.getElementById("tournamentAvgLimit").value = "";
 
             // Discord-Ankündigung, dass ein neues Turnier eröffnet wurde.
             supabaseClient.functions.invoke('discord-tournament-recruit', {
-                body: { type: 'created', tournamentTitle: name, platform, format, startDate: startDateIso, minParticipants }
+                body: { type: 'created', tournamentTitle: name, platform, format, startDate: startDateIso, minParticipants, checkoutMode, matchFormat, avgLimit }
             }).then(({ error: fnError }) => { if (fnError) console.error('Discord-Eröffnungs-Post fehlgeschlagen:', fnError); });
 
             loadActiveTournaments();
@@ -1252,7 +1291,7 @@
         try {
             const { data: tournaments, error } = await supabaseClient
                 .from('tournaments')
-                .select('id, title, platform, format, status, created_at, completed_at, cancelled_at, first_place_name, second_place_name, third_place_name, start_date, min_participants, schedule_generated_at')
+                .select('id, title, platform, format, status, created_at, completed_at, cancelled_at, first_place_name, second_place_name, third_place_name, start_date, min_participants, schedule_generated_at, checkout_mode, match_format, avg_limit')
                 .order('created_at', { ascending: false });
             
             if(error) { activeBody.innerHTML = `<tr><td colspan="5" style="color:#e74c3c;">Fehler beim API-Laden: ${error.message}</td></tr>`; return; }
@@ -1272,9 +1311,10 @@
                     } else if (hasSchedule) {
                         startInfoHtml = `<br><span style="font-size:10.5px; color:#00d084; font-weight:bold;">✓ Gestartet</span>`;
                     }
+                    const modeInfoHtml = `<br><span style="font-size:10.5px; color:var(--text-secondary);">🎯 ${htmlEscape(t.checkout_mode || '501')} · ${matchFormatLabel(t.match_format)}${(t.avg_limit !== null && t.avg_limit !== undefined) ? ` · 📊 max. AVG ${t.avg_limit}` : ''}</span>`;
                     return `
                     <tr>
-                        <td><strong style="color:#00d084;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:var(--text-secondary);">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span>${startInfoHtml}</td>
+                        <td><strong style="color:#00d084;">${htmlEscape(t.title)}</strong><br><span style="font-size:10.5px; color:var(--text-secondary);">${t.format === 'roundrobin' ? '🔁 Jeder gegen Jeden' : '🌳 Turnierbaum'}</span>${modeInfoHtml}${startInfoHtml}</td>
                         <td><span style="background:rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t.platform}</span></td>
                         <td id="count_${t.id}">0</td>
                         <td><span style="color: #ffd700; font-weight: bold;">🟡 Aktiv</span></td>
