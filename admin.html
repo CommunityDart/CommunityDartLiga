@@ -100,6 +100,13 @@
         .editor-container .ql-snow .ql-stroke { stroke: var(--text-secondary); }
         .editor-container .ql-snow .ql-fill { fill: var(--text-secondary); }
         .editor-container .ql-snow .ql-picker { color: var(--text-secondary); }
+        .avg-proof-thumb { width: 90px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); cursor: zoom-in; }
+        .avg-proof-row { display: flex; align-items: center; gap: 14px; padding: 10px; border-left: 3px solid var(--proof-color, #444); background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+        .avg-proof-info { flex: 1; min-width: 160px; font-size: 13px; }
+        .avg-proof-actions { display: flex; gap: 8px; }
+        .btn-verify-proof { background: var(--proof-color, #00d084); color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-reject-proof { background: #e74c3c; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .notif-dot { background: #e74c3c; color: #fff; border-radius: 50%; padding: 1px 6px; font-size: 10.5px; margin-left: 4px; display: none; }
     </style>
 </head>
 <body>
@@ -124,6 +131,7 @@
         <button class="tab-btn" onclick="switchTab('tabBadges')">🏅 7. Badges</button>
         <button class="tab-btn" onclick="switchTab('tabLevel')">⭐ 8. Level-System</button>
         <button class="tab-btn" onclick="switchTab('tabStartgeld')">💰 9. Startgeld</button>
+        <button class="tab-btn" onclick="switchTab('tabAvgProofs')">📸 10. AVG-Nachweise <span id="avgProofBadgeCount" class="notif-dot"></span></button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -516,6 +524,17 @@
             </table>
         </div>
     </div>
+
+    <div id="tabAvgProofs" class="tab-content">
+        <h2>📸 AVG-Nachweise verwalten</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Spieler laden hier einen Screenshot ihres AVG-Werts pro Plattform hoch (im eigenen Profil). Prüfe den Screenshot und verifiziere ihn - erst dann erscheint der farbige Haken (🔵 Autodarts, 🟠 DartCounter, 🟢 Scolia) öffentlich sichtbar im Spielerprofil. Bei einem neuen Upload wird der Verifiziert-Status automatisch zurückgesetzt, damit er erneut geprüft wird.</p>
+
+        <h3>⏳ Offene Prüfungen</h3>
+        <div id="avgProofPendingList" style="margin-bottom:24px;">Lade offene Nachweise...</div>
+
+        <h3>✅ Verifizierte Nachweise</h3>
+        <div id="avgProofVerifiedList">Lade verifizierte Nachweise...</div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -665,6 +684,7 @@
         if (tabId === 'tabBadges') { loadBadgesTab(); }
         if (tabId === 'tabLevel') loadXpConfig();
         if (tabId === 'tabStartgeld') loadFeesTab();
+        if (tabId === 'tabAvgProofs') loadAvgProofsTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -2106,6 +2126,107 @@
         loadFeesTab();
     };
 
+    // --- AVG-Nachweis Verwaltung -------------------------------------------
+    // Farben identisch zum Badge-System: Autodarts=Blau, DartCounter=Orange, Scolia=Grün.
+    const AVG_PROOF_PLATFORMS = {
+        Autodarts:   { color: '#0066ff', icon: '🔵' },
+        DartCounter: { color: '#ff6b35', icon: '🟠' },
+        Scolia:      { color: '#00d084', icon: '🟢' }
+    };
+
+    async function loadAvgProofsTab() {
+        if (!supabaseClient) return;
+        const pendingEl = document.getElementById('avgProofPendingList');
+        const verifiedEl = document.getElementById('avgProofVerifiedList');
+
+        const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name');
+        const playersMap = {};
+        (players || []).forEach(p => { playersMap[p.id] = p; });
+
+        const { data: proofs, error } = await supabaseClient.from('player_avg_proofs').select('*').order('uploaded_at', { ascending: true });
+        if (error) {
+            pendingEl.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert die Tabelle 'player_avg_proofs' bereits in Supabase? (siehe avg_proof_migration.sql)</span></div>`;
+            verifiedEl.innerHTML = "";
+            updateAvgProofBadgeCount(0);
+            return;
+        }
+
+        const pending = (proofs || []).filter(p => !p.verified);
+        const verified = (proofs || []).filter(p => p.verified);
+        updateAvgProofBadgeCount(pending.length);
+
+        pendingEl.innerHTML = pending.length === 0
+            ? `<p class="meta-text">Keine offenen Nachweise 🎉</p>`
+            : pending.map(p => renderAvgProofRow(p, playersMap, true)).join("");
+
+        verifiedEl.innerHTML = verified.length === 0
+            ? `<p class="meta-text">Noch keine verifizierten Nachweise.</p>`
+            : verified.map(p => renderAvgProofRow(p, playersMap, false)).join("");
+    }
+
+    function updateAvgProofBadgeCount(count) {
+        const el = document.getElementById('avgProofBadgeCount');
+        if (!el) return;
+        if (count > 0) { el.textContent = count; el.style.display = 'inline-block'; }
+        else { el.style.display = 'none'; }
+    }
+
+    function renderAvgProofRow(proof, playersMap, isPending) {
+        const cfg = AVG_PROOF_PLATFORMS[proof.platform] || { color: '#7f77dd', icon: '⚪' };
+        const player = playersMap[proof.player_id];
+        const playerName = player ? (player.discord_name || player.username || player.real_name) : 'Unbekannter Spieler';
+        const dateStr = proof.uploaded_at ? new Date(proof.uploaded_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+        return `<div class="avg-proof-row" style="--proof-color:${cfg.color};">
+            <img src="${proof.image_url}" class="avg-proof-thumb" onclick="window.open('${proof.image_url}', '_blank')" alt="AVG Screenshot">
+            <div class="avg-proof-info">
+                <strong style="color:${cfg.color};">${cfg.icon} ${htmlEscape(proof.platform)}</strong><br>
+                <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(playerName)}</span><br>
+                <span class="meta-text">Hochgeladen: ${dateStr}${proof.verified ? ` · verifiziert${proof.verified_by ? ' von ' + htmlEscape(proof.verified_by) : ''}` : ''}</span>
+            </div>
+            <div class="avg-proof-actions">
+                ${isPending
+                    ? `<button class="btn-verify-proof" style="--proof-color:${cfg.color};" onclick="verifyAvgProof('${proof.id}')">${cfg.icon} Verifizieren</button>
+                       <button class="btn-reject-proof" onclick="rejectAvgProof('${proof.id}', '${proof.player_id}', '${proof.platform}')">✖ Ablehnen</button>`
+                    : `<button class="btn-reject-proof" onclick="rejectAvgProof('${proof.id}', '${proof.player_id}', '${proof.platform}')">🗑️ Entfernen</button>`
+                }
+            </div>
+        </div>`;
+    }
+
+    window.verifyAvgProof = async function(proofId) {
+        const { error } = await supabaseClient.from('player_avg_proofs').update({
+            verified: true,
+            verified_at: new Date().toISOString(),
+            verified_by: 'Admin'
+        }).eq('id', proofId);
+        if (error) { alert("❌ Fehler: " + error.message); return; }
+        loadAvgProofsTab();
+    };
+
+    window.rejectAvgProof = async function(proofId, playerId, platform) {
+        if (!confirm(`Nachweis (${platform}) wirklich entfernen? Der Screenshot wird dabei ebenfalls gelöscht.`)) return;
+
+        // Zugehörige Datei(en) im Bucket löschen (Dateiname beginnt mit "<Plattform>.")
+        try {
+            const { data: files } = await supabaseClient.storage.from('avg-proofs').list(playerId);
+            const toDelete = (files || []).filter(f => f.name.startsWith(platform + '.')).map(f => `${playerId}/${f.name}`);
+            if (toDelete.length) await supabaseClient.storage.from('avg-proofs').remove(toDelete);
+        } catch (e) { console.error('Fehler beim Löschen der Datei:', e); }
+
+        const { error } = await supabaseClient.from('player_avg_proofs').delete().eq('id', proofId);
+        if (error) { alert("❌ Fehler: " + error.message); return; }
+        loadAvgProofsTab();
+    };
+
+    async function loadAvgProofsPendingCountOnly() {
+        if (!supabaseClient) return;
+        try {
+            const { count, error } = await supabaseClient.from('player_avg_proofs').select('*', { count: 'exact', head: true }).eq('verified', false);
+            if (!error) updateAvgProofBadgeCount(count || 0);
+        } catch (e) {}
+    }
+
     // --- Automatischer Turnierstart ---------------------------------------
     // Läuft beim Laden der Seite (und danach alle 60s, solange die Seite offen
     // ist). Für jedes aktive Turnier mit gesetztem start_date, das noch keinen
@@ -2213,7 +2334,9 @@
         setTimeout(() => { initLeagueSelector(); injectSeasonManagerUI(); loadWaitingList(); }, 100);
         setTimeout(() => { loadActiveTournaments(); }, 200);
         setTimeout(() => { checkAutoStartTournaments(); }, 800);
+        setTimeout(() => { loadAvgProofsPendingCountOnly(); }, 300);
         setInterval(checkAutoStartTournaments, 60 * 1000);
+        setInterval(loadAvgProofsPendingCountOnly, 60 * 1000);
     }
     initAdmin();
 </script>
