@@ -167,6 +167,19 @@
     }
 
     #msgBox { margin-top: 15px; display: none; padding: 10px; border-radius: 8px; text-align: center; }
+
+    .avg-proof-grid { display: flex; flex-direction: column; gap: 12px; }
+    .avg-proof-card { background: var(--bg-tertiary); border: 1px solid var(--proof-color, var(--border)); border-radius: 10px; padding: 14px; box-shadow: 0 0 10px -6px var(--proof-color, transparent); }
+    .avg-proof-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .avg-proof-card-title { font-weight: 800; font-size: 13.5px; color: var(--proof-color, var(--text-primary)); display: flex; align-items: center; gap: 6px; }
+    .avg-proof-status-verified { font-size: 11.5px; font-weight: 700; color: var(--proof-color, var(--green)); }
+    .avg-proof-status-pending { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); }
+    .avg-proof-image { width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; display: block; margin-bottom: 8px; background: var(--bg-primary); cursor: zoom-in; }
+    .avg-proof-empty { font-size: 12.5px; color: var(--text-secondary); font-style: italic; padding: 10px 0; }
+    .avg-proof-upload-label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--proof-color, var(--border)); color: var(--proof-color, var(--text-primary)); font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .avg-proof-upload-label:hover { background: rgba(255,255,255,0.05); }
+    .avg-proof-upload-label input[type="file"] { display: none; }
+    .avg-proof-uploading { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -264,6 +277,14 @@
           <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
           <div id="msgBox"></div>
         </form>
+      </div>
+    </div>
+
+    <div class="card" id="avgProofCard">
+      <div class="card-header">📸 Meine AVG-Nachweise</div>
+      <div class="card-body">
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Lade pro Plattform einen Screenshot deines aktuellen AVG-Werts hoch. Ein Admin prüft den Screenshot und vergibt danach den farbigen Haken (🔵 Autodarts, 🟠 DartCounter, 🟢 Scolia) - dieser ist dann für alle in deinem Profil sichtbar. Lädst du einen neuen Screenshot hoch, wird der Nachweis erneut geprüft.</p>
+        <div id="avgProofContainer" class="avg-proof-grid">Lade Nachweise...</div>
       </div>
     </div>
 
@@ -653,6 +674,102 @@
       loadMyBadges(currentUser.id);
     };
 
+    // --- AVG-Nachweis (Screenshot-Upload pro Plattform) --------------------
+    // Farben identisch zum Badge-System: Autodarts=Blau, DartCounter=Orange, Scolia=Grün.
+    const AVG_PROOF_PLATFORMS = {
+      Autodarts:   { color: '#0066ff', icon: '🔵' },
+      DartCounter: { color: '#ff6b35', icon: '🟠' },
+      Scolia:      { color: '#00d084', icon: '🟢' }
+    };
+
+    async function loadAvgProofs(userId) {
+      const container = document.getElementById('avgProofContainer');
+      if (!container) return;
+
+      const { data: proofs, error } = await supabaseClient.from('player_avg_proofs').select('*').eq('player_id', userId);
+      if (error) {
+        container.innerHTML = `<div style="color:var(--red); font-size:13px;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span style="font-weight:normal; color:var(--text-secondary);">Existiert die Tabelle 'player_avg_proofs' bereits in Supabase?</span></div>`;
+        return;
+      }
+
+      const proofsByPlatform = {};
+      (proofs || []).forEach(p => { proofsByPlatform[p.platform] = p; });
+
+      container.innerHTML = "";
+      Object.keys(AVG_PROOF_PLATFORMS).forEach(platform => {
+        const cfg = AVG_PROOF_PLATFORMS[platform];
+        const proof = proofsByPlatform[platform];
+
+        const card = document.createElement('div');
+        card.className = 'avg-proof-card';
+        card.style.setProperty('--proof-color', cfg.color);
+
+        const statusHtml = proof
+          ? (proof.verified
+              ? `<span class="avg-proof-status-verified">${cfg.icon} verifiziert</span>`
+              : `<span class="avg-proof-status-pending">⏳ wartet auf Prüfung</span>`)
+          : "";
+
+        card.innerHTML = `
+          <div class="avg-proof-card-header">
+            <span class="avg-proof-card-title">${cfg.icon} ${htmlEscape(platform)} AVG-Nachweis</span>
+            ${statusHtml}
+          </div>
+          ${proof
+            ? `<img src="${proof.image_url}" class="avg-proof-image" alt="${htmlEscape(platform)} AVG Nachweis" onclick="window.open('${proof.image_url}', '_blank')">`
+            : `<div class="avg-proof-empty">Noch kein Screenshot hochgeladen.</div>`
+          }
+          <label class="avg-proof-upload-label">
+            📤 ${proof ? 'Screenshot ersetzen' : 'Screenshot hochladen'}
+            <input type="file" accept="image/*" data-platform="${htmlEscape(platform)}">
+          </label>
+          <div class="avg-proof-uploading" style="display:none;">Wird hochgeladen...</div>
+        `;
+
+        const input = card.querySelector('input[type="file"]');
+        const uploadingEl = card.querySelector('.avg-proof-uploading');
+        input.addEventListener('change', async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          uploadingEl.style.display = 'block';
+          try {
+            await uploadAvgProof(file, platform, userId);
+            await loadAvgProofs(userId);
+          } catch (err) {
+            alert('❌ Upload fehlgeschlagen: ' + err.message);
+            uploadingEl.style.display = 'none';
+          }
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    async function uploadAvgProof(file, platform, userId) {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const path = `${userId}/${platform}.${ext}`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('avg-proofs')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabaseClient.storage.from('avg-proofs').getPublicUrl(path);
+
+      // Neuer Upload setzt "verified" bewusst zurück, damit der Admin den
+      // Screenshot erneut prüft (siehe Beschreibung im Kartenkopf).
+      const { error: dbError } = await supabaseClient.from('player_avg_proofs').upsert({
+        player_id: userId,
+        platform: platform,
+        image_url: publicUrlData.publicUrl,
+        uploaded_at: new Date().toISOString(),
+        verified: false,
+        verified_at: null,
+        verified_by: null
+      }, { onConflict: 'player_id,platform' });
+      if (dbError) throw dbError;
+    }
+
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) { window.location.href = "index.html"; return; }
@@ -667,6 +784,7 @@
       syncDiscordIdentity(currentUser);
       loadLevelInfo(currentUser.id);
       loadMyBadges(currentUser.id);
+      loadAvgProofs(currentUser.id);
       
       document.getElementById("profilForm").style.display = "block";
 
