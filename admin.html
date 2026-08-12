@@ -140,6 +140,7 @@
         <button class="tab-btn" onclick="switchTab('tabStartgeld')">💰 9. Startgeld</button>
         <button class="tab-btn" onclick="switchTab('tabAvgProofs')">📸 10. AVG-Nachweise <span id="avgProofBadgeCount" class="notif-dot"></span></button>
         <button class="tab-btn" onclick="switchTab('tabConfirm')">⏳ 11. Anmeldebestätigung <span id="confirmBadgeCount" class="notif-dot"></span></button>
+        <button class="tab-btn" onclick="switchTab('tabDiscordRoles')">🏷️ 12. Discord-Rollen</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -568,6 +569,51 @@
         <h3>📋 Countdowns</h3>
         <div id="confirmListArea">Lade...</div>
     </div>
+
+    <div id="tabDiscordRoles" class="tab-content">
+        <h2>🏷️ Discord-Rollen-Übersicht</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Zeigt, welcher Spieler aktuell welche automatisch vergebene Discord-Rolle hat und seit wann. Wird von der Funktion "Automatische Discord-Rollenvergabe" gepflegt, sobald sich jemand über sein Profil für eine Plattform anmeldet oder abmeldet.</p>
+
+        <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
+            <h3>🔍 Filtern</h3>
+            <div class="filter-bar">
+                <label>Rolle
+                    <select id="discordRoleFilterRole" class="league-select" onchange="loadDiscordRolesTab()">
+                        <option value="">Alle Rollen</option>
+                        <option value="verified">✅ Verifizierter Spieler</option>
+                        <option value="autodarts">⚫ Autodarts</option>
+                        <option value="dartcounter">🟠 DartCounter</option>
+                        <option value="scolia">🟢 Scolia</option>
+                    </select>
+                </label>
+                <label>Status
+                    <select id="discordRoleFilterStatus" class="league-select" onchange="loadDiscordRolesTab()">
+                        <option value="active" selected>✓ Aktuell aktiv</option>
+                        <option value="removed">✖ Entfernt</option>
+                        <option value="">Alle</option>
+                    </select>
+                </label>
+                <span id="discordRoleFilterCount" class="filter-count-text"></span>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:26%;">Spieler</th>
+                        <th style="width:20%;">Rolle</th>
+                        <th style="width:18%;">Seit</th>
+                        <th style="width:18%;">Entfernt am</th>
+                        <th style="width:18%;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="discordRolesListBody">
+                    <tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Lade Rollen...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -719,6 +765,7 @@
         if (tabId === 'tabStartgeld') loadFeesTab();
         if (tabId === 'tabAvgProofs') loadAvgProofsTab();
         if (tabId === 'tabConfirm') loadConfirmationsTab();
+        if (tabId === 'tabDiscordRoles') loadDiscordRolesTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -2486,6 +2533,63 @@
             loadConfirmBadgeCountOnly();
             if (document.getElementById('tabConfirm') && document.getElementById('tabConfirm').classList.contains('active')) loadConfirmationsTab();
         } catch (e) { console.error('Fehler beim Auswerten der Anmeldebestätigungen:', e); }
+    }
+
+    // --- Discord-Rollen-Übersicht -------------------------------------------
+    const DISCORD_ROLE_LABELS = {
+        verified:    { color: '#ffd700', icon: '✅', label: 'Verifizierter Spieler' },
+        autodarts:   { color: '#0066ff', icon: '⚫', label: 'Autodarts' },
+        dartcounter: { color: '#ff6b35', icon: '🟠', label: 'DartCounter' },
+        scolia:      { color: '#00d084', icon: '🟢', label: 'Scolia' }
+    };
+
+    async function loadDiscordRolesTab() {
+        if (!supabaseClient) return;
+        const tbody = document.getElementById('discordRolesListBody');
+        const roleFilter = document.getElementById('discordRoleFilterRole') ? document.getElementById('discordRoleFilterRole').value : '';
+        const statusFilter = document.getElementById('discordRoleFilterStatus') ? document.getElementById('discordRoleFilterStatus').value : 'active';
+
+        let query = supabaseClient.from('player_discord_roles').select('*').order('assigned_at', { ascending: false });
+        if (roleFilter) query = query.eq('role_key', roleFilter);
+        if (statusFilter === 'active') query = query.eq('active', true);
+        else if (statusFilter === 'removed') query = query.eq('active', false);
+
+        const { data: rows, error } = await query;
+        if (error) {
+            tbody.innerHTML = `<tr><td colspan="5" style="color:#e74c3c;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert die Tabelle 'player_discord_roles' bereits? (siehe discord_roles_history_migration.sql)</span></td></tr>`;
+            return;
+        }
+
+        const countEl = document.getElementById('discordRoleFilterCount');
+        if (countEl) countEl.textContent = `${(rows || []).length} Einträge`;
+
+        if (!rows || rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary);">Keine Einträge für diese Filter gefunden.</td></tr>`;
+            return;
+        }
+
+        const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name');
+        const playersMap = {};
+        (players || []).forEach(p => { playersMap[p.id] = p; });
+
+        tbody.innerHTML = rows.map(r => {
+            const player = playersMap[r.player_id];
+            const playerName = player ? (player.discord_name || player.username || player.real_name) : 'Unbekannter Spieler';
+            const roleInfo = DISCORD_ROLE_LABELS[r.role_key] || { color: '#888', icon: '⚪', label: r.role_key };
+            const assignedStr = r.assigned_at ? new Date(r.assigned_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+            const removedStr = r.removed_at ? new Date(r.removed_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+            const statusHtml = r.active
+                ? `<span style="color:#00d084; font-weight:bold;">✓ Aktiv</span>`
+                : `<span style="color:#e74c3c; font-weight:bold;">✖ Entfernt</span>`;
+
+            return `<tr>
+                <td><strong style="color:#0066ff;">${htmlEscape(playerName)}</strong></td>
+                <td><span style="color:${roleInfo.color}; font-weight:bold;">${roleInfo.icon} ${htmlEscape(roleInfo.label)}</span></td>
+                <td style="font-size:12.5px;">${assignedStr}</td>
+                <td style="font-size:12.5px;">${removedStr}</td>
+                <td>${statusHtml}</td>
+            </tr>`;
+        }).join("");
     }
 
     // --- Automatischer Turnierstart ---------------------------------------
