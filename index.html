@@ -1271,6 +1271,7 @@
     tournamentConfirmationMinutes: 5,
     playerBadgesCache: [],
     allMatchesLifetimeCache: [],
+    avgProofsCache: [],
     xpConfig: {
       matchPlayed: 10, matchWon: 15, tournamentParticipation: 20,
       tournamentWinner: 100, tournamentSecond: 50, tournamentThird: 25, newsReaction: 2
@@ -1279,6 +1280,28 @@
 
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
   let activeMemberTab = 'map';
+
+  // --- AVG-Nachweis: Farben identisch zum Badge-System (Autodarts=Blau,
+  // DartCounter=Orange, Scolia=Grün). Liefert nur VERIFIZIERTE Nachweise -
+  // ausstehende Uploads sollen im öffentlichen Profil nicht auftauchen.
+  const AVG_PROOF_PLATFORMS = {
+    Autodarts:   { color: '#0066ff', icon: '🔵' },
+    DartCounter: { color: '#ff6b35', icon: '🟠' },
+    Scolia:      { color: '#00d084', icon: '🟢' }
+  };
+
+  function getVerifiedAvgProof(playerId, platform) {
+    if (!playerId) return null;
+    return (state.avgProofsCache || []).find(p => p.player_id === playerId && p.platform === platform && p.verified) || null;
+  }
+
+  // Kleiner klickbarer Haken, der den verifizierten Screenshot in neuem Tab öffnet.
+  function renderAvgProofCheckInline(playerId, platform) {
+    const proof = getVerifiedAvgProof(playerId, platform);
+    if (!proof) return '';
+    const cfg = AVG_PROOF_PLATFORMS[platform];
+    return ` <a href="${proof.image_url}" target="_blank" title="Verifizierter ${htmlEscape(platform)} AVG-Nachweis ansehen" onclick="event.stopPropagation()" style="color:${cfg.color}; font-weight:800; text-decoration:none; margin-left:4px;">${cfg.icon}✓</a>`;
+  }
 
   function isIdString(str) {
     if (!str) return true;
@@ -1360,15 +1383,15 @@
 
     let adHtml = "";
     if (p && p.autodarts_name && p.autodarts_name.trim() !== "" && p.autodarts_name !== "-") {
-      adHtml = `<div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(p.autodarts_name)} [AVG: ${parseFloat(p.autodarts_avg || 0).toFixed(2)}]</span></div>`;
+      adHtml = `<div class="player-info-row"><span class="player-info-label">⚫ Autodarts:</span><span class="player-info-value">${htmlEscape(p.autodarts_name)} [AVG: ${parseFloat(p.autodarts_avg || 0).toFixed(2)}]${p ? renderAvgProofCheckInline(p.id, 'Autodarts') : ''}</span></div>`;
     }
     let dcHtml = "";
     if (p && p.dartcounter_name && p.dartcounter_name.trim() !== "" && p.dartcounter_name !== "-") {
-      dcHtml = `<div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(p.dartcounter_name)} [AVG: ${parseFloat(p.dartcounter_avg || 0).toFixed(2)}]</span></div>`;
+      dcHtml = `<div class="player-info-row"><span class="player-info-label">🟠 DartCounter:</span><span class="player-info-value">${htmlEscape(p.dartcounter_name)} [AVG: ${parseFloat(p.dartcounter_avg || 0).toFixed(2)}]${p ? renderAvgProofCheckInline(p.id, 'DartCounter') : ''}</span></div>`;
     }
     let scHtml = "";
     if (p && p.scolia_name && p.scolia_name.trim() !== "" && p.scolia_name !== "-") {
-      scHtml = `<div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(p.scolia_name)} [AVG: ${parseFloat(p.scolia_avg || 0).toFixed(2)}]</span></div>`;
+      scHtml = `<div class="player-info-row"><span class="player-info-label">🟢 Scolia:</span><span class="player-info-value">${htmlEscape(p.scolia_name)} [AVG: ${parseFloat(p.scolia_avg || 0).toFixed(2)}]${p ? renderAvgProofCheckInline(p.id, 'Scolia') : ''}</span></div>`;
     }
 
     let numericDiscordId = "";
@@ -1868,7 +1891,8 @@
       [['Autodarts', p.autodarts_name], ['DartCounter', p.dartcounter_name], ['Scolia', p.scolia_name]].forEach(([plat, val]) => {
         if (val && val.trim() !== '' && val !== '-') {
           const pb = platformBadge(plat);
-          platformChips += `<span style="font-size:10px; font-weight:700; background:${pb.color}1A; color:${pb.color}; padding:2px 7px; border-radius:10px; display:inline-flex; align-items:center; gap:3px;">${pb.icon} ${plat}</span>`;
+          const proofCheck = renderAvgProofCheckInline(p.id, plat);
+          platformChips += `<span style="font-size:10px; font-weight:700; background:${pb.color}1A; color:${pb.color}; padding:2px 7px; border-radius:10px; display:inline-flex; align-items:center; gap:3px;">${pb.icon} ${plat}${proofCheck}</span>`;
         }
       });
 
@@ -1976,7 +2000,6 @@
 
     renderTopMatchAvgs();
   }
-
   // Sammelt aus JEDEM abgeschlossenen Match (Liga + Turnier) den Spiel-AVG
   // beider Spieler als eigenen Eintrag - anders als der Lebenszeit-Ø-AVG geht
   // es hier um die stärkste EINZELNE Spielleistung. Ein Spieler kann mehrfach
@@ -2716,7 +2739,6 @@
       if (mainCompletedArea) mainCompletedArea.innerHTML = emptyMsg;
     }
   }
-
   async function loadData() {
     try {
       loadNews();
@@ -2728,6 +2750,12 @@
 
       const { data: badgesData } = await supabaseClient.from('player_badges').select('*');
       state.playerBadgesCache = badgesData || [];
+
+      // Nur VERIFIZIERTE AVG-Nachweise laden - unverifizierte/ausstehende Uploads
+      // sollen im öffentlichen Profil (noch) nicht als Haken auftauchen.
+      const { data: avgProofsData, error: avgProofsError } = await supabaseClient.from('player_avg_proofs').select('*').eq('verified', true);
+      if (avgProofsError) console.error('Fehler beim Laden der AVG-Nachweise (existiert die Tabelle player_avg_proofs?):', avgProofsError);
+      state.avgProofsCache = avgProofsData || [];
 
       renderMembercards();
       updateMyGamesNavVisibility();
