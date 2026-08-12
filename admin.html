@@ -107,6 +107,13 @@
         .btn-verify-proof { background: var(--proof-color, #00d084); color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .btn-reject-proof { background: #e74c3c; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .notif-dot { background: #e74c3c; color: #fff; border-radius: 50%; padding: 1px 6px; font-size: 10.5px; margin-left: 4px; display: none; }
+        .confirm-row { padding: 14px; border-left: 3px solid var(--row-color, #444); background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 12px; }
+        .confirm-row-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+        .confirm-progress-bar { background: var(--bg-primary); border-radius: 6px; height: 10px; overflow: hidden; margin-top: 8px; }
+        .confirm-progress-fill { height: 100%; border-radius: 6px; }
+        .confirm-player-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 10px; margin: 2px; }
+        .confirm-player-chip.yes { background: rgba(0,208,132,0.15); color: #00d084; }
+        .confirm-player-chip.no { background: rgba(231,76,60,0.15); color: #e74c3c; }
     </style>
 </head>
 <body>
@@ -132,6 +139,7 @@
         <button class="tab-btn" onclick="switchTab('tabLevel')">⭐ 8. Level-System</button>
         <button class="tab-btn" onclick="switchTab('tabStartgeld')">💰 9. Startgeld</button>
         <button class="tab-btn" onclick="switchTab('tabAvgProofs')">📸 10. AVG-Nachweise <span id="avgProofBadgeCount" class="notif-dot"></span></button>
+        <button class="tab-btn" onclick="switchTab('tabConfirm')">⏳ 11. Anmeldebestätigung <span id="confirmBadgeCount" class="notif-dot"></span></button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -535,6 +543,31 @@
         <h3>✅ Verifizierte Nachweise</h3>
         <div id="avgProofVerifiedList">Lade verifizierte Nachweise...</div>
     </div>
+
+    <div id="tabConfirm" class="tab-content">
+        <h2>⏳ Endgültige Saison-Anmeldung</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Startet für eine Liga einen Bestätigungs-Countdown: alle aktuell zugeteilten Spieler müssen sich bis zur Frist in ihrem Profil endgültig anmelden. Wer die Frist verpasst, wird automatisch wieder aus der Liga-Zuteilung entfernt (Status zurück auf "wartend"). Sind danach weniger Spieler bestätigt als die Mindestanzahl, erscheint hier ein Hinweis mit Handlungsbedarf.</p>
+
+        <div class="config-box">
+            <h3>🚀 Countdown starten</h3>
+            <div class="config-row">
+                <select id="confirmLeagueSelect" class="league-select">
+                    <option value="" disabled selected>-- Liga wählen --</option>
+                </select>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">Frist
+                    <input type="datetime-local" id="confirmDeadlineInput" class="league-select" style="display:block; margin-top:4px;">
+                </label>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">Mindestspieler
+                    <input type="number" id="confirmMinPlayersInput" class="num-input" value="10" min="1" style="display:block; margin-top:4px; width:80px;">
+                </label>
+                <button class="generate-btn" onclick="startLeagueConfirmation()">⏳ Countdown starten</button>
+            </div>
+            <p class="meta-text" style="margin-top:8px;">Einbezogen werden alle Spieler, die dieser Liga <strong>aktuell</strong> zugeteilt sind. Ein erneuter Start für dieselbe Liga/Saison ersetzt eine vorherige Runde.</p>
+        </div>
+
+        <h3>📋 Countdowns</h3>
+        <div id="confirmListArea">Lade...</div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -685,6 +718,7 @@
         if (tabId === 'tabLevel') loadXpConfig();
         if (tabId === 'tabStartgeld') loadFeesTab();
         if (tabId === 'tabAvgProofs') loadAvgProofsTab();
+        if (tabId === 'tabConfirm') loadConfirmationsTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -1945,8 +1979,8 @@
     }
 
     function initLeagueSelector() {
-        const sel = document.getElementById("leagueSelector"), cfgSel = document.getElementById("configLeagueSelect"), penSel = document.getElementById("penaltyLeagueSelector");
-        if(sel && sel.options.length === 1) { ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`; if(penSel) penSel.innerHTML += `<option value="${l}">${l}</option>`; }); }
+        const sel = document.getElementById("leagueSelector"), cfgSel = document.getElementById("configLeagueSelect"), penSel = document.getElementById("penaltyLeagueSelector"), confirmSel = document.getElementById("confirmLeagueSelect");
+        if(sel && sel.options.length === 1) { ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`; if(penSel) penSel.innerHTML += `<option value="${l}">${l}</option>`; if(confirmSel) confirmSel.innerHTML += `<option value="${l}">${l}</option>`; }); }
     }
 
     // Vergibt ein Badge idempotent (überspringt still, falls Spieler es schon hat -
@@ -2227,6 +2261,225 @@
         } catch (e) {}
     }
 
+    // --- Endgültige Saison-Anmeldung (Countdown) ---------------------------
+    // Leitet aus dem Liganamen ab, welches profiles-Feld bei Nichtbestätigung
+    // geleert werden muss (analog zu getPlatformPrefixAndNumber weiter oben).
+    function getAssignedFieldForLeague(leagueName) {
+        if (leagueName.includes('Autodarts')) return 'assigned_ad_league';
+        if (leagueName.includes('DartCounter')) return 'assigned_dc_league';
+        if (leagueName.includes('Scolia')) return 'assigned_sc_league';
+        return null;
+    }
+
+    window.startLeagueConfirmation = async function() {
+        const league = document.getElementById('confirmLeagueSelect').value;
+        const deadlineRaw = document.getElementById('confirmDeadlineInput').value;
+        const minPlayers = parseInt(document.getElementById('confirmMinPlayersInput').value) || 10;
+        if (!league) return alert('❌ Bitte eine Liga wählen!');
+        if (!deadlineRaw) return alert('❌ Bitte eine Frist setzen!');
+        const deadlineIso = new Date(deadlineRaw).toISOString();
+        if (isNaN(new Date(deadlineIso).getTime())) return alert('❌ Ungültige Frist!');
+
+        const field = getAssignedFieldForLeague(league);
+        if (!field) return alert('❌ Konnte Plattform aus Liganamen nicht ableiten!');
+
+        const { data: players, error: pErr } = await supabaseClient.from('profiles').select('id').eq(field, league);
+        if (pErr) { alert('❌ Fehler: ' + pErr.message); return; }
+        if (!players || players.length === 0) return alert('❌ Aktuell sind dieser Liga keine Spieler zugeteilt!');
+
+        if (!confirm(`Countdown für "${league}" starten?\n\n${players.length} aktuell zugeteilte Spieler müssen sich bis ${new Date(deadlineIso).toLocaleString('de-DE')} endgültig bestätigen.\nMindestspieler: ${minPlayers}\n\nEine evtl. bereits laufende Runde für diese Liga/Saison wird dabei ersetzt.`)) return;
+
+        const { data: conf, error } = await supabaseClient.from('league_season_confirmations').upsert(
+            { league_name: league, season: currentSeasonGlobal, deadline: deadlineIso, min_players: minPlayers, status: 'active', resolved_at: null },
+            { onConflict: 'league_name,season' }
+        ).select().single();
+        if (error) { alert('❌ Fehler: ' + error.message); return; }
+
+        // Bestehende Bestätigungszeilen dieser Runde entfernen (falls Neustart) und frisch anlegen.
+        await supabaseClient.from('player_league_confirmations').delete().eq('confirmation_id', conf.id);
+        const rows = players.map(p => ({ confirmation_id: conf.id, player_id: p.id, confirmed: false }));
+        const { error: insErr } = await supabaseClient.from('player_league_confirmations').insert(rows);
+        if (insErr) { alert('❌ Fehler beim Anlegen der Spieler-Bestätigungen: ' + insErr.message); return; }
+
+        alert(`✅ Countdown gestartet für ${players.length} Spieler!`);
+        loadConfirmationsTab();
+    };
+
+    function updateConfirmBadgeCount(count) {
+        const el = document.getElementById('confirmBadgeCount');
+        if (!el) return;
+        if (count > 0) { el.textContent = count; el.style.display = 'inline-block'; }
+        else { el.style.display = 'none'; }
+    }
+
+    const CONFIRM_STATUS_LABELS = {
+        active:      { color: '#0066ff', label: '⏳ Läuft' },
+        processing:  { color: '#ffd700', label: '⚙️ Wird ausgewertet...' },
+        resolved_ok: { color: '#00d084', label: '✅ Startklar' },
+        needs_admin: { color: '#e74c3c', label: '⚠️ Admin-Eingriff nötig' },
+        cancelled:   { color: '#888',    label: '✖ Abgebrochen' },
+        overridden:  { color: '#ffd700', label: '🔓 Manuell gestartet' }
+    };
+
+    async function loadConfirmationsTab() {
+        if (!supabaseClient) return;
+        const area = document.getElementById('confirmListArea');
+        const { data: confirmations, error } = await supabaseClient.from('league_season_confirmations').select('*').order('created_at', { ascending: false });
+        if (error) {
+            area.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert die Tabelle 'league_season_confirmations' bereits? (siehe season_confirmation_migration.sql)</span></div>`;
+            updateConfirmBadgeCount(0);
+            return;
+        }
+
+        updateConfirmBadgeCount((confirmations || []).filter(c => c.status === 'needs_admin').length);
+
+        if (!confirmations || confirmations.length === 0) {
+            area.innerHTML = '<p class="meta-text">Noch keine Countdowns gestartet.</p>';
+            return;
+        }
+
+        const { data: allProfiles } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name');
+        const profilesMap = {};
+        (allProfiles || []).forEach(p => { profilesMap[p.id] = p; });
+
+        let html = '';
+        for (const c of confirmations) {
+            const { data: plc } = await supabaseClient.from('player_league_confirmations').select('*').eq('confirmation_id', c.id);
+            const total = (plc || []).length;
+            const confirmedRows = (plc || []).filter(x => x.confirmed);
+            const pendingRows = (plc || []).filter(x => !x.confirmed);
+            const st = CONFIRM_STATUS_LABELS[c.status] || { color: '#888', label: c.status };
+            const deadlineStr = new Date(c.deadline).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const pct = total > 0 ? Math.round((confirmedRows.length / total) * 100) : 0;
+            const barColor = confirmedRows.length >= c.min_players ? '#00d084' : '#e74c3c';
+            const nameOf = (id) => { const p = profilesMap[id]; return p ? (p.discord_name || p.username || p.real_name || 'Spieler') : 'Spieler'; };
+
+            let actionsHtml = '';
+            if (c.status === 'active') {
+                actionsHtml = `<button class="card-btn red" onclick="cancelConfirmation('${c.id}')">✖ Abbrechen</button>`;
+            } else if (c.status === 'needs_admin') {
+                actionsHtml = `
+                    <button class="card-btn yellow" onclick="extendConfirmationDeadline('${c.id}')">⏰ Frist verlängern</button>
+                    <button class="generate-btn" onclick="overrideStartConfirmation('${c.id}')">🔓 Trotzdem starten</button>
+                    <button class="card-btn red" onclick="cancelConfirmation('${c.id}')">✖ Liga abbrechen</button>
+                `;
+            } else {
+                actionsHtml = `<button class="card-btn red" onclick="deleteConfirmation('${c.id}')">🗑️ Eintrag löschen</button>`;
+            }
+
+            const toggleId = `confirm-players-${c.id}`;
+            const playersHtml = `
+                <span class="confirm-player-chip yes" title="Bestätigt">✓</span> ${confirmedRows.map(r => `<span class="confirm-player-chip yes">${htmlEscape(nameOf(r.player_id))}</span>`).join('') || '<span class="meta-text">-</span>'}
+                <div style="margin-top:6px;"></div>
+                <span class="confirm-player-chip no" title="Noch nicht bestätigt">?</span> ${pendingRows.map(r => `<span class="confirm-player-chip no">${htmlEscape(nameOf(r.player_id))}</span>`).join('') || '<span class="meta-text">-</span>'}
+            `;
+
+            html += `<div class="confirm-row" style="--row-color:${st.color};">
+                <div class="confirm-row-header">
+                    <strong style="color:#0066ff;">${htmlEscape(c.league_name)}</strong>
+                    <span style="color:${st.color}; font-weight:bold;">${st.label}</span>
+                </div>
+                <div class="meta-text">Saison ${htmlEscape(c.season)} &middot; Frist: ${deadlineStr} &middot; Mindestspieler: ${c.min_players}</div>
+                <div class="meta-text" style="margin-top:4px;">✅ ${confirmedRows.length} / ${total} bestätigt</div>
+                <div class="confirm-progress-bar"><div class="confirm-progress-fill" style="width:${pct}%; background:${barColor};"></div></div>
+                <div style="margin-top:8px;">
+                    <span class="player-link" style="font-size:11px; font-weight:700;" onclick="document.getElementById('${toggleId}').style.display = document.getElementById('${toggleId}').style.display === 'none' ? 'block' : 'none';">👥 Spieler anzeigen/verbergen</span>
+                    <div id="${toggleId}" style="display:none; margin-top:6px; padding:8px; background:var(--bg-primary); border-radius:6px;">${playersHtml}</div>
+                </div>
+                <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">${actionsHtml}</div>
+            </div>`;
+        }
+        area.innerHTML = html;
+    }
+
+    window.extendConfirmationDeadline = async function(confirmationId) {
+        const newRaw = prompt('Neue Frist (Format: JJJJ-MM-TT HH:MM), z.B. 2026-09-01 20:00:');
+        if (!newRaw) return;
+        const newDate = new Date(newRaw.replace(' ', 'T'));
+        if (isNaN(newDate.getTime())) { alert('❌ Ungültiges Datumsformat!'); return; }
+        const { error } = await supabaseClient.from('league_season_confirmations').update({
+            status: 'active', deadline: newDate.toISOString(), resolved_at: null
+        }).eq('id', confirmationId);
+        if (error) { alert('❌ Fehler: ' + error.message); return; }
+        alert('✅ Frist verlängert! Bereits entfernte Spieler werden dadurch nicht automatisch wieder hinzugefügt - ggf. in "1. Liga Zuteilung" manuell neu zuteilen.');
+        loadConfirmationsTab();
+    };
+
+    window.overrideStartConfirmation = async function(confirmationId) {
+        if (!confirm('Liga trotz zu weniger bestätigter Spieler als startklar markieren? Die Liga kann danach ganz normal über "Spielpläne & Ergebnisse" gestartet werden.')) return;
+        const { error } = await supabaseClient.from('league_season_confirmations').update({
+            status: 'overridden', resolved_at: new Date().toISOString()
+        }).eq('id', confirmationId);
+        if (error) { alert('❌ Fehler: ' + error.message); return; }
+        loadConfirmationsTab();
+    };
+
+    window.cancelConfirmation = async function(confirmationId) {
+        if (!confirm('Countdown wirklich abbrechen? Bereits entfernte Spieler bleiben entfernt.')) return;
+        const { error } = await supabaseClient.from('league_season_confirmations').update({
+            status: 'cancelled', resolved_at: new Date().toISOString()
+        }).eq('id', confirmationId);
+        if (error) { alert('❌ Fehler: ' + error.message); return; }
+        loadConfirmationsTab();
+    };
+
+    window.deleteConfirmation = async function(confirmationId) {
+        if (!confirm('Eintrag endgültig löschen?')) return;
+        await supabaseClient.from('league_season_confirmations').delete().eq('id', confirmationId);
+        loadConfirmationsTab();
+    };
+
+    async function loadConfirmBadgeCountOnly() {
+        if (!supabaseClient) return;
+        try {
+            const { count, error } = await supabaseClient.from('league_season_confirmations').select('*', { count: 'exact', head: true }).eq('status', 'needs_admin');
+            if (!error) updateConfirmBadgeCount(count || 0);
+        } catch (e) {}
+    }
+
+    // Läuft beim Laden und danach alle 60s: prüft, ob eine aktive Bestätigungsrunde
+    // ihre Frist überschritten hat. Nicht bestätigte Spieler werden aus der
+    // Liga-Zuteilung entfernt (Status zurück auf "wartend"), danach wird geprüft,
+    // ob noch genug Spieler übrig sind. Race-Safety wie beim Turnier-Auto-Start:
+    // bedingtes UPDATE...WHERE status='active' claimt die Runde für genau einen Tab.
+    async function checkLeagueConfirmationDeadlines() {
+        if (!supabaseClient) return;
+        try {
+            const nowIso = new Date().toISOString();
+            const { data: dueList } = await supabaseClient.from('league_season_confirmations')
+                .select('*').eq('status', 'active').lt('deadline', nowIso);
+            if (!dueList || dueList.length === 0) return;
+
+            for (const c of dueList) {
+                const { data: claimed } = await supabaseClient.from('league_season_confirmations')
+                    .update({ status: 'processing' }).eq('id', c.id).eq('status', 'active').select('id');
+                if (!claimed || claimed.length === 0) continue;
+
+                const { data: plc } = await supabaseClient.from('player_league_confirmations').select('*').eq('confirmation_id', c.id);
+                const confirmedRows = (plc || []).filter(x => x.confirmed);
+                const unconfirmedRows = (plc || []).filter(x => !x.confirmed);
+                const field = getAssignedFieldForLeague(c.league_name);
+
+                if (field) {
+                    for (const row of unconfirmedRows) {
+                        const updates = { status_neue_saison: 'waiting' };
+                        updates[field] = null;
+                        await supabaseClient.from('profiles').update(updates).eq('id', row.player_id);
+                    }
+                }
+
+                const finalStatus = confirmedRows.length >= c.min_players ? 'resolved_ok' : 'needs_admin';
+                await supabaseClient.from('league_season_confirmations').update({
+                    status: finalStatus, resolved_at: new Date().toISOString()
+                }).eq('id', c.id);
+
+                console.log(`⏳ Anmeldebestätigung "${c.league_name}" ausgewertet: ${confirmedRows.length}/${(plc || []).length} bestätigt, ${unconfirmedRows.length} entfernt, Status: ${finalStatus}`);
+            }
+            loadConfirmBadgeCountOnly();
+            if (document.getElementById('tabConfirm') && document.getElementById('tabConfirm').classList.contains('active')) loadConfirmationsTab();
+        } catch (e) { console.error('Fehler beim Auswerten der Anmeldebestätigungen:', e); }
+    }
+
     // --- Automatischer Turnierstart ---------------------------------------
     // Läuft beim Laden der Seite (und danach alle 60s, solange die Seite offen
     // ist). Für jedes aktive Turnier mit gesetztem start_date, das noch keinen
@@ -2335,8 +2588,10 @@
         setTimeout(() => { loadActiveTournaments(); }, 200);
         setTimeout(() => { checkAutoStartTournaments(); }, 800);
         setTimeout(() => { loadAvgProofsPendingCountOnly(); }, 300);
+        setTimeout(() => { checkLeagueConfirmationDeadlines(); loadConfirmBadgeCountOnly(); }, 600);
         setInterval(checkAutoStartTournaments, 60 * 1000);
         setInterval(loadAvgProofsPendingCountOnly, 60 * 1000);
+        setInterval(checkLeagueConfirmationDeadlines, 60 * 1000);
     }
     initAdmin();
 </script>
