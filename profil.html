@@ -963,13 +963,42 @@
     }
 
     document.getElementById("btnSaveRegistration").onclick = async () => {
+        const wantAd = document.getElementById("want_ad").checked;
+        const wantDc = document.getElementById("want_dc").checked;
+        const wantSc = document.getElementById("want_sc").checked;
+
         await supabaseClient.from('profiles').update({
-            want_autodarts: document.getElementById("want_ad").checked,
-            want_dartcounter: document.getElementById("want_dc").checked,
-            want_scolia: document.getElementById("want_sc").checked,
+            want_autodarts: wantAd,
+            want_dartcounter: wantDc,
+            want_scolia: wantSc,
             status_neue_saison: 'waiting'
         }).eq('id', currentUser.id);
-        alert("Anmeldung für die neue Saison gespeichert!");
+
+        // Discord-Rollen automatisch anpassen: "Verifizierter Spieler" sobald
+        // mind. eine Plattform gewählt ist, plus die jeweilige(n) Plattform-
+        // Rolle(n). Läuft im Hintergrund über eine Supabase Edge Function -
+        // schlägt das fehl (z.B. Bot offline), bleibt die Anmeldung trotzdem
+        // gespeichert, es gibt nur einen zusätzlichen Hinweis.
+        try {
+            const { discordId } = extractDiscordIdentity(currentUser);
+            if (discordId) {
+                const { data: roleResult, error: roleError } = await supabaseClient.functions.invoke('discord-assign-roles', {
+                    body: { discordId, wantAutodarts: wantAd, wantDartcounter: wantDc, wantScolia: wantSc }
+                });
+                if (roleError || (roleResult && roleResult.success === false)) {
+                    console.error('Discord-Rollenvergabe fehlgeschlagen:', roleError || roleResult);
+                    alert("✅ Anmeldung für die neue Saison gespeichert!\n⚠️ Deine Discord-Rollen konnten aber nicht automatisch aktualisiert werden - bitte ggf. einen Admin informieren.");
+                    initProfile();
+                    return;
+                }
+            } else {
+                console.warn('Keine Discord-ID gefunden - Rollenvergabe übersprungen.');
+            }
+        } catch (e) {
+            console.error('Fehler beim Aufruf der Discord-Rollenvergabe:', e);
+        }
+
+        alert("✅ Anmeldung für die neue Saison gespeichert! Deine Discord-Rollen wurden automatisch aktualisiert.");
         initProfile();
     };
 
