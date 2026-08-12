@@ -318,6 +318,9 @@
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Dasselbe Apps Script wie in index.html für den Match-Screenshot-Upload -
+    // AVG-Nachweise landen dort im Drive-Unterordner "AVG-Nachweise".
+    const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwREm3bn0TRIeo8vuYBAESxH6Xmb2krldNeTZFVOcygwCitneX__L5q_Tu81npVWRUf/exec";
     let currentUser = null;
     let currentProfileData = null;
 
@@ -761,28 +764,71 @@
     }
 
     async function uploadAvgProof(file, platform, userId) {
-      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
-      const path = `${userId}/${platform}.${ext}`;
+      const playerLabel = (currentProfileData && (currentProfileData.display_name || currentProfileData.discord_name))
+        || currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || 'Spieler';
 
-      const { error: uploadError } = await supabaseClient.storage
-        .from('avg-proofs')
-        .upload(path, file, { upsert: true });
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabaseClient.storage.from('avg-proofs').getPublicUrl(path);
+      const driveUrl = await uploadAvgScreenshotToDrive(file, platform, playerLabel);
+      if (!driveUrl) throw new Error('Upload zu Google Drive fehlgeschlagen. Bitte später erneut versuchen.');
 
       // Neuer Upload setzt "verified" bewusst zurück, damit der Admin den
       // Screenshot erneut prüft (siehe Beschreibung im Kartenkopf).
       const { error: dbError } = await supabaseClient.from('player_avg_proofs').upsert({
         player_id: userId,
         platform: platform,
-        image_url: publicUrlData.publicUrl,
+        image_url: driveUrl,
         uploaded_at: new Date().toISOString(),
         verified: false,
         verified_at: null,
         verified_by: null
       }, { onConflict: 'player_id,platform' });
       if (dbError) throw dbError;
+    }
+
+    // Lädt den AVG-Screenshot über dasselbe Google Apps Script hoch, das auch
+    // für die Match-Ergebnis-Screenshots (index.html) genutzt wird. Alle
+    // AVG-Nachweise landen dabei gesammelt im Drive-Unterordner "AVG-Nachweise".
+    async function uploadAvgScreenshotToDrive(file, platform, playerName) {
+      if (!GOOGLE_APPS_SCRIPT_URL) { console.error('[AVG-Drive-Upload] GOOGLE_APPS_SCRIPT_URL ist nicht gesetzt.'); return null; }
+      try {
+        const base64Data = await fileToBase64(file);
+        const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+        const fileName = `${sanitizeForFilename(platform)}_${sanitizeForFilename(playerName)}.${ext}`;
+
+        const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ fileName, mimeType: file.type || 'image/png', base64Data, folderName: 'AVG-Nachweise' })
+        });
+        const rawText = await res.text();
+        let data;
+        try { data = JSON.parse(rawText); } catch (parseErr) {
+          console.error('[AVG-Drive-Upload] Antwort war kein gültiges JSON - vermutlich Google-Login/Fehlerseite statt Apps-Script-Antwort.');
+          return null;
+        }
+        if (data.success) return data.url;
+        console.error('[AVG-Drive-Upload] Apps Script meldet Fehler:', data.error);
+        return null;
+      } catch (e) {
+        console.error('[AVG-Drive-Upload] Unerwarteter Fehler (z.B. Netzwerk/CORS):', e);
+        return null;
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function sanitizeForFilename(str) {
+      const umlautMap = { 'ä':'ae','ö':'oe','ü':'ue','Ä':'Ae','Ö':'Oe','Ü':'Ue','ß':'ss' };
+      return String(str || 'Unbekannt')
+        .replace(/[äöüÄÖÜß]/g, c => umlautMap[c])
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
     }
 
     // --- Endgültige Saison-Anmeldung (Countdown) ---------------------------
