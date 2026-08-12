@@ -986,8 +986,23 @@
                     body: { discordId, wantAutodarts: wantAd, wantDartcounter: wantDc, wantScolia: wantSc }
                 });
                 if (roleError || (roleResult && roleResult.success === false)) {
-                    console.error('Discord-Rollenvergabe fehlgeschlagen:', roleError || roleResult);
-                    alert("✅ Anmeldung für die neue Saison gespeichert!\n⚠️ Deine Discord-Rollen konnten aber nicht automatisch aktualisiert werden - bitte ggf. einen Admin informieren.");
+                    // Versucht, die genaue Fehlermeldung aus dem Antwort-Body der
+                    // Edge Function zu holen, damit man sie direkt im Popup sieht
+                    // und nicht extra die Entwicklertools öffnen muss.
+                    let detail = roleError ? roleError.message : 'Unbekannter Fehler';
+                    try {
+                        if (roleError && roleError.context && typeof roleError.context.json === 'function') {
+                            const body = await roleError.context.json();
+                            if (body && body.error) detail = body.error;
+                        } else if (roleResult && roleResult.error) {
+                            detail = roleResult.error;
+                        } else if (roleResult && roleResult.results) {
+                            const failedRole = roleResult.results.find(r => !r.ok);
+                            if (failedRole) detail = `Rolle ${failedRole.roleId} (${failedRole.action}): ${failedRole.error || 'Status ' + failedRole.status}`;
+                        }
+                    } catch (parseErr) {}
+                    console.error('Discord-Rollenvergabe fehlgeschlagen:', detail, roleError || roleResult);
+                    alert(`✅ Anmeldung für die neue Saison gespeichert!\n⚠️ Deine Discord-Rollen konnten nicht automatisch aktualisiert werden:\n\n${detail}\n\nBitte ggf. einen Admin informieren.`);
                     initProfile();
                     return;
                 }
