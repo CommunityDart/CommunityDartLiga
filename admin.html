@@ -2173,7 +2173,7 @@
         const pendingEl = document.getElementById('avgProofPendingList');
         const verifiedEl = document.getElementById('avgProofVerifiedList');
 
-        const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name');
+        const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name, autodarts_name, autodarts_avg, dartcounter_name, dartcounter_avg, scolia_name, scolia_avg');
         const playersMap = {};
         (players || []).forEach(p => { playersMap[p.id] = p; });
 
@@ -2211,11 +2211,22 @@
         const playerName = player ? (player.discord_name || player.username || player.real_name) : 'Unbekannter Spieler';
         const dateStr = proof.uploaded_at ? new Date(proof.uploaded_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
+        // Zeigt den vom Spieler im Profil eingetragenen AVG für genau diese Plattform
+        // an - so lässt sich beim Prüfen direkt vergleichen, ob Screenshot und
+        // eingetragener Wert zusammenpassen.
+        const avgFieldMap = { Autodarts: 'autodarts_avg', DartCounter: 'dartcounter_avg', Scolia: 'scolia_avg' };
+        const avgField = avgFieldMap[proof.platform];
+        const rawAvg = player && avgField ? player[avgField] : null;
+        const declaredAvgHtml = (rawAvg !== null && rawAvg !== undefined && rawAvg !== '')
+            ? `<span style="font-weight:800; color:${cfg.color};">Angegebener AVG: ${parseFloat(rawAvg).toFixed(2)}</span>`
+            : `<span class="meta-text">Angegebener AVG: nicht eingetragen</span>`;
+
         return `<div class="avg-proof-row" style="--proof-color:${cfg.color};">
             <img src="${proof.image_url}" class="avg-proof-thumb" onclick="window.open('${proof.image_url}', '_blank')" alt="AVG Screenshot">
             <div class="avg-proof-info">
                 <strong style="color:${cfg.color};">${cfg.icon} ${htmlEscape(proof.platform)}</strong><br>
                 <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(playerName)}</span><br>
+                <span style="font-size:12.5px; display:block; margin-top:2px;">${declaredAvgHtml}</span>
                 <span class="meta-text">Hochgeladen: ${dateStr}${proof.verified ? ` · verifiziert${proof.verified_by ? ' von ' + htmlEscape(proof.verified_by) : ''}` : ''}</span>
             </div>
             <div class="avg-proof-actions">
