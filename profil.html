@@ -983,7 +983,7 @@
             const { discordId } = extractDiscordIdentity(currentUser);
             if (discordId) {
                 const { data: roleResult, error: roleError } = await supabaseClient.functions.invoke('discord-assign-roles', {
-                    body: { discordId, wantAutodarts: wantAd, wantDartcounter: wantDc, wantScolia: wantSc }
+                    body: { discordId, playerId: currentUser.id, wantAutodarts: wantAd, wantDartcounter: wantDc, wantScolia: wantSc }
                 });
                 if (roleError || (roleResult && roleResult.success === false)) {
                     // Versucht, die genaue Fehlermeldung aus dem Antwort-Body der
