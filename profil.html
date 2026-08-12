@@ -222,6 +222,7 @@
       <div class="card-header">🎯 Anmeldung nächste Saison</div>
       <div class="card-body registration-box-body">
         <p id="registrationStatusText" style="font-size:13px; color:var(--text-secondary);">Wähle unten deine gewünschten Plattformen aus:</p>
+        <p style="font-size:12px; color:var(--red); font-weight:600; margin-top:-8px;">⚠️ Für jede gewählte Plattform musst du weiter unten bereits einen AVG-Screenshot hochgeladen haben ("📸 Meine AVG-Nachweise") - sonst lässt sich die Anmeldung nicht speichern.</p>
         <div id="registrationFormArea" class="registration-box-body">
           <div class="checkbox-group">
             <label><input type="checkbox" id="want_ad"> ⚫ Autodarts Liga spielen</label>
@@ -966,6 +967,46 @@
         const wantAd = document.getElementById("want_ad").checked;
         const wantDc = document.getElementById("want_dc").checked;
         const wantSc = document.getElementById("want_sc").checked;
+
+        // Für jede neu/weiterhin gewählte Plattform muss bereits ein AVG-
+        // Screenshot hochgeladen sein (verifiziert muss er noch nicht sein -
+        // das prüft der Admin separat). Ohne Nachweis wird die Anmeldung
+        // blockiert, damit niemand angemeldet ist, ohne je einen Nachweis
+        // nachzureichen.
+        const selectedPlatforms = [];
+        if (wantAd) selectedPlatforms.push('Autodarts');
+        if (wantDc) selectedPlatforms.push('DartCounter');
+        if (wantSc) selectedPlatforms.push('Scolia');
+
+        const saveBtn = document.getElementById("btnSaveRegistration");
+        if (selectedPlatforms.length > 0) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Prüfe AVG-Nachweise...";
+
+            const { data: proofs, error: proofsError } = await supabaseClient
+                .from('player_avg_proofs')
+                .select('platform')
+                .eq('player_id', currentUser.id)
+                .in('platform', selectedPlatforms);
+
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Anmeldung Speichern";
+
+            if (proofsError) {
+                alert('❌ Fehler beim Prüfen deiner AVG-Nachweise: ' + proofsError.message);
+                return;
+            }
+
+            const uploadedPlatforms = new Set((proofs || []).map(p => p.platform));
+            const missing = selectedPlatforms.filter(p => !uploadedPlatforms.has(p));
+
+            if (missing.length > 0) {
+                alert(`❌ Anmeldung nicht möglich!\n\nFür folgende Plattform(en) fehlt noch dein AVG-Screenshot:\n${missing.join(', ')}\n\nBitte lade zuerst weiter unten unter "📸 Meine AVG-Nachweise" einen Screenshot hoch und speichere die Anmeldung danach erneut.`);
+                const avgCard = document.getElementById('avgProofCard');
+                if (avgCard) avgCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+        }
 
         await supabaseClient.from('profiles').update({
             want_autodarts: wantAd,
