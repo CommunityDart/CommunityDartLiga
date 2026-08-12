@@ -2250,14 +2250,11 @@
     };
 
     window.rejectAvgProof = async function(proofId, playerId, platform) {
-        if (!confirm(`Nachweis (${platform}) wirklich entfernen? Der Screenshot wird dabei ebenfalls gelöscht.`)) return;
-
-        // Zugehörige Datei(en) im Bucket löschen (Dateiname beginnt mit "<Plattform>.")
-        try {
-            const { data: files } = await supabaseClient.storage.from('avg-proofs').list(playerId);
-            const toDelete = (files || []).filter(f => f.name.startsWith(platform + '.')).map(f => `${playerId}/${f.name}`);
-            if (toDelete.length) await supabaseClient.storage.from('avg-proofs').remove(toDelete);
-        } catch (e) { console.error('Fehler beim Löschen der Datei:', e); }
+        // Der Screenshot liegt in Google Drive (nicht mehr im Supabase-Bucket) -
+        // das Apps Script bietet aktuell keine Lösch-Funktion, daher wird hier
+        // nur der Datenbank-Eintrag entfernt. Die Datei bleibt im Drive-Ordner
+        // "AVG-Nachweise" liegen und kann bei Bedarf manuell gelöscht werden.
+        if (!confirm(`Nachweis (${platform}) wirklich entfernen?\n\nHinweis: Die Datei bleibt in eurem Google Drive Ordner "AVG-Nachweise" bestehen - nur der Eintrag hier wird gelöscht.`)) return;
 
         const { error } = await supabaseClient.from('player_avg_proofs').delete().eq('id', proofId);
         if (error) { alert("❌ Fehler: " + error.message); return; }
