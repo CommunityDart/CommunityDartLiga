@@ -180,6 +180,13 @@
     .avg-proof-upload-label:hover { background: rgba(255,255,255,0.05); }
     .avg-proof-upload-label input[type="file"] { display: none; }
     .avg-proof-uploading { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+    .league-confirm-item { background: var(--bg-tertiary); border: 1px solid var(--red); border-radius: 10px; padding: 14px; }
+    .league-confirm-league { font-weight: 800; font-size: 15px; color: var(--platform-color); }
+    .league-confirm-deadline { font-size: 12px; color: var(--text-secondary); margin: 4px 0 8px 0; }
+    .league-confirm-countdown { font-weight: 800; color: var(--red); margin-bottom: 10px; font-size: 14px; }
+    .league-confirm-btn { background: var(--red); color: #fff; border: none; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; width: 100%; font-size: 14px; }
+    .league-confirm-btn:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -224,6 +231,14 @@
           <button type="button" id="btnSaveRegistration" style="background: var(--platform-color); color: #fff; width: 100%;">Anmeldung Speichern</button>
         </div>
         <div id="assignmentArea"></div>
+      </div>
+    </div>
+
+    <div class="card" id="leagueConfirmCard" style="display:none; border-color:var(--red);">
+      <div class="card-header" style="color:var(--red);">⏳ Endgültige Anmeldung erforderlich</div>
+      <div class="card-body">
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Du wurdest für die neue Saison einer Liga zugeteilt. Bitte bestätige deine Teilnahme vor Ablauf der Frist - sonst wirst du automatisch wieder aus der Zuteilung entfernt.</p>
+        <div id="leagueConfirmArea" style="display:flex; flex-direction:column; gap:14px;"></div>
       </div>
     </div>
 
@@ -770,6 +785,71 @@
       if (dbError) throw dbError;
     }
 
+    // --- Endgültige Saison-Anmeldung (Countdown) ---------------------------
+    let leagueConfirmCountdownHandle = null;
+
+    async function loadMyLeagueConfirmations(userId) {
+      const card = document.getElementById('leagueConfirmCard');
+      const area = document.getElementById('leagueConfirmArea');
+      if (!card || !area) return;
+
+      const { data: rows, error } = await supabaseClient
+        .from('player_league_confirmations')
+        .select('*, league_season_confirmations(*)')
+        .eq('player_id', userId)
+        .eq('confirmed', false);
+
+      if (error) { console.error('Fehler beim Laden der Anmeldebestätigungen:', error); card.style.display = 'none'; return; }
+
+      const pending = (rows || []).filter(r =>
+        r.league_season_confirmations &&
+        r.league_season_confirmations.status === 'active' &&
+        new Date(r.league_season_confirmations.deadline) > new Date()
+      );
+
+      if (pending.length === 0) { card.style.display = 'none'; if (leagueConfirmCountdownHandle) clearInterval(leagueConfirmCountdownHandle); return; }
+      card.style.display = 'block';
+
+      area.innerHTML = pending.map(r => {
+        const c = r.league_season_confirmations;
+        const deadlineStr = new Date(c.deadline).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return `<div class="league-confirm-item">
+          <div class="league-confirm-league">${htmlEscape(c.league_name)}</div>
+          <div class="league-confirm-deadline">Frist: ${deadlineStr}</div>
+          <div class="league-confirm-countdown" data-deadline="${c.deadline}" id="lc-countdown-${r.id}"></div>
+          <button type="button" class="league-confirm-btn" onclick="confirmMyLeagueParticipation('${r.id}')">✅ Ich nehme endgültig teil</button>
+        </div>`;
+      }).join('');
+
+      startLeagueConfirmCountdowns();
+    }
+
+    function startLeagueConfirmCountdowns() {
+      if (leagueConfirmCountdownHandle) clearInterval(leagueConfirmCountdownHandle);
+      function tick() {
+        document.querySelectorAll('.league-confirm-countdown').forEach(el => {
+          const deadline = new Date(el.dataset.deadline).getTime();
+          const diff = deadline - Date.now();
+          if (diff <= 0) { el.textContent = '⏰ Frist abgelaufen'; return; }
+          const days = Math.floor(diff / 86400000);
+          const hours = Math.floor((diff % 86400000) / 3600000);
+          const mins = Math.floor((diff % 3600000) / 60000);
+          el.textContent = `⏳ Noch ${days > 0 ? days + 'T ' : ''}${hours}Std ${mins}Min`;
+        });
+      }
+      tick();
+      leagueConfirmCountdownHandle = setInterval(tick, 60000);
+    }
+
+    window.confirmMyLeagueParticipation = async function(rowId) {
+      const { error } = await supabaseClient.from('player_league_confirmations').update({
+        confirmed: true, confirmed_at: new Date().toISOString()
+      }).eq('id', rowId);
+      if (error) { alert('❌ Fehler beim Bestätigen: ' + error.message); return; }
+      alert('✅ Danke! Deine Teilnahme ist bestätigt.');
+      loadMyLeagueConfirmations(currentUser.id);
+    };
+
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) { window.location.href = "index.html"; return; }
@@ -785,6 +865,7 @@
       loadLevelInfo(currentUser.id);
       loadMyBadges(currentUser.id);
       loadAvgProofs(currentUser.id);
+      loadMyLeagueConfirmations(currentUser.id);
       
       document.getElementById("profilForm").style.display = "block";
 
