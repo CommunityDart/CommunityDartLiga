@@ -805,7 +805,14 @@
           console.error('[AVG-Drive-Upload] Antwort war kein gültiges JSON - vermutlich Google-Login/Fehlerseite statt Apps-Script-Antwort.');
           return null;
         }
-        if (data.success) return data.url;
+        if (data.success) {
+          // file.getUrl() liefert einen Drive-Viewer-Link (eine ganze Webseite) -
+          // der lässt sich nicht als <img>-Vorschau einbetten. Stattdessen den
+          // direkten Thumbnail-Endpunkt aus der fileId bauen, der sowohl als
+          // Bildvorschau als auch beim Öffnen in neuem Tab sauber funktioniert.
+          if (data.fileId) return `https://drive.google.com/thumbnail?id=${data.fileId}&sz=w1600`;
+          return data.url;
+        }
         console.error('[AVG-Drive-Upload] Apps Script meldet Fehler:', data.error);
         return null;
       } catch (e) {
