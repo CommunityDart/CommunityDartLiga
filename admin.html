@@ -2356,6 +2356,19 @@
         const { error: insErr } = await supabaseClient.from('player_league_confirmations').insert(rows);
         if (insErr) { alert('❌ Fehler beim Anlegen der Spieler-Bestätigungen: ' + insErr.message); return; }
 
+        // Discord-Nachricht mit Rollen-Ping posten (z.B. "DartCounter-Spieler"
+        // bei einer DartCounter-Liga). Läuft im Hintergrund - schlägt das fehl
+        // (z.B. Webhook nicht konfiguriert), bleibt der Countdown trotzdem aktiv.
+        const platform = field === 'assigned_ad_league' ? 'Autodarts' : field === 'assigned_dc_league' ? 'DartCounter' : field === 'assigned_sc_league' ? 'Scolia' : null;
+        try {
+            const { error: notifyError } = await supabaseClient.functions.invoke('discord-confirmation-started', {
+                body: { leagueName: league, platform, deadline: deadlineIso, minPlayers, playerCount: players.length }
+            });
+            if (notifyError) console.error('Discord-Benachrichtigung fehlgeschlagen:', notifyError);
+        } catch (e) {
+            console.error('Fehler beim Aufruf der Discord-Benachrichtigung:', e);
+        }
+
         alert(`✅ Countdown gestartet für ${players.length} Spieler!`);
         loadConfirmationsTab();
     };
