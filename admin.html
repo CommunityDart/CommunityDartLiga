@@ -2278,14 +2278,27 @@
             ? `<p class="meta-text">Noch keine verifizierten Nachweise.</p>`
             : platformVerified.map(p => renderAvgProofRow(p, playersMap, false)).join("");
 
+        const verifiedToggleId = `avg-verified-${pd.key}`;
+
         return `<div class="avg-proof-column">
             ${statCardHtml}
             <h3 style="font-size:15px; margin-top:16px;">⏳ Offene Prüfungen</h3>
             <div style="margin-bottom:16px;">${pendingHtml}</div>
-            <h3 style="font-size:15px;">✅ Verifiziert</h3>
-            <div>${verifiedHtml}</div>
+            <h3 style="font-size:15px; cursor:pointer; display:flex; align-items:center; gap:6px;" onclick="toggleAvgVerifiedColumn('${verifiedToggleId}', this)">
+                <span class="chev" style="display:inline-block; transition:transform 0.15s;">▸</span> ✅ Verifiziert (${platformVerified.length})
+            </h3>
+            <div id="${verifiedToggleId}" style="display:none;">${verifiedHtml}</div>
         </div>`;
     }
+
+    window.toggleAvgVerifiedColumn = function(toggleId, headerEl) {
+        const el = document.getElementById(toggleId);
+        if (!el) return;
+        const isOpen = el.style.display === 'block';
+        el.style.display = isOpen ? 'none' : 'block';
+        const chev = headerEl.querySelector('.chev');
+        if (chev) chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+    };
 
     function updateAvgProofBadgeCount(count) {
         const el = document.getElementById('avgProofBadgeCount');
