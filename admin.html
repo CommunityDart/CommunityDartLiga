@@ -1174,10 +1174,28 @@
                 if(assignedPlayers.length === 0) {
                     area.innerHTML = `<div style="padding:12px; background:rgba(231, 76, 60, 0.1); border:1px solid #e74c3c; border-radius:10px;">Es sind noch keine Spieler zugewiesen!</div>`;
                 } else {
+                    // AVG-Nachweis-Status für genau die Plattform dieser Liga laden,
+                    // damit man vor dem Spielplan-Start sieht, wer noch fehlt.
+                    const leaguePlatform = getPlatformPrefixAndNumber(league)?.platform || null;
+                    let avgProofMap = {};
+                    if (leaguePlatform) {
+                        const { data: avgProofsData } = await supabaseClient.from('player_avg_proofs')
+                            .select('player_id, verified')
+                            .eq('platform', leaguePlatform)
+                            .in('player_id', assignedPlayers.map(p => p.id));
+                        (avgProofsData || []).forEach(pr => { avgProofMap[pr.player_id] = pr.verified; });
+                    }
+                    const avgStatusBadge = (playerId) => {
+                        if (!leaguePlatform) return '';
+                        if (avgProofMap[playerId] === true) return ' <span style="color:#00d084; font-weight:800;" title="AVG-Nachweis verifiziert">✓ AVG</span>';
+                        if (avgProofMap[playerId] === false) return ' <span style="color:#ffd700; font-weight:800;" title="AVG-Nachweis hochgeladen, wartet auf Prüfung">⏳ AVG</span>';
+                        return ' <span style="color:#e74c3c; font-weight:800;" title="Kein AVG-Nachweis hochgeladen">✖ AVG</span>';
+                    };
+
                     let previewHtml = `<div style="padding:12px; background:rgba(32, 183, 255, 0.05); border:1px solid rgba(32, 183, 255, 0.2); border-radius:10px;">
                         <h3 style="color:#0066ff; margin-bottom:8px;">📋 Vorschau der zugewiesenen Spieler (${assignedPlayers.length})</h3>
                         <table><thead><tr><th>Spieler</th><th>Plattform-Namen</th></tr></thead><tbody>
-                        ${assignedPlayers.map(p => `<tr><td><strong style="color:#00d084;">${htmlEscape(p.discord_name || p.username)}</strong></td><td>${formatAllPlattformNames(p)}</td></tr>`).join("")}
+                        ${assignedPlayers.map(p => `<tr><td><strong style="color:#00d084;">${htmlEscape(p.discord_name || p.username)}</strong>${avgStatusBadge(p.id)}</td><td>${formatAllPlattformNames(p)}</td></tr>`).join("")}
                         </tbody></table></div>`;
                     area.innerHTML = previewHtml;
                 }
