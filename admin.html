@@ -117,6 +117,7 @@
         .avg-stat-card { flex: 1; min-width: 200px; text-align: center; padding: 14px; border-radius: 10px; border: 1px solid var(--stat-color, var(--border)); background: var(--bg-tertiary); }
         .avg-stat-value { font-size: 26px; font-weight: 800; color: var(--text-primary); margin-top: 4px; }
         .avg-stat-sub { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+        .avg-proof-column { flex: 1; min-width: 320px; }
     </style>
 </head>
 <body>
@@ -541,13 +542,7 @@
         <h2>📸 AVG-Nachweise verwalten</h2>
         <p class="meta-text" style="margin-bottom:12px;">Spieler laden hier einen Screenshot ihres AVG-Werts pro Plattform hoch (im eigenen Profil). Prüfe den Screenshot und verifiziere ihn - erst dann erscheint der farbige Haken (🔵 Autodarts, 🟠 DartCounter, 🟢 Scolia) öffentlich sichtbar im Spielerprofil. Bei einem neuen Upload wird der Verifiziert-Status automatisch zurückgesetzt, damit er erneut geprüft wird.</p>
 
-        <div id="avgProofStatsArea" style="margin-bottom:20px;"></div>
-
-        <h3>⏳ Offene Prüfungen</h3>
-        <div id="avgProofPendingList" style="margin-bottom:24px;">Lade offene Nachweise...</div>
-
-        <h3>✅ Verifizierte Nachweise</h3>
-        <div id="avgProofVerifiedList">Lade verifizierte Nachweise...</div>
+        <div id="avgProofColumnsArea" style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;"></div>
     </div>
 
     <div id="tabConfirm" class="tab-content">
@@ -2222,9 +2217,7 @@
 
     async function loadAvgProofsTab() {
         if (!supabaseClient) return;
-        const pendingEl = document.getElementById('avgProofPendingList');
-        const verifiedEl = document.getElementById('avgProofVerifiedList');
-        const statsEl = document.getElementById('avgProofStatsArea');
+        const columnsEl = document.getElementById('avgProofColumnsArea');
 
         const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name, autodarts_name, autodarts_avg, dartcounter_name, dartcounter_avg, scolia_name, scolia_avg, want_autodarts, want_dartcounter, want_scolia');
         const playersMap = {};
@@ -2232,63 +2225,66 @@
 
         const { data: proofs, error } = await supabaseClient.from('player_avg_proofs').select('*').order('uploaded_at', { ascending: true });
         if (error) {
-            pendingEl.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert die Tabelle 'player_avg_proofs' bereits in Supabase? (siehe avg_proof_migration.sql)</span></div>`;
-            verifiedEl.innerHTML = "";
-            if (statsEl) statsEl.innerHTML = "";
+            columnsEl.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert die Tabelle 'player_avg_proofs' bereits in Supabase? (siehe avg_proof_migration.sql)</span></div>`;
             updateAvgProofBadgeCount(0);
             return;
         }
 
-        if (statsEl) statsEl.innerHTML = renderAvgProofStats(players || [], proofs || []);
+        const totalPending = (proofs || []).filter(p => !p.verified).length;
+        updateAvgProofBadgeCount(totalPending);
 
-        const pending = (proofs || []).filter(p => !p.verified);
-        const verified = (proofs || []).filter(p => p.verified);
-        updateAvgProofBadgeCount(pending.length);
-
-        pendingEl.innerHTML = pending.length === 0
-            ? `<p class="meta-text">Keine offenen Nachweise 🎉</p>`
-            : pending.map(p => renderAvgProofRow(p, playersMap, true)).join("");
-
-        verifiedEl.innerHTML = verified.length === 0
-            ? `<p class="meta-text">Noch keine verifizierten Nachweise.</p>`
-            : verified.map(p => renderAvgProofRow(p, playersMap, false)).join("");
-    }
-
-    // Baut die Statistik-Leiste "eingereicht / angemeldet" pro Plattform.
-    // "Angemeldet" = Spieler mit want_autodarts/want_dartcounter/want_scolia = true.
-    // "Eingereicht" = davon wie viele bereits einen AVG-Nachweis für genau
-    // diese Plattform hochgeladen haben (unabhängig vom Verifiziert-Status).
-    function renderAvgProofStats(players, proofs) {
         const platformDefs = [
             { key: 'Autodarts',   wantField: 'want_autodarts',   color: '#0066ff', icon: '🔵' },
             { key: 'DartCounter', wantField: 'want_dartcounter', color: '#ff6b35', icon: '🟠' },
             { key: 'Scolia',      wantField: 'want_scolia',      color: '#00d084', icon: '🟢' }
         ];
 
-        const cardsHtml = platformDefs.map(pd => {
-            const registeredIds = new Set(players.filter(p => p[pd.wantField]).map(p => p.id));
-            const platformProofs = proofs.filter(pr => pr.platform === pd.key);
-            const submittedIds = new Set(platformProofs.map(pr => pr.player_id));
-            const submittedRegisteredCount = [...registeredIds].filter(id => submittedIds.has(id)).length;
-            const missingCount = registeredIds.size - submittedRegisteredCount;
-            const verifiedCount = platformProofs.filter(pr => pr.verified).length;
+        columnsEl.innerHTML = platformDefs.map(pd => renderAvgProofColumn(pd, players || [], proofs || [], playersMap)).join("");
+    }
 
-            const statusLine = registeredIds.size === 0
-                ? `<div class="meta-text" style="margin-top:6px;">Noch keine Anmeldungen</div>`
-                : missingCount > 0
-                    ? `<div style="font-size:12px; color:#e74c3c; font-weight:700; margin-top:6px;">⚠️ ${missingCount} fehlen noch</div>`
-                    : `<div style="font-size:12px; color:#00d084; font-weight:700; margin-top:6px;">✓ Alle eingereicht</div>`;
+    // Baut eine komplette Plattform-Spalte: Statistik-Karte oben, direkt
+    // darunter die offenen Prüfungen und verifizierten Nachweise NUR für
+    // diese eine Plattform - so gehört visuell alles zusammen.
+    function renderAvgProofColumn(pd, players, proofs, playersMap) {
+        const registeredIds = new Set(players.filter(p => p[pd.wantField]).map(p => p.id));
+        const platformProofs = proofs.filter(pr => pr.platform === pd.key);
+        const submittedIds = new Set(platformProofs.map(pr => pr.player_id));
+        const submittedRegisteredCount = [...registeredIds].filter(id => submittedIds.has(id)).length;
+        const missingCount = registeredIds.size - submittedRegisteredCount;
+        const verifiedCount = platformProofs.filter(pr => pr.verified).length;
 
-            return `<div class="avg-stat-card" style="--stat-color:${pd.color};">
-                <div style="font-size:13px; font-weight:800; color:${pd.color};">${pd.icon} ${pd.key}</div>
-                <div class="avg-stat-value">${submittedRegisteredCount} / ${registeredIds.size}</div>
-                <div class="avg-stat-sub">Eingereicht / Angemeldet</div>
-                ${statusLine}
-                <div class="meta-text" style="margin-top:4px;">${verifiedCount} verifiziert</div>
-            </div>`;
-        }).join("");
+        const statusLine = registeredIds.size === 0
+            ? `<div class="meta-text" style="margin-top:6px;">Noch keine Anmeldungen</div>`
+            : missingCount > 0
+                ? `<div style="font-size:12px; color:#e74c3c; font-weight:700; margin-top:6px;">⚠️ ${missingCount} fehlen noch</div>`
+                : `<div style="font-size:12px; color:#00d084; font-weight:700; margin-top:6px;">✓ Alle eingereicht</div>`;
 
-        return `<div style="display:flex; gap:14px; flex-wrap:wrap;">${cardsHtml}</div>`;
+        const statCardHtml = `<div class="avg-stat-card" style="--stat-color:${pd.color}; width:100%; box-sizing:border-box;">
+            <div style="font-size:13px; font-weight:800; color:${pd.color};">${pd.icon} ${pd.key}</div>
+            <div class="avg-stat-value">${submittedRegisteredCount} / ${registeredIds.size}</div>
+            <div class="avg-stat-sub">Eingereicht / Angemeldet</div>
+            ${statusLine}
+            <div class="meta-text" style="margin-top:4px;">${verifiedCount} verifiziert</div>
+        </div>`;
+
+        const platformPending = platformProofs.filter(p => !p.verified);
+        const platformVerified = platformProofs.filter(p => p.verified);
+
+        const pendingHtml = platformPending.length === 0
+            ? `<p class="meta-text">Keine offenen Nachweise 🎉</p>`
+            : platformPending.map(p => renderAvgProofRow(p, playersMap, true)).join("");
+
+        const verifiedHtml = platformVerified.length === 0
+            ? `<p class="meta-text">Noch keine verifizierten Nachweise.</p>`
+            : platformVerified.map(p => renderAvgProofRow(p, playersMap, false)).join("");
+
+        return `<div class="avg-proof-column">
+            ${statCardHtml}
+            <h3 style="font-size:15px; margin-top:16px;">⏳ Offene Prüfungen</h3>
+            <div style="margin-bottom:16px;">${pendingHtml}</div>
+            <h3 style="font-size:15px;">✅ Verifiziert</h3>
+            <div>${verifiedHtml}</div>
+        </div>`;
     }
 
     function updateAvgProofBadgeCount(count) {
