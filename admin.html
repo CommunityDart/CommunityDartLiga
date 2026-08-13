@@ -574,6 +574,17 @@
         <h2>🏷️ Discord-Rollen-Übersicht</h2>
         <p class="meta-text" style="margin-bottom:12px;">Zeigt, welcher Spieler aktuell welche automatisch vergebene Discord-Rolle hat und seit wann. Wird von der Funktion "Automatische Discord-Rollenvergabe" gepflegt, sobald sich jemand über sein Profil für eine Plattform anmeldet oder abmeldet.</p>
 
+        <div class="config-box" style="border-color: #ff6b35; background: rgba(255, 107, 53, 0.05);">
+            <h3>🔄 Rollen manuell neu synchronisieren</h3>
+            <p class="meta-text" style="margin-bottom:8px;">Falls ein Spieler z.B. nur "Verifizierter Spieler" hat, aber keine Plattform-Rolle (kann bei einem kurzen Discord-Rate-Limit passieren): hier den Spieler wählen und neu synchronisieren - setzt die Rollen exakt nach seinen aktuellen Anmeldungen (want_autodarts etc.), ohne dass er sein Profil erneut speichern muss.</p>
+            <div class="config-row">
+                <select id="discordResyncPlayerSelect" class="league-select" style="min-width:240px;">
+                    <option value="">-- Spieler wählen --</option>
+                </select>
+                <button class="generate-btn" onclick="resyncPlayerDiscordRoles()">🔄 Jetzt synchronisieren</button>
+            </div>
+        </div>
+
         <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
             <h3>🔍 Filtern</h3>
             <div class="filter-bar">
@@ -2424,7 +2435,23 @@
             console.error('Fehler beim Aufruf der Discord-Benachrichtigung:', e);
         }
 
-        alert(`✅ Countdown gestartet für ${players.length} Spieler!`);
+        // Zusätzlich als Neuigkeit auf der Website veröffentlichen (Reiter
+        // "📰 Neuigkeiten"), damit auch Spieler ohne Discord informiert werden.
+        // Läuft ebenfalls im Hintergrund - schlägt das fehl, bleibt der
+        // Countdown trotzdem aktiv, nur die News fehlt dann.
+        try {
+            const deadlineStr = new Date(deadlineIso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const newsTitle = `⏳ Endgültige Anmeldung: ${league}`;
+            const newsContent = `<p>Für <strong>${htmlEscape(league)}</strong> läuft ab sofort die Frist zur endgültigen Anmeldung.</p>
+                <p>Bitte bestätigt eure Teilnahme bis <strong>${deadlineStr}</strong> in eurem Profil ("✅ Ich nehme endgültig teil") - wer die Frist verpasst, wird automatisch wieder aus der Liga-Zuteilung entfernt.</p>
+                <p>👥 Aktuell betroffene Spieler: <strong>${players.length}</strong><br>📊 Mindestspieler für den Saisonstart: <strong>${minPlayers}</strong></p>`;
+            const { error: newsError } = await supabaseClient.from('news').insert([{ title: newsTitle, content: newsContent }]);
+            if (newsError) console.error('News-Post fehlgeschlagen:', newsError);
+        } catch (e) {
+            console.error('Fehler beim Erstellen des News-Posts:', e);
+        }
+
+        alert(`✅ Countdown gestartet für ${players.length} Spieler!\n📰 News-Post und Discord-Nachricht wurden veröffentlicht.`);
         loadConfirmationsTab();
     };
 
@@ -2611,8 +2638,60 @@
         scolia:      { color: '#00d084', icon: '🟢', label: 'Scolia' }
     };
 
+    async function populateDiscordResyncPlayerSelect() {
+        const sel = document.getElementById('discordResyncPlayerSelect');
+        if (!sel || sel.options.length > 1) return; // schon befüllt
+        const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name').order('discord_name');
+        (players || []).forEach(p => {
+            sel.innerHTML += `<option value="${p.id}">${htmlEscape(p.discord_name || p.username || p.real_name || p.id)}</option>`;
+        });
+    }
+
+    // Ruft dieselbe Edge Function wie beim normalen Speichern der Anmeldung
+    // auf, aber manuell aus dem Admin-Panel heraus - liest dafür die aktuellen
+    // want_autodarts/want_dartcounter/want_scolia-Werte direkt aus profiles,
+    // damit die Discord-Rollen wieder exakt dazu passen.
+    window.resyncPlayerDiscordRoles = async function() {
+        const playerId = document.getElementById('discordResyncPlayerSelect').value;
+        if (!playerId) return alert('❌ Bitte einen Spieler auswählen!');
+
+        const { data: player, error: pErr } = await supabaseClient.from('profiles')
+            .select('id, discord_id, discord_name, username, want_autodarts, want_dartcounter, want_scolia')
+            .eq('id', playerId).single();
+        if (pErr || !player) { alert('❌ Spieler nicht gefunden: ' + (pErr ? pErr.message : '')); return; }
+        if (!player.discord_id) { alert('❌ Für diesen Spieler ist keine Discord-ID hinterlegt - Rollen können nicht gesetzt werden.'); return; }
+
+        const { data: result, error } = await supabaseClient.functions.invoke('discord-assign-roles', {
+            body: {
+                discordId: player.discord_id,
+                playerId: player.id,
+                wantAutodarts: !!player.want_autodarts,
+                wantDartcounter: !!player.want_dartcounter,
+                wantScolia: !!player.want_scolia
+            }
+        });
+
+        if (error || (result && result.success === false)) {
+            let detail = error ? error.message : 'Unbekannter Fehler';
+            try {
+                if (error && error.context && typeof error.context.json === 'function') {
+                    const body = await error.context.json();
+                    if (body && body.error) detail = body.error;
+                } else if (result && result.error) {
+                    detail = result.error;
+                }
+            } catch (parseErr) {}
+            alert(`❌ Synchronisierung fehlgeschlagen:\n\n${detail}`);
+            return;
+        }
+
+        alert(`✅ Discord-Rollen für ${player.discord_name || player.username} wurden neu synchronisiert!`);
+        loadDiscordRolesTab();
+    };
+
     async function loadDiscordRolesTab() {
         if (!supabaseClient) return;
+        populateDiscordResyncPlayerSelect();
         const tbody = document.getElementById('discordRolesListBody');
         const roleFilter = document.getElementById('discordRoleFilterRole') ? document.getElementById('discordRoleFilterRole').value : '';
         const statusFilter = document.getElementById('discordRoleFilterStatus') ? document.getElementById('discordRoleFilterStatus').value : 'active';
