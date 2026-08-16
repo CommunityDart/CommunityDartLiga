@@ -7,6 +7,33 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- ===================== Google Consent Mode v2 (Standardwerte) =====================
+       Muss VOR dem AdSense-Script geladen werden. Solange der Nutzer noch keine
+       Auswahl im Cookie-Banner getroffen hat, ist alles auf "denied" gesetzt ->
+       AdSense zeigt in diesem Zustand nur nicht-personalisierte Anzeigen. -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'wait_for_update': 500
+    });
+  </script>
+
+  <!-- ===================== Google AdSense ===================== -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8141059951423155"
+   crossorigin="anonymous"></script>
+  <script>
+    (adsbygoogle = window.adsbygoogle || []).push({
+      google_ad_client: "ca-pub-8141059951423155",
+      enable_page_level_ads: true
+    });
+  </script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -618,6 +645,96 @@
       padding: 16px 18px;
       background: var(--bg-secondary);
     }
+
+    /* --- Cookie-Consent-Banner --- */
+    .cookie-banner {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 3000;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.18);
+      padding: 18px 20px;
+      display: none;
+    }
+    .cookie-banner.active { display: block; }
+    .cookie-banner-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cookie-banner-text {
+      flex: 1 1 320px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+    .cookie-banner-text a {
+      color: var(--platform-color);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .cookie-banner-text a:hover { text-decoration: underline; }
+    .cookie-banner-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .cookie-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .cookie-btn:hover { filter: brightness(0.97); }
+    .cookie-btn.accept {
+      background: #00d084;
+      color: white;
+      border: none;
+    }
+    .cookie-btn.reject {
+      background: transparent;
+    }
+    @media (max-width: 600px) {
+      .cookie-banner-inner { flex-direction: column; align-items: stretch; }
+      .cookie-banner-actions { justify-content: stretch; }
+      .cookie-btn { flex: 1; }
+    }
+
+    /* AdSense-Anzeigenblöcke: klar abgegrenzt & mit Hinweis, damit nichts wie
+       redaktioneller Inhalt wirkt */
+    .ad-slot-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .ad-slot-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 6px;
+      opacity: 0.7;
+    }
+    .ad-slot {
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -656,6 +773,17 @@
   </div>
 </div>
 
+<!-- Anzeige direkt unter dem Header -->
+<div class="ad-slot-wrapper" style="margin-top: 20px;">
+  <div class="ad-slot-label">Anzeige</div>
+  <ins class="adsbygoogle ad-slot"
+       style="display:block"
+       data-ad-client="ca-pub-8141059951423155"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
 <div class="container">
   <div id="newsView" class="view active">
     <div class="full-width-layout">
@@ -668,6 +796,17 @@
           </div>
         </div>
       </div>
+
+      <!-- Anzeige zwischen News und Info-Card -->
+      <div class="ad-slot-wrapper" style="padding:0;">
+        <div class="ad-slot-label">Anzeige</div>
+        <ins class="adsbygoogle ad-slot"
+             style="display:block"
+             data-ad-client="ca-pub-8141059951423155"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
       
       <div class="card compact-footer-card">
         <div class="card-header">ℹ️ Infos</div>
@@ -675,6 +814,7 @@
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -749,12 +889,24 @@
         </div>
       </div>
 
+      <!-- Anzeige innerhalb der Ligen-Ansicht -->
+      <div class="ad-slot-wrapper" style="padding:0;">
+        <div class="ad-slot-label">Anzeige</div>
+        <ins class="adsbygoogle ad-slot"
+             style="display:block"
+             data-ad-client="ca-pub-8141059951423155"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
+
       <div class="card compact-footer-card">
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -777,6 +929,17 @@
           <div id="mainCompletedTournamentsArea">Lade Ruhmeshalle...</div>
         </div>
       </div>
+
+      <!-- Anzeige innerhalb der Turniere-Ansicht -->
+      <div class="ad-slot-wrapper" style="padding:0;">
+        <div class="ad-slot-label">Anzeige</div>
+        <ins class="adsbygoogle ad-slot"
+             style="display:block"
+             data-ad-client="ca-pub-8141059951423155"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
       
       <div class="card compact-footer-card">
         <div class="card-header">ℹ️ Infos</div>
@@ -784,6 +947,7 @@
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -857,6 +1021,7 @@
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -879,6 +1044,7 @@
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -932,6 +1098,7 @@
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
+            <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
             <button class="btn small-action-btn">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -946,6 +1113,88 @@
     <div id="modalContent"></div>
   </div>
 </div>
+
+<!-- ===================== Cookie-Consent-Banner ===================== -->
+<div id="cookieBanner" class="cookie-banner">
+  <div class="cookie-banner-inner">
+    <div class="cookie-banner-text">
+      🍪 Wir nutzen Cookies, um CDL zuverlässig zu betreiben und über Google AdSense Werbung einzublenden, mit der wir die Serverkosten decken. Manche Cookies sind technisch notwendig, andere (z. B. für personalisierte Werbung) nur mit deiner Zustimmung.
+      Details findest du in unserer <a href="#" onclick="alert('Datenschutzerklärung folgt in Kürze.'); return false;">Datenschutzerklärung</a>.
+    </div>
+    <div class="cookie-banner-actions">
+      <button class="cookie-btn reject" onclick="rejectNonEssentialCookies()">Nur notwendige</button>
+      <button class="cookie-btn accept" onclick="acceptAllCookies()">Alle akzeptieren</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===================== Cookie-Consent-Logik =====================
+  const COOKIE_CONSENT_KEY = 'cdl_cookie_consent'; // 'accepted' | 'rejected'
+
+  function applyStoredConsent() {
+    const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
+    if (stored === 'accepted') {
+      gtag('consent', 'update', {
+        'ad_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted',
+        'analytics_storage': 'granted'
+      });
+    } else if (stored === 'rejected') {
+      gtag('consent', 'update', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied'
+      });
+    }
+    return stored;
+  }
+
+  function showCookieBanner() {
+    const el = document.getElementById('cookieBanner');
+    if (el) el.classList.add('active');
+  }
+
+  function hideCookieBanner() {
+    const el = document.getElementById('cookieBanner');
+    if (el) el.classList.remove('active');
+  }
+
+  function acceptAllCookies() {
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+    gtag('consent', 'update', {
+      'ad_storage': 'granted',
+      'ad_user_data': 'granted',
+      'ad_personalization': 'granted',
+      'analytics_storage': 'granted'
+    });
+    hideCookieBanner();
+  }
+
+  function rejectNonEssentialCookies() {
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'rejected');
+    gtag('consent', 'update', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied'
+    });
+    hideCookieBanner();
+  }
+
+  // Über den Footer-Button "Cookie-Einstellungen" jederzeit erneut aufrufbar,
+  // damit Nutzer ihre Wahl widerrufen/ändern können (DSGVO-Pflicht).
+  function openCookieSettings() {
+    showCookieBanner();
+  }
+
+  (function initCookieConsent() {
+    const stored = applyStoredConsent();
+    if (!stored) showCookieBanner();
+  })();
+</script>
 
 <script>
   const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
