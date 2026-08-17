@@ -2030,8 +2030,20 @@
         if(!supabaseClient) return;
         const title = document.getElementById("newsTitleInput").value.trim(), content = newsQuill.root.innerHTML;
         if(!title) return alert("Bitte eine Überschrift eingeben!");
+        const isNewPost = !editingNewsId;
+
         if (editingNewsId) { await supabaseClient.from('news').update({ title, content }).eq('id', editingNewsId); editingNewsId = null; } 
         else { await supabaseClient.from('news').insert([{ title, content }]); }
+
+        // Discord-Ping nur bei NEUEN News (nicht beim Bearbeiten einer bestehenden) -
+        // eigener Webhook/Kanal über die Edge Function discord-news-post, läuft im
+        // Hintergrund; schlägt das fehl, bleibt die News trotzdem gespeichert.
+        if (isNewPost) {
+            supabaseClient.functions.invoke('discord-news-post', {
+                body: { title, content }
+            }).then(({ error: fnError }) => { if (fnError) console.error('Discord-News-Post fehlgeschlagen:', fnError); });
+        }
+
         document.getElementById("newsTitleInput").value = ""; newsQuill.root.innerHTML = ""; loadAdminNewsList(); alert("News erfolgreich verarbeitet!");
     };
 
