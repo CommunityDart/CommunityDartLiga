@@ -1091,14 +1091,14 @@
               <span class="onboarding-step-num" style="background:#00d084;">1</span>
               <div>
                 <div class="onboarding-step-title">Discord-Server beitreten</div>
-                <div class="onboarding-step-desc">Falls noch nicht geschehen - Button weiter unten in der Karte "🌐 Discord Server".</div>
+                <div class="onboarding-step-desc">Falls noch nicht geschehen - Button weiter unten in der Karte "🌐 Discord Server". <strong>Wichtig:</strong> Ohne Discord-Mitgliedschaft kannst du dich nicht für Ligen oder Turniere anmelden.</div>
               </div>
             </div>
             <div class="onboarding-step-row">
               <span class="onboarding-step-num" style="background:#0066ff;">2</span>
               <div>
                 <div class="onboarding-step-title">Mit Discord einloggen</div>
-                <div class="onboarding-step-desc">Der Button "Discord Login" weiter unten meldet dich automatisch an und legt dein Profil an.</div>
+                <div class="onboarding-step-desc">Der Button "Discord Login" weiter unten meldet dich automatisch an und legt dein Profil an. Wir prüfen dabei automatisch, ob du bereits Mitglied unseres Discord-Servers bist.</div>
               </div>
             </div>
             <div class="onboarding-step-row">
@@ -1116,7 +1116,7 @@
         <div class="card-header">🌐 Discord Server</div>
         <div class="card-body">
           <h3 style="margin-bottom: 12px;">Beitreten!</h3>
-          <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten!</p>
+          <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten! Die Mitgliedschaft ist Voraussetzung für die Anmeldung zu Ligen &amp; Turnieren.</p>
           <button class="btn discord" onclick="window.open('https://discord.gg/DEINLINK', '_blank')" style="width: 100%;">💬 Discord Server beitreten</button>
         </div>
       </div>
@@ -1127,6 +1127,7 @@
           <h3 style="margin-bottom: 12px;" id="loginTitle">Mit Discord anmelden</h3>
           <p style="margin-bottom: 20px; line-height: 1.6;" id="loginDesc">Melde dich mit deinem Discord-Konto an um auf dein Spieler-Profil zuzugreifen und deine Statistiken zu verwalten.</p>
           <button class="btn primary" id="loginBtn" onclick="handleAuthAction()" style="width: 100%;">👤 Discord Login</button>
+          <div id="discordVerifyStatus" style="margin-top:16px;"></div>
         </div>
       </div>
 
@@ -1547,6 +1548,7 @@
     darkMode: localStorage.getItem('darkMode') === 'true',
     currentView: 'news', 
     currentUser: null,
+    discordVerified: null,
     penaltiesByLeague: {},
     playerHistoryCache: [],
     newsCache: [],
@@ -1554,6 +1556,7 @@
     allMatchesCache: [],
     allTournamentMatchesCache: [],
     allTournamentsCache: [],
+    registrationsCache: [],
     resultConfirmationHours: 48,
     tournamentConfirmationMinutes: 5,
     playerBadgesCache: [],
@@ -1785,10 +1788,40 @@
     if (chev) chev.textContent = isOpen ? '▸' : '▾';
   };
 
+  // ===================== Discord-Mitgliedschafts-Check =====================
+  // Ruft die Edge Function "check-discord-membership" auf, die serverseitig
+  // per Discord-Bot prüft, ob der eingeloggte User im CDL-Discord ist. Das
+  // Ergebnis wird zusätzlich in profiles.discord_member_verified gecacht und
+  // von einem DB-Trigger auf tournament_registrations hart durchgesetzt -
+  // dieser Check hier ist "nur" für die UI (Buttons/Hinweise), die eigentliche
+  // Absicherung passiert serverseitig.
+  window.checkDiscordMembership = async function(manual) {
+    if (!state.currentUser) return;
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('check-discord-membership', {
+        body: { user_id: state.currentUser.id }
+      });
+      if (error) throw error;
+      state.discordVerified = !!(data && data.verified);
+    } catch (e) {
+      console.error('Fehler beim Discord-Mitgliedschafts-Check:', e);
+      if (manual) alert('Die Prüfung ist fehlgeschlagen. Versuch es später erneut.');
+      return;
+    }
+    updateAuthUI();
+    renderTournamentsData(state.allTournamentsCache, state.allTournamentMatchesCache, state.registrationsCache);
+    if (manual) {
+      alert(state.discordVerified
+        ? '✅ Deine Discord-Mitgliedschaft wurde bestätigt! Du kannst dich jetzt für Ligen & Turniere anmelden.'
+        : '❌ Du wurdest nicht als Mitglied unseres Discord-Servers gefunden. Bitte tritt zuerst bei und versuch es dann erneut.');
+    }
+  };
+
   function updateAuthUI() {
     const loginTitle = document.getElementById('loginTitle');
     const loginDesc = document.getElementById('loginDesc');
     const loginBtn = document.getElementById('loginBtn');
+    const verifyStatusEl = document.getElementById('discordVerifyStatus');
     let navProfil = document.getElementById('navProfil');
 
     if (state.currentUser) {
@@ -1803,10 +1836,21 @@
         navProfil.innerText = '⚙️ Mein Profil'; navProfil.onclick = () => window.location.assign('profil.html');
         document.querySelector('.navbar').appendChild(navProfil);
       }
+
+      if (verifyStatusEl) {
+        if (state.discordVerified === true) {
+          verifyStatusEl.innerHTML = '<div style="padding:10px 14px; background:rgba(0,208,132,0.12); color:#00d084; border-radius:8px; font-size:13px; font-weight:700;">✅ Discord-Mitgliedschaft bestätigt</div>';
+        } else if (state.discordVerified === false) {
+          verifyStatusEl.innerHTML = `<div style="padding:10px 14px; background:rgba(255,107,53,0.12); color:#ff6b35; border-radius:8px; font-size:13px; font-weight:700; margin-bottom:8px;">⚠️ Du bist noch nicht auf unserem Discord-Server. Bitte tritt bei, um dich für Ligen &amp; Turniere anmelden zu können.</div><button class="btn small-action-btn" onclick="checkDiscordMembership(true)">🔄 Mitgliedschaft erneut prüfen</button>`;
+        } else {
+          verifyStatusEl.innerHTML = '<div style="padding:10px 14px; background:var(--bg-tertiary); color:var(--text-secondary); border-radius:8px; font-size:13px;">⏳ Prüfe Discord-Mitgliedschaft...</div>';
+        }
+      }
     } else {
       if (loginTitle) loginTitle.innerText = "Mit Discord anmelden";
       if (loginBtn) { loginBtn.innerText = "👤 Discord Login"; loginBtn.style.background = "#0066ff"; }
       if (navProfil) navProfil.remove();
+      if (verifyStatusEl) verifyStatusEl.innerHTML = '';
     }
   }
 
@@ -1824,6 +1868,7 @@
       const { data: { session } } = await supabaseClient.auth.getSession();
       state.currentUser = session?.user || null;
       updateAuthUI();
+      if (state.currentUser) checkDiscordMembership(false);
     } catch (err) {
       console.error("Fehler beim Prüfen der Session:", err);
     }
@@ -2889,6 +2934,18 @@
     const profile = getCurrentPlayerProfile();
     if (!profile) { alert('Dein Spieler-Profil konnte nicht gefunden werden. Bitte kontaktiere einen Admin.'); return; }
 
+    // Discord-Mitgliedschaft ist Voraussetzung für die Anmeldung (nicht fürs
+    // Abmelden). Die eigentliche, unumgehbare Absicherung passiert über einen
+    // DB-Trigger auf tournament_registrations - dieser Check hier verhindert
+    // nur einen unnötigen Roundtrip zur DB und gibt eine klare Fehlermeldung.
+    if (!isRegistered) {
+      if (state.discordVerified !== true) {
+        alert('❌ Du musst zuerst unserem Discord-Server beitreten und deine Mitgliedschaft bestätigen, bevor du dich für Turniere anmelden kannst.');
+        switchView('discord');
+        return;
+      }
+    }
+
     // AVG-Obergrenze prüfen (nur beim Anmelden relevant, nicht beim Abmelden).
     // Bezieht sich auf den AVG-Wert für genau die Plattform, auf der das Turnier
     // stattfindet (autodarts_avg / dartcounter_avg / scolia_avg im Profil).
@@ -2910,7 +2967,13 @@
       if (isRegistered) {
         await supabaseClient.from('tournament_registrations').delete().eq('tournament_id', tournamentId).eq('player_id', profile.id);
       } else {
-        await supabaseClient.from('tournament_registrations').insert({ tournament_id: tournamentId, player_id: profile.id });
+        const { error: regError } = await supabaseClient.from('tournament_registrations').insert({ tournament_id: tournamentId, player_id: profile.id });
+        if (regError) {
+          // Fängt insbesondere die serverseitige Discord-Trigger-Fehlermeldung ab,
+          // falls der lokale Check oben aus irgendeinem Grund veraltet war.
+          alert('❌ Anmeldung nicht möglich: ' + regError.message);
+          return;
+        }
       }
       await loadTournamentsData();
     } catch (err) {
@@ -2951,6 +3014,8 @@
             regButtonHtml = `<span style="font-size:12px; color:var(--text-secondary);">Profil nicht gefunden - bitte Admin kontaktieren</span>`;
           } else if (isRegistered) {
             regButtonHtml = `<button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35; font-weight:800;" onclick="toggleTournamentRegistration('${t.id}', true)">✖️ Abmelden</button>`;
+          } else if (state.discordVerified !== true) {
+            regButtonHtml = `<button class="btn small-action-btn" style="border-color:#ff6b35; color:#ff6b35; font-weight:800;" onclick="switchView('discord')">⚠️ Erst Discord beitreten</button>`;
           } else {
             regButtonHtml = `<button class="btn small-action-btn" style="border-color:${pb.color}; color:${pb.color}; font-weight:800;" onclick="toggleTournamentRegistration('${t.id}', false)">✅ Anmelden</button>`;
           }
@@ -3150,6 +3215,7 @@
       const { data: registrations } = await supabaseClient.from('tournament_registrations').select('id, tournament_id, player_id');
       state.allTournamentsCache = tournaments || [];
       state.allTournamentMatchesCache = tourMatches || [];
+      state.registrationsCache = registrations || [];
       renderTournamentsData(tournaments || [], tourMatches || [], registrations || []);
       if (state.currentView === 'mygames') renderMyGames();
       if (state.currentView === 'bracket') renderBracketSelector();
@@ -3372,11 +3438,13 @@
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     state.currentUser = session?.user || null;
+    if (!state.currentUser) state.discordVerified = null;
     updateAuthUI();
     loadTournamentsData();
     renderNews(state.newsCache);
     updateMyGamesNavVisibility();
     if (state.currentView === 'mygames') renderMyGames();
+    if (state.currentUser) checkDiscordMembership(false);
   });
 
   switchView('news'); updateTheme(); checkInitialSession(); loadData();
