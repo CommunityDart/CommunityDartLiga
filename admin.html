@@ -118,6 +118,98 @@
         .avg-stat-value { font-size: 26px; font-weight: 800; color: var(--text-primary); margin-top: 4px; }
         .avg-stat-sub { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
         .avg-proof-column { flex: 1; min-width: 320px; }
+        /* ---------- Social-Media Bild-Generator (Tab 13) ---------- */
+        .smc-scope {
+            --smc-cyan:#28e6f0; --smc-magenta:#e347e8;
+            --smc-autodarts:#3c7bff; --smc-dartcounter:#ff9d3c; --smc-scolia:#3ce07a;
+            --smc-accent: var(--smc-cyan);
+            background:radial-gradient(circle at 30% 0%, #101830 0%, #05060d 60%), #05060d;
+            border-radius:16px; padding:24px 16px; color:#e8f6ff;
+            font-family:'Segoe UI', system-ui, sans-serif;
+        }
+        .smc-toolbar { max-width:460px; margin:0 auto 18px; }
+        .smc-platform-switch { display:flex; gap:8px; margin-bottom:12px; }
+        .smc-platform-btn {
+            flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+            padding:7px; border-radius:10px; border:1px solid #2a3350;
+            background:#0d1120; color:#9fb3d9; font-weight:600; cursor:pointer; font-size:11px;
+        }
+        .smc-platform-btn.active[data-p="autodarts"]{border-color:var(--smc-autodarts);color:var(--smc-autodarts);box-shadow:0 0 12px -2px var(--smc-autodarts);}
+        .smc-platform-btn.active[data-p="dartcounter"]{border-color:var(--smc-dartcounter);color:var(--smc-dartcounter);box-shadow:0 0 12px -2px var(--smc-dartcounter);}
+        .smc-platform-btn.active[data-p="scolia"]{border-color:var(--smc-scolia);color:var(--smc-scolia);box-shadow:0 0 12px -2px var(--smc-scolia);}
+        .smc-upload-label { font-size:9.5px; text-decoration:underline; color:#7fe9f0; cursor:pointer; }
+        .smc-logo-slot { width:26px; height:26px; border-radius:50%; border:1.5px dashed #3a4568; display:flex; align-items:center; justify-content:center; font-size:9px; color:#5a6690; }
+        .smc-actions-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .smc-actions-row .generate-btn { padding:8px 14px; font-size:12.5px; }
+
+        .smc-frame { width:100%; max-width:460px; margin:0 auto; }
+        .smc-top-pill {
+            border:2px solid var(--smc-accent); border-radius:22px; padding:14px; margin-bottom:14px; text-align:center;
+            background:linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+            box-shadow:0 0 22px -6px var(--smc-accent);
+            font-size:12.5px; letter-spacing:2px; text-transform:uppercase; color:#9fd8ff; outline:none;
+        }
+        .smc-card {
+            border:2px solid var(--smc-accent); border-radius:24px; padding:14px;
+            background:linear-gradient(180deg, rgba(20,26,48,.92), rgba(10,13,24,.96));
+            box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 0 30px -6px var(--smc-accent), 0 0 50px -20px var(--smc-magenta);
+        }
+        .smc-banner {
+            border:2px solid var(--smc-accent); border-radius:18px; min-height:90px; margin-bottom:16px;
+            display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; position:relative;
+            background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+        }
+        .smc-banner img { width:100%; height:100%; object-fit:contain; max-height:120px; padding:8px; }
+        .smc-banner .smc-placeholder { color:#5a6690; font-size:11.5px; text-align:center; }
+        .smc-matchblock { margin-bottom:18px; }
+        .smc-matchblock:last-child { margin-bottom:0; }
+        .smc-league-pill {
+            border:1.5px solid var(--smc-accent); border-radius:14px; text-align:center; padding:8px 10px; margin-bottom:9px;
+            font-weight:800; font-size:14px; letter-spacing:.5px; color:#fff; background:rgba(255,255,255,.02); outline:none;
+        }
+        .smc-league-pill:empty:before { content:attr(data-placeholder); color:#5a6690; font-weight:600; }
+        .smc-match-row {
+            border:1.5px solid var(--smc-accent); border-radius:18px; padding:11px 12px;
+            display:flex; align-items:center; gap:9px; position:relative;
+            background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+        }
+        .smc-player-col { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
+        .smc-player-col.right { order:5; }
+        .smc-avatar {
+            width:44px; height:44px; border-radius:50%; overflow:hidden; border:1.5px solid var(--smc-magenta);
+            background:radial-gradient(circle at 35% 30%, #8fb3ff, #45568c 70%);
+            display:flex; align-items:center; justify-content:center; position:relative;
+        }
+        .smc-avatar img { width:100%; height:100%; object-fit:cover; }
+        .smc-avatar .smc-avatar-fallback { font-size:9px; color:#fff; opacity:.75; }
+        .smc-player-name-wrap { position:relative; }
+        .smc-player-name {
+            width:76px; background:transparent; border:none; color:#fff; font-size:12px;
+            font-weight:700; text-align:center; outline:none;
+        }
+        .smc-avg-tag {
+            display:flex; align-items:center; gap:4px; background:rgba(255,255,255,.05); border:1px solid #2a3350;
+            border-radius:7px; padding:2px 6px;
+        }
+        .smc-avg-tag span { font-size:9px; color:#7fe9f0; font-weight:700; }
+        .smc-avg-tag input { width:32px; background:transparent; border:none; color:#c987f2; font-size:11px; font-weight:800; text-align:center; outline:none; }
+        .smc-score-block { flex:1; display:flex; align-items:center; justify-content:center; gap:8px; order:3; }
+        .smc-score {
+            width:40px; text-align:center; background:rgba(255,255,255,.03); border:1.5px solid var(--smc-accent);
+            border-radius:10px; color:#fff; font-weight:700; font-size:16px; padding:8px 0; outline:none;
+        }
+        .smc-colon { color:#7fe9f0; font-weight:800; font-size:16px; }
+        .smc-del-row { position:absolute; top:7px; right:9px; background:none; border:none; color:#e04c6a; cursor:pointer; font-size:13px; padding:2px 4px; }
+        .smc-add-row { width:100%; background:none; border:1.5px dashed #3a4568; color:#7fe9f0; border-radius:14px; padding:8px; cursor:pointer; font-size:12.5px; margin-top:8px; }
+        .smc-bottom-pill {
+            margin-top:14px; border-radius:20px; padding:16px; text-align:center;
+            background:linear-gradient(135deg, #1E6FFF, #2fb3ff); box-shadow:0 0 24px -6px #1E6FFF;
+            font-weight:700; font-size:13px; letter-spacing:1px; color:#04102a; outline:none;
+        }
+        @media print {
+            .smc-toolbar, .smc-del-row, .smc-add-row { display:none !important; }
+            .smc-avatar .smc-avatar-fallback { display:none; }
+        }
     </style>
 </head>
 <body>
@@ -145,6 +237,7 @@
         <button class="tab-btn" onclick="switchTab('tabAvgProofs')">📸 10. AVG-Nachweise <span id="avgProofBadgeCount" class="notif-dot"></span></button>
         <button class="tab-btn" onclick="switchTab('tabConfirm')">⏳ 11. Anmeldebestätigung <span id="confirmBadgeCount" class="notif-dot"></span></button>
         <button class="tab-btn" onclick="switchTab('tabDiscordRoles')">🏷️ 12. Discord-Rollen</button>
+        <button class="tab-btn" onclick="switchTab('tabSocialImage')">📱 13. Social-Media Bild</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -625,6 +718,67 @@
             </table>
         </div>
     </div>
+
+    <div id="tabSocialImage" class="tab-content">
+        <h2>📱 Social-Media Bild erstellen</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Liga und Spieltag wählen und laden - Spielpaarungen, Ergebnisse, das AVG aus genau diesem Match und die Discord-Avatare werden automatisch aus den gespeicherten Ergebnissen gezogen. Danach lässt sich noch alles von Hand nachbessern. Am Ende über "Als Bild speichern" exportieren (Druckdialog → Als PDF/Bild sichern) und direkt für Discord/Instagram/Co. nutzen.</p>
+
+        <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
+            <div class="config-row">
+                <select id="smcLeagueSelect" class="league-select">
+                    <option value="" disabled selected>-- Liga wählen --</option>
+                </select>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">Spieltag
+                    <input type="number" id="smcMatchdayInput" class="num-input" min="1" value="1" style="display:block; margin-top:4px; width:80px;">
+                </label>
+                <button class="generate-btn" onclick="smcLoadMatchday()">📥 Spieltag laden</button>
+                <span id="smcLoadStatus" class="meta-text"></span>
+            </div>
+        </div>
+
+        <div class="smc-scope">
+            <div class="smc-toolbar">
+                <div class="smc-platform-switch">
+                    <label class="smc-platform-btn active" data-p="autodarts">
+                        <div class="smc-logo-slot" id="smcSlotAutodarts">Logo</div>
+                        <span>Autodarts</span>
+                        <span class="smc-upload-label">Logo im Banner wählen</span>
+                    </label>
+                    <label class="smc-platform-btn" data-p="dartcounter">
+                        <div class="smc-logo-slot" id="smcSlotDartcounter">Logo</div>
+                        <span>DartCounter</span>
+                        <span class="smc-upload-label">Logo im Banner wählen</span>
+                    </label>
+                    <label class="smc-platform-btn" data-p="scolia">
+                        <div class="smc-logo-slot" id="smcSlotScolia">Logo</div>
+                        <span>Scolia</span>
+                        <span class="smc-upload-label">Logo im Banner wählen</span>
+                    </label>
+                </div>
+                <div class="smc-actions-row">
+                    <button class="generate-btn" onclick="smcAddBlock()">+ Begegnung manuell hinzufügen</button>
+                    <button class="generate-btn" onclick="smcPrint()">🖨️ Als Bild speichern</button>
+                </div>
+            </div>
+
+            <div class="smc-frame" id="smcPrintArea">
+                <div class="smc-top-pill" id="smcHeaderPill" contenteditable="true" data-placeholder="Kopfzeile eintragen…">Community Dart Liga</div>
+
+                <div class="smc-card">
+                    <label class="smc-banner" id="smcBanner">
+                        <span class="smc-placeholder">Logo / Banner hochladen</span>
+                        <input type="file" accept="image/*" id="smcBannerInput" style="display:none;">
+                    </label>
+
+                    <div id="smcBlocks"></div>
+
+                    <button class="smc-add-row" onclick="smcAddBlock()">+ weiterer Liga-Block</button>
+                </div>
+
+                <div class="smc-bottom-pill" contenteditable="true" data-placeholder="Fußzeile eintragen…">communitydartliga.de</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -777,6 +931,7 @@
         if (tabId === 'tabAvgProofs') loadAvgProofsTab();
         if (tabId === 'tabConfirm') loadConfirmationsTab();
         if (tabId === 'tabDiscordRoles') loadDiscordRolesTab();
+        if (tabId === 'tabSocialImage') loadSocialImageTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -2869,6 +3024,203 @@
             loadActiveTournaments();
         } catch (e) { console.error('Fehler beim Auto-Start-Check:', e); }
     }
+
+    // --- Social-Media Bild-Generator (Tab 14) -------------------------------
+    // Lädt alle Spieler (Namen, Avatar, AVGs) einmal in einen Cache. Beim
+    // Eintippen/Verlassen eines Namensfelds wird bei exaktem Treffer (Discord-
+    // Name oder Username, case-insensitive) automatisch Avatar + der zur
+    // aktuell gewählten Plattform passende AVG-Wert übernommen.
+    let smcCurrentPlatform = 'autodarts';
+    const SMC_ACCENTS = { autodarts:'#3c7bff', dartcounter:'#ff9d3c', scolia:'#3ce07a' };
+    let smcInitDone = false;
+    let smcLeaguesPopulated = false;
+
+    async function loadSocialImageTab() {
+        if (!smcLeaguesPopulated) {
+            const sel = document.getElementById('smcLeagueSelect');
+            ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; });
+            smcLeaguesPopulated = true;
+        }
+        smcInitOnce();
+    }
+
+    function smcInitOnce() {
+        if (smcInitDone) return;
+        smcInitDone = true;
+
+        document.querySelectorAll('.smc-platform-btn').forEach(btn => {
+            btn.addEventListener('click', () => smcSetPlatform(btn.dataset.p));
+        });
+
+        const bannerLabel = document.getElementById('smcBanner');
+        function handleSmcBannerFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                bannerLabel.innerHTML = `<img src="${reader.result}" alt="Logo/Banner"><input type="file" accept="image/*" id="smcBannerInput" style="display:none;">`;
+                document.getElementById('smcBannerInput').addEventListener('change', handleSmcBannerFile);
+            };
+            reader.readAsDataURL(file);
+        }
+        bannerLabel.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') document.getElementById('smcBannerInput').click(); });
+        document.getElementById('smcBannerInput').addEventListener('change', handleSmcBannerFile);
+
+        document.querySelectorAll('.smc-top-pill, .smc-bottom-pill').forEach(el => {
+            const ph = el.dataset.placeholder;
+            if (!ph) return;
+            el.addEventListener('focus', () => { if (el.textContent === ph) el.textContent = ''; });
+            el.addEventListener('blur', () => { if (el.textContent.trim() === '') el.textContent = ph; });
+        });
+    }
+
+    function smcSetPlatform(p) {
+        smcCurrentPlatform = p;
+        document.querySelectorAll('.smc-platform-btn').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+        document.querySelector('.smc-scope').style.setProperty('--smc-accent', SMC_ACCENTS[p]);
+    }
+
+    // Setzt die Plattform automatisch anhand des Liganamens (z.B. "Scolia Liga 2" -> scolia),
+    // damit der Farbakzent zur gewählten Liga passt.
+    function smcSetPlatformFromLeagueName(leagueName) {
+        if (leagueName.includes('Autodarts')) smcSetPlatform('autodarts');
+        else if (leagueName.includes('DartCounter')) smcSetPlatform('dartcounter');
+        else if (leagueName.includes('Scolia')) smcSetPlatform('scolia');
+    }
+
+    // Baut eine Match-Zeile direkt mit den echten Ergebnisdaten: AVG kommt aus dem
+    // Match selbst (player1_avg/player2_avg), NICHT aus dem allgemeinen Profil-AVG -
+    // so stimmt der gezeigte Wert exakt mit dem gespielten Spieltag überein.
+    function smcMakeMatchRowFromMatch(match, p1, p2) {
+        const row = document.createElement('div');
+        row.className = 'smc-match-row';
+
+        const p1Name = p1 ? (p1.discord_name || p1.username || 'Unbekannt') : 'Freilos';
+        const p2Name = p2 ? (p2.discord_name || p2.username || 'Unbekannt') : 'Freilos';
+        const p1Avatar = p1 && p1.discord_avatar_url ? `<img src="${p1.discord_avatar_url}" alt="${htmlEscape(p1Name)}">` : `<span class="smc-avatar-fallback">Kein Bild</span>`;
+        const p2Avatar = p2 && p2.discord_avatar_url ? `<img src="${p2.discord_avatar_url}" alt="${htmlEscape(p2Name)}">` : `<span class="smc-avatar-fallback">Kein Bild</span>`;
+        const p1Avg = (match.player1_avg !== null && match.player1_avg !== undefined) ? parseFloat(match.player1_avg).toFixed(2) : '';
+        const p2Avg = (match.player2_avg !== null && match.player2_avg !== undefined) ? parseFloat(match.player2_avg).toFixed(2) : '';
+        const l1 = match.legs_player1 ?? '';
+        const l2 = match.legs_player2 ?? '';
+
+        row.innerHTML = `
+            <button class="smc-del-row" title="Zeile löschen">✕</button>
+            <div class="smc-player-col">
+                <div class="smc-avatar">${p1Avatar}</div>
+                <input class="smc-player-name" value="${escAttr(p1Name)}">
+                <div class="smc-avg-tag"><span>Ø AVG</span><input maxlength="5" value="${p1Avg}" placeholder="0.00"></div>
+            </div>
+            <div class="smc-score-block">
+                <input class="smc-score" maxlength="2" value="${l1}">
+                <span class="smc-colon">:</span>
+                <input class="smc-score" maxlength="2" value="${l2}">
+            </div>
+            <div class="smc-player-col right">
+                <div class="smc-avatar">${p2Avatar}</div>
+                <input class="smc-player-name" value="${escAttr(p2Name)}">
+                <div class="smc-avg-tag"><span>Ø AVG</span><input maxlength="5" value="${p2Avg}" placeholder="0.00"></div>
+            </div>
+        `;
+        row.querySelector('.smc-del-row').addEventListener('click', () => row.remove());
+        return row;
+    }
+
+    function smcMakeEmptyMatchRow() {
+        const row = document.createElement('div');
+        row.className = 'smc-match-row';
+        row.innerHTML = `
+            <button class="smc-del-row" title="Zeile löschen">✕</button>
+            <div class="smc-player-col">
+                <div class="smc-avatar"><span class="smc-avatar-fallback">Foto</span></div>
+                <input class="smc-player-name" placeholder="Spielername" value="">
+                <div class="smc-avg-tag"><span>Ø AVG</span><input maxlength="5" value="" placeholder="0.00"></div>
+            </div>
+            <div class="smc-score-block">
+                <input class="smc-score" maxlength="2" value="">
+                <span class="smc-colon">:</span>
+                <input class="smc-score" maxlength="2" value="">
+            </div>
+            <div class="smc-player-col right">
+                <div class="smc-avatar"><span class="smc-avatar-fallback">Foto</span></div>
+                <input class="smc-player-name" placeholder="Spielername" value="">
+                <div class="smc-avg-tag"><span>Ø AVG</span><input maxlength="5" value="" placeholder="0.00"></div>
+            </div>
+        `;
+        row.querySelector('.smc-del-row').addEventListener('click', () => row.remove());
+        return row;
+    }
+
+    function smcMakeBlock(leagueLabel, row) {
+        const block = document.createElement('div');
+        block.className = 'smc-matchblock';
+        const pill = document.createElement('div');
+        pill.className = 'smc-league-pill';
+        pill.contentEditable = 'true';
+        pill.dataset.placeholder = 'Liganame eintragen…';
+        pill.textContent = leagueLabel || '';
+        pill.addEventListener('focus', () => { if (pill.textContent === pill.dataset.placeholder) pill.textContent = ''; });
+        pill.addEventListener('blur', () => { if (pill.textContent.trim() === '') pill.textContent = pill.dataset.placeholder; });
+        block.appendChild(pill);
+        block.appendChild(row);
+        return block;
+    }
+
+    window.smcAddBlock = function() {
+        smcInitOnce();
+        document.getElementById('smcBlocks').appendChild(smcMakeBlock('', smcMakeEmptyMatchRow()));
+    };
+
+    // Kernfunktion: lädt alle Matches der gewählten Liga + Spieltag (aktuelle Saison)
+    // aus 'matches', holt dazu die Spielerprofile (Name + Discord-Avatar) und baut
+    // pro Begegnung automatisch einen fertigen Block mit den echten Ergebnisdaten.
+    window.smcLoadMatchday = async function() {
+        smcInitOnce();
+        const league = document.getElementById('smcLeagueSelect').value;
+        const matchday = parseInt(document.getElementById('smcMatchdayInput').value);
+        const statusEl = document.getElementById('smcLoadStatus');
+        if (!league) { alert('❌ Bitte zuerst eine Liga wählen!'); return; }
+        if (!matchday) { alert('❌ Bitte einen gültigen Spieltag eingeben!'); return; }
+        if (!supabaseClient) return;
+
+        if (statusEl) statusEl.textContent = '⏳ Lade Spieltag...';
+        smcSetPlatformFromLeagueName(league);
+
+        const { data: matches, error } = await supabaseClient.from('matches')
+            .select('*')
+            .eq('league_name', league)
+            .eq('matchday', matchday)
+            .eq('season', currentSeasonGlobal);
+
+        if (error) { if (statusEl) statusEl.textContent = '❌ Fehler: ' + error.message; return; }
+        if (!matches || matches.length === 0) { if (statusEl) statusEl.textContent = `⚠️ Keine Begegnungen für "${league}", Spieltag ${matchday} (Saison ${currentSeasonGlobal}) gefunden.`; return; }
+
+        const playerIds = [...new Set(matches.flatMap(m => [m.player1_id, m.player2_id]).filter(Boolean))];
+        const { data: profilesData } = await supabaseClient.from('profiles')
+            .select('id, discord_name, username, discord_avatar_url')
+            .in('id', playerIds);
+        const profilesMap = {};
+        (profilesData || []).forEach(p => { profilesMap[p.id] = p; });
+
+        const blocksArea = document.getElementById('smcBlocks');
+        blocksArea.innerHTML = '';
+        matches.forEach(m => {
+            const p1 = m.player1_id ? profilesMap[m.player1_id] : null;
+            const p2 = m.player2_id ? profilesMap[m.player2_id] : null;
+            const row = smcMakeMatchRowFromMatch(m, p1, p2);
+            blocksArea.appendChild(smcMakeBlock(`${league} – Spieltag ${matchday}`, row));
+        });
+
+        const headerPill = document.getElementById('smcHeaderPill');
+        if (headerPill && (headerPill.textContent.trim() === '' || headerPill.textContent === headerPill.dataset.placeholder)) {
+            headerPill.textContent = 'Community Dart Liga';
+        }
+
+        const unfinished = matches.filter(m => m.legs_player1 === null || m.legs_player2 === null).length;
+        if (statusEl) statusEl.textContent = `✓ ${matches.length} Begegnung(en) geladen${unfinished > 0 ? ` (${unfinished} davon noch ohne Ergebnis)` : ''}.`;
+    };
+
+    window.smcPrint = function() { window.print(); };
 
     async function initAdmin() {
         await loadCurrentSeason();
