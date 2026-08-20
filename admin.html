@@ -211,6 +211,13 @@
             .smc-toolbar, .smc-del-row, .smc-add-row { display:none !important; }
             .smc-avatar .smc-avatar-fallback { display:none; }
         }
+        /* Beim Bild-Export (html2canvas) werden Lösch-/Hinzufügen-Buttons und
+           Datei-Upload-Hinweise ausgeblendet, damit nur die fertige Karte im
+           Bild landet. */
+        .smc-exporting .smc-del-row,
+        .smc-exporting .smc-add-row { visibility:hidden !important; }
+        .smc-exporting .smc-avatar .smc-avatar-fallback { visibility:hidden !important; }
+        .smc-exporting .smc-banner .smc-placeholder { visibility:hidden !important; }
     </style>
 </head>
 <body>
@@ -722,7 +729,7 @@
 
     <div id="tabSocialImage" class="tab-content">
         <h2>📱 Social-Media Bild erstellen</h2>
-        <p class="meta-text" style="margin-bottom:12px;">Liga und Spieltag wählen und laden - Spielpaarungen, Ergebnisse, das AVG aus genau diesem Match und die Discord-Avatare werden automatisch aus den gespeicherten Ergebnissen gezogen. Danach lässt sich noch alles von Hand nachbessern. Am Ende über "Als Bild speichern" exportieren (Druckdialog → Als PDF/Bild sichern) und direkt für Discord/Instagram/Co. nutzen.</p>
+        <p class="meta-text" style="margin-bottom:12px;">Liga und Spieltag wählen und laden - Spielpaarungen, Ergebnisse, das AVG aus genau diesem Match und die Discord-Avatare werden automatisch aus den gespeicherten Ergebnissen gezogen. Danach lässt sich noch alles von Hand nachbessern. Am Ende über "Als Bild speichern" wird NUR die Karte als PNG-Datei heruntergeladen - direkt für Discord/Instagram/Co. nutzbar.</p>
 
         <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
             <div class="config-row">
@@ -758,7 +765,7 @@
                 </div>
                 <div class="smc-actions-row">
                     <button class="generate-btn" onclick="smcAddBlock()">+ Begegnung manuell hinzufügen</button>
-                    <button class="generate-btn" onclick="smcPrint()">🖨️ Als Bild speichern</button>
+                    <button class="generate-btn" onclick="smcExportImage()">🖼️ Als Bild speichern</button>
                 </div>
             </div>
 
@@ -783,6 +790,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co"; 
@@ -3042,9 +3050,9 @@
     // danach reicht ein Klick auf "Logo einsetzen" statt jedes Mal manuell
     // eine Datei hochzuladen.
     const SMC_LOGO_URLS = {
-        autodarts:   "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_autodarts.png",
-        dartcounter: "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_dartcounter.png",
-        scolia:      "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_scolia.png"
+        autodarts:   "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_autodarts.png",
+        dartcounter: "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_dartcounter.png",
+        scolia:      "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_scolia.png"
     };
 
     async function loadSocialImageTab() {
@@ -3265,7 +3273,45 @@
         if (statusEl) statusEl.textContent = `✓ ${matches.length} Begegnung(en) geladen${unfinished > 0 ? ` (${unfinished} davon noch ohne Ergebnis)` : ''}.`;
     };
 
-    window.smcPrint = function() { window.print(); };
+    // Exportiert NUR die Karte (#smcPrintArea) als PNG-Datei - kein Systemdruckdialog,
+    // keine ganze Webseite. Nutzt html2canvas, um genau den Kartenbereich als Bild
+    // zu rendern und direkt als Download anzustoßen.
+    window.smcExportImage = async function() {
+        const target = document.getElementById('smcPrintArea');
+        const scope = document.querySelector('.smc-scope');
+        if (typeof html2canvas === 'undefined') {
+            alert('❌ Die Bildexport-Bibliothek (html2canvas) konnte nicht geladen werden.\n\nBitte Internetverbindung prüfen und die Seite neu laden.');
+            return;
+        }
+
+        scope.classList.add('smc-exporting');
+        // Kurz warten, damit der Browser das Ausblenden von Lösch-/Upload-Buttons
+        // vor dem Rendern des Canvas tatsächlich übernommen hat.
+        await new Promise(r => setTimeout(r, 50));
+
+        try {
+            const canvas = await html2canvas(target, {
+                backgroundColor: '#05060d',
+                scale: 2,
+                useCORS: true,
+                allowTaint: false
+            });
+
+            const leaguePill = target.querySelector('.smc-league-pill');
+            const rawName = leaguePill ? leaguePill.textContent.trim() : 'spieltag';
+            const fileSafeName = (rawName || 'spieltag').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'spieltag';
+
+            const link = document.createElement('a');
+            link.download = `cdl-${fileSafeName}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) {
+            console.error('Bildexport fehlgeschlagen:', err);
+            alert('❌ Bildexport fehlgeschlagen: ' + err.message + '\n\nHäufigste Ursache: ein Spieler-Avatar von einer externen Quelle ohne CORS-Freigabe. Versuch es notfalls mit manuell hochgeladenem Profilbild statt Discord-Link.');
+        } finally {
+            scope.classList.remove('smc-exporting');
+        }
+    };
 
     async function initAdmin() {
         await loadCurrentSeason();
