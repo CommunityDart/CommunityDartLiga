@@ -137,8 +137,9 @@
         .smc-platform-btn.active[data-p="autodarts"]{border-color:var(--smc-autodarts);color:var(--smc-autodarts);box-shadow:0 0 12px -2px var(--smc-autodarts);}
         .smc-platform-btn.active[data-p="dartcounter"]{border-color:var(--smc-dartcounter);color:var(--smc-dartcounter);box-shadow:0 0 12px -2px var(--smc-dartcounter);}
         .smc-platform-btn.active[data-p="scolia"]{border-color:var(--smc-scolia);color:var(--smc-scolia);box-shadow:0 0 12px -2px var(--smc-scolia);}
-        .smc-upload-label { font-size:9.5px; text-decoration:underline; color:#7fe9f0; cursor:pointer; }
-        .smc-logo-slot { width:26px; height:26px; border-radius:50%; border:1.5px dashed #3a4568; display:flex; align-items:center; justify-content:center; font-size:9px; color:#5a6690; }
+        .smc-upload-label { font-size:9.5px; text-decoration:underline; color:#7fe9f0; cursor:pointer; background:none; border:none; padding:0; font-family:inherit; }
+        .smc-logo-slot { width:26px; height:26px; border-radius:50%; border:1.5px dashed #3a4568; display:flex; align-items:center; justify-content:center; font-size:9px; color:#5a6690; overflow:hidden; }
+        .smc-logo-slot img { width:100%; height:100%; object-fit:contain; }
         .smc-actions-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
         .smc-actions-row .generate-btn { padding:8px 14px; font-size:12.5px; }
 
@@ -742,17 +743,17 @@
                     <label class="smc-platform-btn active" data-p="autodarts">
                         <div class="smc-logo-slot" id="smcSlotAutodarts">Logo</div>
                         <span>Autodarts</span>
-                        <span class="smc-upload-label">Logo im Banner wählen</span>
+                        <button type="button" class="smc-upload-label" onclick="smcSetBannerLogo('autodarts')">Logo einsetzen</button>
                     </label>
                     <label class="smc-platform-btn" data-p="dartcounter">
                         <div class="smc-logo-slot" id="smcSlotDartcounter">Logo</div>
                         <span>DartCounter</span>
-                        <span class="smc-upload-label">Logo im Banner wählen</span>
+                        <button type="button" class="smc-upload-label" onclick="smcSetBannerLogo('dartcounter')">Logo einsetzen</button>
                     </label>
                     <label class="smc-platform-btn" data-p="scolia">
                         <div class="smc-logo-slot" id="smcSlotScolia">Logo</div>
                         <span>Scolia</span>
-                        <span class="smc-upload-label">Logo im Banner wählen</span>
+                        <button type="button" class="smc-upload-label" onclick="smcSetBannerLogo('scolia')">Logo einsetzen</button>
                     </label>
                 </div>
                 <div class="smc-actions-row">
@@ -3035,6 +3036,17 @@
     let smcInitDone = false;
     let smcLeaguesPopulated = false;
 
+    // Öffentlich erreichbare URLs der drei Plattform-Logos (Wordmarks). Einmal
+    // hochladen (z.B. Supabase Storage -> öffentlicher Bucket, oder ins eigene
+    // GitHub-Repo unter /assets/logos/) und hier die finalen URLs eintragen -
+    // danach reicht ein Klick auf "Logo einsetzen" statt jedes Mal manuell
+    // eine Datei hochzuladen.
+    const SMC_LOGO_URLS = {
+        autodarts:   "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_autodarts.png",
+        dartcounter: "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_dartcounter.png",
+        scolia:      "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_scolia.png"
+    };
+
     async function loadSocialImageTab() {
         if (!smcLeaguesPopulated) {
             const sel = document.getElementById('smcLeagueSelect');
@@ -3044,27 +3056,33 @@
         smcInitOnce();
     }
 
+    function smcHandleBannerFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const bannerLabel = document.getElementById('smcBanner');
+            bannerLabel.innerHTML = `<img src="${reader.result}" alt="Logo/Banner"><input type="file" accept="image/*" id="smcBannerInput" style="display:none;">`;
+            document.getElementById('smcBannerInput').addEventListener('change', smcHandleBannerFile);
+        };
+        reader.readAsDataURL(file);
+    }
+
     function smcInitOnce() {
         if (smcInitDone) return;
         smcInitDone = true;
 
         document.querySelectorAll('.smc-platform-btn').forEach(btn => {
-            btn.addEventListener('click', () => smcSetPlatform(btn.dataset.p));
+            btn.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') return; // "Logo einsetzen" hat eigenes onclick
+                smcSetPlatform(btn.dataset.p);
+            });
         });
 
         const bannerLabel = document.getElementById('smcBanner');
-        function handleSmcBannerFile(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                bannerLabel.innerHTML = `<img src="${reader.result}" alt="Logo/Banner"><input type="file" accept="image/*" id="smcBannerInput" style="display:none;">`;
-                document.getElementById('smcBannerInput').addEventListener('change', handleSmcBannerFile);
-            };
-            reader.readAsDataURL(file);
-        }
         bannerLabel.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') document.getElementById('smcBannerInput').click(); });
-        document.getElementById('smcBannerInput').addEventListener('change', handleSmcBannerFile);
+        document.getElementById('smcBannerInput').addEventListener('change', smcHandleBannerFile);
+        smcFillLogoPreviews();
 
         document.querySelectorAll('.smc-top-pill, .smc-bottom-pill').forEach(el => {
             const ph = el.dataset.placeholder;
@@ -3078,6 +3096,33 @@
         smcCurrentPlatform = p;
         document.querySelectorAll('.smc-platform-btn').forEach(b => b.classList.toggle('active', b.dataset.p === p));
         document.querySelector('.smc-scope').style.setProperty('--smc-accent', SMC_ACCENTS[p]);
+    }
+
+    // Setzt das Banner direkt auf das hinterlegte, online gehostete Logo -
+    // kein manueller Datei-Upload mehr nötig.
+    window.smcSetBannerLogo = function(platform) {
+        const url = SMC_LOGO_URLS[platform];
+        if (!url || url.includes('DEINE-DOMAIN')) {
+            alert('❌ Für diese Plattform ist noch keine Logo-URL hinterlegt.\n\nTrag die fertige URL im Code unter SMC_LOGO_URLS ein (einmalig), danach reicht der Klick auf "Logo einsetzen".');
+            return;
+        }
+        smcSetPlatform(platform);
+        const bannerLabel = document.getElementById('smcBanner');
+        bannerLabel.innerHTML = `<img src="${url}" alt="${platform} Logo"><input type="file" accept="image/*" id="smcBannerInput" style="display:none;">`;
+        document.getElementById('smcBannerInput').addEventListener('change', smcHandleBannerFile);
+    };
+
+    // Kleine Vorschau-Kreise im Plattform-Switcher mit den hinterlegten Logos befüllen
+    // (nur wenn eine echte URL eingetragen wurde).
+    function smcFillLogoPreviews() {
+        const slotMap = { autodarts: 'smcSlotAutodarts', dartcounter: 'smcSlotDartcounter', scolia: 'smcSlotScolia' };
+        Object.keys(slotMap).forEach(p => {
+            const url = SMC_LOGO_URLS[p];
+            if (url && !url.includes('DEINE-DOMAIN')) {
+                const slot = document.getElementById(slotMap[p]);
+                if (slot) slot.innerHTML = `<img src="${url}" alt="${p}">`;
+            }
+        });
     }
 
     // Setzt die Plattform automatisch anhand des Liganamens (z.B. "Scolia Liga 2" -> scolia),
