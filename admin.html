@@ -3043,9 +3043,9 @@
     // danach reicht ein Klick auf "Logo einsetzen" statt jedes Mal manuell
     // eine Datei hochzuladen.
     const SMC_LOGO_URLS = {
-        autodarts:   "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_autodarts.png",
-        dartcounter: "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_dartcounter.png",
-        scolia:      "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_scolia.png"
+        autodarts:   "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_autodarts.png",
+        dartcounter: "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_dartcounter.png",
+        scolia:      "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_scolia.png"
     };
 
     async function loadSocialImageTab() {
@@ -3287,7 +3287,44 @@
                 backgroundColor: '#05060d',
                 scale: 2,
                 useCORS: true,
-                allowTaint: false
+                allowTaint: false,
+                // html2canvas rendert <input>-Werte unzuverlässig (falsche Text-
+                // Baseline, dadurch wirken Spielername/Ergebnis/AVG "abgeschnitten").
+                // Fix: im geklonten Dokument, das html2canvas nur für den Export
+                // nutzt, jedes <input> durch ein <span> mit identischem Text und
+                // Styling ersetzen - echte Textknoten rendert html2canvas korrekt.
+                onclone: (clonedDoc) => {
+                    const clonedTarget = clonedDoc.getElementById('smcPrintArea');
+                    if (!clonedTarget) return;
+                    clonedTarget.querySelectorAll('input').forEach(input => {
+                        const span = clonedDoc.createElement('span');
+                        span.textContent = input.value || input.placeholder || '';
+                        const cs = window.getComputedStyle(input);
+                        span.style.cssText = input.style.cssText;
+                        span.style.display = 'inline-flex';
+                        span.style.alignItems = 'center';
+                        span.style.justifyContent = cs.textAlign === 'center' ? 'center' : 'flex-start';
+                        span.style.width = cs.width;
+                        span.style.height = cs.height;
+                        span.style.minHeight = cs.height;
+                        span.style.font = cs.font;
+                        span.style.fontSize = cs.fontSize;
+                        span.style.fontWeight = cs.fontWeight;
+                        span.style.color = cs.color;
+                        span.style.textAlign = cs.textAlign;
+                        span.style.background = cs.backgroundColor;
+                        span.style.border = cs.border;
+                        span.style.borderRadius = cs.borderRadius;
+                        span.style.padding = cs.padding;
+                        span.style.boxSizing = cs.boxSizing;
+                        span.style.maxWidth = cs.width;
+                        span.style.whiteSpace = 'normal';
+                        span.style.wordBreak = 'break-word';
+                        span.style.lineHeight = '1.15';
+                        span.className = input.className;
+                        input.parentNode.replaceChild(span, input);
+                    });
+                }
             });
 
             const leaguePill = target.querySelector('.smc-league-pill');
