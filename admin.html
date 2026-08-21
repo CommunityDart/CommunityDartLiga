@@ -183,7 +183,6 @@
         }
         .smc-avatar img { width:100%; height:100%; object-fit:cover; }
         .smc-avatar .smc-avatar-fallback { font-size:9px; color:#fff; opacity:.75; }
-        .smc-player-name-wrap { position:relative; }
         .smc-player-name {
             width:76px; background:transparent; border:none; color:#fff; font-size:12px;
             font-weight:700; text-align:center; outline:none;
@@ -2247,11 +2246,6 @@
         return { success: true };
     }
 
-    function formatBadgeLabel(b) {
-        const type = BADGE_TYPES[b.badge_type] || { label: b.badge_type };
-        return b.detail ? `${type.label} – ${b.detail}` : type.label;
-    }
-
     async function loadBadgesTab() {
         if (!supabaseClient) return;
         const playerSelect = document.getElementById('badgePlayerSelect');
@@ -3034,11 +3028,10 @@
         } catch (e) { console.error('Fehler beim Auto-Start-Check:', e); }
     }
 
-    // --- Social-Media Bild-Generator (Tab 14) -------------------------------
-    // Lädt alle Spieler (Namen, Avatar, AVGs) einmal in einen Cache. Beim
-    // Eintippen/Verlassen eines Namensfelds wird bei exaktem Treffer (Discord-
-    // Name oder Username, case-insensitive) automatisch Avatar + der zur
-    // aktuell gewählten Plattform passende AVG-Wert übernommen.
+    // --- Social-Media Bild-Generator (Tab 13) -------------------------------
+    // Liga + Spieltag auswählen und laden: zieht alle Begegnungen aus 'matches'
+    // (inkl. Match-AVG und Discord-Avatar der beteiligten Spieler) und baut daraus
+    // automatisch fertige Karten-Blöcke. Alles bleibt danach frei editierbar.
     let smcCurrentPlatform = 'autodarts';
     const SMC_ACCENTS = { autodarts:'#3c7bff', dartcounter:'#ff9d3c', scolia:'#3ce07a' };
     let smcInitDone = false;
