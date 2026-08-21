@@ -3043,9 +3043,9 @@
     // danach reicht ein Klick auf "Logo einsetzen" statt jedes Mal manuell
     // eine Datei hochzuladen.
     const SMC_LOGO_URLS = {
-        autodarts:   "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_autodarts.png",
-        dartcounter: "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_dartcounter.png",
-        scolia:      "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_scolia.png"
+        autodarts:   "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_autodarts.png",
+        dartcounter: "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_dartcounter.png",
+        scolia:      "https://DEINE-DOMAIN-ODER-STORAGE-URL/wordmark_scolia.png"
     };
 
     async function loadSocialImageTab() {
@@ -3289,39 +3289,78 @@
                 useCORS: true,
                 allowTaint: false,
                 // html2canvas rendert <input>-Werte unzuverlässig (falsche Text-
-                // Baseline, dadurch wirken Spielername/Ergebnis/AVG "abgeschnitten").
-                // Fix: im geklonten Dokument, das html2canvas nur für den Export
-                // nutzt, jedes <input> durch ein <span> mit identischem Text und
-                // Styling ersetzen - echte Textknoten rendert html2canvas korrekt.
+                // Baseline) UND kann großflächige CSS-Verläufe (linear/radial-
+                // gradient) als sichtbar gekachelte Blöcke statt als glatten
+                // Verlauf rendern. Beide Probleme werden NUR im geklonten
+                // Dokument behoben, das html2canvas ausschließlich für den
+                // Export nutzt - die Live-Ansicht bleibt unverändert.
                 onclone: (clonedDoc) => {
                     const clonedTarget = clonedDoc.getElementById('smcPrintArea');
                     if (!clonedTarget) return;
+                    const clonedScope = clonedDoc.querySelector('.smc-scope');
+
+                    // 1) Verlaufs-Hintergründe durch flache Farben ersetzen -
+                    // vermeidet den html2canvas-Kachel-Bug bei großen Gradients.
+                    // Die Farben sind bewusst nah am jeweiligen Verlaufs-Mittelwert
+                    // gewählt, damit der Look nahezu identisch bleibt.
+                    if (clonedScope) clonedScope.style.background = '#05060d';
+                    const cardEl = clonedTarget.querySelector('.smc-card');
+                    if (cardEl) cardEl.style.background = '#12172b';
+                    clonedTarget.querySelectorAll('.smc-top-pill').forEach(el => { el.style.background = 'rgba(255,255,255,0.04)'; });
+                    clonedTarget.querySelectorAll('.smc-banner').forEach(el => { el.style.background = 'rgba(255,255,255,0.03)'; });
+                    clonedTarget.querySelectorAll('.smc-match-row').forEach(el => { el.style.background = 'rgba(255,255,255,0.025)'; });
+                    clonedTarget.querySelectorAll('.smc-bottom-pill').forEach(el => { el.style.background = '#2894ff'; });
+
+                    // 1b) Weichgezeichnete Glow-Schatten (box-shadow mit großem
+                    // Blur-Radius) führen bei html2canvas ebenfalls zu sichtbaren
+                    // gekachelten Artefakten im Hintergrund. Für den Export auf
+                    // einen dezenten, kleinen Schatten reduzieren statt sie ganz
+                    // wegzulassen, damit der Neon-Rahmen optisch erhalten bleibt.
+                    [clonedScope, cardEl, ...clonedTarget.querySelectorAll('.smc-top-pill, .smc-banner, .smc-bottom-pill, .smc-avatar, .smc-score')].forEach(el => {
+                        if (!el) return;
+                        el.style.boxShadow = 'none';
+                    });
+
+                    // 2) <input>-Werte durch echte Textknoten (<span>) ersetzen.
+                    // WICHTIG: keine feste Höhe erzwingen - die umgebenden
+                    // Flex-Container (align-items:center) übernehmen die
+                    // vertikale Zentrierung selbst zuverlässiger als eine
+                    // kopierte Input-Höhe (die sonst zu einer nach oben
+                    // verschobenen AVG-/Score-Zahl führt).
                     clonedTarget.querySelectorAll('input').forEach(input => {
                         const span = clonedDoc.createElement('span');
                         span.textContent = input.value || input.placeholder || '';
                         const cs = window.getComputedStyle(input);
-                        span.style.cssText = input.style.cssText;
-                        span.style.display = 'inline-flex';
-                        span.style.alignItems = 'center';
-                        span.style.justifyContent = cs.textAlign === 'center' ? 'center' : 'flex-start';
+                        const hasVisibleBorder = parseFloat(cs.borderTopWidth) > 0;
+                        span.style.display = 'inline-block';
                         span.style.width = cs.width;
-                        span.style.height = cs.height;
-                        span.style.minHeight = cs.height;
+                        span.style.maxWidth = cs.width;
                         span.style.font = cs.font;
                         span.style.fontSize = cs.fontSize;
                         span.style.fontWeight = cs.fontWeight;
                         span.style.color = cs.color;
                         span.style.textAlign = cs.textAlign;
-                        span.style.background = cs.backgroundColor;
-                        span.style.border = cs.border;
-                        span.style.borderRadius = cs.borderRadius;
-                        span.style.padding = cs.padding;
                         span.style.boxSizing = cs.boxSizing;
-                        span.style.maxWidth = cs.width;
                         span.style.whiteSpace = 'normal';
                         span.style.wordBreak = 'break-word';
-                        span.style.lineHeight = '1.15';
-                        span.className = input.className;
+                        span.style.lineHeight = 'normal';
+                        span.style.verticalAlign = 'middle';
+                        if (hasVisibleBorder) {
+                            // Sichtbare Box (z.B. Ergebnis-Felder "4 : 4") - Rahmen,
+                            // Hintergrund und Innenabstand 1:1 übernehmen.
+                            span.style.background = cs.backgroundColor;
+                            span.style.border = cs.borderTop;
+                            span.style.borderRadius = cs.borderRadius;
+                            span.style.padding = cs.padding;
+                        } else {
+                            // Reiner Text (Spielername, AVG-Wert) - kein Rahmen/
+                            // Hintergrund, keine erzwungene Höhe, damit der
+                            // umgebende Flex-Container ihn selbst zentriert.
+                            span.style.background = 'transparent';
+                            span.style.border = 'none';
+                            span.style.padding = '0';
+                            span.style.margin = '0';
+                        }
                         input.parentNode.replaceChild(span, input);
                     });
                 }
