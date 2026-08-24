@@ -84,16 +84,25 @@
     .header-title {
       flex: 1;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .header-title h1 {
-      font-size: 44px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      background: linear-gradient(135deg, #0066ff 0%, #ff6b35 50%, #00d084 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .header-logo {
+      height: 78px;
+      width: 78px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 14px rgba(0, 102, 255, 0.35)) drop-shadow(0 0 14px rgba(0, 208, 132, 0.25));
+      transition: transform 0.3s ease, filter 0.3s ease;
+      cursor: pointer;
+    }
+
+    .header-logo:hover {
+      transform: scale(1.06);
+      filter: drop-shadow(0 0 20px rgba(0, 102, 255, 0.5)) drop-shadow(0 0 20px rgba(255, 107, 53, 0.35)) drop-shadow(0 0 20px rgba(0, 208, 132, 0.35));
     }
 
     .header-title p {
@@ -751,7 +760,7 @@
 <div class="header">
   <div class="header-top">
     <div class="header-title">
-      <h1>CDL</h1>
+      <img src="cdl-logo.png" alt="CDL Logo" class="header-logo" onclick="window.scrollTo({top:0, behavior:'smooth'})">
       <p>Community Dart Liga</p>
     </div>
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
