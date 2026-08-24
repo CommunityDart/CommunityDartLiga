@@ -245,13 +245,14 @@
         <button class="tab-btn" onclick="switchTab('tabConfirm')">⏳ 11. Anmeldebestätigung <span id="confirmBadgeCount" class="notif-dot"></span></button>
         <button class="tab-btn" onclick="switchTab('tabDiscordRoles')">🏷️ 12. Discord-Rollen</button>
         <button class="tab-btn" onclick="switchTab('tabSocialImage')">📱 13. Social-Media Bild</button>
+        <button class="tab-btn" onclick="switchTab('tabAffiliateLinks')">🛒 14. Amazon-Links</button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
         <div class="config-box">
             <h3>⚙️ Auf- / Abstiegseinstellungen pro Liga festlegen</h3>
             <div class="config-row">
-                <select id="configLeagueSelect" class="league-select" onchange="loadLeagueRules()">
+                <select id="configLeagueSelect" class="league-select">
                     <option value="" disabled selected>-- Liga wählen --</option>
                 </select>
                 <label>🟢 Aufsteiger: <input type="number" id="inputAuf" class="num-input" value="0" min="0"></label>
@@ -786,6 +787,59 @@
             </div>
         </div>
     </div>
+
+    <div id="tabAffiliateLinks" class="tab-content">
+        <h2>🛒 Amazon-Affiliate-Links verwalten</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Diese Links erscheinen auf der Startseite über den Button "🔗 Links" (neben der Serverkasse, in jedem Footer). Wichtig: Jeder Amazon-Link braucht deinen Partnernet-Tag (z.B. <code>?tag=deintag-21</code>), sonst gibt es keine Provision. Preise werden bewusst NICHT gespeichert (Amazon-Richtlinie) - nutze stattdessen bei Bedarf ein grobes "ab X€" im Feld "Preis-Hinweis".</p>
+
+        <div class="config-box">
+            <h3 id="affiliateFormTitle">➕ Neuen Link hinzufügen</h3>
+            <input type="hidden" id="affiliateEditId" value="">
+            <div class="config-row">
+                <select id="affiliatePlatform" class="league-select">
+                    <option value="Autodarts">⚫ Autodarts</option>
+                    <option value="DartCounter">🟠 DartCounter</option>
+                    <option value="Scolia">🟢 Scolia</option>
+                    <option value="Allgemein">⚪ Allgemein</option>
+                </select>
+                <input type="text" id="affiliateTitle" class="txt-input" placeholder="Produkttitel" style="width:220px;">
+                <input type="number" id="affiliateSortOrder" class="num-input" placeholder="Reihenfolge" value="0" style="width:90px;">
+            </div>
+            <div class="config-row">
+                <input type="text" id="affiliateAmazonUrl" class="txt-input" placeholder="Amazon-Link (mit ?tag=...)" style="width:420px; max-width:100%;">
+            </div>
+            <div class="config-row">
+                <input type="text" id="affiliateImageUrl" class="txt-input" placeholder="Bild-URL (optional)" style="width:300px;">
+                <input type="text" id="affiliatePriceHint" class="txt-input" placeholder="Preis-Hinweis (optional, z.B. ab 35€)" style="width:220px;">
+            </div>
+            <div class="config-row">
+                <textarea id="affiliateDescription" class="comment-input" placeholder="Kurzbeschreibung (optional)" style="width:100%; max-width:520px; min-height:50px;"></textarea>
+            </div>
+            <div class="config-row">
+                <button class="generate-btn" onclick="saveAffiliateLink()">💾 Speichern</button>
+                <button class="card-btn" id="affiliateCancelEditBtn" style="display:none;" onclick="cancelAffiliateEdit()">✖ Abbrechen</button>
+            </div>
+        </div>
+
+        <h3>Gespeicherte Links</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:10%;">Plattform</th>
+                        <th style="width:22%;">Titel</th>
+                        <th style="width:8%;">Reihenfolge</th>
+                        <th style="width:10%;">Status</th>
+                        <th style="width:28%;">Amazon-Link</th>
+                        <th style="width:22%;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="affiliateLinksListBody">
+                    <tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">Lade Links...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -940,6 +994,7 @@
         if (tabId === 'tabConfirm') loadConfirmationsTab();
         if (tabId === 'tabDiscordRoles') loadDiscordRolesTab();
         if (tabId === 'tabSocialImage') loadSocialImageTab();
+        if (tabId === 'tabAffiliateLinks') loadAffiliateLinksTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -2225,7 +2280,7 @@
         box.className = "config-box";
         box.style.borderColor = "#ff6b35";
         box.style.background = "rgba(255, 107, 53, 0.05)";
-        box.innerHTML = `<h3>📅 Globale Saison-Verwaltung</h3><p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird archiviert.</p><div class="config-row"><input type="text" id="newSeasonNameInput" class="txt-input" placeholder="z.B. Saison 2" style="width: 250px; max-width:100%;"><button class="generate-btn" style="background: #ff6b35; color:#000;" onclick="updateGlobalSeasonName()">🔄 Neue Saison starten & wechseln</button></div>`;
+        box.innerHTML = `<h3>📅 Globale Saison-Verwaltung</h3><p class="meta-text" style="margin-bottom:8px;">Gib hier den Namen für die neue Saison ein. Die aktuelle Saison wird archiviert.</p><div class="config-row"><input type="text" id="newSeasonNameInput" class="txt-input" placeholder="z.B. Saison 2" style="width: 250px; max-width:100%;"><button class="generate-btn" onclick="updateGlobalSeasonName()">🔄 Neue Saison starten & wechseln</button></div>`;
         targetTab.insertBefore(box, targetTab.firstChild);
     }
 
@@ -3380,6 +3435,114 @@
         } finally {
             scope.classList.remove('smc-exporting');
         }
+    };
+
+    // --- Amazon-Affiliate-Links Verwaltung (Tab 14) -------------------------
+    // Pflegt die Tabelle 'affiliate_links', die auf der Startseite über den
+    // Footer-Button "🔗 Links" ausgelesen wird. Preise werden bewusst NICHT
+    // gespeichert (Amazon-Partnerprogramm-Richtlinie) - nur ein optionaler,
+    // grober Preis-Hinweis-Text.
+    async function loadAffiliateLinksTab() {
+        if (!supabaseClient) return;
+        const tbody = document.getElementById('affiliateLinksListBody');
+        const { data, error } = await supabaseClient.from('affiliate_links').select('*').order('platform', { ascending: true }).order('sort_order', { ascending: true });
+        if (error) {
+            tbody.innerHTML = `<tr><td colspan="6" style="color:#e74c3c;">Fehler: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert die Tabelle 'affiliate_links' bereits? (siehe affiliate_links_migration.sql)</span></td></tr>`;
+            return;
+        }
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">Noch keine Links hinterlegt.</td></tr>`;
+            return;
+        }
+
+        const platformIcons = { Autodarts: '⚫', DartCounter: '🟠', Scolia: '🟢', Allgemein: '⚪' };
+        tbody.innerHTML = data.map(l => `
+            <tr>
+                <td>${platformIcons[l.platform] || ''} ${htmlEscape(l.platform)}</td>
+                <td><strong>${htmlEscape(l.title)}</strong>${l.description ? `<br><span class="meta-text">${htmlEscape(l.description)}</span>` : ''}</td>
+                <td style="text-align:center;">${l.sort_order ?? 0}</td>
+                <td>${l.active ? '<span style="color:#00d084; font-weight:bold;">✓ Aktiv</span>' : '<span style="color:#e74c3c; font-weight:bold;">✖ Inaktiv</span>'}</td>
+                <td style="word-break:break-all; font-size:11.5px;"><a href="${htmlEscape(l.amazon_url)}" target="_blank">${htmlEscape(l.amazon_url)}</a></td>
+                <td>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="card-btn yellow" style="padding:4px 8px; font-size:11px;" onclick="editAffiliateLink('${l.id}')">✏️ Bearbeiten</button>
+                        <button class="card-btn" style="padding:4px 8px; font-size:11px;" onclick="toggleAffiliateLinkActive('${l.id}', ${!l.active})">${l.active ? '🙈 Deaktivieren' : '👁️ Aktivieren'}</button>
+                        <button class="card-btn red" style="padding:4px 8px; font-size:11px;" onclick="deleteAffiliateLink('${l.id}')">🗑️ Löschen</button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    window.saveAffiliateLink = async function() {
+        const id = document.getElementById('affiliateEditId').value.trim();
+        const platform = document.getElementById('affiliatePlatform').value;
+        const title = document.getElementById('affiliateTitle').value.trim();
+        const amazon_url = document.getElementById('affiliateAmazonUrl').value.trim();
+        const image_url = document.getElementById('affiliateImageUrl').value.trim();
+        const price_hint = document.getElementById('affiliatePriceHint').value.trim();
+        const description = document.getElementById('affiliateDescription').value.trim();
+        const sort_order = parseInt(document.getElementById('affiliateSortOrder').value) || 0;
+
+        if (!title || !amazon_url) return alert('❌ Bitte mindestens Titel und Amazon-Link ausfüllen!');
+        if (!amazon_url.includes('tag=')) {
+            if (!confirm('⚠️ Der Link enthält keinen "tag="-Parameter - ohne deinen Partnernet-Tag bekommst du KEINE Provision.\n\nTrotzdem so speichern?')) return;
+        }
+
+        const payload = { platform, title, amazon_url, image_url: image_url || null, price_hint: price_hint || null, description: description || null, sort_order };
+
+        let error;
+        if (id) {
+            ({ error } = await supabaseClient.from('affiliate_links').update(payload).eq('id', id));
+        } else {
+            payload.active = true;
+            ({ error } = await supabaseClient.from('affiliate_links').insert([payload]));
+        }
+        if (error) { alert('❌ Fehler: ' + error.message); return; }
+        alert('✅ Gespeichert!');
+        cancelAffiliateEdit();
+        loadAffiliateLinksTab();
+    };
+
+    window.editAffiliateLink = async function(id) {
+        const { data, error } = await supabaseClient.from('affiliate_links').select('*').eq('id', id).single();
+        if (error || !data) { alert('❌ Fehler beim Laden: ' + (error ? error.message : '')); return; }
+        document.getElementById('affiliateEditId').value = data.id;
+        document.getElementById('affiliatePlatform').value = data.platform;
+        document.getElementById('affiliateTitle').value = data.title || '';
+        document.getElementById('affiliateAmazonUrl').value = data.amazon_url || '';
+        document.getElementById('affiliateImageUrl').value = data.image_url || '';
+        document.getElementById('affiliatePriceHint').value = data.price_hint || '';
+        document.getElementById('affiliateDescription').value = data.description || '';
+        document.getElementById('affiliateSortOrder').value = data.sort_order ?? 0;
+        document.getElementById('affiliateFormTitle').innerText = '✏️ Link bearbeiten';
+        document.getElementById('affiliateCancelEditBtn').style.display = 'inline-flex';
+        window.scrollTo({ top: document.getElementById('affiliateFormTitle').offsetTop - 100, behavior: 'smooth' });
+    };
+
+    window.cancelAffiliateEdit = function() {
+        document.getElementById('affiliateEditId').value = '';
+        document.getElementById('affiliateTitle').value = '';
+        document.getElementById('affiliateAmazonUrl').value = '';
+        document.getElementById('affiliateImageUrl').value = '';
+        document.getElementById('affiliatePriceHint').value = '';
+        document.getElementById('affiliateDescription').value = '';
+        document.getElementById('affiliateSortOrder').value = '0';
+        document.getElementById('affiliateFormTitle').innerText = '➕ Neuen Link hinzufügen';
+        document.getElementById('affiliateCancelEditBtn').style.display = 'none';
+    };
+
+    window.toggleAffiliateLinkActive = async function(id, newState) {
+        const { error } = await supabaseClient.from('affiliate_links').update({ active: newState }).eq('id', id);
+        if (error) { alert('❌ Fehler: ' + error.message); return; }
+        loadAffiliateLinksTab();
+    };
+
+    window.deleteAffiliateLink = async function(id) {
+        if (!confirm('Diesen Link wirklich unwiderruflich löschen?')) return;
+        const { error } = await supabaseClient.from('affiliate_links').delete().eq('id', id);
+        if (error) { alert('❌ Fehler: ' + error.message); return; }
+        loadAffiliateLinksTab();
     };
 
     async function initAdmin() {
