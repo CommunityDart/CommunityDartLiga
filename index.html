@@ -833,6 +833,7 @@
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
+            <button class="btn small-action-btn" style="border-color:#ff9900; color:#ff9900; font-weight:800;" onclick="openLinksModal()">🔗 Links</button>
             <button class="btn small-action-btn" style="background:#ffc439; color:#1a1a1a; border:none; font-weight:800;" onclick="window.open(&quot;https://paypal.me/OliverEger949&quot;, &quot;_blank&quot;)">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -925,6 +926,7 @@
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
+            <button class="btn small-action-btn" style="border-color:#ff9900; color:#ff9900; font-weight:800;" onclick="openLinksModal()">🔗 Links</button>
             <button class="btn small-action-btn" style="background:#ffc439; color:#1a1a1a; border:none; font-weight:800;" onclick="window.open(&quot;https://paypal.me/OliverEger949&quot;, &quot;_blank&quot;)">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -966,6 +968,7 @@
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
+            <button class="btn small-action-btn" style="border-color:#ff9900; color:#ff9900; font-weight:800;" onclick="openLinksModal()">🔗 Links</button>
             <button class="btn small-action-btn" style="background:#ffc439; color:#1a1a1a; border:none; font-weight:800;" onclick="window.open(&quot;https://paypal.me/OliverEger949&quot;, &quot;_blank&quot;)">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -1040,6 +1043,7 @@
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
+            <button class="btn small-action-btn" style="border-color:#ff9900; color:#ff9900; font-weight:800;" onclick="openLinksModal()">🔗 Links</button>
             <button class="btn small-action-btn" style="background:#ffc439; color:#1a1a1a; border:none; font-weight:800;" onclick="window.open(&quot;https://paypal.me/OliverEger949&quot;, &quot;_blank&quot;)">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -1063,6 +1067,7 @@
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
+            <button class="btn small-action-btn" style="border-color:#ff9900; color:#ff9900; font-weight:800;" onclick="openLinksModal()">🔗 Links</button>
             <button class="btn small-action-btn" style="background:#ffc439; color:#1a1a1a; border:none; font-weight:800;" onclick="window.open(&quot;https://paypal.me/OliverEger949&quot;, &quot;_blank&quot;)">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -1147,6 +1152,7 @@
             <button class="btn small-action-btn" onclick="alert('Kontakt: communitydartliga@gmail.com')">📧 Kontakt</button>
             <button class="btn small-action-btn" onclick="alert('Community Dart Liga Impressum')">⚖️ Impressum</button>
             <button class="btn small-action-btn" onclick="openCookieSettings()">🍪 Cookie-Einstellungen</button>
+            <button class="btn small-action-btn" style="border-color:#ff9900; color:#ff9900; font-weight:800;" onclick="openLinksModal()">🔗 Links</button>
             <button class="btn small-action-btn" style="background:#ffc439; color:#1a1a1a; border:none; font-weight:800;" onclick="window.open(&quot;https://paypal.me/OliverEger949&quot;, &quot;_blank&quot;)">☕ Serverkasse unterstützen</button>
           </div>
         </div>
@@ -1159,6 +1165,17 @@
   <div class="modal-card" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closePlayerModal(null)">&times;</button>
     <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- ===================== Amazon-Affiliate-Links Modal ===================== -->
+<div id="linksModal" class="modal-overlay" onclick="closeLinksModal(event)">
+  <div class="modal-card" style="max-width:600px;" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeLinksModal(null)">&times;</button>
+    <div class="player-card-title" style="color:#ff9900;">🔗 Empfohlenes Zubehör</div>
+    <p style="font-size:10.5px; color:var(--text-secondary); text-align:center; margin-top:-10px; margin-bottom:16px; text-transform:uppercase; letter-spacing:0.5px;">Werbung &middot; Affiliate-Links (Amazon-Partnerprogramm)</p>
+    <div id="linksModalTabs" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:16px;"></div>
+    <div id="linksModalContent" style="max-height:60vh; overflow-y:auto;"><div class="empty">Lade Links...</div></div>
   </div>
 </div>
 
@@ -1787,6 +1804,76 @@
   }
 
   function closePlayerModal(e) { document.getElementById('playerModal').classList.remove('active'); }
+
+  // ===================== Amazon-Affiliate-Links Modal =====================
+  // Lädt einmalig alle aktiven Links aus der Tabelle 'affiliate_links' und
+  // zeigt sie plattformweise gruppiert an. rel="sponsored" markiert die Links
+  // gegenüber Suchmaschinen korrekt als bezahlte/Affiliate-Verlinkung.
+  let affiliateLinksCache = [];
+  let affiliateLinksActivePlatform = null;
+  let affiliateLinksLoaded = false;
+
+  async function loadAffiliateLinksIfNeeded() {
+    if (affiliateLinksLoaded) return;
+    try {
+      const { data, error } = await supabaseClient.from('affiliate_links').select('*').eq('active', true).order('platform', { ascending: true }).order('sort_order', { ascending: true });
+      if (error) throw error;
+      affiliateLinksCache = data || [];
+      affiliateLinksLoaded = true;
+    } catch (e) {
+      console.error('Fehler beim Laden der Affiliate-Links:', e);
+    }
+  }
+
+  window.openLinksModal = function() {
+    document.getElementById('linksModal').classList.add('active');
+    loadAffiliateLinksIfNeeded().then(renderLinksModal);
+  };
+
+  window.closeLinksModal = function(e) { document.getElementById('linksModal').classList.remove('active'); };
+
+  window.switchLinksPlatform = function(p) { affiliateLinksActivePlatform = p; renderLinksModal(); };
+
+  function renderLinksModal() {
+    const tabsEl = document.getElementById('linksModalTabs');
+    const contentEl = document.getElementById('linksModalContent');
+    if (!tabsEl || !contentEl) return;
+
+    const platformDefs = [
+      { key: 'Autodarts', color: '#0066ff', icon: '⚫' },
+      { key: 'DartCounter', color: '#ff6b35', icon: '🟠' },
+      { key: 'Scolia', color: '#00d084', icon: '🟢' },
+      { key: 'Allgemein', color: '#888', icon: '⚪' }
+    ];
+    const availablePlatforms = platformDefs.filter(p => affiliateLinksCache.some(l => l.platform === p.key));
+
+    if (availablePlatforms.length === 0) {
+      tabsEl.innerHTML = '';
+      contentEl.innerHTML = '<div class="empty">Noch keine Links hinterlegt. Schau bald wieder vorbei!</div>';
+      return;
+    }
+    if (!affiliateLinksActivePlatform || !availablePlatforms.some(p => p.key === affiliateLinksActivePlatform)) {
+      affiliateLinksActivePlatform = availablePlatforms[0].key;
+    }
+
+    tabsEl.innerHTML = availablePlatforms.map(p => {
+      const isActive = affiliateLinksActivePlatform === p.key;
+      return `<button class="league-btn ${isActive ? 'active' : ''}" style="${isActive ? `border-color:${p.color}; color:${p.color};` : ''}" onclick="switchLinksPlatform('${p.key}')">${p.icon} ${htmlEscape(p.key)}</button>`;
+    }).join("");
+
+    const items = affiliateLinksCache.filter(l => l.platform === affiliateLinksActivePlatform);
+    contentEl.innerHTML = items.length > 0 ? items.map(l => `
+      <div style="display:flex; gap:12px; align-items:center; padding:12px; border:1px solid var(--border); border-radius:10px; margin-bottom:10px;">
+        ${l.image_url ? `<img src="${htmlEscape(l.image_url)}" alt="${htmlEscape(l.title)}" style="width:56px; height:56px; object-fit:contain; border-radius:8px; flex-shrink:0; background:var(--bg-tertiary);">` : ''}
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:700; font-size:13.5px;">${htmlEscape(l.title)}</div>
+          ${l.description ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">${htmlEscape(l.description)}</div>` : ''}
+          ${l.price_hint ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${htmlEscape(l.price_hint)}</div>` : ''}
+        </div>
+        <a href="${htmlEscape(l.amazon_url)}" target="_blank" rel="noopener sponsored" class="btn small-action-btn" style="border-color:#ff9900; color:#ff9900; font-weight:800; white-space:nowrap; flex-shrink:0;">🛒 Bei Amazon ansehen</a>
+      </div>
+    `).join("") : '<div class="empty">Für diese Plattform sind noch keine Links hinterlegt.</div>';
+  }
 
   window.toggleParticipationBadges = function(toggleId, headerEl) {
     const el = document.getElementById(toggleId);
