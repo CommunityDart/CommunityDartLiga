@@ -791,6 +791,24 @@
   </div>
 </div>
 
+<!-- =====================================================================
+     Statischer Einführungstext - bewusst AUSSERHALB der per JS umgeschalteten
+     .view-Container platziert, damit er beim allerersten Laden der Seite
+     sofort im Roh-HTML steht (auch ohne dass Supabase/JS etwas nachlädt).
+     Das ist der Inhalt, den Crawler wie der AdSense-Bot tatsächlich sehen. */
+====================================================================== -->
+<div class="container" style="padding-bottom:0;">
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header">🎯 Die Community Dart Liga (CDL)</div>
+    <div class="card-body" style="line-height:1.75; font-size:14.5px;">
+      <p style="margin-bottom:12px;">Die Community Dart Liga (CDL) ist eine kostenlose Online-Dart-Liga für Hobby- und ambitionierte Steel- und Soft-Dart-Spieler aus Deutschland, Österreich und der Schweiz. Statt in einer Kneipe oder einem Verein zu spielen, tragen unsere Mitglieder ihre Liga- und Turniermatches online aus - jeder gegen seinen Gegner, zu einem selbst vereinbarten Termin, mit automatischer Tabellenauswertung direkt auf dieser Website.</p>
+      <p style="margin-bottom:12px;">Wir unterstützen aktuell drei Scoring-Plattformen: <strong>Autodarts</strong> (automatische Kamera-Erkennung für Steeldart-Boards), <strong>DartCounter</strong> (App-basiertes Scoring, bei uns zusätzlich mit Pflicht zu einer separaten Board-Kamera) und <strong>Scolia</strong> (Kamera-basiertes Scoring-System). Für jede Plattform gibt es eigene, nach Leistungsstärke gestaffelte Ligen, sodass Anfänger genauso wie erfahrene Spieler eine passende Liga finden.</p>
+      <p style="margin-bottom:12px;">Neben dem Liga-Betrieb organisieren wir regelmäßig <strong>K.o.-Turniere und Cups</strong> mit automatisch ausgelostem Turnierbaum, führen eine <strong>XP- und Level-Rangliste</strong> sowie Bestenlisten für 180er und Highfinishes, und zeigen auf einer interaktiven Karte, wo unsere Mitglieder herkommen. Die komplette Verwaltung - Anmeldung, Ergebnismeldung, Turnierauslosung - läuft direkt über diese Website.</p>
+      <p style="margin-bottom:0;">Der Beitritt ist kostenlos: Man loggt sich mit einem Discord-Konto ein, füllt das Spielerprofil aus und tritt anschließend unserem Discord-Server bei. Danach steht der Anmeldung für Ligen und Turniere nichts mehr im Weg. Alle Details dazu regelt unser <a href="#" onclick="switchView('ligen'); switchTab('regelwerk'); return false;" style="color:var(--platform-color); font-weight:700;">Regelwerk</a>, das genaue Vorgaben zu Spielmodus, Ergebnismeldung, Verhalten und technischen Voraussetzungen (z. B. Kamerapflicht bei DartCounter) enthält.</p>
+    </div>
+  </div>
+</div>
+
 <!-- Anzeige direkt unter dem Header -->
 <div class="ad-slot-wrapper" style="margin-top: 20px;">
   <div class="ad-slot-label">Anzeige</div>
@@ -869,7 +887,17 @@
         <div id="regelwerkTab" style="display: none;">
           <div class="card">
             <div class="card-header">📑 Regelwerk</div>
-            <div class="card-body" id="regelwerkContent" style="line-height: 1.6;"></div>
+            <!-- Statischer Basistext direkt im HTML (nicht per JS nachgeladen) -
+                 wird durch loadData() überschrieben, sobald in system_settings
+                 ein individuelles regelwerk_html hinterlegt ist. -->
+            <div class="card-body" id="regelwerkContent" style="line-height: 1.6; font-size:14px;">
+              <p style="margin-bottom:12px;"><strong>1. Anmeldung & Discord-Pflicht:</strong> Die Teilnahme an Ligen und Turnieren setzt ein ausgefülltes Spielerprofil sowie eine bestätigte Mitgliedschaft in unserem CDL-Discord-Server voraus. Ohne Discord-Mitgliedschaft ist keine Anmeldung möglich.</p>
+              <p style="margin-bottom:12px;"><strong>2. Spielmodus:</strong> Liga- und Turniermatches werden je nach Wettbewerb im Format Best of 3/5/7 Legs oder Best of 3/5 Sets gespielt (501, Doppel-Aus, sofern nicht anders angegeben). Der genaue Modus steht bei jeder Liga bzw. jedem Turnier.</p>
+              <p style="margin-bottom:12px;"><strong>3. Technische Voraussetzungen:</strong> Bei Autodarts und Scolia ist die automatische Kamera-Erkennung ausreichend. Bei <strong>DartCounter reicht eine reine Target-Omni-Erfassung nicht aus</strong> - zusätzlich ist eine separate Kamera auf das Dartboard verpflichtend, damit Ergebnisse überprüfbar sind.</p>
+              <p style="margin-bottom:12px;"><strong>4. Ergebnismeldung:</strong> Nach jedem Match trägt ein Spieler das Ergebnis inkl. AVG-Werten ein. Der Gegner hat anschließend ein festgelegtes Zeitfenster, um das Ergebnis zu bestätigen oder zu widersprechen. Nach Ablauf der Frist gilt das gemeldete Ergebnis automatisch als bestätigt.</p>
+              <p style="margin-bottom:12px;"><strong>5. Fairplay:</strong> Unsportliches Verhalten, Manipulation von Ergebnissen oder wiederholtes Nicht-Antreten kann mit Verwarnungen (gelbe/rote Karte) bis hin zum Ausschluss aus der Liga geahndet werden.</p>
+              <p style="margin-bottom:0;">Das vollständige, aktuelle Regelwerk mit allen Detailregelungen pflegt die Liga-Administration fortlaufend über das Verwaltungs-Dashboard; Änderungen erscheinen automatisch an dieser Stelle.</p>
+            </div>
           </div>
         </div>
 
