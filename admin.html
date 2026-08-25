@@ -118,6 +118,11 @@
         .avg-stat-value { font-size: 26px; font-weight: 800; color: var(--text-primary); margin-top: 4px; }
         .avg-stat-sub { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
         .avg-proof-column { flex: 1; min-width: 320px; }
+        .discord-check-row { display: flex; align-items: center; gap: 14px; padding: 10px; border-left: 3px solid #ff6b35; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+        .discord-check-info { flex: 1; min-width: 200px; font-size: 13px; }
+        .discord-check-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-recheck-discord { background: #0066ff; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-dm-discord { background: #5865f2; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; }
         /* ---------- Social-Media Bild-Generator (Tab 13) ---------- */
         .smc-scope {
             --smc-cyan:#28e6f0; --smc-magenta:#e347e8;
@@ -210,9 +215,6 @@
             .smc-toolbar, .smc-del-row, .smc-add-row { display:none !important; }
             .smc-avatar .smc-avatar-fallback { display:none; }
         }
-        /* Beim Bild-Export (html2canvas) werden Lösch-/Hinzufügen-Buttons und
-           Datei-Upload-Hinweise ausgeblendet, damit nur die fertige Karte im
-           Bild landet. */
         .smc-exporting .smc-del-row,
         .smc-exporting .smc-add-row { visibility:hidden !important; }
         .smc-exporting .smc-avatar .smc-avatar-fallback { visibility:hidden !important; }
@@ -246,6 +248,7 @@
         <button class="tab-btn" onclick="switchTab('tabDiscordRoles')">🏷️ 12. Discord-Rollen</button>
         <button class="tab-btn" onclick="switchTab('tabSocialImage')">📱 13. Social-Media Bild</button>
         <button class="tab-btn" onclick="switchTab('tabAffiliateLinks')">🛒 14. Amazon-Links</button>
+        <button class="tab-btn" onclick="switchTab('tabDiscordCheck')">🔎 15. Profil ohne Discord <span id="discordCheckBadgeCount" class="notif-dot"></span></button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -840,6 +843,21 @@
             </table>
         </div>
     </div>
+
+    <div id="tabDiscordCheck" class="tab-content">
+        <h2>🔎 Profil erstellt, aber (noch) nicht auf Discord</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Zeigt alle Spieler, die ihr Profil bereits vollständig ausgefüllt haben (Wunschname + Vorname gespeichert), deren letzte Discord-Prüfung aber KEINE bestätigte Mitgliedschaft im CDL-Discord ergeben hat. Der Status stammt aus der letzten Prüfung beim Login des Spielers - über "🔄 Jetzt prüfen" kannst du hier live neu nachfragen, ohne dass der Spieler sich selbst einloggen muss.</p>
+
+        <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
+            <div class="config-row">
+                <button class="generate-btn" onclick="loadDiscordCheckTab()">🔄 Liste neu laden</button>
+                <button class="generate-btn" onclick="recheckAllVisibleDiscordMemberships()">🔄 Alle sichtbaren erneut prüfen</button>
+                <span id="discordCheckResultCount" class="filter-count-text"></span>
+            </div>
+        </div>
+
+        <div id="discordCheckListArea">Lade...</div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -853,8 +871,6 @@
     try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } 
     catch(e) { console.error("Supabase-Verbindungsfehler:", e); }
 
-    // Theme-Toggle: nutzt denselben localStorage-Key wie index.html/profil.html,
-    // damit die Hell/Dunkel-Einstellung seitenübergreifend konsistent bleibt.
     let darkMode = localStorage.getItem('darkMode') === 'true';
     function toggleTheme() { darkMode = !darkMode; localStorage.setItem('darkMode', darkMode); updateTheme(); }
     function updateTheme() {
@@ -935,7 +951,6 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // Übersetzt den gespeicherten Format-Code (z.B. "bo5legs") in einen lesbaren Text.
     function matchFormatLabel(mf) {
         const map = {
             bo3legs: "Best of 3 Legs", bo5legs: "Best of 5 Legs", bo7legs: "Best of 7 Legs",
@@ -995,6 +1010,7 @@
         if (tabId === 'tabDiscordRoles') loadDiscordRolesTab();
         if (tabId === 'tabSocialImage') loadSocialImageTab();
         if (tabId === 'tabAffiliateLinks') loadAffiliateLinksTab();
+        if (tabId === 'tabDiscordCheck') loadDiscordCheckTab();
     }
 
     function formatAllPlattformNames(prof) {
@@ -1032,8 +1048,6 @@
         });
     }
 
-    // Ermittelt aus einem Liganamen ("Autodarts Liga 3") die Plattform und Zahl,
-    // damit sich daraus die Ziel-Liga bei Auf-/Abstieg berechnen lässt.
     function getPlatformPrefixAndNumber(leagueName) {
         const m = String(leagueName || '').match(/^(Autodarts|DartCounter|Scolia) Liga (\d+)$/);
         if (!m) return null;
@@ -1047,9 +1061,6 @@
         return [];
     }
 
-    // statusKey: 'up' (Aufsteiger -> eine Liga-Nummer tiefer/besser) oder
-    // 'down' (Absteiger -> eine Liga-Nummer höher). Gibt null zurück, wenn schon
-    // in der Top- bzw. untersten Liga (keine gültige Ziel-Liga vorhanden).
     function suggestTargetLeague(leagueName, statusKey) {
         const parsed = getPlatformPrefixAndNumber(leagueName);
         if (!parsed || !statusKey) return null;
@@ -1129,19 +1140,11 @@
         loadWaitingList();
     };
 
-    // Escaped einen Wert sicher für die Verwendung in einem HTML-Attribut
-    // (im Unterschied zu htmlEscape() OHNE "-"-Fallback, da leere Inputs
-    // hier wirklich leer bleiben sollen statt "-" anzuzeigen).
     function escAttr(str) {
         if (!str) return "";
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // Legt die drei <datalist>-Elemente (eine pro Plattform) EINMALIG global im
-    // Dokument an. Jede Zeile referenziert per list="..." dieselbe Datalist,
-    // statt pro Spieler eine eigene Liste zu erzeugen - das hält den generierten
-    // HTML-Code schlank und macht jedes Zuteilungs-Feld durchsuchbar (tippen
-    // filtert die Vorschläge automatisch über den nativen Browser-Mechanismus).
     function ensureLeagueDatalists() {
         if (document.getElementById('datalist_ad_leagues')) return;
         const holder = document.createElement('div');
@@ -1154,15 +1157,6 @@
         document.body.appendChild(holder);
     }
 
-    // Baut ein durchsuchbares Zuteilungs-Feld: ein Text-Input mit Datalist-Anbindung
-    // (Tippen filtert live), plus kleinem ✕-Button zum schnellen Leeren.
-    //
-    // WICHTIG: Der Vorschlag (aus Auf-/Absteiger-Berechnung) wird bewusst NICHT
-    // automatisch ins Eingabefeld eingetragen - sonst würde ein Admin, der beim
-    // Speichern nur eine ANDERE Plattform-Zeile ändern wollte, versehentlich
-    // auch den Vorschlag für diese Plattform mit abspeichern und den Spieler so
-    // ungewollt (wieder) einer Liga zuteilen. Der Vorschlag erscheint stattdessen
-    // als klickbarer Hinweis, der erst per Klick ins Feld übernommen wird.
     function buildLeagueComboHtml(idPrefix, playerId, datalistId, currentVal, suggestedVal) {
         const inputId = `${idPrefix}_${playerId}`;
         let html = `<div class="combo-wrap">
@@ -1197,12 +1191,6 @@
             const activePlayers = players || [];
             if (activePlayers.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Keine Spieler in der Datenbank gefunden.</td></tr>'; return; }
 
-            // --- Filterung der anzuzeigenden Spieler ---------------------------
-            // Plattform-Filter: zeigt nur Spieler, die sich für diese Plattform
-            // angemeldet haben (want_autodarts/want_dartcounter/want_scolia).
-            // Status-Filter: "zugeteilt"/"offen" bezieht sich - falls eine
-            // Plattform gewählt ist - genau auf DIESE Plattform-Zuteilung,
-            // sonst (bei "Alle Plattformen") auf jegliche Zuteilung.
             const platformFilter = document.getElementById('filterPlatform') ? document.getElementById('filterPlatform').value : '';
             const statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
 
@@ -1235,10 +1223,6 @@
             const { data: historyRows } = await supabaseClient.from('player_history').select('player_id, platform, league_name, placement, season').order('created_at', { ascending: false });
             
             const historyMap = {};
-            // Zählt, wie viele Spieler tatsächlich in einer bestimmten Liga+Saison
-            // archiviert wurden - damit die Aufsteiger/Absteiger-Berechnung nicht
-            // von einer fest angenommenen Ligagröße (früher immer 10) ausgeht,
-            // sondern von der echten Teilnehmerzahl dieser Saison.
             const leagueSeasonCounts = {};
             if (historyRows) {
                 historyRows.forEach(h => {
@@ -1333,11 +1317,6 @@
         const dcVal = dcEl ? dcEl.value.trim() : "";
         const scVal = scEl ? scEl.value.trim() : "";
 
-        // Da die Zuteilungsfelder jetzt frei durchsuchbare Text-Inputs (mit
-        // Datalist-Vorschlägen) statt starrer <select>-Felder sind, muss hier
-        // validiert werden, dass ein eingegebener Wert auch wirklich einer
-        // existierenden Liga entspricht - sonst könnten Tippfehler versehentlich
-        // ungültige Liga-Namen speichern.
         if (adVal && !AD_LEAGUES.includes(adVal)) return alert(`❌ "${adVal}" ist keine gültige Autodarts-Liga!\nBitte einen Vorschlag aus der Liste wählen oder das Feld leeren.`);
         if (dcVal && !DC_LEAGUES.includes(dcVal)) return alert(`❌ "${dcVal}" ist keine gültige DartCounter-Liga!\nBitte einen Vorschlag aus der Liste wählen oder das Feld leeren.`);
         if (scVal && !SC_LEAGUES.includes(scVal)) return alert(`❌ "${scVal}" ist keine gültige Scolia-Liga!\nBitte einen Vorschlag aus der Liste wählen oder das Feld leeren.`);
@@ -1392,8 +1371,6 @@
                 if(assignedPlayers.length === 0) {
                     area.innerHTML = `<div style="padding:12px; background:rgba(231, 76, 60, 0.1); border:1px solid #e74c3c; border-radius:10px;">Es sind noch keine Spieler zugewiesen!</div>`;
                 } else {
-                    // AVG-Nachweis-Status für genau die Plattform dieser Liga laden,
-                    // damit man vor dem Spielplan-Start sieht, wer noch fehlt.
                     const leaguePlatform = getPlatformPrefixAndNumber(league)?.platform || null;
                     let avgProofMap = {};
                     if (leaguePlatform) {
@@ -1529,9 +1506,6 @@
         return a;
     }
 
-    // Baut einen echten K.o.-Baum: bracketSize = nächste 2er-Potenz >= Teilnehmerzahl.
-    // Freilose werden auf zufällig gewählte, VERSCHIEDENE Runde-1-Partien verteilt
-    // (nie zwei Freilose in derselben Partie), Gewinner rücken automatisch nach.
     function buildSingleEliminationBracket(tournamentId, playerIds, matchFormat, finalMatchFormat) {
         matchFormat = matchFormat || 'bo5legs';
         const n = playerIds.length;
@@ -1544,8 +1518,6 @@
         const byeMatchSet = new Set(shuffleArray([...Array(numMatches).keys()]).slice(0, totalByes));
 
         const numRounds = Math.log2(bracketSize);
-        // Das Finale (letzte Runde) bekommt sein eigenes Format, falls gesetzt -
-        // sonst gilt für jede Runde einheitlich das normale Turnier-Format.
         const formatForRound = (r) => (r === numRounds && finalMatchFormat) ? finalMatchFormat : matchFormat;
         const rounds = [];
         let pointer = 0;
@@ -1592,8 +1564,6 @@
         return rounds.flat();
     }
 
-    // Wird nach jedem final gesetzten Turnier-Ergebnis aufgerufen: ermittelt den
-    // Sieger und trägt ihn automatisch in die nächste Runde ein.
     async function advanceTournamentWinner(matchId) {
         const { data: m } = await supabaseClient.from('tournament_matches')
             .select('player1_id, player2_id, legs_player1, legs_player2, next_match_id, next_match_slot')
@@ -1620,8 +1590,6 @@
 
         if(!name || !platform) return alert("❌ Bitte Name und Plattform ausfüllen!");
 
-        // Mindestens 4 Spieler sind Pflicht, damit ein Turnier automatisch starten kann -
-        // wird hier zusätzlich zur DB-Check-Constraint auch clientseitig erzwungen.
         const minParticipants = Math.max(4, parseInt(minParticipantsRaw) || 4);
         const startDateIso = startDateRaw ? new Date(startDateRaw).toISOString() : null;
         const avgLimit = avgLimitRaw !== "" ? parseFloat(avgLimitRaw.replace(',', '.')) : null;
@@ -1649,7 +1617,6 @@
             if (document.getElementById("tournamentAvgLimit")) document.getElementById("tournamentAvgLimit").value = "";
             if (document.getElementById("tournamentFinalMatchFormat")) document.getElementById("tournamentFinalMatchFormat").value = "";
 
-            // Discord-Ankündigung, dass ein neues Turnier eröffnet wurde.
             supabaseClient.functions.invoke('discord-tournament-recruit', {
                 body: { type: 'created', tournamentTitle: name, platform, format, startDate: startDateIso, minParticipants, checkoutMode, matchFormat, avgLimit, finalMatchFormat }
             }).then(({ error: fnError }) => { if (fnError) console.error('Discord-Eröffnungs-Post fehlgeschlagen:', fnError); });
@@ -1763,10 +1730,6 @@
         }
     }
 
-    // Setzt ein abgesagtes Turnier zurück in den Anmeldemodus: fragt nach einem
-    // neuen Startdatum, setzt status wieder auf 'active' und den Verlängerungs-
-    // Zähler zurück (start_extended = false), damit die Auto-Start-Logik erneut
-    // von vorne beginnt (einmalige Verlängerung, dann ggf. wieder Absage).
     window.reactivateTournament = async function(id) {
         const newStartRaw = prompt("Neues Startdatum/-uhrzeit (Format: JJJJ-MM-TT HH:MM), z.B. 2026-08-20 19:00:");
         if (!newStartRaw) return;
@@ -1929,8 +1892,6 @@
         area.innerHTML = html;
     }
 
-    // Jeder-gegen-Jeden: alle Teilnehmer spielen einmal gegeneinander (Circle-Method,
-    // gleiches Prinzip wie beim Liga-Spielplan, aber nur eine einzige Runde ohne Rückrunde).
     function buildRoundRobinSchedule(tournamentId, playerIds, matchFormat) {
         matchFormat = matchFormat || 'bo5legs';
         let ids = playerIds.slice();
@@ -1959,9 +1920,6 @@
         return matchesToInsert;
     }
 
-    // Postet die "Turnier gestartet"-Nachricht mit den Paarungen der ersten Runde
-    // (round_number === 1) an Discord. nameOfFn löst eine Spieler-ID zu einem
-    // Anzeigenamen auf - je nach Aufrufkontext leicht unterschiedlich implementiert.
     async function postTournamentStartedAnnouncement(title, platform, format, allMatches, nameOfFn) {
         const round1 = allMatches.filter(m => (m.round_number || 1) === 1);
         const pairings = round1.map(m => ({
@@ -2099,11 +2057,6 @@
         
         if(error) { alert("❌ Fehler: " + error.message); return; }
 
-        // Versucht, die eingegebenen Platzierungsnamen automatisch mit bestehenden
-        // Spielerprofilen abzugleichen und vergibt dann direkt die passenden Badges
-        // (inkl. der Turnier-Plattform, damit die Abzeichenfarbe stimmt). Namen ohne
-        // eindeutigen Treffer werden übersprungen - die lassen sich danach im
-        // "Badges"-Tab jederzeit manuell nachtragen.
         const placements = [
             { name: first, badgeType: 'turniersieger' },
             { name: second, badgeType: 'turnier_zweiter' },
@@ -2184,11 +2137,6 @@
                     player_id: player.id, season: currentSeasonGlobal, platform: platformLabel, league_name: leagueName, placement: platzierung
                 }]);
 
-                // Vergibt automatisch das "Teilnehmer <Saison>"-Badge, inkl. der
-                // jeweiligen Plattform (Autodarts/DartCounter/Scolia), damit die
-                // Abzeichenfarbe korrekt ist. Dank Upsert mit ignoreDuplicates
-                // passiert nichts, falls der Spieler dieses Badge (z.B. durch eine
-                // andere Liga derselben Plattform in derselben Saison) schon hat.
                 await awardBadge(player.id, 'teilnehmer', `${currentSeasonGlobal} (${platformLabel})`, platformLabel);
 
                 const updates = { status_neue_saison: 'waiting' };
@@ -2200,10 +2148,6 @@
                 if(!uErr) successCount++;
             }
 
-            // Generierten Spielplan dieser Liga+Saison entfernen - die Endplatzierung
-            // ist bereits über player_history archiviert, die einzelnen Match-Zeilen
-            // werden nicht mehr gebraucht und würden sonst auf der Website weiter als
-            // "aktuelle" Tabelle/Spieltage erscheinen.
             await supabaseClient.from('matches').delete().eq('league_name', leagueName).eq('season', currentSeasonGlobal);
 
             alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler in 'player_history' archiviert.\n🗑️ Spielplan dieser Liga wurde geleert.`); loadWaitingList();
@@ -2253,9 +2197,6 @@
         if (editingNewsId) { await supabaseClient.from('news').update({ title, content }).eq('id', editingNewsId); editingNewsId = null; } 
         else { await supabaseClient.from('news').insert([{ title, content }]); }
 
-        // Discord-Ping nur bei NEUEN News (nicht beim Bearbeiten einer bestehenden) -
-        // eigener Webhook/Kanal über die Edge Function discord-news-post, läuft im
-        // Hintergrund; schlägt das fehl, bleibt die News trotzdem gespeichert.
         if (isNewPost) {
             supabaseClient.functions.invoke('discord-news-post', {
                 body: { title, content }
@@ -2289,8 +2230,6 @@
         if(sel && sel.options.length === 1) { ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`; if(penSel) penSel.innerHTML += `<option value="${l}">${l}</option>`; if(confirmSel) confirmSel.innerHTML += `<option value="${l}">${l}</option>`; }); }
     }
 
-    // Vergibt ein Badge idempotent (überspringt still, falls Spieler es schon hat -
-    // verhindert doppelte Einträge dank unique-Constraint in der DB).
     async function awardBadge(playerId, badgeType, detail, platform) {
         if (!supabaseClient || !playerId || !badgeType) return { skipped: true };
         const { error } = await supabaseClient.from('player_badges').upsert(
@@ -2390,10 +2329,6 @@
         else alert("✅ XP-Werte gespeichert! Gelten sofort für alle neu berechneten Level auf der Startseite.");
     };
 
-    // --- Startgeld-Verwaltung ---------------------------------------------
-    // Nutzt eine eigene Tabelle 'season_fees' (player_id, season, paid,
-    // paid_at) statt eines Felds in 'profiles', damit der Bezahlstatus pro
-    // Saison separat erhalten bleibt (z.B. für spätere Archiv-Auswertungen).
     async function loadFeesTab() {
         if (!supabaseClient) return;
         const tbody = document.getElementById('feesListBody');
@@ -2461,8 +2396,6 @@
         loadFeesTab();
     };
 
-    // --- AVG-Nachweis Verwaltung -------------------------------------------
-    // Farben identisch zum Badge-System: Autodarts=Blau, DartCounter=Orange, Scolia=Grün.
     const AVG_PROOF_PLATFORMS = {
         Autodarts:   { color: '#0066ff', icon: '🔵' },
         DartCounter: { color: '#ff6b35', icon: '🟠' },
@@ -2496,9 +2429,6 @@
         columnsEl.innerHTML = platformDefs.map(pd => renderAvgProofColumn(pd, players || [], proofs || [], playersMap)).join("");
     }
 
-    // Baut eine komplette Plattform-Spalte: Statistik-Karte oben, direkt
-    // darunter die offenen Prüfungen und verifizierten Nachweise NUR für
-    // diese eine Plattform - so gehört visuell alles zusammen.
     function renderAvgProofColumn(pd, players, proofs, playersMap) {
         const registeredIds = new Set(players.filter(p => p[pd.wantField]).map(p => p.id));
         const platformProofs = proofs.filter(pr => pr.platform === pd.key);
@@ -2567,9 +2497,6 @@
         const playerName = player ? (player.discord_name || player.username || player.real_name) : 'Unbekannter Spieler';
         const dateStr = proof.uploaded_at ? new Date(proof.uploaded_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
-        // Zeigt den vom Spieler im Profil eingetragenen AVG für genau diese Plattform
-        // an - so lässt sich beim Prüfen direkt vergleichen, ob Screenshot und
-        // eingetragener Wert zusammenpassen.
         const avgFieldMap = { Autodarts: 'autodarts_avg', DartCounter: 'dartcounter_avg', Scolia: 'scolia_avg' };
         const avgField = avgFieldMap[proof.platform];
         const rawAvg = player && avgField ? player[avgField] : null;
@@ -2606,10 +2533,6 @@
     };
 
     window.rejectAvgProof = async function(proofId, playerId, platform) {
-        // Der Screenshot liegt in Google Drive (nicht mehr im Supabase-Bucket) -
-        // das Apps Script bietet aktuell keine Lösch-Funktion, daher wird hier
-        // nur der Datenbank-Eintrag entfernt. Die Datei bleibt im Drive-Ordner
-        // "AVG-Nachweise" liegen und kann bei Bedarf manuell gelöscht werden.
         if (!confirm(`Nachweis (${platform}) wirklich entfernen?\n\nHinweis: Die Datei bleibt in eurem Google Drive Ordner "AVG-Nachweise" bestehen - nur der Eintrag hier wird gelöscht.`)) return;
 
         const { error } = await supabaseClient.from('player_avg_proofs').delete().eq('id', proofId);
@@ -2625,9 +2548,6 @@
         } catch (e) {}
     }
 
-    // --- Endgültige Saison-Anmeldung (Countdown) ---------------------------
-    // Leitet aus dem Liganamen ab, welches profiles-Feld bei Nichtbestätigung
-    // geleert werden muss (analog zu getPlatformPrefixAndNumber weiter oben).
     function getAssignedFieldForLeague(leagueName) {
         if (leagueName.includes('Autodarts')) return 'assigned_ad_league';
         if (leagueName.includes('DartCounter')) return 'assigned_dc_league';
@@ -2659,15 +2579,11 @@
         ).select().single();
         if (error) { alert('❌ Fehler: ' + error.message); return; }
 
-        // Bestehende Bestätigungszeilen dieser Runde entfernen (falls Neustart) und frisch anlegen.
         await supabaseClient.from('player_league_confirmations').delete().eq('confirmation_id', conf.id);
         const rows = players.map(p => ({ confirmation_id: conf.id, player_id: p.id, confirmed: false }));
         const { error: insErr } = await supabaseClient.from('player_league_confirmations').insert(rows);
         if (insErr) { alert('❌ Fehler beim Anlegen der Spieler-Bestätigungen: ' + insErr.message); return; }
 
-        // Discord-Nachricht mit Rollen-Ping posten (z.B. "DartCounter-Spieler"
-        // bei einer DartCounter-Liga). Läuft im Hintergrund - schlägt das fehl
-        // (z.B. Webhook nicht konfiguriert), bleibt der Countdown trotzdem aktiv.
         const platform = field === 'assigned_ad_league' ? 'Autodarts' : field === 'assigned_dc_league' ? 'DartCounter' : field === 'assigned_sc_league' ? 'Scolia' : null;
         try {
             const { error: notifyError } = await supabaseClient.functions.invoke('discord-confirmation-started', {
@@ -2678,10 +2594,6 @@
             console.error('Fehler beim Aufruf der Discord-Benachrichtigung:', e);
         }
 
-        // Zusätzlich als Neuigkeit auf der Website veröffentlichen (Reiter
-        // "📰 Neuigkeiten"), damit auch Spieler ohne Discord informiert werden.
-        // Läuft ebenfalls im Hintergrund - schlägt das fehl, bleibt der
-        // Countdown trotzdem aktiv, nur die News fehlt dann.
         try {
             const deadlineStr = new Date(deadlineIso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             const newsTitle = `⏳ Endgültige Anmeldung: ${league}`;
@@ -2830,11 +2742,6 @@
         } catch (e) {}
     }
 
-    // Läuft beim Laden und danach alle 60s: prüft, ob eine aktive Bestätigungsrunde
-    // ihre Frist überschritten hat. Nicht bestätigte Spieler werden aus der
-    // Liga-Zuteilung entfernt (Status zurück auf "wartend"), danach wird geprüft,
-    // ob noch genug Spieler übrig sind. Race-Safety wie beim Turnier-Auto-Start:
-    // bedingtes UPDATE...WHERE status='active' claimt die Runde für genau einen Tab.
     async function checkLeagueConfirmationDeadlines() {
         if (!supabaseClient) return;
         try {
@@ -2873,7 +2780,6 @@
         } catch (e) { console.error('Fehler beim Auswerten der Anmeldebestätigungen:', e); }
     }
 
-    // --- Discord-Rollen-Übersicht -------------------------------------------
     const DISCORD_ROLE_LABELS = {
         verified:    { color: '#ffd700', icon: '✅', label: 'Verifizierter Spieler' },
         autodarts:   { color: '#0066ff', icon: '⚫', label: 'Autodarts' },
@@ -2883,17 +2789,13 @@
 
     async function populateDiscordResyncPlayerSelect() {
         const sel = document.getElementById('discordResyncPlayerSelect');
-        if (!sel || sel.options.length > 1) return; // schon befüllt
+        if (!sel || sel.options.length > 1) return;
         const { data: players } = await supabaseClient.from('profiles').select('id, discord_name, username, real_name').order('discord_name');
         (players || []).forEach(p => {
             sel.innerHTML += `<option value="${p.id}">${htmlEscape(p.discord_name || p.username || p.real_name || p.id)}</option>`;
         });
     }
 
-    // Ruft dieselbe Edge Function wie beim normalen Speichern der Anmeldung
-    // auf, aber manuell aus dem Admin-Panel heraus - liest dafür die aktuellen
-    // want_autodarts/want_dartcounter/want_scolia-Werte direkt aus profiles,
-    // damit die Discord-Rollen wieder exakt dazu passen.
     window.resyncPlayerDiscordRoles = async function() {
         const playerId = document.getElementById('discordResyncPlayerSelect').value;
         if (!playerId) return alert('❌ Bitte einen Spieler auswählen!');
@@ -2982,22 +2884,6 @@
         }).join("");
     }
 
-    // --- Automatischer Turnierstart ---------------------------------------
-    // Läuft beim Laden der Seite (und danach alle 60s, solange die Seite offen
-    // ist). Für jedes aktive Turnier mit gesetztem start_date, das noch keinen
-    // Spielplan hat: ist der Zeitpunkt erreicht UND genug Spieler (>= Minimum,
-    // mind. 4) angemeldet, wird der Spielplan/Turnierbaum automatisch generiert
-    // (gleiche Logik wie der manuelle "Generieren"-Knopf). Sind noch nicht genug
-    // Spieler da, wird der Start um 10 Minuten verschoben und ein News-Eintrag
-    // erstellt, der automatisch als Discord-Post rausgeht (bestehende
-    // discord-news-notify Edge Function reagiert auf INSERT in 'news').
-    //
-    // Race-Safety: Da mehrere Browser-Tabs (Admin + Spieler-Startseite) diesen
-    // Check gleichzeitig ausführen können, wird jede Aktion als bedingtes
-    // UPDATE...WHERE...RETURNING abgesetzt. Nur der Tab, dessen UPDATE
-    // tatsächlich eine Zeile trifft, führt die Folgeaktion aus - alle anderen
-    // sehen 0 betroffene Zeilen und überspringen still. Das verhindert doppelt
-    // generierte Turnierbäume oder doppelte Discord-Posts.
     async function checkAutoStartTournaments() {
         if (!supabaseClient) return;
         try {
@@ -3013,7 +2899,6 @@
             if (!candidates || candidates.length === 0) return;
 
             for (const t of candidates) {
-                // Falls bereits (manuell) ein Spielplan existiert, überspringen.
                 const { data: existingMatches } = await supabaseClient.from('tournament_matches').select('id').eq('tournament_id', t.id).limit(1);
                 if (existingMatches && existingMatches.length > 0) continue;
 
@@ -3022,14 +2907,13 @@
                 const effectiveMin = Math.max(4, t.min_participants || 4);
 
                 if (playerIds.length >= effectiveMin) {
-                    // Genug Spieler: Lock holen und Spielplan automatisch generieren.
                     const { data: claimed } = await supabaseClient
                         .from('tournaments')
                         .update({ schedule_generated_at: new Date().toISOString() })
                         .eq('id', t.id)
                         .is('schedule_generated_at', null)
                         .select('id');
-                    if (!claimed || claimed.length === 0) continue; // ein anderer Tab war schneller
+                    if (!claimed || claimed.length === 0) continue;
 
                     const allMatches = t.format === 'roundrobin'
                         ? buildRoundRobinSchedule(t.id, playerIds, t.match_format)
@@ -3039,14 +2923,12 @@
                         console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
                     } else {
                         console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
-                        // Namen für die Paarungs-Nachricht auflösen.
                         const { data: playerProfiles } = await supabaseClient.from('profiles').select('id, discord_name, username, display_name, real_name').in('id', playerIds);
                         const nameMap = {};
                         (playerProfiles || []).forEach(p => { nameMap[p.id] = p.display_name || p.username || p.discord_name || p.real_name || 'Spieler'; });
                         await postTournamentStartedAnnouncement(t.title, t.platform, t.format, allMatches, (id) => nameMap[id] || 'Spieler');
                     }
                 } else if (!t.start_extended) {
-                    // Erste Verzögerung: Start EINMALIG um 10 Minuten verschieben + Discord-Aufruf.
                     const newStartDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
                     const { data: claimed } = await supabaseClient
                         .from('tournaments')
@@ -3055,7 +2937,7 @@
                         .eq('start_extended', false)
                         .lte('start_date', nowIso)
                         .select('id');
-                    if (!claimed || claimed.length === 0) continue; // ein anderer Tab hat den Delay schon gesetzt
+                    if (!claimed || claimed.length === 0) continue;
 
                     const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
                         body: { tournamentTitle: t.title, platform: t.platform, currentCount: playerIds.length, minCount: effectiveMin, type: 'recruit' }
@@ -3063,14 +2945,13 @@
                     if (fnError) console.error('Discord-Spielersuche-Post fehlgeschlagen:', fnError);
                     console.log(`⏳ Auto-Start: Turnier "${t.title}" einmalig verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
                 } else {
-                    // Bereits einmal verlängert und immer noch zu wenig Spieler: Turnier absagen.
                     const { data: claimed } = await supabaseClient
                         .from('tournaments')
                         .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
                         .eq('id', t.id)
                         .eq('status', 'active')
                         .select('id');
-                    if (!claimed || claimed.length === 0) continue; // ein anderer Tab war schneller
+                    if (!claimed || claimed.length === 0) continue;
 
                     const { error: fnError } = await supabaseClient.functions.invoke('discord-tournament-recruit', {
                         body: { tournamentTitle: t.title, platform: t.platform, currentCount: playerIds.length, minCount: effectiveMin, type: 'cancelled' }
@@ -3082,21 +2963,11 @@
             loadActiveTournaments();
         } catch (e) { console.error('Fehler beim Auto-Start-Check:', e); }
     }
-
-    // --- Social-Media Bild-Generator (Tab 13) -------------------------------
-    // Liga + Spieltag auswählen und laden: zieht alle Begegnungen aus 'matches'
-    // (inkl. Match-AVG und Discord-Avatar der beteiligten Spieler) und baut daraus
-    // automatisch fertige Karten-Blöcke. Alles bleibt danach frei editierbar.
     let smcCurrentPlatform = 'autodarts';
     const SMC_ACCENTS = { autodarts:'#3c7bff', dartcounter:'#ff9d3c', scolia:'#3ce07a' };
     let smcInitDone = false;
     let smcLeaguesPopulated = false;
 
-    // Öffentlich erreichbare URLs der drei Plattform-Logos (Wordmarks). Einmal
-    // hochladen (z.B. Supabase Storage -> öffentlicher Bucket, oder ins eigene
-    // GitHub-Repo unter /assets/logos/) und hier die finalen URLs eintragen -
-    // danach reicht ein Klick auf "Logo einsetzen" statt jedes Mal manuell
-    // eine Datei hochzuladen.
     const SMC_LOGO_URLS = {
         autodarts:   "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_autodarts.png",
         dartcounter: "https://ppxwnqbovrnvzkcpyrcj.supabase.co/storage/v1/object/public/assets/wordmark_dartcounter.png",
@@ -3130,7 +3001,7 @@
 
         document.querySelectorAll('.smc-platform-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON') return; // "Logo einsetzen" hat eigenes onclick
+                if (e.target.tagName === 'BUTTON') return;
                 smcSetPlatform(btn.dataset.p);
             });
         });
@@ -3154,8 +3025,6 @@
         document.querySelector('.smc-scope').style.setProperty('--smc-accent', SMC_ACCENTS[p]);
     }
 
-    // Setzt das Banner direkt auf das hinterlegte, online gehostete Logo -
-    // kein manueller Datei-Upload mehr nötig.
     window.smcSetBannerLogo = function(platform) {
         const url = SMC_LOGO_URLS[platform];
         if (!url || url.includes('DEINE-DOMAIN')) {
@@ -3168,8 +3037,6 @@
         document.getElementById('smcBannerInput').addEventListener('change', smcHandleBannerFile);
     };
 
-    // Kleine Vorschau-Kreise im Plattform-Switcher mit den hinterlegten Logos befüllen
-    // (nur wenn eine echte URL eingetragen wurde).
     function smcFillLogoPreviews() {
         const slotMap = { autodarts: 'smcSlotAutodarts', dartcounter: 'smcSlotDartcounter', scolia: 'smcSlotScolia' };
         Object.keys(slotMap).forEach(p => {
@@ -3181,17 +3048,12 @@
         });
     }
 
-    // Setzt die Plattform automatisch anhand des Liganamens (z.B. "Scolia Liga 2" -> scolia),
-    // damit der Farbakzent zur gewählten Liga passt.
     function smcSetPlatformFromLeagueName(leagueName) {
         if (leagueName.includes('Autodarts')) smcSetPlatform('autodarts');
         else if (leagueName.includes('DartCounter')) smcSetPlatform('dartcounter');
         else if (leagueName.includes('Scolia')) smcSetPlatform('scolia');
     }
 
-    // Baut eine Match-Zeile direkt mit den echten Ergebnisdaten: AVG kommt aus dem
-    // Match selbst (player1_avg/player2_avg), NICHT aus dem allgemeinen Profil-AVG -
-    // so stimmt der gezeigte Wert exakt mit dem gespielten Spieltag überein.
     function smcMakeMatchRowFromMatch(match, p1, p2) {
         const row = document.createElement('div');
         row.className = 'smc-match-row';
@@ -3272,9 +3134,6 @@
         document.getElementById('smcBlocks').appendChild(smcMakeBlock('', smcMakeEmptyMatchRow()));
     };
 
-    // Kernfunktion: lädt alle Matches der gewählten Liga + Spieltag (aktuelle Saison)
-    // aus 'matches', holt dazu die Spielerprofile (Name + Discord-Avatar) und baut
-    // pro Begegnung automatisch einen fertigen Block mit den echten Ergebnisdaten.
     window.smcLoadMatchday = async function() {
         smcInitOnce();
         const league = document.getElementById('smcLeagueSelect').value;
@@ -3321,9 +3180,6 @@
         if (statusEl) statusEl.textContent = `✓ ${matches.length} Begegnung(en) geladen${unfinished > 0 ? ` (${unfinished} davon noch ohne Ergebnis)` : ''}.`;
     };
 
-    // Exportiert NUR die Karte (#smcPrintArea) als PNG-Datei - kein Systemdruckdialog,
-    // keine ganze Webseite. Nutzt html2canvas, um genau den Kartenbereich als Bild
-    // zu rendern und direkt als Download anzustoßen.
     window.smcExportImage = async function() {
         const target = document.getElementById('smcPrintArea');
         const scope = document.querySelector('.smc-scope');
@@ -3333,8 +3189,6 @@
         }
 
         scope.classList.add('smc-exporting');
-        // Kurz warten, damit der Browser das Ausblenden von Lösch-/Upload-Buttons
-        // vor dem Rendern des Canvas tatsächlich übernommen hat.
         await new Promise(r => setTimeout(r, 50));
 
         try {
@@ -3343,21 +3197,11 @@
                 scale: 2,
                 useCORS: true,
                 allowTaint: false,
-                // html2canvas rendert <input>-Werte unzuverlässig (falsche Text-
-                // Baseline) UND kann großflächige CSS-Verläufe (linear/radial-
-                // gradient) als sichtbar gekachelte Blöcke statt als glatten
-                // Verlauf rendern. Beide Probleme werden NUR im geklonten
-                // Dokument behoben, das html2canvas ausschließlich für den
-                // Export nutzt - die Live-Ansicht bleibt unverändert.
                 onclone: (clonedDoc) => {
                     const clonedTarget = clonedDoc.getElementById('smcPrintArea');
                     if (!clonedTarget) return;
                     const clonedScope = clonedDoc.querySelector('.smc-scope');
 
-                    // 1) Verlaufs-Hintergründe durch flache Farben ersetzen -
-                    // vermeidet den html2canvas-Kachel-Bug bei großen Gradients.
-                    // Die Farben sind bewusst nah am jeweiligen Verlaufs-Mittelwert
-                    // gewählt, damit der Look nahezu identisch bleibt.
                     if (clonedScope) clonedScope.style.background = '#05060d';
                     const cardEl = clonedTarget.querySelector('.smc-card');
                     if (cardEl) cardEl.style.background = '#12172b';
@@ -3366,22 +3210,11 @@
                     clonedTarget.querySelectorAll('.smc-match-row').forEach(el => { el.style.background = 'rgba(255,255,255,0.025)'; });
                     clonedTarget.querySelectorAll('.smc-bottom-pill').forEach(el => { el.style.background = '#2894ff'; });
 
-                    // 1b) Weichgezeichnete Glow-Schatten (box-shadow mit großem
-                    // Blur-Radius) führen bei html2canvas ebenfalls zu sichtbaren
-                    // gekachelten Artefakten im Hintergrund. Für den Export auf
-                    // einen dezenten, kleinen Schatten reduzieren statt sie ganz
-                    // wegzulassen, damit der Neon-Rahmen optisch erhalten bleibt.
                     [clonedScope, cardEl, ...clonedTarget.querySelectorAll('.smc-top-pill, .smc-banner, .smc-bottom-pill, .smc-avatar, .smc-score')].forEach(el => {
                         if (!el) return;
                         el.style.boxShadow = 'none';
                     });
 
-                    // 2) <input>-Werte durch echte Textknoten (<span>) ersetzen.
-                    // WICHTIG: keine feste Höhe erzwingen - die umgebenden
-                    // Flex-Container (align-items:center) übernehmen die
-                    // vertikale Zentrierung selbst zuverlässiger als eine
-                    // kopierte Input-Höhe (die sonst zu einer nach oben
-                    // verschobenen AVG-/Score-Zahl führt).
                     clonedTarget.querySelectorAll('input').forEach(input => {
                         const span = clonedDoc.createElement('span');
                         span.textContent = input.value || input.placeholder || '';
@@ -3401,16 +3234,11 @@
                         span.style.lineHeight = 'normal';
                         span.style.verticalAlign = 'middle';
                         if (hasVisibleBorder) {
-                            // Sichtbare Box (z.B. Ergebnis-Felder "4 : 4") - Rahmen,
-                            // Hintergrund und Innenabstand 1:1 übernehmen.
                             span.style.background = cs.backgroundColor;
                             span.style.border = cs.borderTop;
                             span.style.borderRadius = cs.borderRadius;
                             span.style.padding = cs.padding;
                         } else {
-                            // Reiner Text (Spielername, AVG-Wert) - kein Rahmen/
-                            // Hintergrund, keine erzwungene Höhe, damit der
-                            // umgebende Flex-Container ihn selbst zentriert.
                             span.style.background = 'transparent';
                             span.style.border = 'none';
                             span.style.padding = '0';
@@ -3437,11 +3265,6 @@
         }
     };
 
-    // --- Amazon-Affiliate-Links Verwaltung (Tab 14) -------------------------
-    // Pflegt die Tabelle 'affiliate_links', die auf der Startseite über den
-    // Footer-Button "🔗 Links" ausgelesen wird. Preise werden bewusst NICHT
-    // gespeichert (Amazon-Partnerprogramm-Richtlinie) - nur ein optionaler,
-    // grober Preis-Hinweis-Text.
     async function loadAffiliateLinksTab() {
         if (!supabaseClient) return;
         const tbody = document.getElementById('affiliateLinksListBody');
@@ -3545,6 +3368,150 @@
         loadAffiliateLinksTab();
     };
 
+    // --- Tab 15: Profil erstellt, aber (noch) nicht auf Discord -------------
+    let discordCheckPlayers = [];
+
+    function adminIsProfileComplete(p) {
+        return !!(p && p.display_name && String(p.display_name).trim() && p.real_name && String(p.real_name).trim());
+    }
+
+    function extractNumericDiscordId(p) {
+        if (/^\d{17,21}$/.test(p.id)) return p.id;
+        if (p.discord_id && /^\d{17,21}$/.test(p.discord_id)) return p.discord_id;
+        return null;
+    }
+
+    function updateDiscordCheckBadgeCount(count) {
+        const el = document.getElementById('discordCheckBadgeCount');
+        if (!el) return;
+        if (count > 0) { el.textContent = count; el.style.display = 'inline-block'; }
+        else { el.style.display = 'none'; }
+    }
+
+    async function loadDiscordCheckTab() {
+        if (!supabaseClient) return;
+        const area = document.getElementById('discordCheckListArea');
+        const countEl = document.getElementById('discordCheckResultCount');
+        if (area) area.innerHTML = 'Lade...';
+
+        const { data: players, error } = await supabaseClient.from('profiles')
+            .select('id, discord_id, discord_name, username, real_name, display_name, discord_member_verified, discord_checked_at, created_at, updated_at');
+        if (error) {
+            area.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert das Feld 'discord_member_verified' bereits in 'profiles'?</span></div>`;
+            updateDiscordCheckBadgeCount(0);
+            return;
+        }
+
+        discordCheckPlayers = (players || [])
+            .filter(p => adminIsProfileComplete(p) && p.discord_member_verified !== true)
+            .sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
+
+        updateDiscordCheckBadgeCount(discordCheckPlayers.length);
+        if (countEl) countEl.textContent = `${discordCheckPlayers.length} Spieler gefunden`;
+
+        if (discordCheckPlayers.length === 0) {
+            area.innerHTML = `<p class="meta-text">🎉 Aktuell hat jeder Spieler mit vollständigem Profil auch eine bestätigte Discord-Mitgliedschaft (Stand letzte Prüfung).</p>`;
+            return;
+        }
+
+        area.innerHTML = discordCheckPlayers.map(p => renderDiscordCheckRow(p)).join("");
+    }
+
+    function renderDiscordCheckRow(p) {
+        const playerName = p.discord_name || p.username || p.real_name || 'Unbekannter Spieler';
+        const handle = p.username || p.discord_name || '-';
+        const numericId = extractNumericDiscordId(p);
+        const checkedStr = p.discord_checked_at
+            ? new Date(p.discord_checked_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : 'noch nie geprüft';
+        const statusLabel = p.discord_member_verified === false
+            ? '<span style="color:#e74c3c; font-weight:bold;">❌ Nicht auf Discord (letzte Prüfung)</span>'
+            : '<span style="color:var(--text-secondary); font-weight:bold;">❔ Noch nie geprüft</span>';
+
+        const dmBtnHtml = numericId
+            ? `<a class="btn-dm-discord" href="https://discord.com/users/${numericId}" target="_blank">💬 Discord-Profil öffnen</a>`
+            : `<span class="meta-text">Keine Discord-ID hinterlegt</span>`;
+
+        return `<div class="discord-check-row" id="discordCheckRow_${p.id}">
+            <div class="discord-check-info">
+                <strong style="color:#0066ff;">${htmlEscape(playerName)}</strong>
+                <span class="meta-text">Echtname: ${htmlEscape(p.real_name)} &middot; Discord-Handle: ${htmlEscape(handle)}</span><br>
+                ${statusLabel}<br>
+                <span class="meta-text">Letzte Prüfung: ${checkedStr}</span>
+            </div>
+            <div class="discord-check-actions">
+                ${dmBtnHtml}
+                <button class="btn-recheck-discord" onclick="recheckPlayerDiscordMembership('${p.id}', true)">🔄 Jetzt prüfen</button>
+            </div>
+        </div>`;
+    }
+
+    window.recheckPlayerDiscordMembership = async function(playerId, manual) {
+        if (!supabaseClient) return;
+        const row = document.getElementById(`discordCheckRow_${playerId}`);
+        if (row && manual) {
+            const btn = row.querySelector('.btn-recheck-discord');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Prüfe...'; }
+        }
+        try {
+            const { data, error } = await supabaseClient.functions.invoke('check-discord-membership', {
+                body: { user_id: playerId }
+            });
+            if (error) throw error;
+            const verified = !!(data && data.verified);
+            if (manual) {
+                if (verified) {
+                    alert('✅ Dieser Spieler ist jetzt als Discord-Mitglied bestätigt und verschwindet aus der Liste.');
+                } else {
+                    alert('❌ Weiterhin keine Discord-Mitgliedschaft gefunden.');
+                }
+            }
+            loadDiscordCheckTab();
+        } catch (e) {
+            console.error('Fehler beim erneuten Discord-Check:', e);
+            if (manual) alert('❌ Die Prüfung ist fehlgeschlagen: ' + (e.message || 'Unbekannter Fehler'));
+            if (row) {
+                const btn = row.querySelector('.btn-recheck-discord');
+                if (btn) { btn.disabled = false; btn.textContent = '🔄 Jetzt prüfen'; }
+            }
+        }
+    };
+
+    window.recheckAllVisibleDiscordMemberships = async function() {
+        if (!supabaseClient) return;
+        if (discordCheckPlayers.length === 0) { alert('Die Liste ist aktuell leer - nichts zu prüfen.'); return; }
+        if (!confirm(`${discordCheckPlayers.length} Spieler nacheinander neu prüfen? Das kann je nach Anzahl einen Moment dauern.`)) return;
+
+        const area = document.getElementById('discordCheckListArea');
+        const idsToCheck = discordCheckPlayers.map(p => p.id);
+        let checkedCount = 0;
+
+        for (const playerId of idsToCheck) {
+            try {
+                await supabaseClient.functions.invoke('check-discord-membership', { body: { user_id: playerId } });
+            } catch (e) {
+                console.error('Fehler beim Massen-Check für Spieler', playerId, e);
+            }
+            checkedCount++;
+            if (area) area.innerHTML = `<p class="meta-text">⏳ Prüfe... (${checkedCount} / ${idsToCheck.length})</p>`;
+            await new Promise(r => setTimeout(r, 400));
+        }
+
+        alert(`✅ Fertig! ${checkedCount} Spieler wurden neu geprüft.`);
+        loadDiscordCheckTab();
+    };
+
+    async function loadDiscordCheckBadgeCountOnly() {
+        if (!supabaseClient) return;
+        try {
+            const { data: players, error } = await supabaseClient.from('profiles')
+                .select('display_name, real_name, discord_member_verified');
+            if (error) return;
+            const count = (players || []).filter(p => adminIsProfileComplete(p) && p.discord_member_verified !== true).length;
+            updateDiscordCheckBadgeCount(count);
+        } catch (e) {}
+    }
+
     async function initAdmin() {
         await loadCurrentSeason();
         setTimeout(async () => { await loadAllLeagueRules(); }, 50);
@@ -3553,9 +3520,11 @@
         setTimeout(() => { checkAutoStartTournaments(); }, 800);
         setTimeout(() => { loadAvgProofsPendingCountOnly(); }, 300);
         setTimeout(() => { checkLeagueConfirmationDeadlines(); loadConfirmBadgeCountOnly(); }, 600);
+        setTimeout(() => { loadDiscordCheckBadgeCountOnly(); }, 400);
         setInterval(checkAutoStartTournaments, 60 * 1000);
         setInterval(loadAvgProofsPendingCountOnly, 60 * 1000);
         setInterval(checkLeagueConfirmationDeadlines, 60 * 1000);
+        setInterval(loadDiscordCheckBadgeCountOnly, 60 * 1000);
     }
     initAdmin();
 </script>
