@@ -105,6 +105,7 @@
       border: 1px solid var(--border);
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: border-color 0.3s ease;
     }
     .card-header {
       background: var(--bg-tertiary);
@@ -196,6 +197,10 @@
     .discord-gate-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .discord-gate-actions .nav-btn { background: #5865f2; color: #fff; border: none; }
     .discord-gate-actions button { background: var(--platform-color); color: #fff; padding: 10px 16px; font-size: 12.5px; }
+
+    .status-tracker { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .status-tracker-step { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; }
+    .status-tracker-arrow { color: var(--text-secondary); }
   </style>
 </head>
 <body>
@@ -224,7 +229,7 @@
           <h2 style="margin:0; font-size:20px; font-weight:800;"><span id="statusText">Lade Profil...</span> <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
         </div>
         <div id="levelBox" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
-        <div id="discordStatusBox" style="margin-top:14px;"></div>
+        <div id="registrationStatusBox" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
       </div>
     </div>
 
@@ -254,7 +259,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="profileFormCard">
       <div class="card-header">📋 Mein Profil</div>
       <div class="card-body">
         <form id="profilForm" style="display:none;">
@@ -333,10 +338,15 @@
     // Dasselbe Apps Script wie in index.html für den Match-Screenshot-Upload -
     // AVG-Nachweise landen dort im Drive-Unterordner "AVG-Nachweise".
     const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx51dfWWqxlsnmsrQvy8eaX9Rlkc046sWRzzrGGw5wVO2z_ZGgqkEgHxZMZI1G8Mb8WWQ/exec";
+    // Discord-Server-Einladungslink - identisch zu dem auf index.html. Wird
+    // jetzt bewusst NICHT mehr auf index.html direkt angezeigt, sondern erst
+    // hier auf profil.html, und dort auch erst NACHDEM das Profil (Wunschname
+    // + Vorname) gespeichert wurde. Siehe renderRegistrationStatus().
+    const DISCORD_INVITE_URL = "https://discord.gg/7JFEAyjCuU";
     let currentUser = null;
     let currentProfileData = null;
     // null = wird gerade geprüft, true = bestätigtes Mitglied, false = nicht auf dem Discord.
-    // Steuert das Discord-Gate um die Liga-Anmeldung (siehe renderDiscordGate()).
+    // Steuert das Discord-Gate um die Liga-Anmeldung (siehe renderRegistrationStatus()).
     let discordVerified = null;
 
     // Theme-Toggle: nutzt denselben localStorage-Key wie index.html, damit die
@@ -355,6 +365,84 @@
       return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
+    // Ein Profil gilt als "vollständig" (Schritt 1 im Registrierungs-Ablauf),
+    // sobald Wunschname UND Vorname gespeichert sind - dieselben Felder, die
+    // im Formular unten als Pflichtfelder (required) markiert sind. Erst ab
+    // diesem Zeitpunkt bekommt der Spieler den Discord-Einladungslink zu sehen.
+    function isProfileComplete(data) {
+      return !!(data && data.display_name && String(data.display_name).trim() && data.real_name && String(data.real_name).trim());
+    }
+
+    // ===================== Registrierungs-Status (Profil -> Discord) =====================
+    // Steuert 3 Dinge auf einen Schlag:
+    // 1) Den kleinen Fortschritts-Tracker "① Profil -> ② Discord-Mitglied" im Kopfbereich
+    // 2) Ob/welcher Status-Hinweis dort angezeigt wird (inkl. Discord-Einladungslink,
+    //    der bewusst erst erscheint, sobald das Profil vollständig ist)
+    // 3) Das Gate um die Liga-Anmeldung weiter unten (registrationFormArea)
+    function renderRegistrationStatus() {
+      const statusBox = document.getElementById('registrationStatusBox');
+      const gateArea = document.getElementById('discordGateArea');
+      const formArea = document.getElementById('registrationFormArea');
+      const profileCard = document.getElementById('profileFormCard');
+      if (!statusBox) return;
+
+      const profileComplete = isProfileComplete(currentProfileData);
+      const fullyRegistered = profileComplete && discordVerified === true;
+
+      if (profileCard) profileCard.style.borderColor = profileComplete ? 'var(--border)' : 'var(--red)';
+
+      const trackerHtml = `<div class="status-tracker">
+        <span class="status-tracker-step" style="color:${profileComplete ? 'var(--green)' : 'var(--text-secondary)'};">${profileComplete ? '✅' : '①'} Profil</span>
+        <span class="status-tracker-arrow">→</span>
+        <span class="status-tracker-step" style="color:${fullyRegistered ? 'var(--green)' : 'var(--text-secondary)'};">${fullyRegistered ? '✅' : '②'} Discord-Mitglied</span>
+      </div>`;
+
+      let statusMsgHtml, gateHtml;
+
+      if (!profileComplete) {
+        statusMsgHtml = `<div class="discord-gate-box">
+          📝 <strong>Status: Profil unvollständig.</strong> Fülle unten mindestens Wunschname und Vorname aus und speichere - danach bekommst du den Link zu unserem Discord-Server.
+          <div class="discord-gate-actions"><button type="button" onclick="document.getElementById('profileFormCard').scrollIntoView({behavior:'smooth'})">👉 Jetzt ausfüllen</button></div>
+        </div>`;
+        gateHtml = `<div class="discord-gate-box">📝 Bitte fülle zuerst dein Profil aus und speichere es (Karte "📋 Mein Profil"). Danach kannst du dich für Ligen &amp; Turniere anmelden.</div>`;
+      } else if (discordVerified === true) {
+        statusMsgHtml = `<div class="discord-gate-box" style="background:rgba(0,208,132,0.1); border-color:rgba(0,208,132,0.35);">✅ <strong>Status: Vollständig registriert</strong> - Profil ausgefüllt &amp; Discord-Mitgliedschaft bestätigt.</div>`;
+        gateHtml = null;
+      } else if (discordVerified === false) {
+        statusMsgHtml = `<div class="discord-gate-box">
+          ⚠️ <strong>Status: Registriert, aber noch nicht auf unserem Discord-Server.</strong> Tritt jetzt bei, um dich für Ligen &amp; Turniere anmelden zu können.
+          <div class="discord-gate-actions">
+            <a class="nav-btn" href="${DISCORD_INVITE_URL}" target="_blank">💬 Discord Server beitreten</a>
+            <button type="button" onclick="checkDiscordMembership(true)">🔄 Mitgliedschaft erneut prüfen</button>
+          </div>
+        </div>`;
+        gateHtml = `<div class="discord-gate-box">
+          ⚠️ Du musst zuerst unserem Discord-Server beitreten, bevor du dich für eine Liga anmelden kannst.
+          <div class="discord-gate-actions">
+            <a class="nav-btn" href="${DISCORD_INVITE_URL}" target="_blank">💬 Discord Server beitreten</a>
+            <button type="button" onclick="checkDiscordMembership(true)">🔄 Mitgliedschaft erneut prüfen</button>
+          </div>
+        </div>`;
+      } else {
+        statusMsgHtml = `<div class="discord-gate-box loading">⏳ Prüfe Discord-Mitgliedschaft...</div>`;
+        gateHtml = `<div class="discord-gate-box loading">⏳ Prüfe Discord-Mitgliedschaft...</div>`;
+      }
+
+      statusBox.innerHTML = trackerHtml + statusMsgHtml;
+
+      if (gateArea && formArea) {
+        if (gateHtml === null) {
+          gateArea.style.display = 'none';
+          gateArea.innerHTML = '';
+          formArea.style.display = 'flex';
+        } else {
+          formArea.style.display = 'none';
+          gateArea.style.display = 'block';
+          gateArea.innerHTML = gateHtml;
+        }
+      }
+    }
+
     // ===================== Discord-Mitgliedschafts-Check =====================
     // Ruft dieselbe Edge Function "check-discord-membership" auf wie index.html.
     // Ergebnis wird in profiles.discord_member_verified gecacht und von einem
@@ -362,7 +450,7 @@
     // serverseitig durchgesetzt - dieser Check hier steuert nur die UI.
     async function checkDiscordMembership(manual) {
       if (!currentUser) return;
-      renderDiscordGate(); // zeigt "Prüfe..." solange kein Ergebnis vorliegt
+      renderRegistrationStatus(); // zeigt "Prüfe..." solange kein Ergebnis vorliegt
       try {
         const { data, error } = await supabaseClient.functions.invoke('check-discord-membership', {
           body: { user_id: currentUser.id }
@@ -374,47 +462,14 @@
         if (manual) alert('Die Prüfung ist fehlgeschlagen. Versuch es später erneut.');
         return;
       }
-      renderDiscordGate();
+      renderRegistrationStatus();
       if (manual) {
         alert(discordVerified
-          ? '✅ Deine Discord-Mitgliedschaft wurde bestätigt! Du kannst dich jetzt für die Liga anmelden.'
+          ? '✅ Deine Discord-Mitgliedschaft wurde bestätigt! Du bist jetzt vollständig registriert und kannst dich für die Liga anmelden.'
           : '❌ Du wurdest nicht als Mitglied unseres Discord-Servers gefunden. Bitte tritt zuerst bei und versuch es dann erneut.');
       }
     }
     window.checkDiscordMembership = checkDiscordMembership;
-
-    // Blendet die Liga-Anmeldung (Checkboxen + Speichern-Button) aus und zeigt
-    // stattdessen einen Hinweis, solange die Discord-Mitgliedschaft nicht
-    // bestätigt ist. Zusätzlich kleiner Status im Kopfbereich des Profils.
-    function renderDiscordGate() {
-      const gateArea = document.getElementById('discordGateArea');
-      const formArea = document.getElementById('registrationFormArea');
-      const statusBox = document.getElementById('discordStatusBox');
-      if (!gateArea || !formArea) return;
-
-      if (discordVerified === true) {
-        gateArea.style.display = 'none';
-        gateArea.innerHTML = '';
-        formArea.style.display = 'flex';
-        if (statusBox) statusBox.innerHTML = '<div class="discord-gate-box" style="background:rgba(0,208,132,0.1); border-color:rgba(0,208,132,0.35);">✅ Discord-Mitgliedschaft bestätigt</div>';
-      } else if (discordVerified === false) {
-        formArea.style.display = 'none';
-        gateArea.style.display = 'block';
-        gateArea.innerHTML = `<div class="discord-gate-box">
-          ⚠️ Du musst zuerst unserem Discord-Server beitreten, bevor du dich für eine Liga anmelden kannst.
-          <div class="discord-gate-actions">
-            <a class="nav-btn" href="index.html">💬 Zur Startseite (Discord beitreten)</a>
-            <button type="button" onclick="checkDiscordMembership(true)">🔄 Mitgliedschaft erneut prüfen</button>
-          </div>
-        </div>`;
-        if (statusBox) statusBox.innerHTML = '<div class="discord-gate-box">⚠️ Noch nicht auf dem Discord-Server</div>';
-      } else {
-        formArea.style.display = 'none';
-        gateArea.style.display = 'block';
-        gateArea.innerHTML = `<div class="discord-gate-box loading">⏳ Prüfe Discord-Mitgliedschaft...</div>`;
-        if (statusBox) statusBox.innerHTML = '';
-      }
-    }
 
     // Liest den Discord-Anzeigenamen, den Discord-Nutzernamen (Handle) und die
     // Discord-User-ID aus den user_metadata, die Supabase beim Discord-OAuth-Login
@@ -995,8 +1050,6 @@
       loadMyBadges(currentUser.id);
       loadAvgProofs(currentUser.id);
       loadMyLeagueConfirmations(currentUser.id);
-      renderDiscordGate(); // zeigt sofort "Prüfe..." an, bevor der Check zurückkommt
-      checkDiscordMembership(false);
       
       document.getElementById("profilForm").style.display = "block";
 
@@ -1037,7 +1090,15 @@
           }
 
           renderAssignmentStatus(data);
+      } else {
+          currentProfileData = null;
       }
+
+      // Erst JETZT (nachdem currentProfileData feststeht) den Status-Tracker
+      // und das Discord-Gate rendern - vorher wüssten wir noch nicht, ob das
+      // Profil bereits vollständig ist.
+      renderRegistrationStatus(); // zeigt sofort den aktuellen Stand, "Prüfe..." für Discord folgt
+      checkDiscordMembership(false);
     }
 
     document.getElementById("btnSaveRegistration").onclick = async () => {
@@ -1046,8 +1107,8 @@
         // einen DB-Trigger auf profiles (siehe SQL-Migration) - dieser Check
         // hier verhindert nur einen unnötigen Roundtrip und gibt eine klare
         // Fehlermeldung, falls das Gate im UI aus irgendeinem Grund umgangen wurde.
-        if (discordVerified !== true) {
-            alert('❌ Du musst zuerst unserem Discord-Server beitreten und deine Mitgliedschaft bestätigen, bevor du dich für eine Liga anmelden kannst.');
+        if (!isProfileComplete(currentProfileData) || discordVerified !== true) {
+            alert('❌ Du musst zuerst dein Profil vervollständigen und unserem Discord-Server beitreten, bevor du dich für eine Liga anmelden kannst.');
             return;
         }
 
