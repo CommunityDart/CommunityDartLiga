@@ -1097,50 +1097,33 @@
 
   <div id="discordView" class="view">
     <div class="full-width-layout">
-      <div class="card" style="border-color:#00d084;">
-        <div class="card-header" style="color:#00d084;">🚀 So kommst du zu deinem Spieler-Profil</div>
+      <div class="card" style="border-color:#0066ff;">
+        <div class="card-header" style="color:#0066ff;">🚀 Login &amp; Registrierung</div>
         <div class="card-body">
-          <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:22px;">
             <div class="onboarding-step-row">
-              <span class="onboarding-step-num" style="background:#00d084;">1</span>
-              <div>
-                <div class="onboarding-step-title">Discord-Server beitreten</div>
-                <div class="onboarding-step-desc">Falls noch nicht geschehen - Button weiter unten in der Karte "🌐 Discord Server". <strong>Wichtig:</strong> Ohne Discord-Mitgliedschaft kannst du dich nicht für Ligen oder Turniere anmelden.</div>
-              </div>
-            </div>
-            <div class="onboarding-step-row">
-              <span class="onboarding-step-num" style="background:#0066ff;">2</span>
+              <span class="onboarding-step-num" style="background:#0066ff;">1</span>
               <div>
                 <div class="onboarding-step-title">Mit Discord einloggen</div>
-                <div class="onboarding-step-desc">Der Button "Discord Login" weiter unten meldet dich automatisch an und legt dein Profil an. Wir prüfen dabei automatisch, ob du bereits Mitglied unseres Discord-Servers bist.</div>
+                <div class="onboarding-step-desc">Ein Klick auf den Button unten meldet dich mit deinem Discord-Konto an und legt automatisch dein Spieler-Profil an. Ein Discord-Server-Beitritt ist dafür noch nicht nötig.</div>
               </div>
             </div>
             <div class="onboarding-step-row">
-              <span class="onboarding-step-num" style="background:#ff6b35;">3</span>
+              <span class="onboarding-step-num" style="background:#ff6b35;">2</span>
               <div>
-                <div class="onboarding-step-title">⚠️ Profil ausfüllen (wichtig!)</div>
-                <div class="onboarding-step-desc">Erst wenn du dort deine Ingame-Namen (Autodarts/DartCounter/Scolia) einträgst und deine Plattform(en) auswählst, können wir dich einer Liga zuteilen. Ohne diesen Schritt bist du nur "eingeloggt", aber noch nicht registriert!</div>
+                <div class="onboarding-step-title">Profil ausfüllen</div>
+                <div class="onboarding-step-desc">Trage auf deiner Profilseite mindestens deinen Wunschnamen und Vornamen ein und speichere. Erst danach schalten wir den nächsten Schritt für dich frei.</div>
+              </div>
+            </div>
+            <div class="onboarding-step-row">
+              <span class="onboarding-step-num" style="background:#00d084;">3</span>
+              <div>
+                <div class="onboarding-step-title">Discord-Server beitreten</div>
+                <div class="onboarding-step-desc">Den Einladungslink bekommst du direkt auf deiner Profilseite, sobald dein Profil gespeichert ist. Erst mit bestätigter Mitgliedschaft kannst du dich für Ligen &amp; Turniere anmelden.</div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">🌐 Discord Server</div>
-        <div class="card-body">
-          <h3 style="margin-bottom: 12px;">Beitreten!</h3>
-          <p style="margin-bottom: 20px; line-height: 1.6;">Tritt unserem Discord Server bei um mit anderen Spielern zu chatten, Matches zu organisieren und Updates zu erhalten! Die Mitgliedschaft ist Voraussetzung für die Anmeldung zu Ligen &amp; Turnieren.</p>
-          <button class="btn discord" onclick="window.open('https://discord.gg/7JFEAyjCuU', '_blank')" style="width: 100%;">💬 Discord Server beitreten</button>
-        </div>
-      </div>
-      
-      <div class="card">
-        <div class="card-header">👤 Discord Login / Profil</div>
-        <div class="card-body">
-          <h3 style="margin-bottom: 12px;" id="loginTitle">Mit Discord anmelden</h3>
-          <p style="margin-bottom: 20px; line-height: 1.6;" id="loginDesc">Melde dich mit deinem Discord-Konto an um auf dein Spieler-Profil zuzugreifen und deine Statistiken zu verwalten.</p>
-          <button class="btn primary" id="loginBtn" onclick="handleAuthAction()" style="width: 100%;">👤 Discord Login</button>
+          <button class="btn primary" id="loginBtn" onclick="handleAuthAction()" style="width: 100%; padding: 16px; font-size: 15px;">👤 Login / Registrieren mit Discord</button>
           <div id="discordVerifyStatus" style="margin-top:16px;"></div>
         </div>
       </div>
@@ -1914,16 +1897,11 @@
   };
 
   function updateAuthUI() {
-    const loginTitle = document.getElementById('loginTitle');
-    const loginDesc = document.getElementById('loginDesc');
     const loginBtn = document.getElementById('loginBtn');
     const verifyStatusEl = document.getElementById('discordVerifyStatus');
     let navProfil = document.getElementById('navProfil');
 
     if (state.currentUser) {
-      const name = state.currentUser.user_metadata?.full_name || state.currentUser.email || "Spieler";
-      if (loginTitle) loginTitle.innerText = `Willkommen zurück, ${name}!`;
-      if (loginDesc) loginDesc.innerText = "Du bist erfolgreich eingeloggt. Klicke auf den Button unten oder oben in der Navbar, um dein Spieler-Profil zu verwalten.";
       if (loginBtn) { loginBtn.innerText = "⚙️ Zum Profil wechseln"; loginBtn.style.background = "#00d084"; }
       
       if (!navProfil) {
@@ -1935,16 +1913,15 @@
 
       if (verifyStatusEl) {
         if (state.discordVerified === true) {
-          verifyStatusEl.innerHTML = '<div style="padding:10px 14px; background:rgba(0,208,132,0.12); color:#00d084; border-radius:8px; font-size:13px; font-weight:700;">✅ Discord-Mitgliedschaft bestätigt</div>';
+          verifyStatusEl.innerHTML = '<div style="padding:10px 14px; background:rgba(0,208,132,0.12); color:#00d084; border-radius:8px; font-size:13px; font-weight:700;">✅ Discord-Mitgliedschaft bestätigt - du bist vollständig registriert!</div>';
         } else if (state.discordVerified === false) {
-          verifyStatusEl.innerHTML = `<div style="padding:10px 14px; background:rgba(255,107,53,0.12); color:#ff6b35; border-radius:8px; font-size:13px; font-weight:700; margin-bottom:8px;">⚠️ Du bist noch nicht auf unserem Discord-Server. Bitte tritt bei, um dich für Ligen &amp; Turniere anmelden zu können.</div><button class="btn small-action-btn" onclick="checkDiscordMembership(true)">🔄 Mitgliedschaft erneut prüfen</button>`;
+          verifyStatusEl.innerHTML = '<div style="padding:10px 14px; background:rgba(255,107,53,0.12); color:#ff6b35; border-radius:8px; font-size:13px; font-weight:700; margin-bottom:8px;">⚠️ Du bist noch nicht Mitglied unseres Discord-Servers. Den Einladungslink findest du auf deiner Profilseite, sobald dein Profil ausgefüllt ist.</div><button class="btn small-action-btn" onclick="window.location.assign(\'profil.html\')">⚙️ Zum Profil</button> <button class="btn small-action-btn" onclick="checkDiscordMembership(true)">🔄 Erneut prüfen</button>';
         } else {
           verifyStatusEl.innerHTML = '<div style="padding:10px 14px; background:var(--bg-tertiary); color:var(--text-secondary); border-radius:8px; font-size:13px;">⏳ Prüfe Discord-Mitgliedschaft...</div>';
         }
       }
     } else {
-      if (loginTitle) loginTitle.innerText = "Mit Discord anmelden";
-      if (loginBtn) { loginBtn.innerText = "👤 Discord Login"; loginBtn.style.background = "#0066ff"; }
+      if (loginBtn) { loginBtn.innerText = "👤 Login / Registrieren mit Discord"; loginBtn.style.background = "#0066ff"; }
       if (navProfil) navProfil.remove();
       if (verifyStatusEl) verifyStatusEl.innerHTML = '';
     }
