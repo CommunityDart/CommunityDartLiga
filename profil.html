@@ -188,6 +188,26 @@
     .league-confirm-countdown { font-weight: 800; color: var(--red); margin-bottom: 10px; font-size: 14px; }
     .league-confirm-btn { background: var(--red); color: #fff; border: none; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; width: 100%; font-size: 14px; }
     .league-confirm-btn:hover { opacity: 0.9; }
+    .league-confirm-explain { font-size: 13.5px; color: var(--text-primary); line-height: 1.5; margin-bottom: 10px; }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+      z-index: 2000; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 14px; width: 100%; max-width: 460px; padding: 24px;
+      position: relative; box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+      max-height: 85vh; overflow-y: auto;
+    }
+    .modal-close {
+      position: absolute; top: 12px; right: 16px; background: transparent;
+      border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);
+    }
+    .modal-close:hover { color: var(--text-primary); }
+    .modal-title { font-size: 19px; font-weight: 800; color: var(--red); text-align: center; margin-bottom: 16px; padding-right: 20px; }
 
     .discord-gate-box {
       background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.35); border-radius: 8px;
@@ -328,6 +348,18 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ===================== Popup: Endgültige Anmeldung erforderlich ===================== -->
+<!-- Öffnet sich automatisch, sobald der Admin für eine zugeteilte Liga die finale
+     Bestätigungsphase gestartet hat und der Spieler noch nicht bestätigt hat.
+     Bleibt zusätzlich als Karte weiter unten auf der Seite sichtbar. -->
+<div id="leagueConfirmModal" class="modal-overlay">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeLeagueConfirmModal()">&times;</button>
+    <div class="modal-title">⏳ Endgültige Anmeldung erforderlich</div>
+    <div id="leagueConfirmModalArea" style="display:flex; flex-direction:column; gap:14px;"></div>
   </div>
 </div>
 
@@ -972,9 +1004,33 @@
     // --- Endgültige Saison-Anmeldung (Countdown) ---------------------------
     let leagueConfirmCountdownHandle = null;
 
+    // Baut die Liste der offenen Bestätigungen als HTML - wird identisch für
+    // die Karte auf der Seite UND das automatisch aufspringende Popup genutzt.
+    // idSuffix verhindert doppelte IDs, da beide Stellen gleichzeitig im DOM stehen.
+    function buildLeagueConfirmItemsHtml(pending, idSuffix) {
+      return pending.map(r => {
+        const c = r.league_season_confirmations;
+        const deadlineStr = new Date(c.deadline).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return `<div class="league-confirm-item">
+          <div class="league-confirm-league">${htmlEscape(c.league_name)}</div>
+          <div class="league-confirm-explain">Du wurdest vom Admin in <strong>${htmlEscape(c.league_name)}</strong> zugeteilt. Bitte bestätige bis <strong>${deadlineStr}</strong> final, dass du dabei bist - erst wenn genug Spieler bestätigt haben, werden die Spieltage für diese Liga erstellt.</div>
+          <div class="league-confirm-deadline">Frist: ${deadlineStr}</div>
+          <div class="league-confirm-countdown" data-deadline="${c.deadline}" id="lc-countdown-${r.id}${idSuffix}"></div>
+          <button type="button" class="league-confirm-btn" onclick="confirmMyLeagueParticipation('${r.id}')">✅ Ich nehme endgültig teil</button>
+        </div>`;
+      }).join('');
+    }
+
+    window.closeLeagueConfirmModal = function() {
+      const modal = document.getElementById('leagueConfirmModal');
+      if (modal) modal.classList.remove('active');
+    };
+
     async function loadMyLeagueConfirmations(userId) {
       const card = document.getElementById('leagueConfirmCard');
       const area = document.getElementById('leagueConfirmArea');
+      const modal = document.getElementById('leagueConfirmModal');
+      const modalArea = document.getElementById('leagueConfirmModalArea');
       if (!card || !area) return;
 
       const { data: rows, error } = await supabaseClient
@@ -983,7 +1039,12 @@
         .eq('player_id', userId)
         .eq('confirmed', false);
 
-      if (error) { console.error('Fehler beim Laden der Anmeldebestätigungen:', error); card.style.display = 'none'; return; }
+      if (error) {
+        console.error('Fehler beim Laden der Anmeldebestätigungen:', error);
+        card.style.display = 'none';
+        if (modal) modal.classList.remove('active');
+        return;
+      }
 
       const pending = (rows || []).filter(r =>
         r.league_season_confirmations &&
@@ -991,19 +1052,21 @@
         new Date(r.league_season_confirmations.deadline) > new Date()
       );
 
-      if (pending.length === 0) { card.style.display = 'none'; if (leagueConfirmCountdownHandle) clearInterval(leagueConfirmCountdownHandle); return; }
-      card.style.display = 'block';
+      if (pending.length === 0) {
+        card.style.display = 'none';
+        if (modal) modal.classList.remove('active');
+        if (leagueConfirmCountdownHandle) clearInterval(leagueConfirmCountdownHandle);
+        return;
+      }
 
-      area.innerHTML = pending.map(r => {
-        const c = r.league_season_confirmations;
-        const deadlineStr = new Date(c.deadline).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        return `<div class="league-confirm-item">
-          <div class="league-confirm-league">${htmlEscape(c.league_name)}</div>
-          <div class="league-confirm-deadline">Frist: ${deadlineStr}</div>
-          <div class="league-confirm-countdown" data-deadline="${c.deadline}" id="lc-countdown-${r.id}"></div>
-          <button type="button" class="league-confirm-btn" onclick="confirmMyLeagueParticipation('${r.id}')">✅ Ich nehme endgültig teil</button>
-        </div>`;
-      }).join('');
+      card.style.display = 'block';
+      area.innerHTML = buildLeagueConfirmItemsHtml(pending, '');
+
+      // Popup öffnet sich automatisch, solange mindestens eine unbestätigte
+      // Zuteilung offen ist - erscheint also bei jedem Aufruf der Profilseite
+      // erneut, bis der Spieler bestätigt hat oder die Frist ausläuft.
+      if (modalArea) modalArea.innerHTML = buildLeagueConfirmItemsHtml(pending, '-modal');
+      if (modal) modal.classList.add('active');
 
       startLeagueConfirmCountdowns();
     }
