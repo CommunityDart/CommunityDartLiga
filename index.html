@@ -805,18 +805,26 @@
 <div class="container">
   <div id="newsView" class="view active">
     <div class="full-width-layout">
-      
+
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchNewsTab('news')">📰 News</button>
+        <button class="tab-btn" onclick="switchNewsTab('geschichte')">📖 Liga-Geschichte</button>
+      </div>
+
+      <div id="newsTab">
       <div class="card">
         <div class="card-header">📰 Neuigkeiten</div>
         <div class="card-body">
           <div id="newsArea">
+            <!-- SNAPSHOT:NEWS:START -->
             <div class="empty">Lade Neuigkeiten...</div>
+            <!-- SNAPSHOT:NEWS:END -->
           </div>
         </div>
       </div>
 
       <!-- Anzeige zwischen News und Info-Card -->
-      <div class="ad-slot-wrapper" style="padding:0;">
+      <div class="ad-slot-wrapper" style="padding:0; margin-top:24px;">
         <div class="ad-slot-label">Anzeige</div>
         <ins class="adsbygoogle ad-slot"
              style="display:block"
@@ -825,7 +833,46 @@
              data-full-width-responsive="true"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
       </div>
-      
+      </div>
+
+      <div id="geschichteTab" style="display:none;">
+      <div class="card">
+        <div class="card-header">📖 Die Geschichte der Community Dart Liga</div>
+        <div class="card-body" style="line-height:1.8; font-size:14.5px;">
+
+          <h3 style="margin-bottom:10px; color:var(--platform-color);">Wie alles begann (2025)</h3>
+          <p style="margin-bottom:14px;">Die Community Dart Liga wurde im Jahr 2025 gegründet - nicht als Firma oder kommerzielles Projekt, sondern aus einer ganz persönlichen Motivation heraus. Der Gründer hatte zuvor selbst über längere Zeit in einer bestehenden Online-Dart-Liga gespielt und dabei sowohl die Faszination am digitalen Liga-Betrieb entdeckt als auch ein Gefühl dafür bekommen, was an bestehenden Angeboten gut funktioniert - und was man anders und besser machen könnte. Aus dem Wunsch, ein eigenes technisches Projekt aufzubauen, dabei viel über Webentwicklung, Datenbanken und Community-Management zu lernen und gleichzeitig etwas Nützliches für die Dart-Community zu schaffen, entstand die Idee zur CDL.</p>
+
+          <p style="margin-bottom:14px;">Statt einfach eine bestehende Struktur zu kopieren, wurde die Community Dart Liga von Grund auf neu gedacht: Eine eigene Website statt reiner Discord-Bots, automatisierte Tabellenberechnung statt manueller Excel-Listen, und ein Baukasten-Ansatz, der von Anfang an für mehrere Scoring-Plattformen gleichzeitig ausgelegt war - nicht nur für eine.</p>
+
+          <h3 style="margin: 22px 0 10px 0; color:var(--platform-color);">Vom ersten Prototyp zur laufenden Liga</h3>
+          <p style="margin-bottom:14px;">Die ersten Versionen der Website waren bewusst schlank gehalten: eine einfache Tabelle, ein simpler Spielplan, ein Discord-Login. Von dort aus wurde die Plattform Schritt für Schritt gewachsen - Feature für Feature, immer orientiert an dem, was die spielende Community tatsächlich gebraucht hat. Aus anfänglich einer einzigen Liga wurden mit der Zeit mehrere, gestaffelt nach Leistungsstärke, damit sowohl Einsteiger als auch fortgeschrittene Spieler eine passende Umgebung finden. Es kamen automatisch ausgeloste K.o.-Turniere hinzu, ein XP- und Level-System zur Motivation, eine Mitgliederkarte samt interaktiver Deutschlandkarte, und zuletzt ein Bestätigungssystem für Ergebnisse, das Streitigkeiten zwischen Spielern deutlich reduziert.</p>
+
+          <p style="margin-bottom:14px;">Diese schrittweise Entwicklung ist bis heute Teil der Philosophie der CDL: Die Plattform ist nie "fertig", sondern wächst kontinuierlich mit den Rückmeldungen aus der Community. Wer als Spieler eine Idee für ein neues Feature hat, kann sie jederzeit einbringen - viele der heutigen Funktionen sind genau so entstanden.</p>
+
+          <h3 style="margin: 22px 0 10px 0; color:var(--platform-color);">Drei Plattformen, eine gemeinsame Liga</h3>
+          <p style="margin-bottom:14px;">Ein zentrales Unterscheidungsmerkmal der Community Dart Liga von Anfang an: Statt sich auf eine einzige Scoring-Plattform festzulegen, unterstützt die CDL parallel <strong>Autodarts</strong>, <strong>DartCounter</strong> und <strong>Scolia</strong>. Das bedeutet, dass Spieler unabhängig von ihrem technischen Setup zu Hause an der Liga teilnehmen können, ohne extra in eine neue Hardware oder Software investieren zu müssen. Gleichzeitig bringt das auch organisatorische Herausforderungen mit sich - etwa unterschiedliche technische Anforderungen an die Ergebnis-Überprüfbarkeit, die im Regelwerk für jede Plattform einzeln festgehalten sind.</p>
+
+          <h3 style="margin: 22px 0 10px 0; color:var(--platform-color);">Was die CDL ausmacht</h3>
+          <p style="margin-bottom:14px;">Im Kern bleibt die Community Dart Liga ein Freizeitprojekt mit dem Anspruch, professionell und zuverlässig zu funktionieren. Es gibt keinen Konzern und kein Investment dahinter - die Serverkosten werden durch kleine Werbeanzeigen und freiwillige Unterstützung über die Serverkasse gedeckt. Was zählt, ist eine faire, transparente Liga-Struktur, in der jede Spielerin und jeder Spieler nachvollziehen kann, wie Tabellen, Auf- und Abstiege sowie Turnierergebnisse zustande kommen.</p>
+
+          <p style="margin-bottom:0;">Die Geschichte der CDL ist damit auch die Geschichte eines Lernprojekts, das sich zu einer aktiven Community mit eigenem Discord-Server, regelmäßigen Spieltagen und wiederkehrenden Turnieren entwickelt hat - und die nächsten Kapitel werden gemeinsam mit den Spielern geschrieben, die heute und in Zukunft mitmachen.</p>
+
+        </div>
+      </div>
+
+      <!-- Anzeige innerhalb der Liga-Geschichte -->
+      <div class="ad-slot-wrapper" style="padding:0; margin-top:24px;">
+        <div class="ad-slot-label">Anzeige</div>
+        <ins class="adsbygoogle ad-slot"
+             style="display:block"
+             data-ad-client="ca-pub-8141059951423155"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
+      </div>
+
       <div class="card compact-footer-card">
         <div class="card-header">ℹ️ Infos</div>
         <div class="card-body">
@@ -869,7 +916,19 @@
         <div id="regelwerkTab" style="display: none;">
           <div class="card">
             <div class="card-header">📑 Regelwerk</div>
-            <div class="card-body" id="regelwerkContent" style="line-height: 1.6;"></div>
+            <!-- Statischer Basistext direkt im HTML (nicht per JS nachgeladen) -
+                 wird durch loadData() überschrieben, sobald in system_settings
+                 ein individuelles regelwerk_html hinterlegt ist. -->
+            <div class="card-body" id="regelwerkContent" style="line-height: 1.6; font-size:14px;">
+              <!-- SNAPSHOT:REGELWERK:START -->
+              <p style="margin-bottom:12px;"><strong>1. Anmeldung & Discord-Pflicht:</strong> Die Teilnahme an Ligen und Turnieren setzt ein ausgefülltes Spielerprofil sowie eine bestätigte Mitgliedschaft in unserem CDL-Discord-Server voraus. Ohne Discord-Mitgliedschaft ist keine Anmeldung möglich.</p>
+              <p style="margin-bottom:12px;"><strong>2. Spielmodus:</strong> Liga- und Turniermatches werden je nach Wettbewerb im Format Best of 3/5/7 Legs oder Best of 3/5 Sets gespielt (501, Doppel-Aus, sofern nicht anders angegeben). Der genaue Modus steht bei jeder Liga bzw. jedem Turnier.</p>
+              <p style="margin-bottom:12px;"><strong>3. Technische Voraussetzungen:</strong> Bei Autodarts und Scolia ist die automatische Kamera-Erkennung ausreichend. Bei <strong>DartCounter reicht eine reine Target-Omni-Erfassung nicht aus</strong> - zusätzlich ist eine separate Kamera auf das Dartboard verpflichtend, damit Ergebnisse überprüfbar sind.</p>
+              <p style="margin-bottom:12px;"><strong>4. Ergebnismeldung:</strong> Nach jedem Match trägt ein Spieler das Ergebnis inkl. AVG-Werten ein. Der Gegner hat anschließend ein festgelegtes Zeitfenster, um das Ergebnis zu bestätigen oder zu widersprechen. Nach Ablauf der Frist gilt das gemeldete Ergebnis automatisch als bestätigt.</p>
+              <p style="margin-bottom:12px;"><strong>5. Fairplay:</strong> Unsportliches Verhalten, Manipulation von Ergebnissen oder wiederholtes Nicht-Antreten kann mit Verwarnungen (gelbe/rote Karte) bis hin zum Ausschluss aus der Liga geahndet werden.</p>
+              <p style="margin-bottom:0;">Das vollständige, aktuelle Regelwerk mit allen Detailregelungen pflegt die Liga-Administration fortlaufend über das Verwaltungs-Dashboard; Änderungen erscheinen automatisch an dieser Stelle.</p>
+              <!-- SNAPSHOT:REGELWERK:END -->
+            </div>
           </div>
         </div>
 
@@ -1370,15 +1429,6 @@
   }
 
   // --- Level-/XP-System -----------------------------------------------------
-  // XP werden NICHT als laufender Zähler gespeichert, sondern live aus den
-  // bestehenden Daten berechnet (gespielte/gewonnene Matches, Turnier-Badges,
-  // News-Reaktionen). Dadurch gibt es nie eine Abweichung zwischen "echten"
-  // Aktionen und dem angezeigten XP-Stand.
-  //
-  // Level-Kurve: moderat steigend statt hart exponentiell - Level N -> N+1
-  // kostet 50 * N zusätzliche XP. Level 1: 0 XP, Level 2: 50 XP, Level 3: 150 XP,
-  // Level 4: 300 XP, Level 5: 500 XP, usw. Damit sind frühe Level schnell
-  // erreichbar, höhere Level bleiben aber eine echte Leistung.
   function xpForLevel(level) {
     return 25 * level * (level - 1);
   }
@@ -1430,8 +1480,6 @@
     return xp;
   }
 
-  // Dart-thematische Rang-Stufen statt generischer Level-Zahlen. Farbe, Icon-
-  // Größe und Glow werden mit jedem Rang intensiver.
   function getLevelTier(level) {
     if (level >= 50) return { color: '#7f77dd', name: 'Nine-Darter', hexSize: 60 };
     if (level >= 30) return { color: '#4fd8e0', name: '180-Werfer', hexSize: 56 };
@@ -1440,8 +1488,6 @@
     return { color: '#cd7f32', name: 'Dart-Neuling', hexSize: 48 };
   }
 
-  // Dartscheibe als Icon statt Stern - bei Nine-Darter (höchster Rang) trifft
-  // ein Pfeil zusätzlich das Bullseye.
   function getLevelIconInner(tier, level) {
     const color = tier.color;
     let inner = `<circle cx="16" cy="16" r="10" fill="none" stroke="${color}" stroke-width="2"/><circle cx="16" cy="16" r="6" fill="none" stroke="${color}" stroke-width="2"/><circle cx="16" cy="16" r="2" fill="${color}"/>`;
@@ -1479,11 +1525,6 @@
     </div>`;
   }
 
-  // --- Sieges-Serien (Streaks) -----------------------------------------------
-  // Wird live berechnet (kein DB-Eintrag nötig): innerhalb jeder Liga+Saison
-  // nach Spieltag sortiert bzw. innerhalb jedes Turniers nach Runde sortiert,
-  // dann die längste Folge aufeinanderfolgender Siege gesucht. Das größte
-  // Ergebnis über alle Ligen/Turniere hinweg ist die "beste Serie" des Spielers.
   function computeLongestWinStreak(playerId) {
     let maxStreak = 0;
 
@@ -1580,9 +1621,6 @@
   const NEWS_EMOJIS = ['👍', '❤️', '🎯', '🔥', '🎉', '😂'];
   let activeMemberTab = 'map';
 
-  // --- AVG-Nachweis: Farben identisch zum Badge-System (Autodarts=Blau,
-  // DartCounter=Orange, Scolia=Grün). Liefert nur VERIFIZIERTE Nachweise -
-  // ausstehende Uploads sollen im öffentlichen Profil nicht auftauchen.
   const AVG_PROOF_PLATFORMS = {
     Autodarts:   { color: '#0066ff', icon: '🔵' },
     DartCounter: { color: '#ff6b35', icon: '🟠' },
@@ -1594,7 +1632,6 @@
     return (state.avgProofsCache || []).find(p => p.player_id === playerId && p.platform === platform && p.verified) || null;
   }
 
-  // Kleiner klickbarer Haken, der den verifizierten Screenshot in neuem Tab öffnet.
   function renderAvgProofCheckInline(playerId, platform) {
     const proof = getVerifiedAvgProof(playerId, platform);
     if (!proof) return '';
@@ -1716,14 +1753,7 @@
       </div>`;
 
       const allMyBadges = state.playerBadgesCache.filter(b => b.player_id === p.id);
-      // Die Hauptseite ist reine Anzeige - versteckte Abzeichen bleiben für
-      // JEDEN unsichtbar, auch beim eigenen Profil. Ein-/Ausblenden geht nur
-      // über die Profilseite (profil.html), nicht hier.
       const myBadges = allMyBadges.filter(b => !b.hidden);
-      // Welche Abzeichen "oben" (max. 6) statt im eingeklappten Dropdown
-      // erscheinen, wählt jeder Spieler selbst auf profil.html (pinned-Flag).
-      // Hat noch niemand etwas angepinnt, zeigen wir sinnvoll die ersten 6
-      // (statt eine leere Fläche), damit das Profil nicht kahl wirkt.
       let achievementBadges = myBadges.filter(b => b.pinned);
       let participationBadges = myBadges.filter(b => !b.pinned);
       if (achievementBadges.length === 0 && myBadges.length > 0) {
@@ -1788,10 +1818,6 @@
 
   function closePlayerModal(e) { document.getElementById('playerModal').classList.remove('active'); }
 
-  // ===================== Amazon-Affiliate-Links Modal =====================
-  // Lädt einmalig alle aktiven Links aus der Tabelle 'affiliate_links' und
-  // zeigt sie plattformweise gruppiert an. rel="sponsored" markiert die Links
-  // gegenüber Suchmaschinen korrekt als bezahlte/Affiliate-Verlinkung.
   let affiliateLinksCache = [];
   let affiliateLinksActivePlatform = null;
   let affiliateLinksLoaded = false;
@@ -1867,13 +1893,6 @@
     if (chev) chev.textContent = isOpen ? '▸' : '▾';
   };
 
-  // ===================== Discord-Mitgliedschafts-Check =====================
-  // Ruft die Edge Function "check-discord-membership" auf, die serverseitig
-  // per Discord-Bot prüft, ob der eingeloggte User im CDL-Discord ist. Das
-  // Ergebnis wird zusätzlich in profiles.discord_member_verified gecacht und
-  // von einem DB-Trigger auf tournament_registrations hart durchgesetzt -
-  // dieser Check hier ist "nur" für die UI (Buttons/Hinweise), die eigentliche
-  // Absicherung passiert serverseitig.
   window.checkDiscordMembership = async function(manual) {
     if (!state.currentUser) return;
     try {
@@ -2045,6 +2064,13 @@
     document.getElementById('regelwerkTab').style.display = tab === 'regelwerk' ? 'block' : 'none';
     document.getElementById('archivTab').style.display = tab === 'archiv' ? 'block' : 'none';
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    if(event && event.target) event.target.classList.add('active');
+  }
+
+  function switchNewsTab(tab) {
+    document.getElementById('newsTab').style.display = tab === 'news' ? 'block' : 'none';
+    document.getElementById('geschichteTab').style.display = tab === 'geschichte' ? 'block' : 'none';
+    document.querySelectorAll('#newsView .tab-btn').forEach(btn => btn.classList.remove('active'));
     if(event && event.target) event.target.classList.add('active');
   }
 
@@ -2263,19 +2289,12 @@
   function updateMyGamesNavVisibility() {
     const btn = document.getElementById('navMyGames');
     if (!btn) return;
-    // Zeigt "Meine Spiele" dauerhaft für jeden eingeloggten Spieler, unabhängig
-    // davon, ob er einer Liga zugeteilt ist oder schon Spiele/Turniere hat -
-    // renderMyGames() zeigt in dem Fall passende Hinweistexte statt leerer Seite.
     btn.style.display = state.currentUser ? 'inline-block' : 'none';
   }
 
   function renderMembercards() {
     const area = document.getElementById('membercardGridArea');
     if (!area) return;
-    console.log('Mitgliederkarte-Check:', state.allProfilesCache.map(p => ({
-      name: p.display_name || p.discord_name || p.username,
-      show_membership_card: p.show_membership_card
-    })));
     const members = state.allProfilesCache.filter(p => p.show_membership_card === true || p.show_membership_card === 'true' || p.show_membership_card === 1);
 
     renderMembercardMap(members);
@@ -2303,7 +2322,6 @@
 
       const myBadges = state.playerBadgesCache.filter(b => b.player_id === p.id && !b.hidden);
       const MAX_PREVIEW_BADGES = 6;
-      // Vom Spieler angepinnte Abzeichen zuerst zeigen, bevor gekappt wird.
       const sortedBadgesForPreview = [...myBadges].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
       const shownBadges = sortedBadgesForPreview.slice(0, MAX_PREVIEW_BADGES);
       const extraBadgeCount = myBadges.length - shownBadges.length;
@@ -2405,10 +2423,6 @@
 
     renderTopMatchAvgs();
   }
-  // Sammelt aus JEDEM abgeschlossenen Match (Liga + Turnier) den Spiel-AVG
-  // beider Spieler als eigenen Eintrag - anders als der Lebenszeit-Ø-AVG geht
-  // es hier um die stärkste EINZELNE Spielleistung. Ein Spieler kann mehrfach
-  // auftauchen, wenn er mehrere Top-Leistungen hingelegt hat.
   function computeTopMatchAvgs(limit) {
     const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
     const entries = [];
@@ -2468,11 +2482,7 @@
       .map(p => ({ ...p, _lat: parseFloat(p.latitude), _lon: parseFloat(p.longitude) }))
       .filter(p => !isNaN(p._lat) && !isNaN(p._lon));
 
-    console.log('Mitglieder mit gültigen Koordinaten für die Karte:', withCoords.map(p => ({ name: p.display_name || p.discord_name, lat: p._lat, lon: p._lon })));
-
     if (!membercardMapInstance) {
-      // Fixe Startansicht: ganz Deutschland auf einen Blick, unabhängig davon
-      // wo die eingetragenen Mitglieder tatsächlich wohnen.
       membercardMapInstance = L.map('membercardMap', { scrollWheelZoom: false }).setView([51.1657, 10.4515], 6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap Mitwirkende',
@@ -2513,12 +2523,6 @@
     return `<span style="font-size:11px; font-weight:700; background:${pb.color}1A; color:${pb.color}; padding:4px 10px; border-radius:10px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">${pb.icon} ${htmlEscape(subLabel)}</span>`;
   }
 
-  // --- Persönliche Statistiken -----------------------------------------------
-  // Zählt Lebenszeit-Highlights eines Spielers zusammen: Anzahl geworfener 180er
-  // (über alle Liga- UND Turnier-Spiele summiert) sowie Anzahl gemeldeter
-  // Highfinishes plus der beste (höchste) davon. Funktioniert für JEDEN Spieler
-  // (nicht nur den eingeloggten), damit es in der Mitgliederübersicht für alle
-  // angezeigt werden kann.
   function computePlayerHighlights(playerId) {
     const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
     let total180s = 0, highfinishCount = 0, bestHighfinish = 0;
@@ -2538,8 +2542,6 @@
     return { total180s, highfinishCount, bestHighfinish };
   }
 
-  // Baut die kleinen Highlight-"Buttons" (180er / Highfinishes), die sowohl in
-  // der Mitgliederkarten-Vorschau als auch im vollen Profil verwendet werden.
   function renderHighlightButtonsHtml(highlights) {
     let html = "";
     if (highlights.total180s > 0) {
@@ -2831,8 +2833,6 @@
     renderMyGames();
   };
 
-  // Wird nach jedem final gesetzten Turnier-Ergebnis aufgerufen: ermittelt den
-  // Sieger und trägt ihn automatisch in die nächste Runde ein.
   async function advanceTournamentWinner(matchId) {
     const { data: m } = await supabaseClient.from('tournament_matches')
       .select('player1_id, player2_id, legs_player1, legs_player2, next_match_id, next_match_slot')
@@ -2906,8 +2906,6 @@
     renderBracket();
   }
 
-  // Feste Kartengröße pro Spiel im Baum, damit sich die Verbindungslinien
-  // exakt berechnen lassen (keine geschätzten CSS-Abstände).
   function bracketCardHtml(m) {
     if (!m) return '';
     const p1Name = m.player1_id ? getProfileNameFromId(m.player1_id) : (m.is_bye ? '—' : 'TBD');
@@ -2929,10 +2927,6 @@
     </div>`;
   }
 
-  // Echter klassischer Turnierbaum: Positionen und Verbindungslinien werden
-  // exakt in Pixeln berechnet (rekursiv von Runde 1 aus), statt nur Spalten
-  // nebeneinander zu stellen. Dadurch entstehen echte Baum-Linien wie bei
-  // klassischen K.o.-Baum-Grafiken.
   window.renderBracket = function() {
     const area = document.getElementById('bracketArea');
     const sel = document.getElementById('bracketTournamentSelect');
@@ -3007,10 +3001,6 @@
     const profile = getCurrentPlayerProfile();
     if (!profile) { alert('Dein Spieler-Profil konnte nicht gefunden werden. Bitte kontaktiere einen Admin.'); return; }
 
-    // Discord-Mitgliedschaft ist Voraussetzung für die Anmeldung (nicht fürs
-    // Abmelden). Die eigentliche, unumgehbare Absicherung passiert über einen
-    // DB-Trigger auf tournament_registrations - dieser Check hier verhindert
-    // nur einen unnötigen Roundtrip zur DB und gibt eine klare Fehlermeldung.
     if (!isRegistered) {
       if (state.discordVerified !== true) {
         alert('❌ Du musst zuerst unserem Discord-Server beitreten und deine Mitgliedschaft bestätigen, bevor du dich für Turniere anmelden kannst.');
@@ -3019,9 +3009,6 @@
       }
     }
 
-    // AVG-Obergrenze prüfen (nur beim Anmelden relevant, nicht beim Abmelden).
-    // Bezieht sich auf den AVG-Wert für genau die Plattform, auf der das Turnier
-    // stattfindet (autodarts_avg / dartcounter_avg / scolia_avg im Profil).
     if (!isRegistered) {
       const t = state.allTournamentsCache.find(x => x.id === tournamentId);
       if (t && t.avg_limit !== null && t.avg_limit !== undefined) {
@@ -3042,8 +3029,6 @@
       } else {
         const { error: regError } = await supabaseClient.from('tournament_registrations').insert({ tournament_id: tournamentId, player_id: profile.id });
         if (regError) {
-          // Fängt insbesondere die serverseitige Discord-Trigger-Fehlermeldung ab,
-          // falls der lokale Check oben aus irgendeinem Grund veraltet war.
           alert('❌ Anmeldung nicht möglich: ' + regError.message);
           return;
         }
@@ -3176,8 +3161,6 @@
       const { data: badgesData } = await supabaseClient.from('player_badges').select('*');
       state.playerBadgesCache = badgesData || [];
 
-      // Nur VERIFIZIERTE AVG-Nachweise laden - unverifizierte/ausstehende Uploads
-      // sollen im öffentlichen Profil (noch) nicht als Haken auftauchen.
       const { data: avgProofsData, error: avgProofsError } = await supabaseClient.from('player_avg_proofs').select('*').eq('verified', true);
       if (avgProofsError) console.error('Fehler beim Laden der AVG-Nachweise (existiert die Tabelle player_avg_proofs?):', avgProofsError);
       state.avgProofsCache = avgProofsData || [];
@@ -3210,10 +3193,6 @@
       const { data: matchesData } = await supabaseClient.from('matches').select('*');
       state.allMatchesLifetimeCache = matchesData || [];
       let matches = matchesData ? matchesData.filter(m => String(m.season || '').replace(/\D/g, "") === stateSeasonNum || String(m.season || '').trim().toLowerCase() === String(state.currentSeason).trim().toLowerCase()) : [];
-      // Nur auf ALLE Matches zurückfallen, wenn wirklich noch nie ein Match ein
-      // season-Feld gesetzt hatte (reine Alt-Daten). Sonst würde eine frisch
-      // geleerte/beendete Saison (noch 0 Matches) fälschlich wieder Matches aus
-      // längst beendeten, alten Saisons anzeigen.
       const anyMatchHasSeason = (matchesData || []).some(m => m.season);
       if (matches.length === 0 && matchesData && !anyMatchHasSeason) matches = matchesData;
       state.allMatchesCache = matches;
@@ -3318,12 +3297,6 @@
     } catch (e) { console.error('Auto-Bestätigung fehlgeschlagen:', e); }
   }
 
-  // --- Automatischer Turnierstart (Spieler-Seite) ----------------------------
-  // Identische Logik wie im Admin-Dashboard: läuft beim Laden dieser Seite und
-  // danach alle 60s, solange sie geöffnet bleibt. Da Spieler die Startseite
-  // deutlich häufiger besuchen als das Admin-Dashboard, ist dies der
-  // zuverlässigste Ort für den Check. Race-Safety über bedingte
-  // UPDATE...WHERE...RETURNING-Aufrufe - siehe Kommentar in admin.html.
   function shuffleArrayLocal(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -3458,8 +3431,6 @@
             console.error('Auto-Start: Fehler beim Generieren des Spielplans:', insertErr);
           } else {
             console.log(`✅ Auto-Start: Turnier "${t.title}" automatisch gestartet (${playerIds.length} Spieler).`);
-            // state.allProfilesCache ist bereits geladen (loadData läuft vor diesem Check) -
-            // getProfileNameFromId liefert dieselbe Namens-Fallback-Kette wie überall sonst auf der Seite.
             const round1 = allMatches.filter(m => (m.round_number || 1) === 1);
             const pairings = round1.map(m => ({
               player1: getProfileNameFromId(m.player1_id),
@@ -3472,7 +3443,6 @@
             if (fnError) console.error('Discord-Start-Post fehlgeschlagen:', fnError);
           }
         } else if (!t.start_extended) {
-          // Erste Verzögerung: Start EINMALIG um 10 Minuten verschieben + Discord-Aufruf.
           const newStartDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
           const { data: claimed } = await supabaseClient
             .from('tournaments')
@@ -3489,7 +3459,6 @@
           if (fnError) console.error('Discord-Spielersuche-Post fehlgeschlagen:', fnError);
           console.log(`⏳ Auto-Start: Turnier "${t.title}" einmalig verzögert (${playerIds.length}/${effectiveMin} Spieler).`);
         } else {
-          // Bereits einmal verlängert und immer noch zu wenig Spieler: Turnier absagen.
           const { data: claimed } = await supabaseClient
             .from('tournaments')
             .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
