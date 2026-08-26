@@ -33,6 +33,17 @@ function htmlEscape(str) {
     .replace(/'/g, "&#039;");
 }
 
+// Rein kosmetisch: fügt nach gängigen schließenden Block-Tags einen Zeilenumbruch
+// ein, damit der Regelwerk-Text im GitHub-Dateiviewer nicht als eine einzige,
+// endlos lange Zeile erscheint. Ändert NICHTS an der Darstellung im Browser -
+// HTML ignoriert Zeilenumbrüche zwischen Tags ohnehin komplett.
+function prettifyHtml(html) {
+  return html
+    .replace(/(<\/(?:p|div|li|ul|ol|h1|h2|h3|h4|h5|h6|blockquote|table|tr)>)/gi, "$1\n")
+    .replace(/(<br\s*\/?>)/gi, "$1\n")
+    .trim();
+}
+
 function replaceBetweenMarkers(html, startMarker, endMarker, newContent) {
   const startIdx = html.indexOf(startMarker);
   const endIdx = html.indexOf(endMarker);
@@ -61,7 +72,7 @@ async function fetchRegelwerkHtml() {
   }
 
   return rulesText.includes("<p>")
-    ? rulesText
+    ? prettifyHtml(rulesText)
     : `<div style="white-space: pre-wrap; line-height: 1.6; font-size:14px;">${htmlEscape(rulesText)}</div>`;
 }
 
