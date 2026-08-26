@@ -892,12 +892,24 @@
     <div class="full-width-layout">
       <div class="main-cards">
         <div class="tab-buttons">
-          <button class="tab-btn active" onclick="switchTab('ligen')">⚡ Ligen</button>
+          <button class="tab-btn active" onclick="switchTab('uebersicht')">ℹ️ Übersicht</button>
+          <button class="tab-btn" onclick="switchTab('ligen')">⚡ Ligen</button>
           <button class="tab-btn" onclick="switchTab('regelwerk')">📑 Regelwerk</button>
           <button class="tab-btn" onclick="switchTab('archiv')">🏛️ Archiv</button>
         </div>
 
-        <div id="ligenTab">
+        <div id="uebersichtTab">
+          <div class="card">
+            <div class="card-header">⚡ Wie unsere Ligen funktionieren</div>
+            <div class="card-body" style="line-height:1.75; font-size:14.5px;">
+              <p style="margin-bottom:12px;">Auf der Community Dart Liga spielt jeder Teilnehmer innerhalb einer festen Liga gegen alle anderen Spieler seiner Leistungsklasse - je nach Anzahl der Teilnehmer im Hin- und ggf. Rückspiel-Modus. Die Ergebnisse tragen die Spieler nach jedem Match selbst ein; der jeweilige Gegner hat anschließend ein festgelegtes Zeitfenster, um das gemeldete Ergebnis zu bestätigen oder zu widersprechen. Läuft diese Frist ab, gilt das gemeldete Ergebnis automatisch als final - so bleibt der Spielbetrieb auch ohne ständige Admin-Kontrolle fair und nachvollziehbar.</p>
+              <p style="margin-bottom:12px;">Da wir drei unterschiedliche Scoring-Plattformen unterstützen - <strong>Autodarts</strong>, <strong>DartCounter</strong> und <strong>Scolia</strong> - gibt es für jede Plattform eigene, nach Leistungsstärke gestaffelte Ligen. Am Ende jeder Saison steigen die besten Platzierungen einer Liga in die nächsthöhere Liga auf, die schwächsten Platzierungen steigen ab, und dazwischen kann optional eine Relegation stattfinden. Die genaue Anzahl an Auf- und Absteigern pro Liga legt die Administration jede Saison neu fest und veröffentlicht sie transparent.</p>
+              <p style="margin-bottom:0;">Wer neu einsteigen möchte, meldet sich einfach über sein Profil für die gewünschte(n) Plattform(en) an - die Zuteilung in eine passende Liga erfolgt anschließend durch die Administration, meist orientiert an der bisherigen Spielstärke oder, bei komplett neuen Spielern, in eine Einsteiger-Liga. Alle Detailregeln zu Spielmodus, Kamerapflicht und Fairplay findest du im Tab "📑 Regelwerk".</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="ligenTab" style="display: none;">
           <div class="card" style="margin-bottom: 24px;">
             <div class="card-header" id="tableHeaderTitle">📊 Tabelle</div>
             <div class="card-body" style="overflow-x: auto;">
@@ -995,6 +1007,16 @@
 
   <div id="tournamentsView" class="view">
     <div class="full-width-layout">
+
+      <div class="card">
+        <div class="card-header">🏆 Turniere & Cups bei der CDL</div>
+        <div class="card-body" style="line-height:1.75; font-size:14.5px;">
+          <p style="margin-bottom:12px;">Neben dem laufenden Liga-Betrieb veranstaltet die Community Dart Liga regelmäßig eigenständige Turniere und Cups - unabhängig davon, in welcher Liga ein Spieler aktuell antritt. Es gibt zwei Turnierformate: den klassischen <strong>K.o.-Turnierbaum</strong> mit automatisch verlosten Freilosen bei ungerader Teilnehmerzahl, sowie das Format <strong>Jeder gegen Jeden</strong>, bei dem alle Teilnehmer einmal gegeneinander antreten und die beste Gesamtbilanz gewinnt.</p>
+          <p style="margin-bottom:12px;">Jedes Turnier hat einen eigenen Spielmodus (z. B. 501 Doppel-Aus) und ein eigenes Format (Best of X Legs oder Sets), das für das Finale sogar abweichend festgelegt werden kann. Manche Turniere haben zusätzlich eine AVG-Obergrenze, damit gezielt Einsteiger-Cups ohne übermächtige Gegner stattfinden können. Die Anmeldung läuft direkt über diese Website; sobald genügend Spieler angemeldet sind, wird der Turnierbaum automatisch ausgelost und alle Teilnehmer werden über Discord benachrichtigt.</p>
+          <p style="margin-bottom:0;">Abgeschlossene Turniere bleiben dauerhaft im Archiv weiter unten einsehbar - inklusive Platzierungen 1 bis 3 und dem kompletten Turnierbaum. Wer ein Turnier gewinnt oder unter die besten drei kommt, erhält automatisch ein entsprechendes Abzeichen für sein Profil.</p>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">🏆 Aktive Cups & Live-Turniere</div>
         <div class="card-body">
@@ -1037,6 +1059,16 @@
 
   <div id="membercardView" class="view">
     <div class="full-width-layout">
+
+      <div class="card">
+        <div class="card-header">🪪 User & Highlights der Community</div>
+        <div class="card-body" style="line-height:1.75; font-size:14.5px;">
+          <p style="margin-bottom:12px;">Dieser Bereich zeigt, was unsere Community abseits der reinen Liga-Tabellen ausmacht. Auf der interaktiven Karte sehen alle, die ihre Mitgliederkarte öffentlich freigegeben haben, wo unsere Spielerinnen und Spieler herkommen - von kleinen Ortschaften bis zu großen Städten in Deutschland, Österreich und der Schweiz. Im Reiter "Mitglieder" lassen sich alle öffentlich sichtbaren Profile durchstöbern, inklusive Abzeichen, aktuellem Level und den genutzten Plattform-Accounts.</p>
+          <p style="margin-bottom:12px;">Unser <strong>XP- und Level-System</strong> belohnt Aktivität: Für jedes gespielte und gewonnene Match, für Turnierteilnahmen und -platzierungen sowie für Reaktionen auf News-Beiträge gibt es Erfahrungspunkte. Mit steigendem Level ändert sich auch der Rang-Titel - vom "Dart-Neuling" über "Scorer" und "Checkout-Spezialist" bis zum seltenen "Nine-Darter" auf den höchsten Stufen.</p>
+          <p style="margin-bottom:0;">In der Dart-Rangliste werden zusätzlich die besten Einzelleistungen der gesamten Liga gesammelt: die meisten geworfenen 180er, die höchsten Checkouts (Highfinishes) und die stärksten Einzelspiel-Durchschnitte (AVG) - unabhängig davon, ob sie in einem Liga- oder Turniermatch erzielt wurden.</p>
+        </div>
+      </div>
+
       <div class="tab-buttons">
         <button class="tab-btn active" id="memberTabMapBtn" onclick="switchMemberTab('map')">🗺️ Karte</button>
         <button class="tab-btn" id="memberTabCardsBtn" onclick="switchMemberTab('cards')">🪪 Mitglieder</button>
@@ -2060,6 +2092,7 @@
   }
 
   function switchTab(tab) {
+    document.getElementById('uebersichtTab').style.display = tab === 'uebersicht' ? 'block' : 'none';
     document.getElementById('ligenTab').style.display = tab === 'ligen' ? 'block' : 'none';
     document.getElementById('regelwerkTab').style.display = tab === 'regelwerk' ? 'block' : 'none';
     document.getElementById('archivTab').style.display = tab === 'archiv' ? 'block' : 'none';
