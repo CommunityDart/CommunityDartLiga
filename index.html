@@ -892,13 +892,13 @@
     <div class="full-width-layout">
       <div class="main-cards">
         <div class="tab-buttons">
-          <button class="tab-btn active" onclick="switchTab('uebersicht')">ℹ️ Übersicht</button>
-          <button class="tab-btn" onclick="switchTab('ligen')">⚡ Ligen</button>
+          <button class="tab-btn" onclick="switchTab('uebersicht')">ℹ️ Übersicht</button>
+          <button class="tab-btn active" onclick="switchTab('ligen')">⚡ Ligen</button>
           <button class="tab-btn" onclick="switchTab('regelwerk')">📑 Regelwerk</button>
           <button class="tab-btn" onclick="switchTab('archiv')">🏛️ Archiv</button>
         </div>
 
-        <div id="uebersichtTab">
+        <div id="uebersichtTab" style="display: none;">
           <div class="card">
             <div class="card-header">⚡ Wie unsere Ligen funktionieren</div>
             <div class="card-body" style="line-height:1.75; font-size:14.5px;">
@@ -909,7 +909,7 @@
           </div>
         </div>
 
-        <div id="ligenTab" style="display: none;">
+        <div id="ligenTab">
           <div class="card" style="margin-bottom: 24px;">
             <div class="card-header" id="tableHeaderTitle">📊 Tabelle</div>
             <div class="card-body" style="overflow-x: auto;">
