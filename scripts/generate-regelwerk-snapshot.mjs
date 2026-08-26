@@ -47,7 +47,7 @@ function replaceBetweenMarkers(html, startMarker, endMarker, newContent) {
 async function fetchRegelwerkHtml() {
   const { data: sys, error } = await supabase
     .from("system_settings")
-    .select("regelwerk_html, rules, regelwerk, rules_text")
+    .select("*")
     .eq("id", 1)
     .single();
 
