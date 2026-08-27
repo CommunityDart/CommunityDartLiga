@@ -219,6 +219,44 @@
         .smc-exporting .smc-add-row { visibility:hidden !important; }
         .smc-exporting .smc-avatar .smc-avatar-fallback { visibility:hidden !important; }
         .smc-exporting .smc-banner .smc-placeholder { visibility:hidden !important; }
+
+        /* ===================== Mobile Responsiveness ===================== */
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            .admin-container { padding: 12px; border-radius: 8px; }
+            .header-row h1 { font-size: 20px; }
+            .header-row { gap: 8px; margin-bottom: 10px; }
+            .season-indicator { font-size: 10.5px; padding: 6px 8px; }
+            .back-home-btn { padding: 6px 10px; font-size: 11.5px; }
+            .theme-toggle { width: 34px; height: 34px; font-size: 16px; }
+            .tabs { gap: 5px; padding-bottom: 6px; margin-bottom: 10px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+            .tab-btn { padding: 7px 11px; font-size: 11.5px; flex-shrink: 0; }
+            table { font-size: 12px; }
+            th, td { padding: 6px 6px; font-size: 11.5px; }
+            .config-box { padding: 10px; }
+            .config-row { gap: 8px; flex-direction: column; align-items: stretch; }
+            .config-row > * { width: 100%; max-width: none !important; }
+            .config-row label { width: 100%; }
+            .filter-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+            .filter-count-text { margin-left: 0; }
+            .txt-input, .comment-input, .combo-wrap { max-width: none !important; width: 100%; }
+            .news-headline-field { font-size: 16px; }
+            .gen-options-row { flex-wrap: wrap; }
+            .avg-proof-row, .discord-check-row { flex-direction: column; align-items: stretch; }
+            .avg-proof-actions, .discord-check-actions { justify-content: flex-start; }
+            .avg-proof-column { min-width: 0; width: 100%; }
+            #avgProofColumnsArea { flex-direction: column; }
+            .avg-stat-card { min-width: 0; }
+            .confirm-row-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .smc-frame, .smc-toolbar { max-width: 100%; }
+            .smc-platform-switch { flex-wrap: wrap; }
+            input, select, textarea { font-size: 16px; }
+            .num-input { font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            .header-row h1 { font-size: 17px; }
+            .tab-btn { padding: 6px 9px; font-size: 11px; }
+        }
     </style>
 </head>
 <body>
