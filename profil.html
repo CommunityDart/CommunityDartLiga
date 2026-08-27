@@ -38,6 +38,8 @@
       color: var(--text-primary);
       transition: background 0.3s ease, color 0.3s ease;
       min-height: 100vh;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     .header {
@@ -78,6 +80,7 @@
       font-size: 22px;
       display: flex; align-items: center; justify-content: center;
       transition: all 0.3s ease;
+      flex-shrink: 0;
     }
     .theme-toggle:hover { border-color: var(--platform-color); background: var(--hover); transform: scale(1.05); }
 
@@ -129,7 +132,7 @@
     input[type="text"]:focus { border-color: var(--platform-color); box-shadow: 0 0 0 3px rgba(0,102,255,0.12); }
     input[type="text"]:required:invalid { border-color: var(--red); }
 
-    .url-input { margin-top: -10px; font-size: 12.5px !important; color: var(--text-secondary) !important; }
+    .url-input { margin-top: -10px; font-size: 13px !important; color: var(--text-secondary) !important; }
 
     button { border: none; padding: 13px 22px; cursor: pointer; font-weight: 700; border-radius: 8px; transition: 0.2s ease; font-size: 14px; }
     button:hover { opacity: 0.92; transform: translateY(-1px); }
@@ -146,7 +149,7 @@
       background: var(--bg-tertiary); padding: 14px; border-radius: 8px; border: 1px solid var(--border);
     }
     .checkbox-group label { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; color: var(--text-primary); font-weight: 600; margin-bottom: 0; }
-    .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
     .hint-text { font-size: 12px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 4px; font-style: italic; }
 
     .visibility-box {
@@ -155,13 +158,13 @@
       margin-bottom: 15px;
     }
     .visibility-box label { margin-bottom: 0; font-size: 13.5px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; }
-    .visibility-box input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    .visibility-box input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
 
     .required-mark { color: var(--red); }
 
     .assignment-status { background: rgba(0,208,132,0.08); border: 1px solid rgba(0,208,132,0.3); border-radius: 8px; padding: 12px 14px; }
     .assignment-status-title { font-size: 12px; font-weight: 800; color: var(--green); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-    .assignment-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; color: var(--text-primary); }
+    .assignment-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; color: var(--text-primary); gap: 8px; flex-wrap: wrap; }
     .assignment-pending {
       background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.3); border-radius: 8px;
       padding: 10px 14px; font-size: 13px; color: var(--text-primary); margin-top: 10px;
@@ -171,7 +174,7 @@
 
     .avg-proof-grid { display: flex; flex-direction: column; gap: 12px; }
     .avg-proof-card { background: var(--bg-tertiary); border: 1px solid var(--proof-color, var(--border)); border-radius: 10px; padding: 14px; box-shadow: 0 0 10px -6px var(--proof-color, transparent); }
-    .avg-proof-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .avg-proof-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
     .avg-proof-card-title { font-weight: 800; font-size: 13.5px; color: var(--proof-color, var(--text-primary)); display: flex; align-items: center; gap: 6px; }
     .avg-proof-status-verified { font-size: 11.5px; font-weight: 700; color: var(--proof-color, var(--green)); }
     .avg-proof-status-pending { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); }
@@ -221,6 +224,36 @@
     .status-tracker { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
     .status-tracker-step { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; }
     .status-tracker-arrow { color: var(--text-secondary); }
+
+    /* ===================== Mobile Responsiveness ===================== */
+    @media (max-width: 768px) {
+      .header-top { padding: 16px 14px; gap: 10px; }
+      .header-title h1 { font-size: 24px; }
+      .header-title p { font-size: 10.5px; letter-spacing: 0.8px; }
+      .theme-toggle { width: 40px; height: 40px; font-size: 18px; }
+      .navbar { padding: 10px 10px; gap: 6px; }
+      .nav-btn { padding: 9px 12px; font-size: 12px; }
+      .container { padding: 18px 12px; }
+      .full-width-layout { gap: 14px; }
+      .card-header { padding: 13px 16px; font-size: 14.5px; }
+      .card-body { padding: 14px; }
+      .profile-header-inner { gap: 10px; }
+      .avatar { width: 52px; height: 52px; }
+      .profile-header-inner h2 { font-size: 16px; }
+      .input-group { flex-direction: column; gap: 0; }
+      .input-group > div { flex: none; width: 100%; }
+      input[type="text"] { padding: 12px; font-size: 16px; }
+      button { padding: 12px 16px; font-size: 13.5px; width: 100%; margin-bottom: 8px; }
+      .logout-btn { margin-left: 0; }
+      #saveBtn, .logout-btn { width: 100%; }
+      .modal-card { padding: 18px; max-width: calc(100% - 20px); }
+      .avg-proof-image { max-height: 170px; }
+      .league-confirm-item { padding: 12px; }
+    }
+    @media (max-width: 420px) {
+      .header-title h1 { font-size: 20px; }
+      .nav-btn { padding: 8px 10px; font-size: 11.5px; }
+    }
   </style>
 </head>
 <body>
@@ -816,13 +849,13 @@
           <button type="button" onclick="toggleBadgePinned('${b.id}', ${!!b.pinned})" title="${b.pinned ? 'Von \'Oben angezeigt\' entfernen' : (pinDisabled ? 'Maximal 6 angeheftete Abzeichen erlaubt' : 'Oben anheften (max. 6)')}" ${pinDisabled ? 'disabled' : ''} style="background:none; border:1px solid ${b.pinned ? 'var(--platform-color)' : 'var(--border)'}; border-radius:6px; padding:6px 10px; cursor:${pinDisabled ? 'not-allowed' : 'pointer'}; font-size:13px; color:${b.pinned ? 'var(--platform-color)' : 'var(--text-primary)'}; opacity:${pinDisabled ? '0.5' : '1'};">
             ${b.pinned ? '📌 Oben angezeigt' : '📍 Anheften'}
           </button>`;
-        return `<div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg-tertiary); border-radius:8px; border:1px solid var(--border); ${dimStyle}">
+        return `<div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg-tertiary); border-radius:8px; border:1px solid var(--border); ${dimStyle} flex-wrap:wrap;">
           ${renderBadgeHex(b, 36)}
           <div style="flex:1; min-width:0;">
             <div style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</div>
             <div style="font-size:11px; color:var(--text-secondary);">${b.platform ? htmlEscape(b.platform) + ' · ' : ''}${dateStr}</div>
           </div>
-          <div style="display:flex; gap:6px; flex-shrink:0;">
+          <div style="display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap;">
             ${pinBtn}
             <button type="button" onclick="toggleBadgeVisibility('${b.id}', ${!!b.hidden})" title="${b.hidden ? 'Wieder einblenden' : 'Für andere ausblenden'}" style="background:none; border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; color:var(--text-primary);">
               ${b.hidden ? '🙈 Ausgeblendet' : '👁️ Sichtbar'}
