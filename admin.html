@@ -123,6 +123,12 @@
         .discord-check-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-recheck-discord { background: #0066ff; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .btn-dm-discord { background: #5865f2; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; }
+        .btn-msg-admin { background: #7f77dd; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .msg-compose-box { width: 100%; margin-top: 10px; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; }
+        .msg-compose-box textarea { width: 100%; min-height: 70px; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); font-size: 13px; font-family: inherit; resize: vertical; box-sizing: border-box; }
+        .msg-history-box { width: 100%; margin-top: 8px; padding: 8px 10px; background: rgba(127,119,221,0.08); border: 1px solid rgba(127,119,221,0.3); border-radius: 8px; font-size: 12px; }
+        .msg-history-unread { color: #ff6b35; font-weight: bold; }
+        .msg-history-read { color: var(--text-secondary); }
         /* ---------- Social-Media Bild-Generator (Tab 13) ---------- */
         .smc-scope {
             --smc-cyan:#28e6f0; --smc-magenta:#e347e8;
@@ -286,7 +292,7 @@
         <button class="tab-btn" onclick="switchTab('tabDiscordRoles')">🏷️ 12. Discord-Rollen</button>
         <button class="tab-btn" onclick="switchTab('tabSocialImage')">📱 13. Social-Media Bild</button>
         <button class="tab-btn" onclick="switchTab('tabAffiliateLinks')">🛒 14. Amazon-Links</button>
-        <button class="tab-btn" onclick="switchTab('tabDiscordCheck')">🔎 15. Profil ohne Discord <span id="discordCheckBadgeCount" class="notif-dot"></span></button>
+        <button class="tab-btn" onclick="switchTab('tabDiscordCheck')">🔎 15. Registrierungen & Nachrichten <span id="discordCheckBadgeCount" class="notif-dot"></span></button>
     </div>
 
     <div id="tabZuteilung" class="tab-content active">
@@ -883,14 +889,28 @@
     </div>
 
     <div id="tabDiscordCheck" class="tab-content">
-        <h2>🔎 Profil erstellt, aber (noch) nicht auf Discord</h2>
-        <p class="meta-text" style="margin-bottom:12px;">Zeigt alle Spieler, die ihr Profil bereits vollständig ausgefüllt haben (Wunschname + Vorname gespeichert), deren letzte Discord-Prüfung aber KEINE bestätigte Mitgliedschaft im CDL-Discord ergeben hat. Der Status stammt aus der letzten Prüfung beim Login des Spielers - über "🔄 Jetzt prüfen" kannst du hier live neu nachfragen, ohne dass der Spieler sich selbst einloggen muss.</p>
+        <h2>🔎 Registrierungen & Nachrichten</h2>
+        <p class="meta-text" style="margin-bottom:12px;">Zeigt alle Spieler, die noch nicht vollständig registriert sind - entweder weil ihr Profil (Wunschname + Vorname) noch unvollständig ist, oder weil die letzte Discord-Prüfung keine bestätigte Mitgliedschaft ergeben hat. Über "✉️ Nachricht senden" kannst du einem Spieler direkt eine Nachricht hinterlassen - sie wird ihm angezeigt, sobald er sich das nächste Mal auf der Webseite einloggt.</p>
 
         <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
+            <div class="filter-bar" style="margin-bottom: 10px;">
+                <label>Status
+                    <select id="discordCheckStatusFilter" class="league-select" onchange="applyDiscordCheckFilters()">
+                        <option value="needs_attention" selected>⚠️ Unvollständig oder nicht auf Discord</option>
+                        <option value="incomplete">📝 Nur unvollständiges Profil</option>
+                        <option value="not_discord">☑️ Profil vollständig, nicht auf Discord</option>
+                        <option value="complete">✅ Vollständig registriert</option>
+                        <option value="all">Alle Spieler</option>
+                    </select>
+                </label>
+                <label>Suche (Name / Discord-Handle)
+                    <input type="text" id="discordCheckSearchInput" class="txt-input" placeholder="Suchbegriff..." style="width:220px;" oninput="applyDiscordCheckFilters()">
+                </label>
+                <span id="discordCheckResultCount" class="filter-count-text"></span>
+            </div>
             <div class="config-row">
                 <button class="generate-btn" onclick="loadDiscordCheckTab()">🔄 Liste neu laden</button>
-                <button class="generate-btn" onclick="recheckAllVisibleDiscordMemberships()">🔄 Alle sichtbaren erneut prüfen</button>
-                <span id="discordCheckResultCount" class="filter-count-text"></span>
+                <button class="generate-btn" onclick="recheckAllVisibleDiscordMemberships()">🔄 Alle sichtbaren (Discord) erneut prüfen</button>
             </div>
         </div>
 
@@ -3452,8 +3472,14 @@
         loadAffiliateLinksTab();
     };
 
-    // --- Tab 15: Profil erstellt, aber (noch) nicht auf Discord -------------
-    let discordCheckPlayers = [];
+    // --- Tab 15: Registrierungen & Nachrichten -------------------------------
+    // Zeigt Spieler nach Registrierungs-Status (unvollständiges Profil / Profil
+    // ohne Discord / vollständig) und erlaubt dem Admin, einem Spieler eine
+    // Nachricht zu hinterlassen, die beim nächsten Login angezeigt wird
+    // (Tabelle 'admin_messages', siehe admin_messages_migration.sql).
+    let discordCheckAllPlayers = [];
+    let discordCheckFilteredPlayers = [];
+    let adminMessagesByPlayer = {};
 
     function adminIsProfileComplete(p) {
         return !!(p && p.display_name && String(p.display_name).trim() && p.real_name && String(p.real_name).trim());
@@ -3472,63 +3498,158 @@
         else { el.style.display = 'none'; }
     }
 
+    // Ordnet einem Spieler eine der drei Status-Kategorien zu.
+    function getPlayerRegistrationStatus(p) {
+        if (!adminIsProfileComplete(p)) return 'incomplete';
+        if (p.discord_member_verified !== true) return 'not_discord';
+        return 'complete';
+    }
+
     async function loadDiscordCheckTab() {
         if (!supabaseClient) return;
         const area = document.getElementById('discordCheckListArea');
-        const countEl = document.getElementById('discordCheckResultCount');
         if (area) area.innerHTML = 'Lade...';
 
         const { data: players, error } = await supabaseClient.from('profiles')
-            .select('id, discord_id, discord_name, username, real_name, display_name, discord_member_verified, discord_checked_at, created_at, updated_at');
+            .select('id, discord_id, discord_name, username, real_name, display_name, discord_member_verified, discord_checked_at, want_autodarts, want_dartcounter, want_scolia, created_at, updated_at');
         if (error) {
             area.innerHTML = `<div style="color:#e74c3c;">Fehler beim Laden: ${htmlEscape(error.message)}<br><span class="meta-text">Existiert das Feld 'discord_member_verified' bereits in 'profiles'?</span></div>`;
             updateDiscordCheckBadgeCount(0);
             return;
         }
 
-        discordCheckPlayers = (players || [])
-            .filter(p => adminIsProfileComplete(p) && p.discord_member_verified !== true)
-            .sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
+        discordCheckAllPlayers = (players || []).sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
 
-        updateDiscordCheckBadgeCount(discordCheckPlayers.length);
-        if (countEl) countEl.textContent = `${discordCheckPlayers.length} Spieler gefunden`;
+        const needsAttentionCount = discordCheckAllPlayers.filter(p => getPlayerRegistrationStatus(p) !== 'complete').length;
+        updateDiscordCheckBadgeCount(needsAttentionCount);
 
-        if (discordCheckPlayers.length === 0) {
-            area.innerHTML = `<p class="meta-text">🎉 Aktuell hat jeder Spieler mit vollständigem Profil auch eine bestätigte Discord-Mitgliedschaft (Stand letzte Prüfung).</p>`;
+        // Alle admin_messages einmal laden und pro Spieler die jeweils neueste zuordnen.
+        try {
+            const { data: messages, error: msgError } = await supabaseClient.from('admin_messages')
+                .select('*').order('created_at', { ascending: false });
+            if (msgError) throw msgError;
+            adminMessagesByPlayer = {};
+            (messages || []).forEach(m => { if (!adminMessagesByPlayer[m.player_id]) adminMessagesByPlayer[m.player_id] = m; });
+        } catch (e) {
+            console.error('Fehler beim Laden der Admin-Nachrichten (existiert die Tabelle admin_messages bereits?):', e);
+            adminMessagesByPlayer = {};
+        }
+
+        applyDiscordCheckFilters();
+    }
+
+    window.applyDiscordCheckFilters = function() {
+        const area = document.getElementById('discordCheckListArea');
+        const countEl = document.getElementById('discordCheckResultCount');
+        const statusFilter = document.getElementById('discordCheckStatusFilter') ? document.getElementById('discordCheckStatusFilter').value : 'needs_attention';
+        const searchRaw = document.getElementById('discordCheckSearchInput') ? document.getElementById('discordCheckSearchInput').value.trim().toLowerCase() : '';
+
+        let list = discordCheckAllPlayers;
+        if (statusFilter === 'needs_attention') list = list.filter(p => getPlayerRegistrationStatus(p) !== 'complete');
+        else if (statusFilter !== 'all') list = list.filter(p => getPlayerRegistrationStatus(p) === statusFilter);
+
+        if (searchRaw) {
+            list = list.filter(p => {
+                const haystack = [p.discord_name, p.username, p.real_name, p.display_name].filter(Boolean).join(' ').toLowerCase();
+                return haystack.includes(searchRaw);
+            });
+        }
+
+        discordCheckFilteredPlayers = list;
+        if (countEl) countEl.textContent = `${list.length} Spieler gefunden`;
+
+        if (list.length === 0) {
+            area.innerHTML = `<p class="meta-text">🎉 Keine Spieler entsprechen den gewählten Filtern.</p>`;
             return;
         }
 
-        area.innerHTML = discordCheckPlayers.map(p => renderDiscordCheckRow(p)).join("");
+        area.innerHTML = list.map(p => renderDiscordCheckRow(p)).join("");
+    };
+
+    function formatWantedPlatformsShort(p) {
+        const chips = [];
+        if (p.want_autodarts) chips.push('⚫ Autodarts');
+        if (p.want_dartcounter) chips.push('🟠 DartCounter');
+        if (p.want_scolia) chips.push('🟢 Scolia');
+        return chips.length > 0 ? chips.join(', ') : 'Keine Plattform angemeldet';
     }
 
     function renderDiscordCheckRow(p) {
         const playerName = p.discord_name || p.username || p.real_name || 'Unbekannter Spieler';
         const handle = p.username || p.discord_name || '-';
         const numericId = extractNumericDiscordId(p);
+        const status = getPlayerRegistrationStatus(p);
+        const registeredStr = p.created_at
+            ? new Date(p.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            : '-';
         const checkedStr = p.discord_checked_at
             ? new Date(p.discord_checked_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : 'noch nie geprüft';
-        const statusLabel = p.discord_member_verified === false
-            ? '<span style="color:#e74c3c; font-weight:bold;">❌ Nicht auf Discord (letzte Prüfung)</span>'
-            : '<span style="color:var(--text-secondary); font-weight:bold;">❔ Noch nie geprüft</span>';
+
+        let statusLabel;
+        if (status === 'incomplete') statusLabel = '<span style="color:#ff6b35; font-weight:bold;">📝 Profil unvollständig (nur registriert)</span>';
+        else if (status === 'not_discord') statusLabel = '<span style="color:#e74c3c; font-weight:bold;">❌ Nicht auf Discord (letzte Prüfung)</span>';
+        else statusLabel = '<span style="color:#00d084; font-weight:bold;">✅ Vollständig registriert</span>';
 
         const dmBtnHtml = numericId
             ? `<a class="btn-dm-discord" href="https://discord.com/users/${numericId}" target="_blank">💬 Discord-Profil öffnen</a>`
-            : `<span class="meta-text">Keine Discord-ID hinterlegt</span>`;
+            : '';
+        const recheckBtnHtml = status !== 'incomplete'
+            ? `<button class="btn-recheck-discord" onclick="recheckPlayerDiscordMembership('${p.id}', true)">🔄 Jetzt prüfen</button>`
+            : '';
+
+        const lastMsg = adminMessagesByPlayer[p.id];
+        const msgHistoryHtml = lastMsg
+            ? `<div class="msg-history-box">📨 Letzte Nachricht: „${htmlEscape(lastMsg.message)}" (${new Date(lastMsg.created_at).toLocaleDateString('de-DE')}) - ${lastMsg.read_at ? `<span class="msg-history-read">gelesen am ${new Date(lastMsg.read_at).toLocaleDateString('de-DE')}</span>` : `<span class="msg-history-unread">noch ungelesen</span>`}</div>`
+            : "";
 
         return `<div class="discord-check-row" id="discordCheckRow_${p.id}">
             <div class="discord-check-info">
                 <strong style="color:#0066ff;">${htmlEscape(playerName)}</strong>
-                <span class="meta-text">Echtname: ${htmlEscape(p.real_name)} &middot; Discord-Handle: ${htmlEscape(handle)}</span><br>
+                <span class="meta-text">Echtname: ${htmlEscape(p.real_name || '-')} &middot; Discord-Handle: ${htmlEscape(handle)}</span><br>
                 ${statusLabel}<br>
-                <span class="meta-text">Letzte Prüfung: ${checkedStr}</span>
+                <span class="meta-text">Registriert seit: ${registeredStr} &middot; ${htmlEscape(formatWantedPlatformsShort(p))}</span><br>
+                <span class="meta-text">Letzte Discord-Prüfung: ${checkedStr}</span>
+                ${msgHistoryHtml}
+                <div id="msgComposeArea_${p.id}"></div>
             </div>
             <div class="discord-check-actions">
                 ${dmBtnHtml}
-                <button class="btn-recheck-discord" onclick="recheckPlayerDiscordMembership('${p.id}', true)">🔄 Jetzt prüfen</button>
+                ${recheckBtnHtml}
+                <button class="btn-msg-admin" onclick="toggleMessageCompose('${p.id}')">✉️ Nachricht senden</button>
             </div>
         </div>`;
     }
+
+    window.toggleMessageCompose = function(playerId) {
+        const area = document.getElementById(`msgComposeArea_${playerId}`);
+        if (!area) return;
+        if (area.innerHTML.trim() !== '') { area.innerHTML = ''; return; }
+        area.innerHTML = `
+            <div class="msg-compose-box">
+                <textarea id="msgComposeText_${playerId}" placeholder="Nachricht an diesen Spieler..."></textarea>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button class="assign-btn" style="width:auto; padding:8px 14px;" onclick="sendAdminMessage('${playerId}')">📨 Absenden</button>
+                    <button class="card-btn" onclick="toggleMessageCompose('${playerId}')">✖ Abbrechen</button>
+                </div>
+            </div>`;
+        const textarea = document.getElementById(`msgComposeText_${playerId}`);
+        if (textarea) textarea.focus();
+    };
+
+    window.sendAdminMessage = async function(playerId) {
+        const textarea = document.getElementById(`msgComposeText_${playerId}`);
+        const message = textarea ? textarea.value.trim() : '';
+        if (!message) { alert('❌ Bitte eine Nachricht eingeben!'); return; }
+
+        const { error } = await supabaseClient.from('admin_messages').insert({
+            player_id: playerId, message: message, created_by: 'Admin'
+        });
+        if (error) { alert('❌ Fehler beim Senden: ' + error.message + '\n\nExistiert die Tabelle "admin_messages" bereits? (siehe admin_messages_migration.sql)'); return; }
+
+        alert('✅ Nachricht gesendet! Sie wird dem Spieler beim nächsten Login angezeigt.');
+        loadDiscordCheckTab();
+    };
 
     window.recheckPlayerDiscordMembership = async function(playerId, manual) {
         if (!supabaseClient) return;
@@ -3545,7 +3666,7 @@
             const verified = !!(data && data.verified);
             if (manual) {
                 if (verified) {
-                    alert('✅ Dieser Spieler ist jetzt als Discord-Mitglied bestätigt und verschwindet aus der Liste.');
+                    alert('✅ Dieser Spieler ist jetzt als Discord-Mitglied bestätigt.');
                 } else {
                     alert('❌ Weiterhin keine Discord-Mitgliedschaft gefunden.');
                 }
@@ -3563,21 +3684,21 @@
 
     window.recheckAllVisibleDiscordMemberships = async function() {
         if (!supabaseClient) return;
-        if (discordCheckPlayers.length === 0) { alert('Die Liste ist aktuell leer - nichts zu prüfen.'); return; }
-        if (!confirm(`${discordCheckPlayers.length} Spieler nacheinander neu prüfen? Das kann je nach Anzahl einen Moment dauern.`)) return;
+        const toCheck = discordCheckFilteredPlayers.filter(p => getPlayerRegistrationStatus(p) !== 'incomplete');
+        if (toCheck.length === 0) { alert('Die aktuell sichtbare Liste enthält keine Spieler mit vollständigem Profil - nichts zu prüfen.'); return; }
+        if (!confirm(`${toCheck.length} Spieler nacheinander erneut auf Discord prüfen? Das kann je nach Anzahl einen Moment dauern.`)) return;
 
         const area = document.getElementById('discordCheckListArea');
-        const idsToCheck = discordCheckPlayers.map(p => p.id);
         let checkedCount = 0;
 
-        for (const playerId of idsToCheck) {
+        for (const p of toCheck) {
             try {
-                await supabaseClient.functions.invoke('check-discord-membership', { body: { user_id: playerId } });
+                await supabaseClient.functions.invoke('check-discord-membership', { body: { user_id: p.id } });
             } catch (e) {
-                console.error('Fehler beim Massen-Check für Spieler', playerId, e);
+                console.error('Fehler beim Massen-Check für Spieler', p.id, e);
             }
             checkedCount++;
-            if (area) area.innerHTML = `<p class="meta-text">⏳ Prüfe... (${checkedCount} / ${idsToCheck.length})</p>`;
+            if (area) area.innerHTML = `<p class="meta-text">⏳ Prüfe... (${checkedCount} / ${toCheck.length})</p>`;
             await new Promise(r => setTimeout(r, 400));
         }
 
@@ -3591,7 +3712,7 @@
             const { data: players, error } = await supabaseClient.from('profiles')
                 .select('display_name, real_name, discord_member_verified');
             if (error) return;
-            const count = (players || []).filter(p => adminIsProfileComplete(p) && p.discord_member_verified !== true).length;
+            const count = (players || []).filter(p => getPlayerRegistrationStatus(p) !== 'complete').length;
             updateDiscordCheckBadgeCount(count);
         } catch (e) {}
     }
