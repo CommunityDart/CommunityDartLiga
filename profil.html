@@ -396,6 +396,16 @@
   </div>
 </div>
 
+<!-- ===================== Popup: Nachricht(en) vom Admin ===================== -->
+<!-- Öffnet sich automatisch, wenn ungelesene Einträge in admin_messages für
+     diesen Spieler vorliegen. Jede Nachricht wird einzeln als gelesen markiert. -->
+<div id="adminMessageModal" class="modal-overlay">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title" style="color:var(--platform-color);">📨 Nachricht vom Admin</div>
+    <div id="adminMessageModalArea" style="display:flex; flex-direction:column; gap:14px;"></div>
+  </div>
+</div>
+
   <script>
     const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
@@ -1130,6 +1140,51 @@
       loadMyLeagueConfirmations(currentUser.id);
     };
 
+    // ===================== Nachrichten vom Admin =====================
+    // Zeigt ungelesene Einträge aus admin_messages als Popup, sobald sich der
+    // Spieler einloggt. Jede Nachricht wird einzeln per "Verstanden" als
+    // gelesen markiert (read_at gesetzt) und verschwindet danach dauerhaft.
+    async function loadMyAdminMessages(userId) {
+      const modal = document.getElementById('adminMessageModal');
+      const area = document.getElementById('adminMessageModalArea');
+      if (!modal || !area) return;
+
+      const { data: messages, error } = await supabaseClient
+        .from('admin_messages')
+        .select('*')
+        .eq('player_id', userId)
+        .is('read_at', null)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Fehler beim Laden der Admin-Nachrichten (existiert die Tabelle admin_messages bereits?):', error);
+        return;
+      }
+      if (!messages || messages.length === 0) { modal.classList.remove('active'); return; }
+
+      renderAdminMessageModal(messages);
+      modal.classList.add('active');
+    }
+
+    function renderAdminMessageModal(messages) {
+      const area = document.getElementById('adminMessageModalArea');
+      if (!area) return;
+      area.innerHTML = messages.map(m => {
+        const dateStr = new Date(m.created_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return `<div class="league-confirm-item" style="border-color:var(--platform-color);">
+          <div class="league-confirm-deadline">${dateStr}</div>
+          <div class="league-confirm-explain" style="margin-bottom:14px;">${htmlEscape(m.message)}</div>
+          <button type="button" class="league-confirm-btn" style="background:var(--platform-color);" onclick="acknowledgeAdminMessage('${m.id}')">✅ Verstanden</button>
+        </div>`;
+      }).join('');
+    }
+
+    window.acknowledgeAdminMessage = async function(messageId) {
+      const { error } = await supabaseClient.from('admin_messages').update({ read_at: new Date().toISOString() }).eq('id', messageId);
+      if (error) { alert('❌ Fehler: ' + error.message); return; }
+      loadMyAdminMessages(currentUser.id);
+    };
+
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) { window.location.href = "index.html"; return; }
@@ -1146,6 +1201,7 @@
       loadMyBadges(currentUser.id);
       loadAvgProofs(currentUser.id);
       loadMyLeagueConfirmations(currentUser.id);
+      loadMyAdminMessages(currentUser.id);
       
       document.getElementById("profilForm").style.display = "block";
 
