@@ -851,7 +851,7 @@
           </button>`;
         return `<div style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg-tertiary); border-radius:8px; border:1px solid var(--border); ${dimStyle} flex-wrap:wrap;">
           ${renderBadgeHex(b, 36)}
-          <div style="flex:1; min-width:0;">
+          <div style="flex:1 1 130px; min-width:130px;">
             <div style="font-size:13px; font-weight:600; color:var(--text-primary);">${htmlEscape(formatBadgeLabel(b))}</div>
             <div style="font-size:11px; color:var(--text-secondary);">${b.platform ? htmlEscape(b.platform) + ' · ' : ''}${dateStr}</div>
           </div>
