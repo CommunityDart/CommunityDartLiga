@@ -1304,6 +1304,43 @@
         } catch(e) { console.error("Fehler in loadWaitingList:", e); }
     }
 
+    // Trägt einen Spieler nachträglich in eine bereits laufende (status: 'active',
+    // Frist noch nicht abgelaufen) Anmeldebestätigung für die aktuelle Saison ein,
+    // falls er einer der betroffenen Ligen neu zugeteilt wurde. Bereits bestätigte
+    // Spieler in derselben Runde bleiben davon unberührt - es wird nur eine fehlende
+    // Zeile für den neuen Spieler nachgelegt (confirmed: false).
+    async function syncPlayerIntoActiveConfirmations(playerId, leagueNames) {
+        const validLeagues = [...new Set(leagueNames.filter(Boolean))];
+        const addedTo = [];
+        if (validLeagues.length === 0 || !supabaseClient) return { addedTo };
+        try {
+            const { data: confirmations, error } = await supabaseClient.from('league_season_confirmations')
+                .select('id, league_name')
+                .eq('season', currentSeasonGlobal)
+                .eq('status', 'active')
+                .gt('deadline', new Date().toISOString())
+                .in('league_name', validLeagues);
+            if (error || !confirmations || confirmations.length === 0) return { addedTo };
+
+            for (const conf of confirmations) {
+                const { data: existing } = await supabaseClient.from('player_league_confirmations')
+                    .select('id')
+                    .eq('confirmation_id', conf.id)
+                    .eq('player_id', playerId)
+                    .maybeSingle();
+                if (!existing) {
+                    const { error: insErr } = await supabaseClient.from('player_league_confirmations')
+                        .insert({ confirmation_id: conf.id, player_id: playerId, confirmed: false });
+                    if (!insErr) addedTo.push(conf.league_name);
+                    else console.error('Fehler beim Nachtragen in Anmeldebestätigung:', insErr);
+                }
+            }
+        } catch (e) {
+            console.error('Fehler beim Prüfen laufender Anmeldebestätigungen:', e);
+        }
+        return { addedTo };
+    }
+
     window.saveSingleAssignment = async function(playerId) {
         if(!supabaseClient) return;
         const adEl = document.getElementById(`ad_${playerId}`);
@@ -1330,8 +1367,16 @@
         };
 
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', playerId);
-        if(error) alert("❌ Fehler beim Abspeichern: " + error.message);
-        else { alert("✅ Zuteilungen erfolgreich abgespeichert!"); loadWaitingList(); }
+        if(error) { alert("❌ Fehler beim Abspeichern: " + error.message); return; }
+
+        const { addedTo } = await syncPlayerIntoActiveConfirmations(playerId, [adVal, dcVal, scVal]);
+        let msg = "✅ Zuteilungen erfolgreich abgespeichert!";
+        if (addedTo.length > 0) {
+            msg += `\n⏳ Spieler wurde zusätzlich in die laufende(n) Anmeldebestätigung(en) für "${addedTo.join('", "')}" aufgenommen (Status: noch nicht bestätigt).`;
+        }
+        alert(msg);
+        loadWaitingList();
+        if (document.getElementById('tabConfirm') && document.getElementById('tabConfirm').classList.contains('active')) loadConfirmationsTab();
     };
 
     window.loadMatchdayPlan = async function() {
@@ -2963,6 +3008,7 @@
             loadActiveTournaments();
         } catch (e) { console.error('Fehler beim Auto-Start-Check:', e); }
     }
+
     let smcCurrentPlatform = 'autodarts';
     const SMC_ACCENTS = { autodarts:'#3c7bff', dartcounter:'#ff9d3c', scolia:'#3ce07a' };
     let smcInitDone = false;
@@ -3527,6 +3573,7 @@
         setInterval(loadDiscordCheckBadgeCountOnly, 60 * 1000);
     }
     initAdmin();
+
 </script>
 </body>
 </html>
