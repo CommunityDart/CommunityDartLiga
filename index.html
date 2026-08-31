@@ -2277,21 +2277,47 @@
     const data = state.leagueData[state.activeLeague] || { matchdays: [] }; const matchdays = data.matchdays || [];
     if (matchdays.length === 0) { document.getElementById('matchesHeaderTitle').innerText = `🎯 Spielpaarungen`; document.getElementById('matchesArea').innerHTML = '<div class="empty">Noch keine Spielpaarungen für diese Liga generiert</div>'; return; }
 
-    matchdays.sort((a, b) => (parseInt(a.title.replace(/\D/g, "")) || 0) - (parseInt(b.title.replace(/\D/g, "")) || 0));
+    // Jeder Spieltag bekommt seine Nummer (aus dem Titel) sowie ein Flag, ob
+    // ALLE seine Spiele bereits abgeschlossen sind.
+    matchdays.forEach(md => {
+      md._dayNum = parseInt(md.title.replace(/\D/g, "")) || 0;
+      md._isComplete = md.rows.length > 0 && md.rows.every(m => m.status === 'done' || m.status === 'fertig');
+    });
+
+    // Offene/teilweise gespielte Spieltage zuerst (aufsteigend nach Nummer),
+    // komplett abgeschlossene Spieltage werden ans Ende geschoben (ebenfalls
+    // aufsteigend sortiert), damit der aktuelle Spielstand immer oben steht.
+    matchdays.sort((a, b) => {
+      if (a._isComplete !== b._isComplete) return a._isComplete ? 1 : -1;
+      return a._dayNum - b._dayNum;
+    });
+
     document.getElementById('matchesHeaderTitle').innerText = `🎯 Spielplan-Übersicht (${state.activeLeague})`;
 
     let html = '<div class="matchdays-grid">';
     matchdays.forEach((md, mdIdx) => {
       const openRows = md.rows.filter(m => !(m.status === 'done' || m.status === 'fertig'));
       const doneRows = md.rows.filter(m => m.status === 'done' || m.status === 'fertig');
-      const toggleId = `done-matches-${state.activeLeague.replace(/[^a-zA-Z0-9]+/g, '_')}-${mdIdx}`;
 
+      if (md._isComplete) {
+        // Komplett abgeschlossene Spieltage: Karte bleibt eingeklappt, Titel
+        // grün markiert, alle Spiele erst nach Klick sichtbar.
+        const fullToggleId = `matchday-full-${state.activeLeague.replace(/[^a-zA-Z0-9]+/g, '_')}-${mdIdx}`;
+        html += `<div class="matchday-card">
+          <div class="matchday-title" style="color:#00d084;">✅ ${htmlEscape(md.title)}</div>
+          <div style="text-align:center; padding:4px 0 2px 0;">
+            <span class="player-link" style="font-size:11px; font-weight:600;" onclick="toggleDoneMatches('${fullToggleId}')">🔽 Alle ${doneRows.length} Spiel${doneRows.length === 1 ? '' : 'e'} abgeschlossen - anzeigen</span>
+          </div>
+          <div id="${fullToggleId}" style="display:none; margin-top:6px;">${doneRows.map(m => buildMatchRowHtml(m, 'done')).join('')}</div>
+        </div>`;
+        return;
+      }
+
+      const toggleId = `done-matches-${state.activeLeague.replace(/[^a-zA-Z0-9]+/g, '_')}-${mdIdx}`;
       html += `<div class="matchday-card"><div class="matchday-title">⚡ ${htmlEscape(md.title)}</div>`;
 
       if (openRows.length > 0) {
         openRows.forEach(m => { html += buildMatchRowHtml(m, 'open'); });
-      } else if (doneRows.length > 0) {
-        html += `<div style="text-align:center; padding:8px 0; color:var(--text-secondary); font-size:12px;">✓ Alle Spiele abgeschlossen</div>`;
       } else {
         html += `<div style="text-align:center; padding:8px 0; color:var(--text-secondary); font-size:12px; font-style:italic;">Noch keine Spiele</div>`;
       }
