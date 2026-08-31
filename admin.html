@@ -197,21 +197,20 @@
         }
         .smc-league-pill:empty:before { content:attr(data-placeholder); color:#5a6690; font-weight:600; }
         .smc-match-row {
-            border:1.5px solid var(--smc-accent); border-radius:18px; padding:11px 12px;
-            display:flex; align-items:center; gap:9px; position:relative;
+            border:1.5px solid var(--smc-accent); border-radius:18px; padding:16px 12px;
+            display:flex; flex-direction:column; align-items:center; gap:10px; position:relative;
             background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
         }
-        .smc-player-col { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
-        .smc-player-col.right { order:5; }
+        .smc-player-block { display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; }
         .smc-avatar {
-            width:44px; height:44px; border-radius:50%; overflow:hidden; border:1.5px solid var(--smc-magenta);
+            width:52px; height:52px; border-radius:50%; overflow:hidden; border:1.5px solid var(--smc-magenta);
             background:radial-gradient(circle at 35% 30%, #8fb3ff, #45568c 70%);
-            display:flex; align-items:center; justify-content:center; position:relative;
+            display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0;
         }
         .smc-avatar img { width:100%; height:100%; object-fit:cover; }
         .smc-avatar .smc-avatar-fallback { font-size:9px; color:#fff; opacity:.75; }
         .smc-player-name {
-            width:76px; background:transparent; border:none; color:#fff; font-size:12px;
+            width:auto; max-width:90%; background:transparent; border:none; color:#fff; font-size:13.5px;
             font-weight:700; text-align:center; outline:none;
         }
         .smc-avg-tag {
@@ -220,12 +219,11 @@
         }
         .smc-avg-tag span { font-size:9px; color:#7fe9f0; font-weight:700; }
         .smc-avg-tag input { width:32px; background:transparent; border:none; color:#c987f2; font-size:11px; font-weight:800; text-align:center; outline:none; }
-        .smc-score-block { flex:1; display:flex; align-items:center; justify-content:center; gap:8px; order:3; }
         .smc-score {
-            width:40px; text-align:center; background:rgba(255,255,255,.03); border:1.5px solid var(--smc-accent);
-            border-radius:10px; color:#fff; font-weight:700; font-size:16px; padding:8px 0; outline:none;
+            width:52px; text-align:center; background:rgba(255,255,255,.03); border:1.5px solid var(--smc-accent);
+            border-radius:10px; color:#fff; font-weight:700; font-size:18px; padding:8px 0; outline:none;
         }
-        .smc-colon { color:#7fe9f0; font-weight:800; font-size:16px; }
+        .smc-vs-divider { color:#7fe9f0; font-weight:800; font-size:13px; letter-spacing:2px; }
         .smc-bottom-pill {
             border-radius:20px; padding:16px; text-align:center; flex-shrink:0;
             background:linear-gradient(135deg, #1E6FFF, #2fb3ff); box-shadow:0 0 24px -6px #1E6FFF;
@@ -3198,20 +3196,18 @@
                         <label class="smc-banner">${smcCurrentBannerHtml}</label>
                         <div class="smc-league-pill" contenteditable="true" data-placeholder="Liganame eintragen…"></div>
                         <div class="smc-match-row">
-                            <div class="smc-player-col">
+                            <div class="smc-player-block">
                                 <div class="smc-avatar">${p1AvatarHtml}</div>
                                 <input class="smc-player-name" placeholder="Spielername" value="${escAttr(p1Name || '')}">
                                 <div class="smc-avg-tag"><span>Ø AVG</span><input maxlength="5" value="${escAttr(p1Avg || '')}" placeholder="0.00"></div>
-                            </div>
-                            <div class="smc-score-block">
                                 <input class="smc-score" maxlength="2" value="${escAttr(l1 ?? '')}">
-                                <span class="smc-colon">:</span>
-                                <input class="smc-score" maxlength="2" value="${escAttr(l2 ?? '')}">
                             </div>
-                            <div class="smc-player-col right">
+                            <div class="smc-vs-divider">VS</div>
+                            <div class="smc-player-block">
                                 <div class="smc-avatar">${p2AvatarHtml}</div>
                                 <input class="smc-player-name" placeholder="Spielername" value="${escAttr(p2Name || '')}">
                                 <div class="smc-avg-tag"><span>Ø AVG</span><input maxlength="5" value="${escAttr(p2Avg || '')}" placeholder="0.00"></div>
+                                <input class="smc-score" maxlength="2" value="${escAttr(l2 ?? '')}">
                             </div>
                         </div>
                     </div>
