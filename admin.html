@@ -203,12 +203,19 @@
         .smc-match-row {
             position:relative; overflow:hidden; display:flex; flex-direction:column; gap:0; padding:2px 0;
         }
+        .smc-match-row.horizontal {
+            flex-direction:row; align-items:stretch; justify-content:center; gap:10px; padding:8px 2px;
+        }
         .smc-player-block {
             display:flex; flex-direction:column; align-items:center; gap:6px; width:100%;
             padding:14px 10px; position:relative; box-sizing:border-box;
         }
+        .smc-match-row.horizontal .smc-player-block { flex:1; min-width:0; width:auto; }
+        .smc-match-row.horizontal .smc-player-name { font-size:12.5px; }
         .smc-player-block.p1 { background:linear-gradient(180deg, rgba(60,123,255,.16), transparent 85%); border-left:3px solid var(--smc-accent); }
         .smc-player-block.p2 { background:linear-gradient(0deg, rgba(227,71,232,.16), transparent 85%); border-left:3px solid var(--smc-magenta); }
+        .smc-match-row.horizontal .smc-player-block.p1 { border-left:none; border-bottom:3px solid var(--smc-accent); background:linear-gradient(180deg, rgba(60,123,255,.16), transparent 85%); }
+        .smc-match-row.horizontal .smc-player-block.p2 { border-left:none; border-bottom:3px solid var(--smc-magenta); background:linear-gradient(180deg, rgba(227,71,232,.16), transparent 85%); }
         .smc-avatar {
             width:58px; height:58px; overflow:hidden; position:relative; flex-shrink:0;
             clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
@@ -245,6 +252,7 @@
             text-shadow:0 0 12px var(--smc-accent), 0 0 20px var(--smc-magenta);
             padding:2px 0;
         }
+        .smc-match-row.horizontal .smc-vs-divider { flex-shrink:0; align-self:center; padding:0 2px; }
         .smc-bottom-pill {
             position:relative; padding:15px; text-align:center; flex-shrink:0;
             clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 100%, 14px 100%);
@@ -3154,6 +3162,10 @@
         document.querySelectorAll('.smc-frame').forEach(frame => {
             frame.classList.remove('fmt-square', 'fmt-tiktok');
             frame.classList.add(fmt === 'tiktok' ? 'fmt-tiktok' : 'fmt-square');
+            const row = frame.querySelector('.smc-match-row');
+            // Instagram (Quadrat) -> Spieler nebeneinander (breiter Inhalt füllt das Quadrat besser).
+            // TikTok/Story (Hochformat) -> Spieler gestapelt (füllt die Höhe besser).
+            if (row) row.classList.toggle('horizontal', fmt !== 'tiktok');
         });
     }
 
@@ -3219,7 +3231,7 @@
                     <div class="smc-card">
                         <label class="smc-banner">${smcCurrentBannerHtml}</label>
                         <div class="smc-league-pill" contenteditable="true" data-placeholder="Liganame eintragen…"></div>
-                        <div class="smc-match-row">
+                        <div class="smc-match-row${smcCurrentFormat === 'tiktok' ? '' : ' horizontal'}">
                             <div class="smc-player-block p1">
                                 <div class="smc-avatar">${p1AvatarHtml}</div>
                                 <input class="smc-player-name" placeholder="Spielername" value="${escAttr(p1Name || '')}">
@@ -3235,7 +3247,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="smc-bottom-pill" contenteditable="true" data-placeholder="Fußzeile eintragen…">communitydartliga.de</div>
+                    <div class="smc-bottom-pill" contenteditable="true" data-placeholder="Fußzeile eintragen…">communitydart.de</div>
                 </div>
             </div>
             <div class="smc-slide-toolbar">
