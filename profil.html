@@ -667,9 +667,20 @@
         </div>`;
       }
 
-      const wantsAny = data.want_autodarts || data.want_dartcounter || data.want_scolia;
-      if (data.status_neue_saison === 'waiting' && wantsAny) {
-        html += `<div class="assignment-pending">⏳ Du bist für die neue Saison angemeldet und wartest auf Zuteilung durch den Admin.</div>`;
+      // FIX: Vorher wurde die "wartet auf Zuteilung"-Box gezeigt, sobald
+      // status_neue_saison === 'waiting' war und IRGENDEINE Plattform gewünscht
+      // wurde - unabhängig davon, ob genau diese Plattform(en) längst zugeteilt
+      // wurden. Dadurch stand z.B. "Aktuell zugeteilt: DartCounter Liga 1" UND
+      // "wartest auf Zuteilung" gleichzeitig da, obwohl DartCounter (die einzige
+      // gewählte Plattform) bereits zugeteilt war. Jetzt wird pro Plattform
+      // geprüft: nur gewünschte Plattformen OHNE Zuteilung gelten als "pending".
+      const pendingPlatforms = [];
+      if (data.want_autodarts && !data.assigned_ad_league) pendingPlatforms.push('⚫ Autodarts');
+      if (data.want_dartcounter && !data.assigned_dc_league) pendingPlatforms.push('🟠 DartCounter');
+      if (data.want_scolia && !data.assigned_sc_league) pendingPlatforms.push('🟢 Scolia');
+
+      if (data.status_neue_saison === 'waiting' && pendingPlatforms.length > 0) {
+        html += `<div class="assignment-pending">⏳ Du wartest noch auf Zuteilung durch den Admin für: ${pendingPlatforms.join(', ')}</div>`;
       }
 
       area.innerHTML = html;
