@@ -166,11 +166,7 @@
         .smc-slide-toolbar .generate-btn, .smc-slide-toolbar .remove-btn-large { padding:7px 12px; font-size:12px; }
 
         .smc-frame { width:100%; max-width:460px; margin:0 auto; }
-        .smc-frame-inner { display:flex; flex-direction:column; justify-content:center; gap:14px; box-sizing:border-box; }
-        .smc-frame.fmt-square { aspect-ratio: 1 / 1; overflow:hidden; border-radius:10px; }
-        .smc-frame.fmt-tiktok { aspect-ratio: 9 / 16; overflow:hidden; border-radius:10px; }
-        .smc-frame.fmt-square .smc-frame-inner,
-        .smc-frame.fmt-tiktok .smc-frame-inner { height:100%; padding:20px 6px; }
+        .smc-frame-inner { display:flex; flex-direction:column; gap:14px; box-sizing:border-box; padding:4px 2px; }
         .smc-top-pill {
             border:2px solid var(--smc-accent); border-radius:22px; padding:14px; text-align:center;
             background:linear-gradient(180deg, rgba(255,255,255,.04), transparent);
@@ -832,6 +828,7 @@
                     <button class="generate-btn" onclick="smcAddManualSlide()">+ Begegnung manuell hinzufügen</button>
                     <button class="generate-btn" onclick="smcExportAllSlides()">🖼️ Alle Karten als Bilder speichern</button>
                 </div>
+                <p class="meta-text" style="margin-top:6px; color:#9fb3d9;">Beim Speichern wird jede Karte automatisch ins gewählte Format eingepasst - ohne Zuschneiden, überschüssiger Platz wird als Rand aufgefüllt.</p>
             </div>
 
             <div id="smcSlidesArea"></div>
@@ -3299,8 +3296,31 @@
         if (statusEl) statusEl.textContent = `✓ ${matches.length} fertige Begegnung(en) geladen - eine Karte pro Spiel.`;
     };
 
-    // Exportiert genau eine Karte (ein .smc-frame-Element) als PNG in fester
-    // Ziel-Auflösung (1080px breit; Höhe ergibt sich aus dem gewählten Format).
+    // Setzt ein per html2canvas erfasstes Canvas (beliebige natürliche Größe) sauber
+    // OHNE Beschnitt in ein Ziel-Canvas fester Auflösung um ("contain"-Skalierung).
+    // Passt die Karte proportional ein und füllt den Rest mit der Hintergrundfarbe,
+    // statt Inhalt am Rand abzuschneiden.
+    function smcComposeToTargetCanvas(sourceCanvas, targetW, targetH, bgColor) {
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = targetW;
+        finalCanvas.height = targetH;
+        const ctx = finalCanvas.getContext('2d');
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, targetW, targetH);
+        const scale = Math.min(targetW / sourceCanvas.width, targetH / sourceCanvas.height);
+        const drawW = sourceCanvas.width * scale;
+        const drawH = sourceCanvas.height * scale;
+        const dx = (targetW - drawW) / 2;
+        const dy = (targetH - drawH) / 2;
+        ctx.drawImage(sourceCanvas, dx, dy, drawW, drawH);
+        return finalCanvas;
+    }
+
+    // Exportiert genau eine Karte (ein .smc-frame-Element) als PNG. Die Karte wird
+    // zuerst in ihrer natürlichen (vollen) Höhe erfasst und danach OHNE Beschnitt
+    // ins gewählte Zielformat eingepasst (1080x1080 Instagram-Quadrat oder
+    // 1080x1920 TikTok/Story-Hochformat) - überschüssiger Platz wird mit der
+    // Hintergrundfarbe aufgefüllt statt Inhalt abzuschneiden.
     async function smcExportFrameElement(frame) {
         if (typeof html2canvas === 'undefined') {
             alert('❌ Die Bildexport-Bibliothek (html2canvas) konnte nicht geladen werden.\n\nBitte Internetverbindung prüfen und die Seite neu laden.');
@@ -3311,18 +3331,24 @@
         await new Promise(r => setTimeout(r, 50));
 
         try {
-            const targetWidth = 1080;
-            const scale = targetWidth / frame.offsetWidth;
-            const canvas = await html2canvas(frame, {
-                backgroundColor: '#05060d',
-                scale: scale,
+            const isTiktok = frame.classList.contains('fmt-tiktok');
+            const targetW = 1080;
+            const targetH = isTiktok ? 1920 : 1080;
+            const bgColor = '#05060d';
+
+            // Erfassung in hoher Qualität, aber in der NATÜRLICHEN Höhe der Karte -
+            // hier wird nichts abgeschnitten, egal wie lang Name/Inhalt ist.
+            const captureScale = Math.max(2, targetW / frame.offsetWidth);
+            const rawCanvas = await html2canvas(frame, {
+                backgroundColor: bgColor,
+                scale: captureScale,
                 useCORS: true,
                 allowTaint: false,
                 onclone: (clonedDoc) => {
                     const clonedFrame = clonedDoc.getElementById(frame.id);
                     if (!clonedFrame) return;
 
-                    clonedFrame.style.background = '#05060d';
+                    clonedFrame.style.background = bgColor;
                     const cardEl = clonedFrame.querySelector('.smc-card');
                     if (cardEl) cardEl.style.background = '#12172b';
                     clonedFrame.querySelectorAll('.smc-top-pill').forEach(el => { el.style.background = 'rgba(255,255,255,0.04)'; });
@@ -3369,6 +3395,8 @@
                 }
             });
 
+            const finalCanvas = smcComposeToTargetCanvas(rawCanvas, targetW, targetH, bgColor);
+
             const leaguePill = frame.querySelector('.smc-league-pill');
             const playerNameInputs = frame.querySelectorAll('.smc-player-name');
             const rawLeague = leaguePill ? leaguePill.textContent.trim() : 'spieltag';
@@ -3379,7 +3407,7 @@
 
             const link = document.createElement('a');
             link.download = fileName;
-            link.href = canvas.toDataURL('image/png');
+            link.href = finalCanvas.toDataURL('image/png');
             link.click();
         } catch (err) {
             console.error('Bildexport fehlgeschlagen:', err);
