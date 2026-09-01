@@ -367,6 +367,30 @@
             </table>
         </div>
 
+        <div class="config-box" style="border-color: #e74c3c; background: rgba(231, 76, 60, 0.05);">
+            <h3>🚪 Spieler kicken & ersetzen</h3>
+            <p class="meta-text" style="margin-bottom:8px;">Für Spieler, die während der laufenden Saison aussteigen. Der Spieler wird aus der gewählten Liga entfernt. Alle NOCH OFFENEN Begegnungen (bereits gespielte/fertige Spiele bleiben unangetastet) werden - falls ein Ersatzspieler gewählt wird - automatisch auf ihn umgeschrieben; ohne Ersatz werden die restlichen Spiele zu Freilosen.</p>
+            <div class="config-row">
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">Liga
+                    <select id="kickLeagueSelect" class="league-select" onchange="loadKickTabPlayers()" style="display:block; margin-top:4px; min-width:220px;">
+                        <option value="" disabled selected>-- Liga wählen --</option>
+                    </select>
+                </label>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">Spieler, der aussteigt
+                    <select id="kickLeavingPlayerSelect" class="league-select" style="display:block; margin-top:4px; min-width:220px;">
+                        <option value="">-- zuerst Liga wählen --</option>
+                    </select>
+                </label>
+                <label style="font-size:12.5px; font-weight:bold; color:var(--text-secondary);">Ersetzen durch (optional)
+                    <select id="kickReplacementPlayerSelect" class="league-select" style="display:block; margin-top:4px; min-width:220px;">
+                        <option value="">-- Kein Ersatz (nur kicken) --</option>
+                    </select>
+                </label>
+                <button class="remove-btn-large" onclick="kickAndReplacePlayer()">🚪 Kicken / Ersetzen</button>
+            </div>
+            <p id="kickTabStatus" class="meta-text" style="margin-top:6px;"></p>
+        </div>
+
         <h2>Spieler für die neue Saison einteilen</h2>
         <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
             <h3>🔍 Spielerliste filtern</h3>
@@ -1472,6 +1496,142 @@
         if (document.getElementById('tabConfirm') && document.getElementById('tabConfirm').classList.contains('active')) loadConfirmationsTab();
     };
 
+    // ==================== Spieler kicken & ersetzen (Tab 1) ====================
+    let kickLeaguesPopulated = false;
+
+    function populateKickLeagueSelectOnce() {
+        if (kickLeaguesPopulated) return;
+        const sel = document.getElementById('kickLeagueSelect');
+        if (!sel) return;
+        ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; });
+        kickLeaguesPopulated = true;
+    }
+
+    window.loadKickTabPlayers = async function() {
+        populateKickLeagueSelectOnce();
+        const league = document.getElementById('kickLeagueSelect').value;
+        const leavingSel = document.getElementById('kickLeavingPlayerSelect');
+        const replacementSel = document.getElementById('kickReplacementPlayerSelect');
+        const statusEl = document.getElementById('kickTabStatus');
+        if (statusEl) statusEl.textContent = '';
+
+        leavingSel.innerHTML = '<option value="">-- Spieler wählen --</option>';
+        replacementSel.innerHTML = '<option value="">-- Kein Ersatz (nur kicken) --</option>';
+
+        if (!league || !supabaseClient) return;
+
+        const { data: players, error } = await supabaseClient.from('profiles').select('*');
+        if (error) { if (statusEl) statusEl.textContent = '❌ Fehler beim Laden: ' + error.message; return; }
+
+        const inLeague = getPlayersForLeague(players || [], league).sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
+        if (inLeague.length === 0) {
+            if (statusEl) statusEl.textContent = '⚠️ Dieser Liga sind aktuell keine Spieler zugeteilt.';
+        }
+        inLeague.forEach(p => {
+            leavingSel.innerHTML += `<option value="${p.id}">${htmlEscape(p.discord_name || p.username)}</option>`;
+        });
+
+        const inLeagueIds = new Set(inLeague.map(p => p.id));
+        const others = (players || []).filter(p => !inLeagueIds.has(p.id)).sort((a, b) => (a.discord_name || a.username || '').localeCompare(b.discord_name || b.username || ''));
+        others.forEach(p => {
+            const already = p.assigned_ad_league || p.assigned_dc_league || p.assigned_sc_league;
+            const label = already ? `${p.discord_name || p.username} (bereits in "${already}")` : (p.discord_name || p.username);
+            replacementSel.innerHTML += `<option value="${p.id}">${htmlEscape(label)}</option>`;
+        });
+    };
+
+    window.kickAndReplacePlayer = async function() {
+        if (!supabaseClient) return;
+        const league = document.getElementById('kickLeagueSelect').value;
+        const leavingId = document.getElementById('kickLeavingPlayerSelect').value;
+        const replacementId = document.getElementById('kickReplacementPlayerSelect').value;
+        const statusEl = document.getElementById('kickTabStatus');
+
+        if (!league) return alert('❌ Bitte zuerst eine Liga wählen!');
+        if (!leavingId) return alert('❌ Bitte den Spieler wählen, der die Liga verlässt!');
+        if (replacementId && replacementId === leavingId) return alert('❌ Der Ersatzspieler kann nicht derselbe Spieler sein!');
+
+        const field = getAssignedFieldForLeague(league);
+        if (!field) return alert('❌ Konnte Plattform aus dem Liganamen nicht ableiten!');
+
+        const { data: leavingProfile } = await supabaseClient.from('profiles').select('id, discord_name, username').eq('id', leavingId).single();
+        const leavingName = leavingProfile ? (leavingProfile.discord_name || leavingProfile.username) : 'Spieler';
+
+        let replacementName = null;
+        if (replacementId) {
+            const { data: replacementProfile } = await supabaseClient.from('profiles').select('id, discord_name, username').eq('id', replacementId).single();
+            replacementName = replacementProfile ? (replacementProfile.discord_name || replacementProfile.username) : 'Ersatzspieler';
+        }
+
+        const confirmMsg = replacementId
+            ? `"${leavingName}" wird aus "${league}" entfernt und durch "${replacementName}" ersetzt.\n\nAlle noch OFFENEN Begegnungen dieser Liga (Saison ${currentSeasonGlobal}) übernimmt "${replacementName}". Bereits fertig gespielte Begegnungen bleiben unverändert bei "${leavingName}" stehen.\n\nFortfahren?`
+            : `"${leavingName}" wird aus "${league}" entfernt (ohne Ersatz).\n\nAlle noch OFFENEN Begegnungen dieser Liga (Saison ${currentSeasonGlobal}) werden dadurch zu Freilosen. Bereits fertig gespielte Begegnungen bleiben unverändert bei "${leavingName}" stehen.\n\nFortfahren?`;
+        if (!confirm(confirmMsg)) return;
+
+        if (statusEl) statusEl.textContent = '⏳ Verarbeite...';
+
+        try {
+            // 1) Nur noch OFFENE Begegnungen dieser Liga/Saison laden, in denen der aussteigende Spieler steht.
+            const { data: openMatches, error: matchesErr } = await supabaseClient.from('matches')
+                .select('id, player1_id, player2_id')
+                .eq('league_name', league)
+                .eq('season', currentSeasonGlobal)
+                .eq('status', 'offen')
+                .or(`player1_id.eq.${leavingId},player2_id.eq.${leavingId}`);
+            if (matchesErr) throw matchesErr;
+
+            let updatedCount = 0;
+            let skippedSelfMatchCount = 0;
+
+            for (const m of (openMatches || [])) {
+                const isP1 = m.player1_id === leavingId;
+                const otherId = isP1 ? m.player2_id : m.player1_id;
+
+                // Sicherheitscheck: Ersatzspieler stand bereits als Gegner in genau dieser
+                // Begegnung -> würde sonst gegen sich selbst spielen. Diese Zeile überspringen.
+                if (replacementId && otherId === replacementId) {
+                    skippedSelfMatchCount++;
+                    continue;
+                }
+
+                const field2 = isP1 ? 'player1_id' : 'player2_id';
+                const { error: upErr } = await supabaseClient.from('matches').update({ [field2]: replacementId || null }).eq('id', m.id);
+                if (upErr) { console.error('Fehler beim Umschreiben von Match', m.id, upErr); continue; }
+                updatedCount++;
+            }
+
+            // 2) Liga-Zuteilung des aussteigenden Spielers entfernen (nur dieses eine Plattform-Feld).
+            const { error: leaveErr } = await supabaseClient.from('profiles').update({ [field]: null }).eq('id', leavingId);
+            if (leaveErr) throw leaveErr;
+
+            // 3) Ersatzspieler der Liga zuteilen (falls gewählt).
+            if (replacementId) {
+                const { error: repErr } = await supabaseClient.from('profiles').update({ [field]: league, status_neue_saison: 'assigned' }).eq('id', replacementId);
+                if (repErr) throw repErr;
+                await syncPlayerIntoActiveConfirmations(replacementId, [league]);
+            }
+
+            let msg = replacementId
+                ? `✅ "${leavingName}" wurde aus "${league}" entfernt und durch "${replacementName}" ersetzt.\n📅 ${updatedCount} offene Begegnung(en) wurden umgeschrieben.`
+                : `✅ "${leavingName}" wurde aus "${league}" entfernt.\n📅 ${updatedCount} offene Begegnung(en) sind jetzt Freilose.`;
+            if (skippedSelfMatchCount > 0) {
+                msg += `\n⚠️ ${skippedSelfMatchCount} Begegnung(en) wurden NICHT automatisch umgeschrieben, da der Ersatzspieler darin bereits der Gegner war (sonst würde er gegen sich selbst spielen) - bitte in "2. Spielpläne & Ergebnisse" manuell prüfen.`;
+            }
+            alert(msg);
+            if (statusEl) statusEl.textContent = '';
+
+            document.getElementById('kickLeavingPlayerSelect').value = '';
+            document.getElementById('kickReplacementPlayerSelect').value = '';
+            loadKickTabPlayers();
+            loadWaitingList();
+            if (document.getElementById('leagueSelector') && document.getElementById('leagueSelector').value === league) loadMatchdayPlan();
+        } catch (e) {
+            console.error('Fehler beim Kicken/Ersetzen:', e);
+            alert('❌ Fehler: ' + (e.message || 'Unbekannter Fehler'));
+            if (statusEl) statusEl.textContent = '';
+        }
+    };
+
     window.loadMatchdayPlan = async function() {
         if(!supabaseClient) return;
         const league = document.getElementById("leagueSelector").value;
@@ -2364,8 +2524,9 @@
     }
 
     function initLeagueSelector() {
-        const sel = document.getElementById("leagueSelector"), cfgSel = document.getElementById("configLeagueSelect"), penSel = document.getElementById("penaltyLeagueSelector"), confirmSel = document.getElementById("confirmLeagueSelect");
-        if(sel && sel.options.length === 1) { ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`; if(penSel) penSel.innerHTML += `<option value="${l}">${l}</option>`; if(confirmSel) confirmSel.innerHTML += `<option value="${l}">${l}</option>`; }); }
+        const sel = document.getElementById("leagueSelector"), cfgSel = document.getElementById("configLeagueSelect"), penSel = document.getElementById("penaltyLeagueSelector"), confirmSel = document.getElementById("confirmLeagueSelect"), kickSel = document.getElementById("kickLeagueSelect");
+        if(sel && sel.options.length === 1) { ALL_LEAGUES.forEach(l => { sel.innerHTML += `<option value="${l}">${l}</option>`; if(cfgSel) cfgSel.innerHTML += `<option value="${l}">${l}</option>`; if(penSel) penSel.innerHTML += `<option value="${l}">${l}</option>`; if(confirmSel) confirmSel.innerHTML += `<option value="${l}">${l}</option>`; if(kickSel) kickSel.innerHTML += `<option value="${l}">${l}</option>`; }); }
+        if (kickSel) kickLeaguesPopulated = true;
     }
 
     async function awardBadge(playerId, badgeType, detail, platform) {
