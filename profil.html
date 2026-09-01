@@ -728,13 +728,11 @@
       area.innerHTML = html;
     }
 
-    // Zeigt bei nicht-Admin Spielern anstelle des "ADMIN"-Badges an, in welcher(n)
-    // Liga(en) sie aktuell aktiv zugeteilt sind (z.B. "🟠 DartCounter Liga 1").
-    // Admins sehen weiterhin das ADMIN-Badge, hier passiert dann nichts.
+    // Zeigt zusätzlich zum "ADMIN"-Badge (bzw. bei Nicht-Admins anstelle davon) an,
+    // in welcher(n) Liga(en) der Spieler aktuell aktiv zugeteilt ist (z.B. "🟠 DartCounter Liga 1").
     function renderLeagueRoleBadge(data) {
       const el = document.getElementById('leagueRoleBadge');
       if (!el) return;
-      if (data.is_admin) { el.style.display = 'none'; el.innerHTML = ''; return; }
 
       const parts = [];
       if (data.assigned_ad_league) parts.push({ label: data.assigned_ad_league, color: '#0066ff', icon: '⚫' });
