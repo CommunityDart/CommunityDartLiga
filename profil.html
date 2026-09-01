@@ -119,9 +119,19 @@
     }
     .card-body { padding: 20px; }
 
-    .profile-header-inner { display: flex; align-items: center; gap: 15px; }
+    .profile-header-inner { display: flex; align-items: center; gap: 15px; justify-content: space-between; flex-wrap: wrap; }
+    .profile-header-main { display: flex; align-items: center; gap: 15px; min-width: 0; }
     .avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--platform-color); object-fit: cover; background: var(--bg-tertiary); flex-shrink: 0; }
     .admin-badge { background: #ff6b35; color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 8px; display: none; }
+    .league-role-badge { display: none; }
+    .logout-btn-header {
+      background: var(--red); color: #fff; border: none; padding: 9px 16px; font-size: 12.5px;
+      border-radius: 8px; cursor: pointer; font-weight: 700; flex-shrink: 0; white-space: nowrap;
+    }
+    .logout-btn-header:hover { opacity: 0.92; transform: translateY(-1px); }
+
+    .card-header.collapsible { cursor: pointer; justify-content: space-between; user-select: none; }
+    .card-header-toggle-icon { font-size: 13px; color: var(--text-secondary); transition: transform 0.2s ease; }
 
     label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 700; letter-spacing: 0.3px; }
     input[type="text"] {
@@ -246,6 +256,8 @@
       button { padding: 12px 16px; font-size: 13.5px; width: 100%; margin-bottom: 8px; }
       .logout-btn { margin-left: 0; }
       #saveBtn, .logout-btn { width: 100%; }
+      .logout-btn-header { padding: 7px 11px; font-size: 11.5px; }
+      .profile-header-inner h2 { flex: 1 1 auto; }
       .modal-card { padding: 18px; max-width: calc(100% - 20px); }
       .avg-proof-image { max-height: 170px; }
       .league-confirm-item { padding: 12px; }
@@ -278,8 +290,11 @@
     <div class="card">
       <div class="card-body">
         <div class="profile-header-inner">
-          <img id="userAvatar" class="avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>">
-          <h2 style="margin:0; font-size:20px; font-weight:800;"><span id="statusText">Lade Profil...</span> <span id="adminBadge" class="admin-badge">ADMIN</span></h2>
+          <div class="profile-header-main">
+            <img id="userAvatar" class="avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>">
+            <h2 style="margin:0; font-size:20px; font-weight:800;"><span id="statusText">Lade Profil...</span> <span id="adminBadge" class="admin-badge">ADMIN</span><span id="leagueRoleBadge" class="league-role-badge"></span></h2>
+          </div>
+          <button type="button" id="logoutBtn" class="logout-btn-header">Ausloggen</button>
         </div>
         <div id="levelBox" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
         <div id="registrationStatusBox" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);"></div>
@@ -359,15 +374,17 @@
 
           <div class="divider"></div>
           <button type="submit" id="saveBtn">Profil Speichern</button>
-          <button type="button" id="logoutBtn" class="logout-btn">Ausloggen</button>
           <div id="msgBox"></div>
         </form>
       </div>
     </div>
 
     <div class="card" id="avgProofCard">
-      <div class="card-header">📸 Meine AVG-Nachweise</div>
-      <div class="card-body">
+      <div class="card-header collapsible" id="avgProofHeader" onclick="toggleAvgProofCard()">
+        <span>📸 Meine AVG-Nachweise</span>
+        <span class="card-header-toggle-icon" id="avgProofToggleIcon">▸</span>
+      </div>
+      <div class="card-body" id="avgProofBody" style="display:none;">
         <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Lade pro Plattform einen Screenshot deines aktuellen AVG-Werts hoch. Ein Admin prüft den Screenshot und vergibt danach den farbigen Haken (🔵 Autodarts, 🟠 DartCounter, 🟢 Scolia) - dieser ist dann für alle in deinem Profil sichtbar. Lädst du einen neuen Screenshot hoch, wird der Nachweis erneut geprüft.</p>
         <div id="avgProofContainer" class="avg-proof-grid">Lade Nachweise...</div>
       </div>
@@ -424,6 +441,13 @@
     // Steuert das Discord-Gate um die Liga-Anmeldung (siehe renderRegistrationStatus()).
     let discordVerified = null;
 
+    // Steuert, ob die Karte "🎯 Anmeldung nächste Saison" überhaupt sichtbar ist.
+    // Während eine Saison läuft, schließt der Admin die Anmeldung global (system_settings.
+    // registration_open = false) - dann bleibt die Karte für ALLE Spieler ausgeblendet,
+    // unabhängig vom eigenen Zuteilungsstatus. Erst wenn der Admin die Saison abschließt
+    // und eine neue startet (registration_open wieder = true), taucht sie wieder auf.
+    let registrationOpen = true;
+
     // Theme-Toggle: nutzt denselben localStorage-Key wie index.html, damit die
     // Hell/Dunkel-Einstellung über beide Seiten hinweg konsistent bleibt.
     let darkMode = localStorage.getItem('darkMode') === 'true';
@@ -446,6 +470,24 @@
     // diesem Zeitpunkt bekommt der Spieler den Discord-Einladungslink zu sehen.
     function isProfileComplete(data) {
       return !!(data && data.display_name && String(data.display_name).trim() && data.real_name && String(data.real_name).trim());
+    }
+
+    // ===================== Anmeldung nächste Saison: global öffnen/schließen =====================
+    // Liest system_settings.registration_open (vom Admin gepflegt) und blendet die
+    // komplette Karte "🎯 Anmeldung nächste Saison" aus, solange die Saison läuft.
+    // Fail-open: schlägt das Lesen fehl (z.B. Spalte fehlt noch), bleibt die Karte
+    // sichtbar, damit niemand versehentlich dauerhaft von der Anmeldung ausgesperrt wird.
+    async function loadRegistrationOpenState() {
+      try {
+        const { data, error } = await supabaseClient.from('system_settings').select('registration_open').eq('id', 1).single();
+        if (error) throw error;
+        registrationOpen = data?.registration_open !== false;
+      } catch (e) {
+        console.error('Fehler beim Laden des Anmelde-Status (registration_open):', e);
+        registrationOpen = true;
+      }
+      const box = document.getElementById('seasonRegistrationBox');
+      if (box) box.style.display = registrationOpen ? 'block' : 'none';
     }
 
     // ===================== Registrierungs-Status (Profil -> Discord) =====================
@@ -686,6 +728,27 @@
       area.innerHTML = html;
     }
 
+    // Zeigt bei nicht-Admin Spielern anstelle des "ADMIN"-Badges an, in welcher(n)
+    // Liga(en) sie aktuell aktiv zugeteilt sind (z.B. "🟠 DartCounter Liga 1").
+    // Admins sehen weiterhin das ADMIN-Badge, hier passiert dann nichts.
+    function renderLeagueRoleBadge(data) {
+      const el = document.getElementById('leagueRoleBadge');
+      if (!el) return;
+      if (data.is_admin) { el.style.display = 'none'; el.innerHTML = ''; return; }
+
+      const parts = [];
+      if (data.assigned_ad_league) parts.push({ label: data.assigned_ad_league, color: '#0066ff', icon: '⚫' });
+      if (data.assigned_dc_league) parts.push({ label: data.assigned_dc_league, color: '#ff6b35', icon: '🟠' });
+      if (data.assigned_sc_league) parts.push({ label: data.assigned_sc_league, color: '#00d084', icon: '🟢' });
+
+      if (parts.length === 0) { el.style.display = 'none'; el.innerHTML = ''; return; }
+
+      el.style.display = 'inline-flex';
+      el.style.gap = '6px';
+      el.style.flexWrap = 'wrap';
+      el.innerHTML = parts.map(p => `<span style="background:${p.color}; color:#fff; font-size:11px; padding:3px 8px; border-radius:12px; font-weight:bold; margin-left:6px; white-space:nowrap;">${p.icon} ${htmlEscape(p.label)}</span>`).join('');
+    }
+
     // --- Level-/XP-System (gleiche Logik wie index.html, hier nur für den
     // eigenen Spieler berechnet) - XP werden live aus Matches, Turnier-Badges
     // und News-Reaktionen berechnet, nicht als laufender Zähler gespeichert.
@@ -915,6 +978,17 @@
       Autodarts:   { color: '#0066ff', icon: '🔵' },
       DartCounter: { color: '#ff6b35', icon: '🟠' },
       Scolia:      { color: '#00d084', icon: '🟢' }
+    };
+
+    // Klappt die AVG-Nachweise-Karte auf/zu - standardmäßig eingeklappt, damit
+    // sie auf der Profilseite nicht so viel Platz wegnimmt.
+    window.toggleAvgProofCard = function() {
+      const body = document.getElementById('avgProofBody');
+      const icon = document.getElementById('avgProofToggleIcon');
+      if (!body || !icon) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      icon.textContent = isOpen ? '▸' : '▾';
     };
 
     async function loadAvgProofs(userId) {
@@ -1213,6 +1287,7 @@
       loadAvgProofs(currentUser.id);
       loadMyLeagueConfirmations(currentUser.id);
       loadMyAdminMessages(currentUser.id);
+      loadRegistrationOpenState();
       
       document.getElementById("profilForm").style.display = "block";
 
@@ -1253,6 +1328,7 @@
           }
 
           renderAssignmentStatus(data);
+          renderLeagueRoleBadge(data);
       } else {
           currentProfileData = null;
       }
