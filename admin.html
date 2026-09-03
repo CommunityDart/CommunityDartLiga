@@ -798,6 +798,15 @@
             </div>
         </div>
 
+        <div class="config-box" style="border-color: #e74c3c; background: rgba(231, 76, 60, 0.05);">
+            <h3>🔁 Alle Spieler einmalig neu synchronisieren</h3>
+            <p class="meta-text" style="margin-bottom:8px;">Einmalige Migration: berechnet den Rollenstatus für ALLE Spieler mit hinterlegter Discord-ID neu (nacheinander, mit kurzer Pause zwischen den Aufrufen wegen Discords Rate-Limit). Sinnvoll direkt nach der Umstellung auf die neue Verifizierungslogik, damit bereits bestehende Spieler sofort den korrekten Stand bekommen - danach hält sich alles automatisch aktuell.</p>
+            <div class="config-row">
+                <button class="remove-btn-large" onclick="resyncAllPlayersDiscordRoles()">🔁 Jetzt alle Spieler synchronisieren</button>
+                <span id="discordBulkResyncStatus" class="meta-text"></span>
+            </div>
+        </div>
+
         <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
             <h3>🔍 Filtern</h3>
             <div class="filter-bar">
@@ -3155,6 +3164,57 @@
             sel.innerHTML += `<option value="${p.id}">${htmlEscape(p.discord_name || p.username || p.real_name || p.id)}</option>`;
         });
     }
+
+    // Einmalige Massen-Synchronisierung: berechnet den Rollenstatus für ALLE
+    // Spieler mit hinterlegter Discord-ID neu. Läuft nacheinander (nicht
+    // parallel) mit kurzer Pause zwischen den Aufrufen, um Discords
+    // Rate-Limit nicht zu triggern - kann bei vielen Spielern also eine
+    // Weile dauern, der Status-Text zeigt den Fortschritt an.
+    window.resyncAllPlayersDiscordRoles = async function() {
+        if (!supabaseClient) return;
+        const statusEl = document.getElementById('discordBulkResyncStatus');
+
+        const { data: players, error } = await supabaseClient.from('profiles')
+            .select('id, discord_id, discord_name, username')
+            .not('discord_id', 'is', null);
+        if (error) { alert('❌ Fehler beim Laden der Spieler: ' + error.message); return; }
+
+        const toSync = players || [];
+        if (toSync.length === 0) { alert('Keine Spieler mit hinterlegter Discord-ID gefunden.'); return; }
+        if (!confirm(`${toSync.length} Spieler werden nacheinander synchronisiert. Das kann je nach Anzahl mehrere Minuten dauern. Fortfahren?`)) return;
+
+        let successCount = 0;
+        let failCount = 0;
+        const failedNames = [];
+
+        for (let i = 0; i < toSync.length; i++) {
+            const p = toSync[i];
+            if (statusEl) statusEl.textContent = `⏳ Synchronisiere... (${i + 1} / ${toSync.length})`;
+            try {
+                const { data: result, error: fnError } = await supabaseClient.functions.invoke('discord-assign-roles', {
+                    body: { playerId: p.id }
+                });
+                if (fnError || (result && result.success === false)) {
+                    failCount++;
+                    failedNames.push(p.discord_name || p.username || p.id);
+                } else {
+                    successCount++;
+                }
+            } catch (e) {
+                failCount++;
+                failedNames.push(p.discord_name || p.username || p.id);
+            }
+            await new Promise(r => setTimeout(r, 350));
+        }
+
+        if (statusEl) statusEl.textContent = '';
+        let msg = `✅ Fertig! ${successCount} von ${toSync.length} Spielern erfolgreich synchronisiert.`;
+        if (failCount > 0) {
+            msg += `\n⚠️ ${failCount} fehlgeschlagen: ${failedNames.slice(0, 15).join(', ')}${failedNames.length > 15 ? ', ...' : ''}`;
+        }
+        alert(msg);
+        loadDiscordRolesTab();
+    };
 
     window.resyncPlayerDiscordRoles = async function() {
         const playerId = document.getElementById('discordResyncPlayerSelect').value;
