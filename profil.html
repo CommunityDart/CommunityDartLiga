@@ -1086,6 +1086,10 @@
         verified_by: null
       }, { onConflict: 'player_id,platform' });
       if (dbError) throw dbError;
+
+      // Neuer AVG-Nachweis kann dazu führen, dass "Verifizierter Spieler"
+      // jetzt erstmals zutrifft (Profil vollständig + mind. 1 Nachweis).
+      syncMyDiscordRoles();
     }
 
     // Lädt den AVG-Screenshot über dasselbe Google Apps Script hoch, das auch
@@ -1299,6 +1303,28 @@
       return checked ? checked.value : null;
     }
 
+    // ===================== Discord-Rollen-Sync =====================
+    // Stößt die Edge Function "discord-assign-roles" an, die den kompletten
+    // Rollenstatus SELBST aus der Datenbank berechnet (Profil vollständig +
+    // AVG-Nachweis vorhanden -> "Verifizierter Spieler"; tatsächliche
+    // Liga-Zuteilung durch den Admin -> Plattform-Rolle). Wird nach jedem
+    // Ereignis aufgerufen, das diesen Status verändern könnte (Profil
+    // gespeichert, AVG-Nachweis hochgeladen). Läuft bewusst im Hintergrund -
+    // schlägt es fehl (z.B. Bot offline), bleibt die eigentliche Aktion
+    // (Profil/Upload) trotzdem gespeichert, nur die Discord-Rolle hinkt
+    // dann kurz hinterher.
+    async function syncMyDiscordRoles() {
+      if (!currentUser) return;
+      try {
+        const { error } = await supabaseClient.functions.invoke('discord-assign-roles', {
+          body: { playerId: currentUser.id }
+        });
+        if (error) console.error('Discord-Rollen-Sync fehlgeschlagen:', error);
+      } catch (e) {
+        console.error('Fehler beim Aufruf der Discord-Rollen-Sync:', e);
+      }
+    }
+
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) { window.location.href = "index.html"; return; }
@@ -1455,46 +1481,13 @@
             return;
         }
 
-        // Discord-Rollen automatisch anpassen: "Verifizierter Spieler" sobald
-        // mind. eine Plattform gewählt ist, plus die jeweilige(n) Plattform-
-        // Rolle(n). Läuft im Hintergrund über eine Supabase Edge Function -
-        // schlägt das fehl (z.B. Bot offline), bleibt die Anmeldung trotzdem
-        // gespeichert, es gibt nur einen zusätzlichen Hinweis.
-        try {
-            const { discordId } = extractDiscordIdentity(currentUser);
-            if (discordId) {
-                const { data: roleResult, error: roleError } = await supabaseClient.functions.invoke('discord-assign-roles', {
-                    body: { discordId, playerId: currentUser.id, wantAutodarts: wantAd, wantDartcounter: wantDc, wantScolia: wantSc }
-                });
-                if (roleError || (roleResult && roleResult.success === false)) {
-                    // Versucht, die genaue Fehlermeldung aus dem Antwort-Body der
-                    // Edge Function zu holen, damit man sie direkt im Popup sieht
-                    // und nicht extra die Entwicklertools öffnen muss.
-                    let detail = roleError ? roleError.message : 'Unbekannter Fehler';
-                    try {
-                        if (roleError && roleError.context && typeof roleError.context.json === 'function') {
-                            const body = await roleError.context.json();
-                            if (body && body.error) detail = body.error;
-                        } else if (roleResult && roleResult.error) {
-                            detail = roleResult.error;
-                        } else if (roleResult && roleResult.results) {
-                            const failedRole = roleResult.results.find(r => !r.ok);
-                            if (failedRole) detail = `Rolle ${failedRole.roleId} (${failedRole.action}): ${failedRole.error || 'Status ' + failedRole.status}`;
-                        }
-                    } catch (parseErr) {}
-                    console.error('Discord-Rollenvergabe fehlgeschlagen:', detail, roleError || roleResult);
-                    alert(`✅ Anmeldung für die neue Saison gespeichert!\n⚠️ Deine Discord-Rollen konnten nicht automatisch aktualisiert werden:\n\n${detail}\n\nBitte ggf. einen Admin informieren.`);
-                    initProfile();
-                    return;
-                }
-            } else {
-                console.warn('Keine Discord-ID gefunden - Rollenvergabe übersprungen.');
-            }
-        } catch (e) {
-            console.error('Fehler beim Aufruf der Discord-Rollenvergabe:', e);
-        }
+        // Hinweis: Die Liga-Anmeldung selbst löst keine Discord-Rollenänderung
+        // mehr aus. "Verifizierter Spieler" hängt an Profil+AVG-Nachweis
+        // (siehe syncMyDiscordRoles) und die Plattform-Rollen hängen erst an
+        // der tatsächlichen Zuteilung durch den Admin - diese Anmeldung hier
+        // ist nur der erste Schritt (Wunsch äußern), noch keine Zuteilung.
 
-        alert("✅ Anmeldung für die neue Saison gespeichert! Deine Discord-Rollen wurden automatisch aktualisiert.");
+        alert("✅ Anmeldung für die neue Saison gespeichert!");
         initProfile();
     };
 
@@ -1568,9 +1561,13 @@
         if (error) {
             alert("Fehler beim Speichern: " + error.message);
         } else if (plzOrtChanged && (plzVal || ortVal) && lat === null) {
+            // Profil wurde gespeichert (könnte jetzt vollständig sein) - Rollen-Status neu berechnen lassen.
+            syncMyDiscordRoles();
             alert("Profil gespeichert! ⚠️ Dein Standort konnte aber nicht automatisch gefunden werden - dein Pin erscheint deshalb noch nicht auf der Karte. Prüfe PLZ/Ort auf Tippfehler und speichere nochmal.");
             initProfile();
         } else {
+            // Profil wurde gespeichert (könnte jetzt vollständig sein) - Rollen-Status neu berechnen lassen.
+            syncMyDiscordRoles();
             alert("Profil erfolgreich gespeichert!");
             initProfile();
         }
