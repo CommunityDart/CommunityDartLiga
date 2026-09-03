@@ -807,6 +807,16 @@
             </div>
         </div>
 
+        <div class="config-box" style="border-color: #5865f2; background: rgba(88, 101, 242, 0.06);">
+            <h3>📥 Ist-Zustand von Discord importieren</h3>
+            <p class="meta-text" style="margin-bottom:8px;">Liest aus, welche Rollen die Mitglieder GERADE JETZT tatsächlich in Discord haben (z.B. auch manuell von dir vergebene Rollen) und korrigiert damit die interne Historie unten in der Tabelle. ⚠️ Ändert NICHTS an Liga-Zuteilungen - ist nur eine Bestandsaufnahme. Speichert ein Spieler danach sein Profil neu oder änderst du seine Zuteilung, berechnet das System seine Rolle wieder ganz normal aus der Website-Logik (eine rein manuell vergebene Rolle kann dadurch wieder verschwinden). Erfordert "SERVER MEMBERS INTENT" für den Bot im Discord Developer Portal.</p>
+            <div class="config-row">
+                <button class="generate-btn" style="background:#5865f2;" onclick="importDiscordRolesFromGuild()">📥 Jetzt von Discord abgleichen</button>
+                <span id="discordImportStatus" class="meta-text"></span>
+            </div>
+            <div id="discordImportResultArea" style="margin-top:10px;"></div>
+        </div>
+
         <div class="config-box" style="border-color: #0066ff; background: rgba(0, 102, 255, 0.05);">
             <h3>🔍 Filtern</h3>
             <div class="filter-bar">
@@ -3185,10 +3195,11 @@
 
         let successCount = 0;
         let failCount = 0;
-        const failedNames = [];
+        const failedDetails = [];
 
         for (let i = 0; i < toSync.length; i++) {
             const p = toSync[i];
+            const label = p.discord_name || p.username || p.id;
             if (statusEl) statusEl.textContent = `⏳ Synchronisiere... (${i + 1} / ${toSync.length})`;
             try {
                 const { data: result, error: fnError } = await supabaseClient.functions.invoke('discord-assign-roles', {
@@ -3196,13 +3207,27 @@
                 });
                 if (fnError || (result && result.success === false)) {
                     failCount++;
-                    failedNames.push(p.discord_name || p.username || p.id);
+                    let detail = fnError ? fnError.message : 'Unbekannter Fehler';
+                    try {
+                        if (fnError && fnError.context && typeof fnError.context.json === 'function') {
+                            const body = await fnError.context.json();
+                            if (body && body.error) detail = body.error;
+                        } else if (result && result.error) {
+                            detail = result.error;
+                        } else if (result && result.results) {
+                            const failedRole = result.results.find(r => !r.ok);
+                            if (failedRole) detail = `Rolle ${failedRole.roleKey}: ${failedRole.error || 'Status ' + failedRole.status}`;
+                        }
+                    } catch (parseErr) {}
+                    console.error(`Discord-Rollen-Sync fehlgeschlagen für ${label}:`, detail);
+                    failedDetails.push(`${label}: ${detail}`);
                 } else {
                     successCount++;
                 }
             } catch (e) {
                 failCount++;
-                failedNames.push(p.discord_name || p.username || p.id);
+                console.error(`Discord-Rollen-Sync fehlgeschlagen für ${label}:`, e);
+                failedDetails.push(`${label}: ${e.message || 'Unbekannter Fehler'}`);
             }
             await new Promise(r => setTimeout(r, 350));
         }
@@ -3210,10 +3235,67 @@
         if (statusEl) statusEl.textContent = '';
         let msg = `✅ Fertig! ${successCount} von ${toSync.length} Spielern erfolgreich synchronisiert.`;
         if (failCount > 0) {
-            msg += `\n⚠️ ${failCount} fehlgeschlagen: ${failedNames.slice(0, 15).join(', ')}${failedNames.length > 15 ? ', ...' : ''}`;
+            msg += `\n\n⚠️ ${failCount} fehlgeschlagen:\n${failedDetails.slice(0, 12).join('\n')}${failedDetails.length > 12 ? `\n... und ${failedDetails.length - 12} weitere (siehe Browser-Konsole für alle Details)` : ''}`;
         }
         alert(msg);
         loadDiscordRolesTab();
+    };
+
+    // ===================== Discord -> Website: Ist-Zustand importieren =====================
+    // Ruft die Edge Function "discord-sync-roles-from-guild" auf, die den
+    // tatsächlichen Rollen-Zustand direkt aus Discord ausliest und in
+    // player_discord_roles korrigiert (siehe Kommentar in der Function für
+    // Details, insbesondere dass das KEIN dauerhafter Override ist).
+    window.importDiscordRolesFromGuild = async function() {
+        if (!supabaseClient) return;
+        const statusEl = document.getElementById('discordImportStatus');
+        const resultArea = document.getElementById('discordImportResultArea');
+        if (resultArea) resultArea.innerHTML = '';
+        if (statusEl) statusEl.textContent = '⏳ Lese Discord-Mitgliederliste... (kann bei großen Servern etwas dauern)';
+
+        try {
+            const { data: result, error } = await supabaseClient.functions.invoke('discord-sync-roles-from-guild', { body: {} });
+
+            if (error || (result && result.success === false)) {
+                let detail = error ? error.message : (result && result.error) || 'Unbekannter Fehler';
+                try {
+                    if (error && error.context && typeof error.context.json === 'function') {
+                        const body = await error.context.json();
+                        if (body && body.error) detail = body.error;
+                    }
+                } catch (parseErr) {}
+                if (statusEl) statusEl.textContent = '';
+                alert('❌ Abgleich fehlgeschlagen:\n\n' + detail);
+                return;
+            }
+
+            if (statusEl) statusEl.textContent = '';
+
+            const roleLabel = { verified: '✅ Verifizierter Spieler', autodarts: '⚫ Autodarts', dartcounter: '🟠 DartCounter', scolia: '🟢 Scolia' };
+
+            if (resultArea) {
+                if (result.correctionsCount === 0) {
+                    resultArea.innerHTML = `<p class="meta-text">✓ ${result.matchedProfiles} zugeordnete Spieler geprüft (von ${result.totalGuildMembers} Discord-Mitgliedern insgesamt) - alles war bereits korrekt, keine Korrekturen nötig.</p>`;
+                } else {
+                    resultArea.innerHTML = `
+                        <p class="meta-text" style="margin-bottom:8px;">${result.matchedProfiles} zugeordnete Spieler geprüft (von ${result.totalGuildMembers} Discord-Mitgliedern insgesamt). <strong>${result.correctionsCount} Korrektur(en)</strong> vorgenommen:</p>
+                        <div style="max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
+                            ${result.corrections.map(c => `
+                                <div style="font-size:12.5px; padding:6px 10px; background:var(--bg-tertiary); border-radius:6px;">
+                                    <strong style="color:#0066ff;">${htmlEscape(c.player)}</strong> - ${roleLabel[c.roleKey] || c.roleKey}:
+                                    ${c.from ? '<span style="color:#e74c3c;">war aktiv</span>' : '<span style="color:var(--text-secondary);">war inaktiv</span>'}
+                                    →
+                                    ${c.to ? '<span style="color:#00d084; font-weight:bold;">jetzt aktiv</span>' : '<span style="color:#e74c3c; font-weight:bold;">jetzt inaktiv</span>'}
+                                </div>
+                            `).join('')}
+                        </div>`;
+                }
+            }
+            loadDiscordRolesTab();
+        } catch (e) {
+            if (statusEl) statusEl.textContent = '';
+            alert('❌ Unerwarteter Fehler beim Abgleich: ' + (e.message || 'Unbekannt'));
+        }
     };
 
     window.resyncPlayerDiscordRoles = async function() {
