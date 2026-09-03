@@ -1068,6 +1068,14 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
+    // Kurze Anzeige für die Autodarts-Spielweise (Kameras vs. Autodarts Lens),
+    // die der Spieler bei seiner Anmeldung im Profil angeben muss.
+    function autodartsPlayModeLabel(mode) {
+        if (mode === 'lens') return '<span style="color:#7f77dd; font-weight:700;">🔎 Lens</span>';
+        if (mode === 'kameras') return '<span style="color:#0066ff; font-weight:700;">📷 Kameras</span>';
+        return '';
+    }
+
     function matchFormatLabel(mf) {
         const map = {
             bo3legs: "Best of 3 Legs", bo5legs: "Best of 5 Legs", bo7legs: "Best of 7 Legs",
@@ -1133,9 +1141,10 @@
     function formatAllPlattformNames(prof) {
         if(!prof) return "";
         const fmtAvg = (v) => (v !== null && v !== undefined && v !== '') ? parseFloat(v).toFixed(2) : '-';
+        const adModeHtml = autodartsPlayModeLabel(prof.autodarts_play_mode);
         return `
             <div style="margin-top:4px; font-size:11.5px; line-height:1.3; color:var(--text-secondary); background:var(--bg-tertiary); padding:4px; border-radius:6px; border:1px solid var(--border);">
-                <div>⚫ AD: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span> <span style="color:var(--text-secondary);">[AVG ${fmtAvg(prof.autodarts_avg)}]</span></div>
+                <div>⚫ AD: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.autodarts_name || '-')}</span> <span style="color:var(--text-secondary);">[AVG ${fmtAvg(prof.autodarts_avg)}]</span>${adModeHtml ? ` · ${adModeHtml}` : ''}</div>
                 <div>🟠 DC: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.dartcounter_name || '-')}</span> <span style="color:var(--text-secondary);">[AVG ${fmtAvg(prof.dartcounter_avg)}]</span></div>
                 <div>🟢 SC: <span style="color:var(--text-primary); font-weight:600;">${htmlEscape(prof.scolia_name || '-')}</span> <span style="color:var(--text-secondary);">[AVG ${fmtAvg(prof.scolia_avg)}]</span></div>
             </div>
@@ -1147,8 +1156,16 @@
         const chip = (wanted, label, icon) => `<span style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:4px; display:inline-flex; align-items:center; gap:3px; ${wanted
             ? 'background:rgba(61,220,151,0.15); color:#00d084; border:1px solid rgba(61,220,151,0.4);'
             : 'background:rgba(255,255,255,0.04); color:var(--text-secondary); border:1px solid var(--border); text-decoration:line-through; opacity:0.55;'}">${icon} ${label}</span>`;
-        return `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">
-            ${chip(prof.want_autodarts, 'Autodarts', '⚫')}
+        // Autodarts-Spielweise (Kameras/Lens) direkt neben dem Autodarts-Chip anzeigen,
+        // sobald der Spieler sich für Autodarts angemeldet hat.
+        let adSuffix = '';
+        if (prof.want_autodarts) {
+            adSuffix = prof.autodarts_play_mode
+                ? ` ${autodartsPlayModeLabel(prof.autodarts_play_mode)}`
+                : ` <span style="font-size:10px; color:#e74c3c; font-weight:700;">⚠️ Spielweise fehlt</span>`;
+        }
+        return `<div style="margin-top:4px; display:flex; flex-wrap:wrap; align-items:center; gap:4px;">
+            ${chip(prof.want_autodarts, 'Autodarts', '⚫')}${adSuffix}
             ${chip(prof.want_dartcounter, 'DartCounter', '🟠')}
             ${chip(prof.want_scolia, 'Scolia', '🟢')}
         </div>`;
