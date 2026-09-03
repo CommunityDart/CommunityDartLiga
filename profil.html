@@ -162,6 +162,16 @@
     .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
     .hint-text { font-size: 12px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 4px; font-style: italic; }
 
+    .autodarts-mode-group {
+      display: none; margin-left: 26px; margin-top: -2px; margin-bottom: 4px;
+      flex-direction: column; gap: 8px; padding: 10px 12px;
+      background: var(--bg-primary); border: 1px dashed var(--border); border-radius: 8px;
+    }
+    .autodarts-mode-group.visible { display: flex; }
+    .autodarts-mode-title { font-size: 12px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+    .autodarts-mode-group label { font-size: 13px !important; font-weight: 600 !important; }
+    .autodarts-mode-group input[type="radio"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+
     .visibility-box {
       display: flex; align-items: center; gap: 10px;
       background: var(--bg-tertiary); padding: 14px; border-radius: 8px; border: 1px solid var(--border);
@@ -310,6 +320,11 @@
         <div id="registrationFormArea" class="registration-box-body">
           <div class="checkbox-group">
             <label><input type="checkbox" id="want_ad"> ⚫ Autodarts Liga spielen</label>
+            <div id="autodartsModeGroup" class="autodarts-mode-group">
+              <span class="autodarts-mode-title">Spielweise <span class="required-mark">*</span></span>
+              <label><input type="radio" name="autodarts_play_mode" id="autodarts_mode_kameras" value="kameras"> 📷 Klassisch mit Kameras</label>
+              <label><input type="radio" name="autodarts_play_mode" id="autodarts_mode_lens" value="lens"> 🔎 Autodarts Lens</label>
+            </div>
             <label><input type="checkbox" id="want_dc"> 🟠 DartCounter Liga spielen</label>
             <label><input type="checkbox" id="want_sc"> 🟢 Scolia Liga spielen</label>
           </div>
@@ -1268,6 +1283,22 @@
       loadMyAdminMessages(currentUser.id);
     };
 
+    // ===================== Autodarts Spielweise (Kameras vs. Lens) =====================
+    // Blendet die Pflichtauswahl "Klassisch mit Kameras" / "Autodarts Lens" ein,
+    // sobald "Autodarts Liga spielen" angehakt ist. Wird nur benötigt/validiert,
+    // wenn want_ad tatsächlich angehakt ist.
+    function updateAutodartsModeVisibility() {
+      const wantAd = document.getElementById('want_ad').checked;
+      const group = document.getElementById('autodartsModeGroup');
+      if (group) group.classList.toggle('visible', wantAd);
+    }
+    document.getElementById('want_ad').addEventListener('change', updateAutodartsModeVisibility);
+
+    function getSelectedAutodartsMode() {
+      const checked = document.querySelector('input[name="autodarts_play_mode"]:checked');
+      return checked ? checked.value : null;
+    }
+
     async function initProfile() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) { window.location.href = "index.html"; return; }
@@ -1319,6 +1350,11 @@
           document.getElementById("want_ad").checked = data.want_autodarts || false;
           document.getElementById("want_dc").checked = data.want_dartcounter || false;
           document.getElementById("want_sc").checked = data.want_scolia || false;
+
+          // Gespeicherte Autodarts-Spielweise vorauswählen (falls vorhanden)
+          document.getElementById("autodarts_mode_kameras").checked = data.autodarts_play_mode === 'kameras';
+          document.getElementById("autodarts_mode_lens").checked = data.autodarts_play_mode === 'lens';
+          updateAutodartsModeVisibility();
           
           if(data.is_admin) {
               document.getElementById("adminBadge").style.display = "inline-block";
@@ -1329,6 +1365,7 @@
           renderLeagueRoleBadge(data);
       } else {
           currentProfileData = null;
+          updateAutodartsModeVisibility();
       }
 
       // Erst JETZT (nachdem currentProfileData feststeht) den Status-Tracker
@@ -1352,6 +1389,16 @@
         const wantAd = document.getElementById("want_ad").checked;
         const wantDc = document.getElementById("want_dc").checked;
         const wantSc = document.getElementById("want_sc").checked;
+
+        // Pflichtfeld: Wer sich für Autodarts anmeldet, muss angeben ob er
+        // klassisch mit Kameras oder über Autodarts Lens spielt - eins von
+        // beiden MUSS ausgewählt sein.
+        const autodartsPlayMode = getSelectedAutodartsMode();
+        if (wantAd && !autodartsPlayMode) {
+            alert('❌ Bitte gib bei Autodarts an, ob du klassisch mit Kameras oder über Autodarts Lens spielst.');
+            document.getElementById('autodartsModeGroup').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
         // Für jede neu/weiterhin gewählte Plattform muss bereits ein AVG-
         // Screenshot hochgeladen sein (verifiziert muss er noch nicht sein -
@@ -1397,6 +1444,7 @@
             want_autodarts: wantAd,
             want_dartcounter: wantDc,
             want_scolia: wantSc,
+            autodarts_play_mode: wantAd ? autodartsPlayMode : null,
             status_neue_saison: 'waiting'
         }).eq('id', currentUser.id);
 
