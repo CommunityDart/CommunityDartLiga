@@ -785,11 +785,11 @@
 
     <div id="tabDiscordRoles" class="tab-content">
         <h2>🏷️ Discord-Rollen-Übersicht</h2>
-        <p class="meta-text" style="margin-bottom:12px;">Zeigt, welcher Spieler aktuell welche automatisch vergebene Discord-Rolle hat und seit wann. Wird von der Funktion "Automatische Discord-Rollenvergabe" gepflegt, sobald sich jemand über sein Profil für eine Plattform anmeldet oder abmeldet.</p>
+        <p class="meta-text" style="margin-bottom:12px;">Zeigt, welcher Spieler aktuell welche automatisch vergebene Discord-Rolle hat und seit wann. "Verifizierter Spieler" wird vergeben, sobald das Profil vollständig ist (Wunschname + Vorname) UND mindestens ein AVG-Nachweis hochgeladen wurde. Die Plattform-Rollen (Autodarts/DartCounter/Scolia) werden erst vergeben, sobald der Spieler tatsächlich einer Liga dieser Plattform zugeteilt ist - die reine Anmeldung im Profil reicht dafür nicht mehr aus.</p>
 
         <div class="config-box" style="border-color: #ff6b35; background: rgba(255, 107, 53, 0.05);">
             <h3>🔄 Rollen manuell neu synchronisieren</h3>
-            <p class="meta-text" style="margin-bottom:8px;">Falls ein Spieler z.B. nur "Verifizierter Spieler" hat, aber keine Plattform-Rolle (kann bei einem kurzen Discord-Rate-Limit passieren): hier den Spieler wählen und neu synchronisieren - setzt die Rollen exakt nach seinen aktuellen Anmeldungen (want_autodarts etc.), ohne dass er sein Profil erneut speichern muss.</p>
+            <p class="meta-text" style="margin-bottom:8px;">Falls ein Spieler z.B. nur "Verifizierter Spieler" hat, aber keine erwartete Plattform-Rolle (kann bei einem kurzen Discord-Rate-Limit passieren): hier den Spieler wählen und neu synchronisieren - berechnet den kompletten Rollenstatus frisch aus Profil, AVG-Nachweisen und aktueller Liga-Zuteilung.</p>
             <div class="config-row">
                 <select id="discordResyncPlayerSelect" class="league-select" style="min-width:240px;">
                     <option value="">-- Spieler wählen --</option>
@@ -1504,10 +1504,30 @@
         if(error) { alert("❌ Fehler beim Abspeichern: " + error.message); return; }
 
         const { addedTo } = await syncPlayerIntoActiveConfirmations(playerId, [adVal, dcVal, scVal]);
+
+        // Zuteilung kann Plattform-Discord-Rollen verändern (Rolle wird nur
+        // vergeben, wenn tatsächlich eine Liga zugeteilt ist) - Rollen-Status
+        // im Hintergrund neu berechnen lassen. Schlägt es fehl, bleibt die
+        // Zuteilung trotzdem gespeichert, nur ein Hinweis erscheint zusätzlich.
+        let roleWarning = '';
+        try {
+            const { data: roleResult, error: roleError } = await supabaseClient.functions.invoke('discord-assign-roles', {
+                body: { playerId }
+            });
+            if (roleError || (roleResult && roleResult.success === false)) {
+                const detail = roleError ? roleError.message : (roleResult && roleResult.error) || 'Unbekannter Fehler';
+                console.error('Discord-Rollen-Sync fehlgeschlagen:', detail);
+                roleWarning = `\n⚠️ Discord-Rollen konnten nicht automatisch aktualisiert werden: ${detail}`;
+            }
+        } catch (e) {
+            console.error('Fehler beim Aufruf der Discord-Rollen-Sync:', e);
+        }
+
         let msg = "✅ Zuteilungen erfolgreich abgespeichert!";
         if (addedTo.length > 0) {
             msg += `\n⏳ Spieler wurde zusätzlich in die laufende(n) Anmeldebestätigung(en) für "${addedTo.join('", "')}" aufgenommen (Status: noch nicht bestätigt).`;
         }
+        msg += roleWarning;
         alert(msg);
         loadWaitingList();
         if (document.getElementById('tabConfirm') && document.getElementById('tabConfirm').classList.contains('active')) loadConfirmationsTab();
@@ -1626,6 +1646,18 @@
                 const { error: repErr } = await supabaseClient.from('profiles').update({ [field]: league, status_neue_saison: 'assigned' }).eq('id', replacementId);
                 if (repErr) throw repErr;
                 await syncPlayerIntoActiveConfirmations(replacementId, [league]);
+            }
+
+            // 4) Discord-Plattform-Rollen für beide Spieler neu berechnen lassen -
+            // der Aussteiger verliert ggf. die Plattform-Rolle, der Ersatzspieler
+            // (falls gewählt) bekommt sie. Läuft im Hintergrund, blockiert nicht.
+            try {
+                await supabaseClient.functions.invoke('discord-assign-roles', { body: { playerId: leavingId } });
+                if (replacementId) {
+                    await supabaseClient.functions.invoke('discord-assign-roles', { body: { playerId: replacementId } });
+                }
+            } catch (e) {
+                console.error('Fehler beim Aufruf der Discord-Rollen-Sync nach Kicken/Ersetzen:', e);
             }
 
             let msg = replacementId
@@ -2465,6 +2497,18 @@
 
             await supabaseClient.from('matches').delete().eq('league_name', leagueName).eq('season', currentSeasonGlobal);
 
+            // Alle betroffenen Spieler haben gerade ihre Zuteilung verloren ->
+            // Discord-Plattform-Rolle muss für jeden von ihnen entfernt werden.
+            // Nacheinander mit kurzer Pause, um Discords Rate-Limit zu schonen.
+            for (const player of sortedPlayers) {
+                try {
+                    await supabaseClient.functions.invoke('discord-assign-roles', { body: { playerId: player.id } });
+                } catch (e) {
+                    console.error('Fehler bei Discord-Rollen-Sync nach Saisonende für Spieler', player.id, e);
+                }
+                await new Promise(r => setTimeout(r, 300));
+            }
+
             alert(`✅ Saison beendet!\n✅ ${successCount}/${leaguePlayers.length} Spieler in 'player_history' archiviert.\n🗑️ Spielplan dieser Liga wurde geleert.`); loadWaitingList();
         } catch(e) { alert("❌ Fehler:\n" + e.message); }
     };
@@ -3117,19 +3161,16 @@
         if (!playerId) return alert('❌ Bitte einen Spieler auswählen!');
 
         const { data: player, error: pErr } = await supabaseClient.from('profiles')
-            .select('id, discord_id, discord_name, username, want_autodarts, want_dartcounter, want_scolia')
+            .select('id, discord_id, discord_name, username')
             .eq('id', playerId).single();
         if (pErr || !player) { alert('❌ Spieler nicht gefunden: ' + (pErr ? pErr.message : '')); return; }
         if (!player.discord_id) { alert('❌ Für diesen Spieler ist keine Discord-ID hinterlegt - Rollen können nicht gesetzt werden.'); return; }
 
+        // Die Funktion berechnet den kompletten Rollenstatus (Verifiziert +
+        // Plattform-Rollen) selbst aus der Datenbank - hier muss nur noch die
+        // playerId mitgeschickt werden.
         const { data: result, error } = await supabaseClient.functions.invoke('discord-assign-roles', {
-            body: {
-                discordId: player.discord_id,
-                playerId: player.id,
-                wantAutodarts: !!player.want_autodarts,
-                wantDartcounter: !!player.want_dartcounter,
-                wantScolia: !!player.want_scolia
-            }
+            body: { playerId: player.id }
         });
 
         if (error || (result && result.success === false)) {
