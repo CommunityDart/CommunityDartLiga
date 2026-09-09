@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kellerliga · Community Dart Liga</title>
+<title>Kellerliga · SV Lerbach Darts Liga [intern] </title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,7 +15,7 @@
     --cream-dim:#b8b39c;
     --dart-red:#c23b2f;
     --brass:#f2c230;
-    --line:#332f1a;
+    --line:#4d4726;
   }
   *{box-sizing:border-box;}
   body{
@@ -74,7 +74,7 @@
   }
   section{margin-bottom:34px;}
   .card{
-    background:rgba(0,0,0,0.18);
+    background:#1a1810;
     border:1px solid var(--line);
     border-radius:4px;
     padding:20px;
@@ -99,8 +99,8 @@
   }
   .player-row{display:flex; gap:8px; margin-bottom:10px;}
   input[type=text], input[type=number]{
-    background:var(--board-green-dark);
-    border:1px solid var(--line);
+    background:#242013;
+    border:1.5px solid rgba(242,194,48,0.4);
     color:var(--cream);
     border-radius:3px;
     padding:10px 12px;
@@ -108,7 +108,7 @@
     font-size:0.95rem;
   }
   input[type=text]{flex:1; min-width:0;}
-  input:disabled{opacity:0.55; cursor:not-allowed;}
+  input:disabled{opacity:0.85; cursor:not-allowed; border-color:var(--line);}
   input:focus{outline:2px solid var(--brass); outline-offset:1px;}
   button{
     font-family:'IBM Plex Sans', sans-serif;
@@ -143,7 +143,7 @@
     border-bottom:1px solid var(--line); flex-wrap:wrap;
   }
   .match:last-child{border-bottom:none;}
-  .match.played{background:rgba(79,143,107,0.08);}
+  .match.played{background:rgba(242,194,48,0.06);}
   .match-players{flex:1; min-width:150px; font-size:0.98rem;}
   .match-players b{color:var(--cream);}
   .vs{color:var(--cream-dim); font-size:0.8rem; margin:0 4px;}
@@ -154,7 +154,7 @@
   .stat-group input{
     width:44px; text-align:center; font-family:'IBM Plex Mono', monospace; font-weight:600; padding:8px 4px;
   }
-  .stat-group.legs input{font-weight:700; border-color:var(--brass);}
+  .stat-group.legs input{font-weight:700; border-color:var(--brass); background:rgba(242,194,48,0.1);}
   table{width:100%; border-collapse:collapse; font-size:0.92rem;}
   th, td{padding:9px 8px; text-align:left; border-bottom:1px solid var(--line);}
   th{
@@ -165,7 +165,7 @@
   tr:first-child td{color:var(--brass); font-weight:600;}
   .rank{color:var(--cream-dim); font-family:'IBM Plex Mono', monospace;}
   .progress-bar{
-    height:6px; background:var(--board-green-dark); border-radius:3px; overflow:hidden;
+    height:6px; background:#1a1810; border-radius:3px; overflow:hidden;
     margin-bottom:14px; border:1px solid var(--line);
   }
   .progress-fill{height:100%; background:var(--brass); transition:width 0.3s ease;}
@@ -182,7 +182,7 @@
   .filter-btns button.active{border-color:var(--brass); color:var(--brass);}
   .records-grid{display:flex; gap:14px; flex-wrap:wrap;}
   .record-box{
-    flex:1; min-width:180px; background:var(--board-green-dark); border:1px solid var(--line);
+    flex:1; min-width:180px; background:#1a1810; border:1px solid var(--line);
     border-radius:4px; padding:14px; text-align:center;
   }
   .record-box .label{font-family:'IBM Plex Mono', monospace; font-size:0.68rem; color:var(--cream-dim); letter-spacing:0.05em;}
