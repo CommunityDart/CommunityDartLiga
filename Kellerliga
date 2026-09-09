@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kellerliga · Community Dart Liga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --board-green:#173229;
+    --board-green-dark:#0e211a;
+    --cream:#f3ecd9;
+    --cream-dim:#c9c0a8;
+    --dart-red:#c23b2f;
+    --brass:#c99a4b;
+    --line:#2c473c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 50% 0%, #1d3c30 0%, var(--board-green) 45%, var(--board-green-dark) 100%);
+    color:var(--cream);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:0 0 60px;
+  }
+  header{
+    padding:36px 20px 24px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  h1{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:clamp(2.6rem, 8vw, 4.2rem);
+    letter-spacing:0.03em;
+    margin:0;
+    color:var(--cream);
+    line-height:0.95;
+  }
+  h1 span{color:var(--dart-red);}
+  .sub{
+    color:var(--cream-dim);
+    font-size:0.95rem;
+    margin-top:8px;
+    max-width:480px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .auth-corner{
+    position:absolute;
+    top:16px;
+    right:16px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .auth-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.7rem;
+    color:var(--cream-dim);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:5px 9px;
+  }
+  .auth-tag.admin{color:var(--brass); border-color:var(--brass);}
+  main{
+    max-width:720px;
+    margin:0 auto;
+    padding:28px 16px 0;
+  }
+  section{margin-bottom:34px;}
+  .card{
+    background:rgba(0,0,0,0.18);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px;
+  }
+  h2{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:1.5rem;
+    letter-spacing:0.03em;
+    margin:0 0 14px;
+    color:var(--brass);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  h2 .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85rem;
+    color:var(--cream-dim);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:2px 7px;
+  }
+  .player-row{display:flex; gap:8px; margin-bottom:10px;}
+  input[type=text], input[type=number]{
+    background:var(--board-green-dark);
+    border:1px solid var(--line);
+    color:var(--cream);
+    border-radius:3px;
+    padding:10px 12px;
+    font-family:inherit;
+    font-size:0.95rem;
+  }
+  input[type=text]{flex:1; min-width:0;}
+  input:disabled{opacity:0.55; cursor:not-allowed;}
+  input:focus{outline:2px solid var(--brass); outline-offset:1px;}
+  button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    font-size:0.9rem;
+    border:none;
+    border-radius:3px;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:transform 0.08s ease, filter 0.15s ease;
+  }
+  button:active{transform:scale(0.97);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .btn-primary{background:var(--dart-red); color:var(--cream);}
+  .btn-primary:hover{filter:brightness(1.1);}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--cream-dim);}
+  .btn-ghost:hover{border-color:var(--brass); color:var(--brass);}
+  .btn-discord{background:#5865f2; color:#fff;}
+  .btn-discord:hover{filter:brightness(1.1);}
+  .btn-danger-text{background:none; border:none; color:var(--cream-dim); font-size:1.1rem; padding:4px 10px;}
+  .btn-danger-text:hover{color:var(--dart-red);}
+  .player-list{list-style:none; padding:0; margin:0 0 14px;}
+  .player-list li{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 4px; border-bottom:1px solid var(--line); font-size:0.95rem;
+  }
+  .player-list li:last-child{border-bottom:none;}
+  .actions-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
+  .empty{color:var(--cream-dim); font-size:0.9rem; font-style:italic; padding:8px 0;}
+  .match{
+    display:flex; align-items:center; gap:10px; padding:12px 8px;
+    border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  .match:last-child{border-bottom:none;}
+  .match.played{background:rgba(79,143,107,0.08);}
+  .match-players{flex:1; min-width:150px; font-size:0.98rem;}
+  .match-players b{color:var(--cream);}
+  .vs{color:var(--cream-dim); font-size:0.8rem; margin:0 4px;}
+  .stat-inputs{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .stat-group{display:flex; flex-direction:column; align-items:center; gap:3px;}
+  .stat-group label{font-family:'IBM Plex Mono', monospace; font-size:0.62rem; color:var(--cream-dim); letter-spacing:0.05em;}
+  .stat-group .pair{display:flex; align-items:center; gap:4px;}
+  .stat-group input{
+    width:44px; text-align:center; font-family:'IBM Plex Mono', monospace; font-weight:600; padding:8px 4px;
+  }
+  .stat-group.legs input{font-weight:700; border-color:var(--brass);}
+  table{width:100%; border-collapse:collapse; font-size:0.92rem;}
+  th, td{padding:9px 8px; text-align:left; border-bottom:1px solid var(--line);}
+  th{
+    font-family:'IBM Plex Mono', monospace; font-size:0.72rem; letter-spacing:0.05em;
+    color:var(--cream-dim); font-weight:500;
+  }
+  td.num, th.num{text-align:center; font-family:'IBM Plex Mono', monospace;}
+  tr:first-child td{color:var(--brass); font-weight:600;}
+  .rank{color:var(--cream-dim); font-family:'IBM Plex Mono', monospace;}
+  .progress-bar{
+    height:6px; background:var(--board-green-dark); border-radius:3px; overflow:hidden;
+    margin-bottom:14px; border:1px solid var(--line);
+  }
+  .progress-fill{height:100%; background:var(--brass); transition:width 0.3s ease;}
+  .progress-label{font-size:0.82rem; color:var(--cream-dim); margin-bottom:10px; font-family:'IBM Plex Mono', monospace;}
+  .toolbar{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;
+    gap:10px; margin-bottom:14px;
+  }
+  .filter-btns{display:flex; gap:6px;}
+  .filter-btns button{
+    background:transparent; border:1px solid var(--line); color:var(--cream-dim);
+    padding:6px 12px; font-size:0.8rem;
+  }
+  .filter-btns button.active{border-color:var(--brass); color:var(--brass);}
+  .records-grid{display:flex; gap:14px; flex-wrap:wrap;}
+  .record-box{
+    flex:1; min-width:180px; background:var(--board-green-dark); border:1px solid var(--line);
+    border-radius:4px; padding:14px; text-align:center;
+  }
+  .record-box .label{font-family:'IBM Plex Mono', monospace; font-size:0.68rem; color:var(--cream-dim); letter-spacing:0.05em;}
+  .record-box .value{font-family:'Bebas Neue', sans-serif; font-size:2rem; color:var(--brass); letter-spacing:0.02em; margin:4px 0;}
+  .record-box .who{font-size:0.85rem; color:var(--cream-dim);}
+  footer{text-align:center; color:var(--cream-dim); font-size:0.78rem; margin-top:40px; padding:0 20px;}
+  #saveStatus{font-size:0.75rem; color:var(--cream-dim); font-family:'IBM Plex Mono', monospace;}
+  .viewer-note{
+    font-size:0.85rem; color:var(--cream-dim); font-style:italic; text-align:center; padding:10px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="auth-corner" id="authCorner"></div>
+  <h1>KELLER<span>LIGA</span></h1>
+  <p class="sub">Interne Dart-Runde &middot; jeder gegen jeden &middot; Ergebnisse werden eingetragen, wenn gespielt wird.</p>
+</header>
+
+<main>
+
+  <section id="playersSection" class="admin-only" style="display:none;">
+    <div class="card">
+      <h2>Spieler <span class="num" id="playerCount">0</span></h2>
+      <div class="player-row">
+        <input type="text" id="newPlayerName" placeholder="Name eingeben..." maxlength="30">
+        <button class="btn-primary" id="addPlayerBtn">Hinzufügen</button>
+      </div>
+      <ul class="player-list" id="playerList"></ul>
+      <p class="empty" id="playerEmpty">Noch keine Spieler eingetragen.</p>
+    </div>
+  </section>
+
+  <section id="seasonSection" class="admin-only" style="display:none;">
+    <div class="card">
+      <h2>Saison</h2>
+      <div class="actions-row">
+        <button class="btn-primary" id="generateBtn">Spielplan generieren</button>
+        <button class="btn-ghost" id="resetSeasonBtn">Saison zurücksetzen</button>
+      </div>
+      <p class="empty" id="seasonHint">Trag zuerst Spieler ein, dann Spielplan generieren. Bestehende Spiele werden dabei ersetzt.</p>
+      <p id="saveStatus"></p>
+    </div>
+  </section>
+
+  <section id="matchesSection" style="display:none;">
+    <h2 style="padding-left:4px;">Spiele</h2>
+    <div class="card">
+      <div class="toolbar">
+        <div class="progress-label" id="progressLabel">0 / 0 gespielt</div>
+        <div class="filter-btns">
+          <button data-filter="all" class="active">Alle</button>
+          <button data-filter="open">Offen</button>
+          <button data-filter="done">Gespielt</button>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div id="matchList"></div>
+      <p class="viewer-note" id="viewerNote" style="display:none;">Nur Ansicht &ndash; Ergebnisse werden vom Admin eingetragen.</p>
+    </div>
+  </section>
+
+  <section id="recordsSection" style="display:none;">
+    <h2 style="padding-left:4px;">Rekorde</h2>
+    <div class="records-grid">
+      <div class="record-box">
+        <div class="label">BESTER AVERAGE</div>
+        <div class="value" id="recordAvgValue">–</div>
+        <div class="who" id="recordAvgWho">–</div>
+      </div>
+      <div class="record-box">
+        <div class="label">HÖCHSTES FINISH</div>
+        <div class="value" id="recordFinishValue">–</div>
+        <div class="who" id="recordFinishWho">–</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="standingsSection" style="display:none;">
+    <h2 style="padding-left:4px;">Tabelle</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th></th><th>Spieler</th><th class="num">Sp</th><th class="num">S</th>
+            <th class="num">U</th><th class="num">N</th><th class="num">Diff</th><th class="num">Pkt</th>
+          </tr>
+        </thead>
+        <tbody id="standingsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="empty" id="globalEmpty" style="display:none; text-align:center;">Es wurde noch keine Saison gestartet.</p>
+
+</main>
+
+<footer>Community Dart Liga &middot; Kellerliga &middot; Ergebnisse werden vom Admin gepflegt.</footer>
+
+<script>
+(function(){
+  // ============================================================
+  // KONFIGURATION
+  // ============================================================
+  const SUPABASE_URL = "https://ppxwnqbovrnvzkcpyrcj.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
+  // TODO Oliver: durch deine eigene Supabase Auth UUID ersetzen (dieselbe,
+  // die du in kellerliga_setup.sql in die RLS-Policies eingetragen hast).
+  const ADMIN_UUID = "DEINE-ADMIN-UUID-HIER";
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let players = [];
+  let matches = [];
+  let currentFilter = 'all';
+  let isAdmin = false;
+  let currentUser = null;
+
+  const authCorner = document.getElementById('authCorner');
+  const playersSection = document.getElementById('playersSection');
+  const seasonSection = document.getElementById('seasonSection');
+  const playerListEl = document.getElementById('playerList');
+  const playerCountEl = document.getElementById('playerCount');
+  const playerEmptyEl = document.getElementById('playerEmpty');
+  const matchesSection = document.getElementById('matchesSection');
+  const standingsSection = document.getElementById('standingsSection');
+  const recordsSection = document.getElementById('recordsSection');
+  const matchListEl = document.getElementById('matchList');
+  const standingsBody = document.getElementById('standingsBody');
+  const seasonHint = document.getElementById('seasonHint');
+  const saveStatus = document.getElementById('saveStatus');
+  const progressLabel = document.getElementById('progressLabel');
+  const progressFill = document.getElementById('progressFill');
+  const viewerNote = document.getElementById('viewerNote');
+  const globalEmpty = document.getElementById('globalEmpty');
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
+
+  // ============================================================
+  // AUTH
+  // ============================================================
+  function renderAuthCorner(){
+    authCorner.innerHTML = '';
+    if (currentUser) {
+      const tag = document.createElement('span');
+      tag.className = 'auth-tag' + (isAdmin ? ' admin' : '');
+      tag.textContent = isAdmin ? '🛠️ Admin' : 'Nur Ansicht';
+      authCorner.appendChild(tag);
+
+      const btn = document.createElement('button');
+      btn.className = 'btn-ghost';
+      btn.style.padding = '6px 10px';
+      btn.style.fontSize = '0.75rem';
+      btn.textContent = 'Logout';
+      btn.onclick = () => supabaseClient.auth.signOut();
+      authCorner.appendChild(btn);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn-discord';
+      btn.style.padding = '6px 12px';
+      btn.style.fontSize = '0.75rem';
+      btn.textContent = 'Admin-Login';
+      btn.onclick = () => {
+        supabaseClient.auth.signInWithOAuth({
+          provider: 'discord',
+          options: { redirectTo: window.location.href }
+        });
+      };
+      authCorner.appendChild(btn);
+    }
+  }
+
+  function applyAdminVisibility(){
+    playersSection.style.display = isAdmin ? 'block' : 'none';
+    seasonSection.style.display = isAdmin ? 'block' : 'none';
+    viewerNote.style.display = (!isAdmin && matches.length > 0) ? 'block' : 'none';
+  }
+
+  async function refreshAuthState(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    currentUser = session ? session.user : null;
+    isAdmin = !!(currentUser && currentUser.id === ADMIN_UUID);
+    renderAuthCorner();
+    applyAdminVisibility();
+    render();
+  }
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    currentUser = session ? session.user : null;
+    isAdmin = !!(currentUser && currentUser.id === ADMIN_UUID);
+    renderAuthCorner();
+    applyAdminVisibility();
+    render();
+  });
+
+  // ============================================================
+  // DATEN LADEN
+  // ============================================================
+  async function loadAll(){
+    const [{ data: playersData, error: playersErr }, { data: matchesData, error: matchesErr }] = await Promise.all([
+      supabaseClient.from('kellerliga_players').select('*').order('created_at', { ascending: true }),
+      supabaseClient.from('kellerliga_matches').select('*').order('created_at', { ascending: true })
+    ]);
+    if (playersErr) { console.error('Fehler beim Laden der Spieler:', playersErr); return; }
+    if (matchesErr) { console.error('Fehler beim Laden der Spiele:', matchesErr); return; }
+    players = playersData || [];
+    matches = matchesData || [];
+    render();
+  }
+
+  // ============================================================
+  // ADMIN-AKTIONEN (serverseitig durch RLS zusätzlich abgesichert)
+  // ============================================================
+  async function addPlayer(){
+    if (!isAdmin) return;
+    const input = document.getElementById('newPlayerName');
+    const name = input.value.trim();
+    if (!name) return;
+    const { error } = await supabaseClient.from('kellerliga_players').insert({ name });
+    if (error) { alert('❌ Fehler: ' + error.message); return; }
+    input.value = '';
+    await loadAll();
+  }
+
+  async function removePlayer(id){
+    if (!isAdmin) return;
+    if (matches.length > 0) {
+      const ok = confirm('Es gibt bereits einen Spielplan. Spieler entfernen setzt die aktuelle Saison zurück. Fortfahren?');
+      if (!ok) return;
+      await supabaseClient.from('kellerliga_matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    }
+    const { error } = await supabaseClient.from('kellerliga_players').delete().eq('id', id);
+    if (error) { alert('❌ Fehler: ' + error.message); return; }
+    await loadAll();
+  }
+
+  async function generateSchedule(){
+    if (!isAdmin) return;
+    if (players.length < 2) { alert('Mindestens 2 Spieler eintragen, bevor der Spielplan generiert wird.'); return; }
+    if (matches.length > 0) {
+      const ok = confirm('Es existiert bereits ein Spielplan mit Ergebnissen. Wirklich neu generieren und alles löschen?');
+      if (!ok) return;
+    }
+    await supabaseClient.from('kellerliga_matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+    const ids = players.map(p => p.id);
+    const rows = [];
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        rows.push({ player1_id: ids[i], player2_id: ids[j] });
+      }
+    }
+    const { error } = await supabaseClient.from('kellerliga_matches').insert(rows);
+    if (error) { alert('❌ Fehler: ' + error.message); return; }
+    await loadAll();
+  }
+
+  async function resetSeason(){
+    if (!isAdmin) return;
+    const ok = confirm('Kompletten Spielplan und alle Ergebnisse löschen? Spieler bleiben erhalten.');
+    if (!ok) return;
+    const { error } = await supabaseClient.from('kellerliga_matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error) { alert('❌ Fehler: ' + error.message); return; }
+    await loadAll();
+  }
+
+  function readNumOrNull(val){
+    if (val === '' || val === null || val === undefined) return null;
+    const n = Number(val);
+    return isNaN(n) ? null : n;
+  }
+
+  async function saveResult(matchId, fields){
+    if (!isAdmin) return;
+    const legs1 = readNumOrNull(fields.legs1);
+    const legs2 = readNumOrNull(fields.legs2);
+    const updates = {
+      legs_player1: legs1,
+      legs_player2: legs2,
+      avg_player1: readNumOrNull(fields.avg1),
+      avg_player2: readNumOrNull(fields.avg2),
+      highfinish_player1: readNumOrNull(fields.hf1),
+      highfinish_player2: readNumOrNull(fields.hf2),
+      played: legs1 !== null && legs2 !== null
+    };
+    const { error } = await supabaseClient.from('kellerliga_matches').update(updates).eq('id', matchId);
+    if (error) { saveStatus.textContent = '❌ Speichern fehlgeschlagen: ' + error.message; return; }
+    saveStatus.textContent = 'Gespeichert · ' + new Date().toLocaleTimeString('de-DE');
+    await loadAll();
+  }
+
+  // ============================================================
+  // BERECHNUNGEN
+  // ============================================================
+  function nameOf(id){
+    const p = players.find(p => p.id === id);
+    return p ? p.name : '?';
+  }
+
+  function computeStandings(){
+    const table = {};
+    players.forEach(p => { table[p.id] = { id: p.id, name: p.name, sp:0, s:0, u:0, n:0, diff:0, pkt:0 }; });
+    matches.forEach(m => {
+      if (!m.played) return;
+      const a = table[m.player1_id], b = table[m.player2_id];
+      if (!a || !b) return;
+      a.sp++; b.sp++;
+      a.diff += (m.legs_player1 - m.legs_player2);
+      b.diff += (m.legs_player2 - m.legs_player1);
+      if (m.legs_player1 > m.legs_player2) { a.s++; a.pkt += 2; b.n++; }
+      else if (m.legs_player2 > m.legs_player1) { b.s++; b.pkt += 2; a.n++; }
+      else { a.u++; b.u++; a.pkt += 1; b.pkt += 1; }
+    });
+    return Object.values(table).sort((x,y) => y.pkt - x.pkt || y.diff - x.diff || y.s - x.s);
+  }
+
+  function computeRecords(){
+    let bestAvg = null, bestAvgWho = null;
+    let bestFinish = null, bestFinishWho = null;
+    matches.forEach(m => {
+      [[m.avg_player1, m.player1_id], [m.avg_player2, m.player2_id]].forEach(([avg, pid]) => {
+        if (avg !== null && avg !== undefined && (bestAvg === null || avg > bestAvg)) {
+          bestAvg = avg; bestAvgWho = pid;
+        }
+      });
+      [[m.highfinish_player1, m.player1_id], [m.highfinish_player2, m.player2_id]].forEach(([hf, pid]) => {
+        if (hf !== null && hf !== undefined && (bestFinish === null || hf > bestFinish)) {
+          bestFinish = hf; bestFinishWho = pid;
+        }
+      });
+    });
+    return { bestAvg, bestAvgWho, bestFinish, bestFinishWho };
+  }
+
+  // ============================================================
+  // RENDERING
+  // ============================================================
+  function render(){
+    // Spielerliste (admin only sichtbar)
+    playerListEl.innerHTML = '';
+    playerCountEl.textContent = players.length;
+    playerEmptyEl.style.display = players.length ? 'none' : 'block';
+    players.forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span>' + escapeHtml(p.name) + '</span>';
+      if (isAdmin) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-danger-text';
+        btn.textContent = '×';
+        btn.title = 'Entfernen';
+        btn.onclick = () => removePlayer(p.id);
+        li.appendChild(btn);
+      }
+      playerListEl.appendChild(li);
+    });
+
+    seasonHint.style.display = matches.length > 0 ? 'none' : 'block';
+
+    const hasMatches = matches.length > 0;
+    matchesSection.style.display = hasMatches ? 'block' : 'none';
+    standingsSection.style.display = hasMatches ? 'block' : 'none';
+    recordsSection.style.display = hasMatches ? 'block' : 'none';
+    globalEmpty.style.display = (!hasMatches && !isAdmin) ? 'block' : 'none';
+
+    if (hasMatches) {
+      renderMatches();
+      renderStandings();
+      renderRecords();
+    }
+    viewerNote.style.display = (!isAdmin && hasMatches) ? 'block' : 'none';
+  }
+
+  function renderMatches(){
+    const played = matches.filter(m => m.played).length;
+    const total = matches.length;
+    progressLabel.textContent = played + ' / ' + total + ' Spiele gespielt';
+    progressFill.style.width = total ? Math.round((played/total)*100) + '%' : '0%';
+
+    let list = matches;
+    if (currentFilter === 'open') list = list.filter(m => !m.played);
+    if (currentFilter === 'done') list = list.filter(m => m.played);
+
+    matchListEl.innerHTML = '';
+    if (list.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'empty';
+      p.textContent = 'Keine Spiele in dieser Ansicht.';
+      matchListEl.appendChild(p);
+      return;
+    }
+
+    list.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'match' + (m.played ? ' played' : '');
+
+      const playersEl = document.createElement('div');
+      playersEl.className = 'match-players';
+      playersEl.innerHTML = '<b>' + escapeHtml(nameOf(m.player1_id)) + '</b><span class="vs">vs</span><b>' + escapeHtml(nameOf(m.player2_id)) + '</b>';
+      row.appendChild(playersEl);
+
+      const statsWrap = document.createElement('div');
+      statsWrap.className = 'stat-inputs';
+
+      function makeGroup(labelText, cssClass, val1, val2){
+        const group = document.createElement('div');
+        group.className = 'stat-group' + (cssClass ? ' ' + cssClass : '');
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        const pair = document.createElement('div');
+        pair.className = 'pair';
+        const in1 = document.createElement('input');
+        in1.type = 'number';
+        in1.value = (val1 === null || val1 === undefined) ? '' : val1;
+        in1.disabled = !isAdmin;
+        const dash = document.createElement('span');
+        dash.textContent = ':';
+        dash.style.color = 'var(--cream-dim)';
+        const in2 = document.createElement('input');
+        in2.type = 'number';
+        in2.value = (val2 === null || val2 === undefined) ? '' : val2;
+        in2.disabled = !isAdmin;
+        pair.appendChild(in1); pair.appendChild(dash); pair.appendChild(in2);
+        group.appendChild(label); group.appendChild(pair);
+        return { group, in1, in2 };
+      }
+
+      const legsGroup = makeGroup('LEGS', 'legs', m.legs_player1, m.legs_player2);
+      const avgGroup = makeGroup('AVG', '', m.avg_player1, m.avg_player2);
+      const hfGroup = makeGroup('FINISH', '', m.highfinish_player1, m.highfinish_player2);
+
+      statsWrap.appendChild(legsGroup.group);
+      statsWrap.appendChild(avgGroup.group);
+      statsWrap.appendChild(hfGroup.group);
+      row.appendChild(statsWrap);
+
+      if (isAdmin) {
+        function commit(){
+          saveResult(m.id, {
+            legs1: legsGroup.in1.value, legs2: legsGroup.in2.value,
+            avg1: avgGroup.in1.value, avg2: avgGroup.in2.value,
+            hf1: hfGroup.in1.value, hf2: hfGroup.in2.value
+          });
+        }
+        [legsGroup.in1, legsGroup.in2, avgGroup.in1, avgGroup.in2, hfGroup.in1, hfGroup.in2].forEach(inp => {
+          inp.addEventListener('change', commit);
+        });
+      }
+
+      matchListEl.appendChild(row);
+    });
+  }
+
+  function renderStandings(){
+    const rows = computeStandings();
+    standingsBody.innerHTML = '';
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="rank">' + (i+1) + '</td>' +
+        '<td>' + escapeHtml(r.name) + '</td>' +
+        '<td class="num">' + r.sp + '</td>' +
+        '<td class="num">' + r.s + '</td>' +
+        '<td class="num">' + r.u + '</td>' +
+        '<td class="num">' + r.n + '</td>' +
+        '<td class="num">' + (r.diff > 0 ? '+' : '') + r.diff + '</td>' +
+        '<td class="num">' + r.pkt + '</td>';
+      standingsBody.appendChild(tr);
+    });
+  }
+
+  function renderRecords(){
+    const rec = computeRecords();
+    const avgValEl = document.getElementById('recordAvgValue');
+    const avgWhoEl = document.getElementById('recordAvgWho');
+    const finishValEl = document.getElementById('recordFinishValue');
+    const finishWhoEl = document.getElementById('recordFinishWho');
+
+    if (rec.bestAvg !== null) {
+      avgValEl.textContent = Number(rec.bestAvg).toFixed(2);
+      avgWhoEl.textContent = nameOf(rec.bestAvgWho);
+    } else {
+      avgValEl.textContent = '–'; avgWhoEl.textContent = 'Noch kein Wert eingetragen';
+    }
+    if (rec.bestFinish !== null) {
+      finishValEl.textContent = rec.bestFinish;
+      finishWhoEl.textContent = nameOf(rec.bestFinishWho);
+    } else {
+      finishValEl.textContent = '–'; finishWhoEl.textContent = 'Noch kein Wert eingetragen';
+    }
+  }
+
+  // ============================================================
+  // EVENTS & INIT
+  // ============================================================
+  document.getElementById('addPlayerBtn').addEventListener('click', addPlayer);
+  document.getElementById('newPlayerName').addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
+  document.getElementById('generateBtn').addEventListener('click', generateSchedule);
+  document.getElementById('resetSeasonBtn').addEventListener('click', resetSeason);
+  document.querySelectorAll('.filter-btns button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderMatches();
+    });
+  });
+
+  (async function init(){
+    await refreshAuthState();
+    await loadAll();
+    // Alle 30s automatisch aktualisieren, damit Mitspieler ohne Reload
+    // frisch eingetragene Ergebnisse sehen.
+    setInterval(loadAll, 30000);
+  })();
+})();
+</script>
+
+</body>
+</html>
