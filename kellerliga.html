@@ -292,7 +292,7 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBweHducWJvdnJudnprY3B5cmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTEyMTksImV4cCI6MjA5NzA2NzIxOX0.wRDVNxLBx2QHz6hFC59rn1xZgEkxyf1NM6fc8ki-3-Q";
   // TODO Oliver: durch deine eigene Supabase Auth UUID ersetzen (dieselbe,
   // die du in kellerliga_setup.sql in die RLS-Policies eingetragen hast).
-  const ADMIN_UUID = "DEINE-ADMIN-UUID-HIER";
+  const ADMIN_UUID = "dca075e3-33ed-4bc4-bfc8-8c4fc7ed2681";
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -336,13 +336,6 @@
       tag.className = 'auth-tag' + (isAdmin ? ' admin' : '');
       tag.textContent = isAdmin ? '🛠️ Admin' : 'Nur Ansicht';
       authCorner.appendChild(tag);
-
-      // TEMPORÄR zum Debuggen - danach wieder entfernen:
-      const debugTag = document.createElement('span');
-      debugTag.className = 'auth-tag';
-      debugTag.style.fontSize = '0.6rem';
-      debugTag.textContent = 'UID: ' + currentUser.id;
-      authCorner.appendChild(debugTag);
 
       const btn = document.createElement('button');
       btn.className = 'btn-ghost';
