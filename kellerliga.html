@@ -337,6 +337,13 @@
       tag.textContent = isAdmin ? '🛠️ Admin' : 'Nur Ansicht';
       authCorner.appendChild(tag);
 
+      // TEMPORÄR zum Debuggen - danach wieder entfernen:
+      const debugTag = document.createElement('span');
+      debugTag.className = 'auth-tag';
+      debugTag.style.fontSize = '0.6rem';
+      debugTag.textContent = 'UID: ' + currentUser.id;
+      authCorner.appendChild(debugTag);
+
       const btn = document.createElement('button');
       btn.className = 'btn-ghost';
       btn.style.padding = '6px 10px';
