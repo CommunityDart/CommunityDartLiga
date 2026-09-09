@@ -9,19 +9,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --board-green:#173229;
-    --board-green-dark:#0e211a;
-    --cream:#f3ecd9;
-    --cream-dim:#c9c0a8;
+    --board-green:#161611;
+    --board-green-dark:#0a0a08;
+    --cream:#f5f1e2;
+    --cream-dim:#b8b39c;
     --dart-red:#c23b2f;
-    --brass:#c99a4b;
-    --line:#2c473c;
+    --brass:#f2c230;
+    --line:#332f1a;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     background:
-      radial-gradient(circle at 50% 0%, #1d3c30 0%, var(--board-green) 45%, var(--board-green-dark) 100%);
+      radial-gradient(circle at 50% 0%, #1e1c12 0%, var(--board-green) 45%, var(--board-green-dark) 100%);
     color:var(--cream);
     font-family:'IBM Plex Sans', sans-serif;
     min-height:100vh;
@@ -41,7 +41,7 @@
     color:var(--cream);
     line-height:0.95;
   }
-  h1 span{color:var(--dart-red);}
+  h1 span{color:var(--brass);}
   .sub{
     color:var(--cream-dim);
     font-size:0.95rem;
@@ -122,7 +122,7 @@
   }
   button:active{transform:scale(0.97);}
   button:disabled{opacity:0.4; cursor:not-allowed;}
-  .btn-primary{background:var(--dart-red); color:var(--cream);}
+  .btn-primary{background:var(--brass); color:#171400;}
   .btn-primary:hover{filter:brightness(1.1);}
   .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--cream-dim);}
   .btn-ghost:hover{border-color:var(--brass); color:var(--brass);}
