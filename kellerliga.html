@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kellerliga · interne Dartliga vom SVL</title>
+<title>Kellerliga · interne SVL Liga</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -126,6 +126,8 @@
   .btn-primary:hover{filter:brightness(1.1);}
   .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--cream-dim);}
   .btn-ghost:hover{border-color:var(--brass); color:var(--brass);}
+  .btn-end-season{background:transparent; border:3px solid var(--dart-red); color:var(--dart-red); font-weight:700;}
+  .btn-end-season:hover{background:var(--dart-red); color:var(--cream);}
   .btn-discord{background:#5865f2; color:#fff;}
   .btn-discord:hover{filter:brightness(1.1);}
   .btn-danger-text{background:none; border:none; color:var(--cream-dim); font-size:1.1rem; padding:4px 10px;}
@@ -193,6 +195,18 @@
   .viewer-note{
     font-size:0.85rem; color:var(--cream-dim); font-style:italic; text-align:center; padding:10px 0;
   }
+  .history-item{margin-bottom:16px;}
+  .history-item .card{padding:16px;}
+  .history-header{
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;
+    margin-bottom:10px; cursor:pointer;
+  }
+  .history-header .title{font-family:'Bebas Neue', sans-serif; font-size:1.2rem; color:var(--brass); letter-spacing:0.02em;}
+  .history-header .date{font-family:'IBM Plex Mono', monospace; font-size:0.75rem; color:var(--cream-dim);}
+  .history-body{display:none;}
+  .history-body.open{display:block;}
+  .history-records{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; font-size:0.82rem; color:var(--cream-dim);}
+  .history-records strong{color:var(--brass);}
 </style>
 </head>
 <body>
@@ -219,10 +233,11 @@
 
   <section id="seasonSection" class="admin-only" style="display:none;">
     <div class="card">
-      <h2>Saison</h2>
+      <h2>Saison <span class="num" id="currentSeasonLabel">–</span></h2>
       <div class="actions-row">
         <button class="btn-primary" id="generateBtn">Spielplan generieren</button>
-        <button class="btn-ghost" id="resetSeasonBtn">Saison zurücksetzen</button>
+        <button class="btn-ghost" id="resetSeasonBtn">Spielplan löschen (ohne Archivierung)</button>
+        <button class="btn-end-season" id="endSeasonBtn">🏁 Saison beenden &amp; archivieren</button>
       </div>
       <p class="empty" id="seasonHint">Trag zuerst Spieler ein, dann Spielplan generieren. Bestehende Spiele werden dabei ersetzt.</p>
       <p id="saveStatus"></p>
@@ -277,6 +292,11 @@
     </div>
   </section>
 
+  <section id="historySection" style="display:none;">
+    <h2 style="padding-left:4px;">Historie</h2>
+    <div id="historyList"></div>
+  </section>
+
   <p class="empty" id="globalEmpty" style="display:none; text-align:center;">Es wurde noch keine Saison gestartet.</p>
 
 </main>
@@ -298,6 +318,8 @@
 
   let players = [];
   let matches = [];
+  let seasonLabel = 'Saison 1';
+  let history = [];
   let currentFilter = 'all';
   let isAdmin = false;
   let currentUser = null;
@@ -319,6 +341,9 @@
   const progressFill = document.getElementById('progressFill');
   const viewerNote = document.getElementById('viewerNote');
   const globalEmpty = document.getElementById('globalEmpty');
+  const currentSeasonLabelEl = document.getElementById('currentSeasonLabel');
+  const historySection = document.getElementById('historySection');
+  const historyListEl = document.getElementById('historyList');
 
   function escapeHtml(str){
     const d = document.createElement('div');
@@ -387,14 +412,25 @@
   // DATEN LADEN
   // ============================================================
   async function loadAll(){
-    const [{ data: playersData, error: playersErr }, { data: matchesData, error: matchesErr }] = await Promise.all([
+    const [
+      { data: playersData, error: playersErr },
+      { data: matchesData, error: matchesErr },
+      { data: settingsData, error: settingsErr },
+      { data: historyData, error: historyErr }
+    ] = await Promise.all([
       supabaseClient.from('kellerliga_players').select('*').order('created_at', { ascending: true }),
-      supabaseClient.from('kellerliga_matches').select('*').order('created_at', { ascending: true })
+      supabaseClient.from('kellerliga_matches').select('*').order('created_at', { ascending: true }),
+      supabaseClient.from('kellerliga_settings').select('*').eq('id', 1).maybeSingle(),
+      supabaseClient.from('kellerliga_season_history').select('*').order('ended_at', { ascending: false })
     ]);
     if (playersErr) { console.error('Fehler beim Laden der Spieler:', playersErr); return; }
     if (matchesErr) { console.error('Fehler beim Laden der Spiele:', matchesErr); return; }
+    if (settingsErr) { console.error('Fehler beim Laden der Einstellungen:', settingsErr); }
+    if (historyErr) { console.error('Fehler beim Laden der Historie (existiert die Tabelle kellerliga_season_history bereits?):', historyErr); }
     players = playersData || [];
     matches = matchesData || [];
+    seasonLabel = (settingsData && settingsData.season_label) || 'Saison 1';
+    history = historyData || [];
     render();
   }
 
@@ -447,10 +483,49 @@
 
   async function resetSeason(){
     if (!isAdmin) return;
-    const ok = confirm('Kompletten Spielplan und alle Ergebnisse löschen? Spieler bleiben erhalten.');
+    const ok = confirm('Kompletten Spielplan und alle Ergebnisse löschen (OHNE Archivierung in der Historie)? Nur für Korrekturen gedacht. Spieler bleiben erhalten.');
     if (!ok) return;
     const { error } = await supabaseClient.from('kellerliga_matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     if (error) { alert('❌ Fehler: ' + error.message); return; }
+    await loadAll();
+  }
+
+  async function endSeason(){
+    if (!isAdmin) return;
+    if (matches.length === 0) { alert('Es gibt aktuell keinen Spielplan zum Archivieren.'); return; }
+
+    const labelToArchive = prompt('Name der Saison, die archiviert wird:', seasonLabel);
+    if (labelToArchive === null) return;
+
+    const standings = computeStandings();
+    const rec = computeRecords();
+
+    if (!confirm(`"${labelToArchive}" mit ${standings.length} Spielern und ${matches.filter(m=>m.played).length}/${matches.length} gespielten Partien wird archiviert.\n\nDanach wird der Spielplan geleert, die Spielerliste bleibt erhalten.\n\nFortfahren?`)) return;
+
+    const historyRow = {
+      season_label: labelToArchive,
+      standings: standings.map(r => ({ name: r.name, sp: r.sp, s: r.s, u: r.u, n: r.n, diff: r.diff, pkt: r.pkt })),
+      best_avg: rec.bestAvg,
+      best_avg_player: rec.bestAvgWho ? nameOf(rec.bestAvgWho) : null,
+      best_finish: rec.bestFinish,
+      best_finish_player: rec.bestFinishWho ? nameOf(rec.bestFinishWho) : null
+    };
+
+    const { error: insertErr } = await supabaseClient.from('kellerliga_season_history').insert(historyRow);
+    if (insertErr) { alert('❌ Fehler beim Archivieren: ' + insertErr.message); return; }
+
+    const { error: deleteErr } = await supabaseClient.from('kellerliga_matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (deleteErr) { alert('⚠️ Saison wurde archiviert, aber der Spielplan konnte nicht geleert werden: ' + deleteErr.message); await loadAll(); return; }
+
+    const match = labelToArchive.match(/(\d+)\s*$/);
+    const suggestedNext = match ? labelToArchive.replace(/\d+\s*$/, (parseInt(match[1], 10) + 1)) : labelToArchive;
+    const nextLabel = prompt('Name für die neue Saison:', suggestedNext);
+    if (nextLabel && nextLabel.trim()) {
+      const { error: settingsErr } = await supabaseClient.from('kellerliga_settings').upsert({ id: 1, season_label: nextLabel.trim() });
+      if (settingsErr) console.error('Fehler beim Setzen der neuen Saison:', settingsErr);
+    }
+
+    alert(`✅ "${labelToArchive}" wurde archiviert! Der Spielplan ist jetzt leer für die neue Saison.`);
     await loadAll();
   }
 
@@ -545,12 +620,16 @@
     });
 
     seasonHint.style.display = matches.length > 0 ? 'none' : 'block';
+    currentSeasonLabelEl.textContent = seasonLabel;
 
     const hasMatches = matches.length > 0;
     matchesSection.style.display = hasMatches ? 'block' : 'none';
     standingsSection.style.display = hasMatches ? 'block' : 'none';
     recordsSection.style.display = hasMatches ? 'block' : 'none';
-    globalEmpty.style.display = (!hasMatches && !isAdmin) ? 'block' : 'none';
+    globalEmpty.style.display = (!hasMatches && !isAdmin && history.length === 0) ? 'block' : 'none';
+
+    historySection.style.display = history.length > 0 ? 'block' : 'none';
+    renderHistory();
 
     if (hasMatches) {
       renderMatches();
@@ -679,6 +758,49 @@
     }
   }
 
+  function renderHistory(){
+    historyListEl.innerHTML = '';
+    history.forEach((h, idx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'history-item';
+
+      const dateStr = h.ended_at ? new Date(h.ended_at).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : '';
+      const standingsRows = Array.isArray(h.standings) ? h.standings : [];
+      const winner = standingsRows[0] ? standingsRows[0].name : null;
+
+      const recordsBits = [];
+      if (h.best_avg !== null && h.best_avg !== undefined) recordsBits.push(`Bester Average: <strong>${Number(h.best_avg).toFixed(2)}</strong> (${escapeHtml(h.best_avg_player || '?')})`);
+      if (h.best_finish !== null && h.best_finish !== undefined) recordsBits.push(`Höchstes Finish: <strong>${h.best_finish}</strong> (${escapeHtml(h.best_finish_player || '?')})`);
+
+      const bodyId = 'historyBody_' + idx;
+      wrap.innerHTML = `
+        <div class="card">
+          <div class="history-header" data-target="${bodyId}">
+            <span class="title">🏆 ${escapeHtml(h.season_label)}${winner ? ' – ' + escapeHtml(winner) : ''}</span>
+            <span class="date">${dateStr}</span>
+          </div>
+          <div class="history-records">${recordsBits.join(' &middot; ')}</div>
+          <div class="history-body" id="${bodyId}">
+            <table>
+              <thead>
+                <tr><th></th><th>Spieler</th><th class="num">Sp</th><th class="num">S</th><th class="num">U</th><th class="num">N</th><th class="num">Diff</th><th class="num">Pkt</th></tr>
+              </thead>
+              <tbody>
+                ${standingsRows.map((r, i) => `<tr><td class="rank">${i+1}</td><td>${escapeHtml(r.name)}</td><td class="num">${r.sp}</td><td class="num">${r.s}</td><td class="num">${r.u}</td><td class="num">${r.n}</td><td class="num">${(r.diff>0?'+':'')+r.diff}</td><td class="num">${r.pkt}</td></tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      const header = wrap.querySelector('.history-header');
+      const body = wrap.querySelector('.history-body');
+      header.addEventListener('click', () => body.classList.toggle('open'));
+
+      historyListEl.appendChild(wrap);
+    });
+  }
+
   // ============================================================
   // EVENTS & INIT
   // ============================================================
@@ -686,6 +808,7 @@
   document.getElementById('newPlayerName').addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
   document.getElementById('generateBtn').addEventListener('click', generateSchedule);
   document.getElementById('resetSeasonBtn').addEventListener('click', resetSeason);
+  document.getElementById('endSeasonBtn').addEventListener('click', endSeason);
   document.querySelectorAll('.filter-btns button').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-btns button').forEach(b => b.classList.remove('active'));
