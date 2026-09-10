@@ -245,6 +245,44 @@
     .status-tracker { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
     .status-tracker-step { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; }
     .status-tracker-arrow { color: var(--text-secondary); }
+    .status-tracker-dot {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+    }
+    .status-tracker-line { flex: 1; min-width: 24px; height: 2px; border-radius: 2px; }
+
+    .platform-reg-row {
+      display: flex; flex-direction: column; gap: 8px;
+      background: var(--bg-tertiary); padding: 12px 14px; border-radius: 8px;
+      border-left: 3px solid var(--border);
+    }
+    .platform-reg-row label { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; color: var(--text-primary); font-weight: 600; margin-bottom: 0; }
+    .platform-reg-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+    .platform-reg-ad { border-left-color: #0066ff; }
+    .platform-reg-dc { border-left-color: #ff6b35; }
+    .platform-reg-sc { border-left-color: #00d084; }
+    .platform-reg-status { font-size: 11.5px; font-weight: 700; display: none; align-items: center; gap: 4px; margin-left: 26px; }
+    .platform-reg-status.visible { display: inline-flex; }
+    .platform-reg-status.ok { color: var(--green); }
+    .platform-reg-status.missing { color: var(--red); }
+
+    .toast-container {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; gap: 8px; z-index: 3000;
+      width: calc(100% - 40px); max-width: 420px; align-items: center;
+    }
+    .toast {
+      background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 16px; font-size: 13.5px; color: var(--text-primary);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18); opacity: 0; transform: translateY(10px);
+      transition: opacity 0.25s ease, transform 0.25s ease; width: 100%;
+      text-align: center; white-space: pre-line;
+    }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    .toast-success { border-color: var(--green); color: var(--green); }
+    .toast-error { border-color: var(--red); color: var(--red); }
+    .toast-warning { border-color: #ffb020; color: #ffb020; }
 
     /* ===================== Mobile Responsiveness ===================== */
     @media (max-width: 768px) {
@@ -272,6 +310,7 @@
       .modal-card { padding: 18px; max-width: calc(100% - 20px); }
       .avg-proof-image { max-height: 170px; }
       .league-confirm-item { padding: 12px; }
+      .toast-container { bottom: 14px; width: calc(100% - 24px); }
     }
     @media (max-width: 420px) {
       .header-title h1 { font-size: 20px; }
@@ -319,15 +358,24 @@
         <p style="font-size:12px; color:var(--red); font-weight:600; margin-top:-8px;">⚠️ Für jede gewählte Plattform musst du weiter unten bereits einen AVG-Screenshot hochgeladen haben ("📸 Meine AVG-Nachweise") - sonst lässt sich die Anmeldung nicht speichern.</p>
         <div id="discordGateArea" style="display:none;"></div>
         <div id="registrationFormArea" class="registration-box-body">
-          <div class="checkbox-group">
-            <label><input type="checkbox" id="want_ad"> ⚫ Autodarts Liga spielen</label>
-            <div id="autodartsModeGroup" class="autodarts-mode-group">
-              <span class="autodarts-mode-title">Spielweise <span class="required-mark">*</span></span>
-              <label><input type="radio" name="autodarts_play_mode" id="autodarts_mode_kameras" value="kameras"> 📷 Klassisch mit Kameras</label>
-              <label><input type="radio" name="autodarts_play_mode" id="autodarts_mode_lens" value="lens"> 🔎 Autodarts Lens</label>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="platform-reg-row platform-reg-ad">
+              <label><input type="checkbox" id="want_ad"> ⚫ Autodarts Liga spielen</label>
+              <span class="platform-reg-status" id="regStatusAd"></span>
+              <div id="autodartsModeGroup" class="autodarts-mode-group">
+                <span class="autodarts-mode-title">Spielweise <span class="required-mark">*</span></span>
+                <label><input type="radio" name="autodarts_play_mode" id="autodarts_mode_kameras" value="kameras"> 📷 Klassisch mit Kameras</label>
+                <label><input type="radio" name="autodarts_play_mode" id="autodarts_mode_lens" value="lens"> 🔎 Autodarts Lens</label>
+              </div>
             </div>
-            <label><input type="checkbox" id="want_dc"> 🟠 DartCounter Liga spielen</label>
-            <label><input type="checkbox" id="want_sc"> 🟢 Scolia Liga spielen</label>
+            <div class="platform-reg-row platform-reg-dc">
+              <label><input type="checkbox" id="want_dc"> 🟠 DartCounter Liga spielen</label>
+              <span class="platform-reg-status" id="regStatusDc"></span>
+            </div>
+            <div class="platform-reg-row platform-reg-sc">
+              <label><input type="checkbox" id="want_sc"> 🟢 Scolia Liga spielen</label>
+              <span class="platform-reg-status" id="regStatusSc"></span>
+            </div>
           </div>
           <button type="button" id="btnSaveRegistration" style="background: var(--platform-color); color: #fff; width: 100%;">Anmeldung Speichern</button>
         </div>
@@ -360,7 +408,7 @@
 
           <div class="input-group">
             <div><label>Vorname <span class="required-mark">*</span></label><input type="text" id="real_name" placeholder="Dein Vorname" required></div>
-            <div style="flex:0 0 100px;"><label>PLZ *</label><input type="text" id="plz" maxlength="5" inputmode="numeric" placeholder="12345"></div>
+            <div style="flex:0 0 100px;"><label>PLZ <span class="required-mark">*</span></label><input type="text" id="plz" maxlength="5" inputmode="numeric" placeholder="12345" required></div>
             <div><label>Wohnort</label><input type="text" id="ort" placeholder="Wohnort"></div>
           </div>
           <p class="hint-text">* Postleitzahl wird für die Mitgliederkarte benötigt.</p>
@@ -480,6 +528,29 @@
       return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
+    // Nicht-blockierender Hinweis statt alert() - verschwindet nach 4 Sekunden
+    // von selbst. type: 'success' | 'error' | 'warning' | 'info'.
+    function showToast(message, type) {
+      type = type || 'info';
+      let container = document.getElementById('toastContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'toast toast-' + type;
+      toast.textContent = message;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('visible'));
+      setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+    window.showToast = showToast;
+
     // Ein Profil gilt als "vollständig" (Schritt 1 im Registrierungs-Ablauf),
     // sobald Wunschname UND Vorname gespeichert sind - dieselben Felder, die
     // im Formular unten als Pflichtfelder (required) markiert sind. Erst ab
@@ -525,9 +596,15 @@
       if (profileCard) profileCard.style.borderColor = profileComplete ? 'var(--border)' : 'var(--red)';
 
       const trackerHtml = `<div class="status-tracker">
-        <span class="status-tracker-step" style="color:${profileComplete ? 'var(--green)' : 'var(--text-secondary)'};">${profileComplete ? '✅' : '①'} Profil</span>
-        <span class="status-tracker-arrow">→</span>
-        <span class="status-tracker-step" style="color:${fullyRegistered ? 'var(--green)' : 'var(--text-secondary)'};">${fullyRegistered ? '✅' : '②'} Discord-Mitglied</span>
+        <span class="status-tracker-step" style="color:${profileComplete ? 'var(--green)' : 'var(--text-secondary)'};">
+          <span class="status-tracker-dot" style="background:${profileComplete ? 'var(--green)' : 'var(--border)'}; color:${profileComplete ? '#04342c' : 'var(--text-secondary)'};">${profileComplete ? '✓' : '1'}</span>
+          Profil
+        </span>
+        <span class="status-tracker-line" style="background:${profileComplete ? 'var(--green)' : 'var(--border)'};"></span>
+        <span class="status-tracker-step" style="color:${fullyRegistered ? 'var(--green)' : 'var(--text-secondary)'};">
+          <span class="status-tracker-dot" style="background:${fullyRegistered ? 'var(--green)' : 'var(--border)'}; color:${fullyRegistered ? '#04342c' : 'var(--text-secondary)'};">${fullyRegistered ? '✓' : '2'}</span>
+          Discord-Mitglied
+        </span>
       </div>`;
 
       let statusMsgHtml, gateHtml;
@@ -592,14 +669,14 @@
         discordVerified = !!(data && data.verified);
       } catch (e) {
         console.error('Fehler beim Discord-Mitgliedschafts-Check:', e);
-        if (manual) alert('Die Prüfung ist fehlgeschlagen. Versuch es später erneut.');
+        if (manual) showToast('Die Prüfung ist fehlgeschlagen. Versuch es später erneut.', 'error');
         return;
       }
       renderRegistrationStatus();
       if (manual) {
-        alert(discordVerified
-          ? '✅ Deine Discord-Mitgliedschaft wurde bestätigt! Du bist jetzt vollständig registriert und kannst dich für die Liga anmelden.'
-          : '❌ Du wurdest nicht als Mitglied unseres Discord-Servers gefunden. Bitte tritt zuerst bei und versuch es dann erneut.');
+        showToast(discordVerified
+          ? 'Discord-Mitgliedschaft bestätigt! Du bist jetzt vollständig registriert und kannst dich für die Liga anmelden.'
+          : 'Du wurdest nicht als Mitglied unseres Discord-Servers gefunden. Bitte tritt zuerst bei und versuch es dann erneut.', discordVerified ? 'success' : 'error');
       }
     }
     window.checkDiscordMembership = checkDiscordMembership;
@@ -968,7 +1045,7 @@
     // als "hidden"/"pinned" verändert werden kann.
     window.toggleBadgeVisibility = async function(badgeId, currentlyHidden) {
       const { error } = await supabaseClient.from('player_badges').update({ hidden: !currentlyHidden }).eq('id', badgeId);
-      if (error) { alert('❌ Fehler beim Ändern der Sichtbarkeit: ' + error.message); return; }
+      if (error) { showToast('Fehler beim Ändern der Sichtbarkeit: ' + error.message, 'error'); return; }
       loadMyBadges(currentUser.id);
     };
 
@@ -979,10 +1056,10 @@
       if (!currentlyPinned) {
         const { data: badges } = await supabaseClient.from('player_badges').select('id, pinned').eq('player_id', currentUser.id);
         const pinnedCount = (badges || []).filter(b => b.pinned).length;
-        if (pinnedCount >= 6) { alert('❌ Du kannst maximal 6 Abzeichen oben anzeigen lassen. Entferne zuerst eins.'); return; }
+        if (pinnedCount >= 6) { showToast('Du kannst maximal 6 Abzeichen oben anzeigen lassen. Entferne zuerst eins.', 'warning'); return; }
       }
       const { error } = await supabaseClient.from('player_badges').update({ pinned: !currentlyPinned }).eq('id', badgeId);
-      if (error) { alert('❌ Fehler: ' + error.message); return; }
+      if (error) { showToast('Fehler: ' + error.message, 'error'); return; }
       loadMyBadges(currentUser.id);
     };
 
@@ -993,6 +1070,37 @@
       DartCounter: { color: '#ff6b35', icon: '🟠' },
       Scolia:      { color: '#00d084', icon: '🟢' }
     };
+
+    // Merkt sich pro Plattform, ob bereits ein AVG-Nachweis hochgeladen wurde -
+    // wird nach jedem Laden der Nachweise aktualisiert und steuert die Live-
+    // Statusanzeige neben den Anmeldungs-Checkboxen (renderPlatformRegStatus).
+    let avgProofStatus = {};
+
+    const PLATFORM_REG_MAP = [
+      { checkboxId: 'want_ad', statusId: 'regStatusAd', platform: 'Autodarts' },
+      { checkboxId: 'want_dc', statusId: 'regStatusDc', platform: 'DartCounter' },
+      { checkboxId: 'want_sc', statusId: 'regStatusSc', platform: 'Scolia' }
+    ];
+
+    // Zeigt live neben jeder angehakten Plattform-Checkbox, ob bereits ein
+    // AVG-Nachweis existiert - verhindert die Überraschung erst beim Speichern
+    // der Anmeldung zu erfahren, dass ein Screenshot fehlt.
+    function renderPlatformRegStatus() {
+      PLATFORM_REG_MAP.forEach(cfg => {
+        const checkbox = document.getElementById(cfg.checkboxId);
+        const statusEl = document.getElementById(cfg.statusId);
+        if (!checkbox || !statusEl) return;
+        if (!checkbox.checked) {
+          statusEl.className = 'platform-reg-status';
+          statusEl.innerHTML = '';
+          return;
+        }
+        const hasProof = !!avgProofStatus[cfg.platform];
+        statusEl.className = 'platform-reg-status visible ' + (hasProof ? 'ok' : 'missing');
+        statusEl.innerHTML = hasProof ? '✅ Nachweis vorhanden' : '⚠️ Nachweis fehlt - weiter unten hochladen';
+      });
+    }
+    window.renderPlatformRegStatus = renderPlatformRegStatus;
 
     // Klappt die AVG-Nachweise-Karte auf/zu - standardmäßig eingeklappt, damit
     // sie auf der Profilseite nicht so viel Platz wegnimmt.
@@ -1017,6 +1125,8 @@
 
       const proofsByPlatform = {};
       (proofs || []).forEach(p => { proofsByPlatform[p.platform] = p; });
+      avgProofStatus = proofsByPlatform;
+      renderPlatformRegStatus();
 
       container.innerHTML = "";
       Object.keys(AVG_PROOF_PLATFORMS).forEach(platform => {
@@ -1059,7 +1169,7 @@
             await uploadAvgProof(file, platform, userId);
             await loadAvgProofs(userId);
           } catch (err) {
-            alert('❌ Upload fehlgeschlagen: ' + err.message);
+            showToast('Upload fehlgeschlagen: ' + err.message, 'error');
             uploadingEl.style.display = 'none';
           }
         });
@@ -1238,8 +1348,8 @@
       const { error } = await supabaseClient.from('player_league_confirmations').update({
         confirmed: true, confirmed_at: new Date().toISOString()
       }).eq('id', rowId);
-      if (error) { alert('❌ Fehler beim Bestätigen: ' + error.message); return; }
-      alert('✅ Danke! Deine Teilnahme ist bestätigt.');
+      if (error) { showToast('Fehler beim Bestätigen: ' + error.message, 'error'); return; }
+      showToast('Danke! Deine Teilnahme ist bestätigt.', 'success');
       loadMyLeagueConfirmations(currentUser.id);
     };
 
@@ -1284,7 +1394,7 @@
 
     window.acknowledgeAdminMessage = async function(messageId) {
       const { error } = await supabaseClient.from('admin_messages').update({ read_at: new Date().toISOString() }).eq('id', messageId);
-      if (error) { alert('❌ Fehler: ' + error.message); return; }
+      if (error) { showToast('Fehler: ' + error.message, 'error'); return; }
       loadMyAdminMessages(currentUser.id);
     };
 
@@ -1298,6 +1408,9 @@
       if (group) group.classList.toggle('visible', wantAd);
     }
     document.getElementById('want_ad').addEventListener('change', updateAutodartsModeVisibility);
+    document.getElementById('want_ad').addEventListener('change', renderPlatformRegStatus);
+    document.getElementById('want_dc').addEventListener('change', renderPlatformRegStatus);
+    document.getElementById('want_sc').addEventListener('change', renderPlatformRegStatus);
 
     function getSelectedAutodartsMode() {
       const checked = document.querySelector('input[name="autodarts_play_mode"]:checked');
@@ -1382,6 +1495,7 @@
           document.getElementById("autodarts_mode_kameras").checked = data.autodarts_play_mode === 'kameras';
           document.getElementById("autodarts_mode_lens").checked = data.autodarts_play_mode === 'lens';
           updateAutodartsModeVisibility();
+          renderPlatformRegStatus();
           
           if(data.is_admin) {
               document.getElementById("adminBadge").style.display = "inline-block";
@@ -1409,7 +1523,7 @@
         // hier verhindert nur einen unnötigen Roundtrip und gibt eine klare
         // Fehlermeldung, falls das Gate im UI aus irgendeinem Grund umgangen wurde.
         if (!isProfileComplete(currentProfileData) || discordVerified !== true) {
-            alert('❌ Du musst zuerst dein Profil vervollständigen und unserem Discord-Server beitreten, bevor du dich für eine Liga anmelden kannst.');
+            showToast('Du musst zuerst dein Profil vervollständigen und unserem Discord-Server beitreten, bevor du dich für eine Liga anmelden kannst.', 'error');
             return;
         }
 
@@ -1422,7 +1536,7 @@
         // beiden MUSS ausgewählt sein.
         const autodartsPlayMode = getSelectedAutodartsMode();
         if (wantAd && !autodartsPlayMode) {
-            alert('❌ Bitte gib bei Autodarts an, ob du klassisch mit Kameras oder über Autodarts Lens spielst.');
+            showToast('Bitte gib bei Autodarts an, ob du klassisch mit Kameras oder über Autodarts Lens spielst.', 'error');
             document.getElementById('autodartsModeGroup').scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -1452,7 +1566,7 @@
             saveBtn.innerText = "Anmeldung Speichern";
 
             if (proofsError) {
-                alert('❌ Fehler beim Prüfen deiner AVG-Nachweise: ' + proofsError.message);
+                showToast('Fehler beim Prüfen deiner AVG-Nachweise: ' + proofsError.message, 'error');
                 return;
             }
 
@@ -1460,7 +1574,7 @@
             const missing = selectedPlatforms.filter(p => !uploadedPlatforms.has(p));
 
             if (missing.length > 0) {
-                alert(`❌ Anmeldung nicht möglich!\n\nFür folgende Plattform(en) fehlt noch dein AVG-Screenshot:\n${missing.join(', ')}\n\nBitte lade zuerst weiter unten unter "📸 Meine AVG-Nachweise" einen Screenshot hoch und speichere die Anmeldung danach erneut.`);
+                showToast(`Anmeldung nicht möglich - für folgende Plattform(en) fehlt noch dein AVG-Screenshot: ${missing.join(', ')}. Bitte lade ihn weiter unten unter "AVG-Nachweise" hoch.`, 'error');
                 const avgCard = document.getElementById('avgProofCard');
                 if (avgCard) avgCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
@@ -1478,7 +1592,7 @@
         if (regError) {
             // Fängt insbesondere die serverseitige Discord-Trigger-Fehlermeldung ab,
             // falls der lokale Check oben aus irgendeinem Grund veraltet war.
-            alert('❌ Anmeldung nicht möglich: ' + regError.message);
+            showToast('Anmeldung nicht möglich: ' + regError.message, 'error');
             return;
         }
 
@@ -1488,7 +1602,7 @@
         // der tatsächlichen Zuteilung durch den Admin - diese Anmeldung hier
         // ist nur der erste Schritt (Wunsch äußern), noch keine Zuteilung.
 
-        alert("✅ Anmeldung für die neue Saison gespeichert!");
+        showToast("Anmeldung für die neue Saison gespeichert!", "success");
         initProfile();
     };
 
@@ -1500,15 +1614,16 @@
         // "required" ignorieren, oder bei nur aus Leerzeichen bestehenden Werten).
         const displayNameVal = document.getElementById("display_name").value.trim();
         const realNameVal = document.getElementById("real_name").value.trim();
-        if (!displayNameVal || !realNameVal) {
-            alert("Bitte fülle sowohl 'Wunschname / Anzeigename' als auch 'Vorname (Echter Name)' aus - beide Felder sind Pflicht.");
+        const plzVal = document.getElementById("plz").value.trim();
+        if (!displayNameVal || !realNameVal || !plzVal) {
+            showToast("Bitte fülle Wunschname, Vorname und PLZ aus - alle drei Felder sind Pflicht.", "error");
             if (!displayNameVal) document.getElementById("display_name").focus();
-            else document.getElementById("real_name").focus();
+            else if (!realNameVal) document.getElementById("real_name").focus();
+            else document.getElementById("plz").focus();
             return;
         }
 
         const saveBtn = document.getElementById("saveBtn");
-        const plzVal = document.getElementById("plz").value.trim();
         const ortVal = document.getElementById("ort").value.trim();
 
         // Nur neu geocoden wenn PLZ oder Ort sich geändert haben - spart unnötige Anfragen
@@ -1558,18 +1673,23 @@
             updated_at: new Date()
         };
 
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Speichert...";
         const { error } = await supabaseClient.from('profiles').upsert(updates);
+        saveBtn.disabled = false;
+        saveBtn.innerText = "Profil Speichern";
+
         if (error) {
-            alert("Fehler beim Speichern: " + error.message);
+            showToast("Fehler beim Speichern: " + error.message, "error");
         } else if (plzOrtChanged && (plzVal || ortVal) && lat === null) {
             // Profil wurde gespeichert (könnte jetzt vollständig sein) - Rollen-Status neu berechnen lassen.
             syncMyDiscordRoles();
-            alert("Profil gespeichert! ⚠️ Dein Standort konnte aber nicht automatisch gefunden werden - dein Pin erscheint deshalb noch nicht auf der Karte. Prüfe PLZ/Ort auf Tippfehler und speichere nochmal.");
+            showToast("Profil gespeichert - dein Standort konnte aber nicht automatisch gefunden werden. Prüfe PLZ/Ort auf Tippfehler und speichere nochmal.", "warning");
             initProfile();
         } else {
             // Profil wurde gespeichert (könnte jetzt vollständig sein) - Rollen-Status neu berechnen lassen.
             syncMyDiscordRoles();
-            alert("Profil erfolgreich gespeichert!");
+            showToast("Profil gespeichert.", "success");
             initProfile();
         }
     });
