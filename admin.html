@@ -410,6 +410,10 @@
                         <option value="open">Noch offen</option>
                     </select>
                 </label>
+                <label style="flex-direction:row; align-items:center; gap:6px;">
+                    <input type="checkbox" id="filterTournamentOnly" onchange="loadWaitingList()" style="width:16px; height:16px; cursor:pointer;">
+                    🏆 Nur Turnierspieler
+                </label>
                 <span id="filterResultCount" class="filter-count-text"></span>
             </div>
         </div>
@@ -1183,10 +1187,16 @@
                 ? ` ${autodartsPlayModeLabel(prof.autodarts_play_mode)}`
                 : ` <span style="font-size:10px; color:#e74c3c; font-weight:700;">⚠️ Spielweise fehlt</span>`;
         }
+        // Turnierspieler ist ein reines Info-Flag (keine Liga-Zuteilung nötig) -
+        // eigener, neutral-lila Chip mit der gewählten Plattform als Zusatz.
+        const tournamentChip = prof.want_tournament
+            ? `<span style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:10px; margin-right:4px; display:inline-flex; align-items:center; gap:3px; background:rgba(127,119,221,0.15); color:#7f77dd; border:1px solid rgba(127,119,221,0.4);">🏆 Turnier (${htmlEscape(prof.tournament_platform || '-')})</span>`
+            : '';
         return `<div style="margin-top:4px; display:flex; flex-wrap:wrap; align-items:center; gap:4px;">
             ${chip(prof.want_autodarts, 'Autodarts', '⚫')}${adSuffix}
             ${chip(prof.want_dartcounter, 'DartCounter', '🟠')}
             ${chip(prof.want_scolia, 'Scolia', '🟢')}
+            ${tournamentChip}
         </div>`;
     }
 
@@ -1346,11 +1356,15 @@
 
             const platformFilter = document.getElementById('filterPlatform') ? document.getElementById('filterPlatform').value : '';
             const statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
+            const tournamentOnlyFilter = document.getElementById('filterTournamentOnly') ? document.getElementById('filterTournamentOnly').checked : false;
 
             let displayPlayers = activePlayers;
             if (platformFilter) {
                 const wantField = platformFilter === 'Autodarts' ? 'want_autodarts' : platformFilter === 'DartCounter' ? 'want_dartcounter' : 'want_scolia';
                 displayPlayers = displayPlayers.filter(p => !!p[wantField]);
+            }
+            if (tournamentOnlyFilter) {
+                displayPlayers = displayPlayers.filter(p => !!p.want_tournament);
             }
             if (statusFilter) {
                 displayPlayers = displayPlayers.filter(p => {
