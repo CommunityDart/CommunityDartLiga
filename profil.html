@@ -262,6 +262,7 @@
     .platform-reg-ad { border-left-color: #0066ff; }
     .platform-reg-dc { border-left-color: #ff6b35; }
     .platform-reg-sc { border-left-color: #00d084; }
+    .platform-reg-tournament { border-left-color: #7f77dd; }
     .platform-reg-status { font-size: 11.5px; font-weight: 700; display: none; align-items: center; gap: 4px; margin-left: 26px; }
     .platform-reg-status.visible { display: inline-flex; }
     .platform-reg-status.ok { color: var(--green); }
@@ -375,6 +376,16 @@
             <div class="platform-reg-row platform-reg-sc">
               <label><input type="checkbox" id="want_sc"> 🟢 Scolia Liga spielen</label>
               <span class="platform-reg-status" id="regStatusSc"></span>
+            </div>
+            <div class="platform-reg-row platform-reg-tournament">
+              <label><input type="checkbox" id="want_tournament"> 🏆 Ich bin Turnierspieler (keine Liga, nur Turniere)</label>
+              <span class="platform-reg-status" id="regStatusTournament"></span>
+              <div id="tournamentPlatformGroup" class="autodarts-mode-group">
+                <span class="autodarts-mode-title">Plattform für Turniere <span class="required-mark">*</span></span>
+                <label><input type="radio" name="tournament_platform" id="tournament_platform_ad" value="Autodarts"> ⚫ Autodarts</label>
+                <label><input type="radio" name="tournament_platform" id="tournament_platform_dc" value="DartCounter"> 🟠 DartCounter</label>
+                <label><input type="radio" name="tournament_platform" id="tournament_platform_sc" value="Scolia"> 🟢 Scolia</label>
+              </div>
             </div>
           </div>
           <button type="button" id="btnSaveRegistration" style="background: var(--platform-color); color: #fff; width: 100%;">Anmeldung Speichern</button>
@@ -1102,6 +1113,24 @@
     }
     window.renderPlatformRegStatus = renderPlatformRegStatus;
 
+    // Wie renderPlatformRegStatus, aber für die Turnierspieler-Zeile: hier ist
+    // die Plattform nicht fix, sondern hängt von der Radio-Auswahl darunter ab.
+    function renderTournamentRegStatus() {
+      const checkbox = document.getElementById('want_tournament');
+      const statusEl = document.getElementById('regStatusTournament');
+      if (!checkbox || !statusEl) return;
+      const platform = getSelectedTournamentPlatform();
+      if (!checkbox.checked || !platform) {
+        statusEl.className = 'platform-reg-status';
+        statusEl.innerHTML = '';
+        return;
+      }
+      const hasProof = !!avgProofStatus[platform];
+      statusEl.className = 'platform-reg-status visible ' + (hasProof ? 'ok' : 'missing');
+      statusEl.innerHTML = hasProof ? '✅ Nachweis vorhanden' : '⚠️ Nachweis fehlt - weiter unten hochladen';
+    }
+    window.renderTournamentRegStatus = renderTournamentRegStatus;
+
     // Klappt die AVG-Nachweise-Karte auf/zu - standardmäßig eingeklappt, damit
     // sie auf der Profilseite nicht so viel Platz wegnimmt.
     window.toggleAvgProofCard = function() {
@@ -1127,6 +1156,7 @@
       (proofs || []).forEach(p => { proofsByPlatform[p.platform] = p; });
       avgProofStatus = proofsByPlatform;
       renderPlatformRegStatus();
+      renderTournamentRegStatus();
 
       container.innerHTML = "";
       Object.keys(AVG_PROOF_PLATFORMS).forEach(platform => {
@@ -1417,6 +1447,24 @@
       return checked ? checked.value : null;
     }
 
+    // Turnierspieler ohne Liga: zeigt die Plattformauswahl erst, sobald das
+    // Häkchen gesetzt ist - genau wie bei der Autodarts-Spielweise oben.
+    function updateTournamentPlatformVisibility() {
+      const wantTournament = document.getElementById('want_tournament').checked;
+      const group = document.getElementById('tournamentPlatformGroup');
+      if (group) group.classList.toggle('visible', wantTournament);
+    }
+    document.getElementById('want_tournament').addEventListener('change', updateTournamentPlatformVisibility);
+    document.getElementById('want_tournament').addEventListener('change', renderTournamentRegStatus);
+    document.getElementById('tournament_platform_ad').addEventListener('change', renderTournamentRegStatus);
+    document.getElementById('tournament_platform_dc').addEventListener('change', renderTournamentRegStatus);
+    document.getElementById('tournament_platform_sc').addEventListener('change', renderTournamentRegStatus);
+
+    function getSelectedTournamentPlatform() {
+      const checked = document.querySelector('input[name="tournament_platform"]:checked');
+      return checked ? checked.value : null;
+    }
+
     // ===================== Discord-Rollen-Sync =====================
     // Stößt die Edge Function "discord-assign-roles" an, die den kompletten
     // Rollenstatus SELBST aus der Datenbank berechnet (Profil vollständig +
@@ -1490,13 +1538,18 @@
           document.getElementById("want_ad").checked = data.want_autodarts || false;
           document.getElementById("want_dc").checked = data.want_dartcounter || false;
           document.getElementById("want_sc").checked = data.want_scolia || false;
+          document.getElementById("want_tournament").checked = data.want_tournament || false;
+          document.getElementById("tournament_platform_ad").checked = data.tournament_platform === 'Autodarts';
+          document.getElementById("tournament_platform_dc").checked = data.tournament_platform === 'DartCounter';
+          document.getElementById("tournament_platform_sc").checked = data.tournament_platform === 'Scolia';
 
           // Gespeicherte Autodarts-Spielweise vorauswählen (falls vorhanden)
           document.getElementById("autodarts_mode_kameras").checked = data.autodarts_play_mode === 'kameras';
           document.getElementById("autodarts_mode_lens").checked = data.autodarts_play_mode === 'lens';
           updateAutodartsModeVisibility();
+          updateTournamentPlatformVisibility();
           renderPlatformRegStatus();
-          
+          renderTournamentRegStatus();
           if(data.is_admin) {
               document.getElementById("adminBadge").style.display = "inline-block";
               document.getElementById("adminDashboardBtn").style.display = "inline-block";
@@ -1507,6 +1560,7 @@
       } else {
           currentProfileData = null;
           updateAutodartsModeVisibility();
+          updateTournamentPlatformVisibility();
       }
 
       // Erst JETZT (nachdem currentProfileData feststeht) den Status-Tracker
@@ -1530,6 +1584,7 @@
         const wantAd = document.getElementById("want_ad").checked;
         const wantDc = document.getElementById("want_dc").checked;
         const wantSc = document.getElementById("want_sc").checked;
+        const wantTournament = document.getElementById("want_tournament").checked;
 
         // Pflichtfeld: Wer sich für Autodarts anmeldet, muss angeben ob er
         // klassisch mit Kameras oder über Autodarts Lens spielt - eins von
@@ -1538,6 +1593,15 @@
         if (wantAd && !autodartsPlayMode) {
             showToast('Bitte gib bei Autodarts an, ob du klassisch mit Kameras oder über Autodarts Lens spielst.', 'error');
             document.getElementById('autodartsModeGroup').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        // Pflichtfeld: Wer als reiner Turnierspieler angibt, muss eine
+        // Plattform auswählen, damit sein AVG-Nachweis zugeordnet werden kann.
+        const tournamentPlatform = getSelectedTournamentPlatform();
+        if (wantTournament && !tournamentPlatform) {
+            showToast('Bitte wähle bei "Ich bin Turnierspieler" eine Plattform aus.', 'error');
+            document.getElementById('tournamentPlatformGroup').scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
@@ -1550,6 +1614,9 @@
         if (wantAd) selectedPlatforms.push('Autodarts');
         if (wantDc) selectedPlatforms.push('DartCounter');
         if (wantSc) selectedPlatforms.push('Scolia');
+        if (wantTournament && tournamentPlatform && !selectedPlatforms.includes(tournamentPlatform)) {
+            selectedPlatforms.push(tournamentPlatform);
+        }
 
         const saveBtn = document.getElementById("btnSaveRegistration");
         if (selectedPlatforms.length > 0) {
@@ -1586,7 +1653,12 @@
             want_dartcounter: wantDc,
             want_scolia: wantSc,
             autodarts_play_mode: wantAd ? autodartsPlayMode : null,
-            status_neue_saison: 'waiting'
+            want_tournament: wantTournament,
+            tournament_platform: wantTournament ? tournamentPlatform : null,
+            // Turnierspieler ist nur ein Info-Flag für den Admin (siehe Kartentext) -
+            // löst keine Zuteilung/"wartet auf Zuteilung"-Anzeige aus. Der
+            // "waiting"-Status gilt daher nur, wenn tatsächlich eine Liga gewünscht ist.
+            status_neue_saison: (wantAd || wantDc || wantSc) ? 'waiting' : null
         }).eq('id', currentUser.id);
 
         if (regError) {
