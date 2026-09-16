@@ -2658,8 +2658,8 @@
 
       const titleColor = md._isComplete ? 'color:#00d084;' : '';
       const titleIcon = md._isComplete ? '✅' : '⚡';
-      html += `<div class="matchday-card"><div class="matchday-title" style="${titleColor}">${titleIcon} ${htmlEscape(md.title)}</div>`;
-
+      const zeitraum = spieltagZeitraum(md._dayNum);
+      html += `<div class="matchday-card"><div class="matchday-title" style="${titleColor}">${titleIcon} ${htmlEscape(md.title)}${zeitraum ? `<div style="font-size:10.5px; font-weight:600; color:var(--text-secondary); text-transform:none; margin-top:2px;">${zeitraum}</div>` : ''}</div>`;
       // Innerhalb des Spieltags: offene Spiele zuerst, erledigte darunter -
       // alle immer sichtbar, kein Einklappen mehr.
       if (openRows.length === 0 && doneRows.length === 0) {
@@ -2925,6 +2925,17 @@
     return `<span style="font-size:11px; font-weight:700; background:${pb.color}1A; color:${pb.color}; padding:4px 10px; border-radius:10px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">${pb.icon} ${htmlEscape(subLabel)}</span>`;
   }
 
+function spieltagZeitraum(spieltagNummer, tageProSpieltag = 7) {
+  if (!state.seasonStartDate) return '';
+  const start = new Date(state.seasonStartDate + 'T00:00:00');
+  const von = new Date(start);
+  von.setDate(start.getDate() + (spieltagNummer - 1) * tageProSpieltag);
+  const bis = new Date(von);
+  bis.setDate(von.getDate() + tageProSpieltag - 1);
+  const fmt = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  return `${fmt(von)} – ${fmt(bis)}`;
+   }
+  
   function computePlayerHighlights(playerId) {
     const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
     let total180s = 0, highfinishCount = 0, bestHighfinish = 0;
@@ -3593,6 +3604,7 @@
       const { data: sysData } = await supabaseClient.from('system_settings').select('*');
       const sys = (sysData && sysData.length > 0) ? sysData[0] : null;
       state.currentSeason = sys?.current_season || 'Saison 1';
+      state.seasonStartDate = sys?.season_start_date || null;
       state.resultConfirmationHours = sys?.result_confirmation_hours || 48;
       state.tournamentConfirmationMinutes = sys?.tournament_confirmation_minutes || 5;
       state.xpConfig = {
