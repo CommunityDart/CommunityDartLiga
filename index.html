@@ -2932,9 +2932,9 @@ function spieltagZeitraum(spieltagNummer, tageProSpieltag = 7) {
   von.setDate(start.getDate() + (spieltagNummer - 1) * tageProSpieltag);
   const bis = new Date(von);
   bis.setDate(von.getDate() + tageProSpieltag - 1);
-  const fmt = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  const fmt = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   return `${fmt(von)} – ${fmt(bis)}`;
-   }
+}
   
   function computePlayerHighlights(playerId) {
     const allMatches = [...(state.allMatchesLifetimeCache || []), ...(state.allTournamentMatchesCache || [])];
