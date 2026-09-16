@@ -2800,7 +2800,7 @@
     const withHighlights = state.allProfilesCache.map(p => ({ profile: p, ...computePlayerHighlights(p.id) }));
 
     const ranked180 = withHighlights.filter(r => r.total180s > 0).sort((a, b) => b.total180s - a.total180s);
-    const rankedHf = withHighlights.filter(r => r.highfinishCount > 0).sort((a, b) => b.bestHighfinish - a.bestHighfinish || b.highfinishCount - a.highfinishCount);
+    const rankedHf = withHighlights.filter(r => r.highfinishCount > 0).sort((a, b) => b.bestHighfinish - a.bestHighfinish || b.highfinishCount - a.highfinishCount).slice(0, 10);
 
     function renderRow(r, idx, valueHtml) {
       const p = r.profile;
